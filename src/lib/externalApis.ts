@@ -1,5 +1,15 @@
 import type { GeoPoint, MobilityMode, RouteInstruction, RouteOption } from '../types';
 
+// Delai maximal par requete reseau: en mobilite a connectivite variable, une
+// requete qui pend est pire qu'une requete qui echoue vite (le fallback prend
+// le relais). On combine le timeout avec le signal d'annulation eventuel.
+const NETWORK_TIMEOUT_MS = 8000;
+
+function withTimeout(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(NETWORK_TIMEOUT_MS);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
+
 export interface PlaceSearchResult extends GeoPoint {
   id: string;
   context: string;
@@ -77,7 +87,7 @@ export async function searchPlaces(query: string, origin?: GeoPoint, signal?: Ab
   }
 
   const response = await fetch(`https://api-adresse.data.gouv.fr/search/?${params.toString()}`, {
-    signal,
+    signal: withTimeout(signal),
     headers: {
       Accept: 'application/json',
     },
@@ -131,9 +141,14 @@ export async function enhanceRoutesWithLiveRouting(
   return enhancedRoutes;
 }
 
+// Le CO2 par leg est calcule par routePlanner selon le facteur de chaque mode.
+// L'enrichissement live ne recalcule pas tout au facteur du mode dominant (ce qui
+// gonflerait un trajet velo+metro comme du 100 % metro) : il conserve l'intensite
+// carbone moyenne de l'option d'origine (g/km) et l'applique a la distance reelle.
 function estimateLiveCarbon(routeOption: RouteOption, distanceKm: number): number {
-  const dominantMode = routeOption.modes[routeOption.modes.length - 1] ?? 'walk';
-  return Math.round(distanceKm * LIVE_EMISSIONS_G_PER_KM[dominantMode]);
+  const baseDistanceKm = routeOption.distanceKm > 0 ? routeOption.distanceKm : distanceKm;
+  const carbonIntensityPerKm = baseDistanceKm > 0 ? routeOption.carbonGrams / baseDistanceKm : 0;
+  return Math.round(distanceKm * carbonIntensityPerKm);
 }
 
 function scoreLiveRoute(routeOption: RouteOption, durationMinutes: number, carbonGrams: number): number {
@@ -158,7 +173,7 @@ async function fetchRouteGeometry(
 
   try {
     const response = await fetch(url, {
-      signal,
+      signal: withTimeout(signal),
       headers: {
         Accept: 'application/json',
       },

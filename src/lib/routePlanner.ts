@@ -3,6 +3,7 @@ import type {
   GtfsRoute,
   GtfsStop,
   MobilityMode,
+  MobilityProfile,
   RouteInstruction,
   RouteLeg,
   RouteOption,
@@ -35,6 +36,20 @@ const MODE_LABELS: Record<MobilityMode, string> = {
   carpool: 'covoiturage',
 };
 
+// Coefficients du modele de score, centralises et testes (routePlanner.test.ts).
+// Le score part de la fiabilite de l'option, ajoute un bonus par mode prefere et
+// retranche des penalites (duree, carbone, inaccessibilite PMR, avertissements).
+export const SCORING_WEIGHTS = {
+  preferenceBonusPerMode: 8,
+  carbonDivisor: 55,
+  timePenaltyPerMinute: 0.85,
+  accessibilityPenalty: 45,
+  warningPenalty: 6,
+} as const;
+
+// RG3 : un segment velo/trottinette n'est propose que si une station est a portee de marche.
+const MAX_STATION_ACCESS_KM = 0.4;
+
 export const LANDMARKS: GeoPoint[] = [
   { label: 'Bellecour', lat: 45.7578, lon: 4.832 },
   { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 },
@@ -66,13 +81,22 @@ export function planRoutes(request: RouteRequest): RouteOption[] {
   ].filter((option): option is RouteOption => Boolean(option));
 
   return candidates
-    .map((option) => scoreOption(option, request.profile.preferredModes, request.profile.accessibilityNeed))
+    .map((option) => scoreOption(option, request.profile))
     .sort((a, b) => b.score - a.score);
 }
 
-function createTransitOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption {
+// RG5 : minutes de marche cumulees d'une option (segments a pied uniquement).
+export function totalWalkMinutes(option: RouteOption): number {
+  return option.legs.filter((leg) => leg.mode === 'walk').reduce((sum, leg) => sum + leg.durationMinutes, 0);
+}
+
+function createTransitOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
   const fromStop = nearestStop(network.gtfs.stops, origin, profile.accessibilityNeed);
   const toStop = nearestStop(network.gtfs.stops, destination, profile.accessibilityNeed);
+  if (!fromStop || !toStop) {
+    // Profil PMR sans arret accessible a proximite: pas d'option transport public conforme.
+    return null;
+  }
   const trip = network.gtfs.trips.slice().sort((a, b) => a.headway_minutes - b.headway_minutes)[0];
   const route = network.gtfs.routes.find((item) => item.route_id === trip.route_id) ?? network.gtfs.routes[0];
   const firstWalkKm = haversineDistanceKm(origin, stopToPoint(fromStop));
@@ -128,6 +152,9 @@ function createBikeTransitOption({ origin, destination, profile, network }: Rout
 
   const boardingStop = nearestStop(network.gtfs.stops, stationToPoint(fromStation), profile.accessibilityNeed);
   const arrivalStop = nearestStop(network.gtfs.stops, destination, profile.accessibilityNeed);
+  if (!boardingStop || !arrivalStop) {
+    return null;
+  }
   const trip = network.gtfs.trips.slice().sort((a, b) => a.headway_minutes - b.headway_minutes)[0];
   const route = network.gtfs.routes.find((item) => item.route_id === trip.route_id) ?? network.gtfs.routes[0];
   const firstWalkKm = haversineDistanceKm(origin, stationToPoint(fromStation));
@@ -364,16 +391,27 @@ function buildFallbackInstructions(legs: RouteLeg[]): RouteInstruction[] {
   ];
 }
 
-function scoreOption(option: RouteOption, preferredModes: MobilityMode[], accessibilityNeed: boolean): RouteOption {
-  const preferenceBonus = option.modes.reduce((sum, mode) => sum + (preferredModes.includes(mode) ? 8 : 0), 0);
-  const carbonPenalty = option.carbonGrams / 55;
-  const timePenalty = option.durationMinutes * 0.85;
-  const accessibilityPenalty = accessibilityNeed && !option.accessible ? 45 : 0;
-  const warningPenalty = option.warnings.length * 6;
+function scoreOption(option: RouteOption, profile: MobilityProfile): RouteOption {
+  const w = SCORING_WEIGHTS;
+  const preferenceBonus = option.modes.reduce((sum, mode) => sum + (profile.preferredModes.includes(mode) ? w.preferenceBonusPerMode : 0), 0);
+  const carbonPenalty = option.carbonGrams / w.carbonDivisor;
+  const timePenalty = option.durationMinutes * w.timePenaltyPerMinute;
+  const accessibilityPenalty = profile.accessibilityNeed && !option.accessible ? w.accessibilityPenalty : 0;
+
+  // RG5 : au-dela de la marche maximale du profil, un avertissement est ajoute
+  // et l'option est penalisee (1 point par minute de marche excedentaire).
+  const walkMinutes = totalWalkMinutes(option);
+  const walkExcess = Math.max(walkMinutes - profile.maxWalkMinutes, 0);
+  const warnings = walkExcess > 0
+    ? [...option.warnings, `Marche de ${Math.round(walkMinutes)} min superieure a ta limite de ${profile.maxWalkMinutes} min.`]
+    : option.warnings;
+  const warningPenalty = warnings.length * w.warningPenalty + walkExcess;
+
   const score = Math.round(option.reliabilityScore + preferenceBonus - carbonPenalty - timePenalty - accessibilityPenalty - warningPenalty);
 
   return {
     ...option,
+    warnings,
     score: Math.min(Math.max(score, 0), 100),
   };
 }
@@ -426,21 +464,28 @@ function midpoint(a: GeoPoint, b: GeoPoint, offset: number): GeoPoint {
   };
 }
 
-function nearestStop(stops: GtfsStop[], point: GeoPoint, requireAccessible: boolean): GtfsStop {
+function nearestStop(stops: GtfsStop[], point: GeoPoint, requireAccessible: boolean): GtfsStop | null {
   const candidates = requireAccessible ? stops.filter((stop) => stop.wheelchair_boarding === 1) : stops;
+  if (candidates.length === 0) {
+    // Aucun arret accessible PMR: on n'invente pas une correspondance non conforme.
+    return null;
+  }
   return candidates
     .slice()
     .sort((a, b) => haversineDistanceKm(stopToPoint(a), point) - haversineDistanceKm(stopToPoint(b), point))[0];
 }
 
+// RG3 : seule une station situee dans le rayon de marche (400 m) est exploitable.
 function nearestStation(stations: SharedStation[], point: GeoPoint): SharedStation | null {
   if (stations.length === 0) {
     return null;
   }
 
-  return stations
+  const closest = stations
     .slice()
     .sort((a, b) => haversineDistanceKm(stationToPoint(a), point) - haversineDistanceKm(stationToPoint(b), point))[0];
+
+  return haversineDistanceKm(stationToPoint(closest), point) <= MAX_STATION_ACCESS_KM ? closest : null;
 }
 
 function stopToPoint(stop: GtfsStop): GeoPoint {
@@ -459,8 +504,14 @@ function stationToPoint(station: SharedStation): GeoPoint {
   };
 }
 
+// Le MVP ne calcule pas la desserte reelle (pas de stop_times.txt): on ne peut
+// pas garantir QUELLE ligne dessert l'arret. On affiche donc la categorie de
+// mode (metro/tram/bus), jamais un numero de ligne qui serait trompeur.
 function routeLabel(route: GtfsRoute): string {
-  return `${route.route_type === 1 ? 'Metro' : route.route_type === 0 ? 'Tram' : 'Bus'} ${route.route_short_name}`;
+  if (route.route_type === 1) return 'Metro';
+  if (route.route_type === 0) return 'Tram';
+  if (route.route_type === 7) return 'Funiculaire';
+  return 'Transport public';
 }
 
 function minutesForDistance(distanceKm: number, speedKmh: number): number {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from './auth';
-import { LANDMARKS, planRoutes } from './routePlanner';
+import { LANDMARKS, planRoutes, SCORING_WEIGHTS, totalWalkMinutes } from './routePlanner';
 import type { TransportNetwork } from '../types';
 
 const network: TransportNetwork = {
@@ -50,10 +50,11 @@ const network: TransportNetwork = {
     data: {
       stations: [
         {
+          // A ~40 m de Bellecour (LANDMARKS[0]) : dans le rayon de marche RG3 (400 m).
           station_id: 's1',
           name: 'Station 1',
-          lat: 45.751,
-          lon: 4.831,
+          lat: 45.758,
+          lon: 4.8325,
           capacity: 20,
           bikes_available: 8,
           scooters_available: 4,
@@ -63,10 +64,11 @@ const network: TransportNetwork = {
           last_reported: 1789365900,
         },
         {
+          // A ~40 m de Part-Dieu (LANDMARKS[1]).
           station_id: 's2',
           name: 'Station 2',
-          lat: 45.759,
-          lon: 4.858,
+          lat: 45.7605,
+          lon: 4.859,
           capacity: 20,
           bikes_available: 3,
           scooters_available: 2,
@@ -113,5 +115,62 @@ describe('planRoutes', () => {
     expect(firstAccessible).toBeDefined();
     expect(firstInaccessible).toBeDefined();
     expect(firstAccessible?.score).toBeGreaterThan(firstInaccessible?.score ?? 0);
+  });
+
+  it('applique un bonus de score aux modes preferes (poids centralises)', () => {
+    const base = {
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      network,
+    };
+    const neutral = planRoutes({ ...base, profile: { ...DEFAULT_PROFILE, preferredModes: [] } });
+    const bikeLover = planRoutes({ ...base, profile: { ...DEFAULT_PROFILE, preferredModes: ['bike'] } });
+
+    const bikeNeutral = neutral.find((route) => route.modes.includes('bike'));
+    const bikePreferred = bikeLover.find((route) => route.modes.includes('bike'));
+
+    expect(bikeNeutral).toBeDefined();
+    expect(bikePreferred).toBeDefined();
+    // Le bonus par mode prefere est le coefficient centralise, pas une constante magique.
+    expect(bikePreferred!.score).toBeGreaterThanOrEqual(bikeNeutral!.score + SCORING_WEIGHTS.preferenceBonusPerMode - 1);
+  });
+
+  it("RG5 : penalise et signale une option qui depasse la marche maximale du profil", () => {
+    const routes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      profile: { ...DEFAULT_PROFILE, maxWalkMinutes: 1 },
+      network,
+    });
+
+    const overWalking = routes.find((route) => totalWalkMinutes(route) > 1);
+    expect(overWalking).toBeDefined();
+    expect(overWalking!.warnings.some((warning) => /marche/i.test(warning))).toBe(true);
+  });
+
+  it('RG3 : aucune option velo/trottinette si aucune station n\'est a portee de marche', () => {
+    const farStations: TransportNetwork = {
+      ...network,
+      sharedMobility: {
+        ...network.sharedMobility,
+        data: {
+          stations: network.sharedMobility.data.stations.map((station) => ({
+            ...station,
+            lat: station.lat + 0.05, // ~5,5 km : hors du rayon RG3 de 400 m
+          })),
+        },
+      },
+    };
+
+    const routes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      profile: DEFAULT_PROFILE,
+      network: farStations,
+    });
+
+    expect(routes.some((route) => route.modes.includes('bike') || route.modes.includes('scooter'))).toBe(false);
+    // Le transport public reste disponible.
+    expect(routes.some((route) => route.modes.includes('transit'))).toBe(true);
   });
 });
