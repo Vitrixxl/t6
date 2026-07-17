@@ -83,7 +83,22 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Captures finales automatisees dans output/screens/ et integrees au dossier.
 - [x] Dossier projet reecrit: 21 pages, 13 sections alignees sur la grille, 6 figures, 7 captures.
 
-## 8. Preuves concretes
+## 8. Durcissement post-audit (revue croisee)
+
+- [x] Secret retire du code : jeton GTFS en variable d'environnement (GTFS_SOURCE_URL), .env.example versionne, .env ignore.
+- [x] Scoring : coefficients centralises dans SCORING_WEIGHTS + test unitaire ; dossier aligne sur la formule reelle (fini le 40/30/20/10 inexistant).
+- [x] RG3 (station a 400 m) et RG5 (marche maximale) reellement implementees et testees ; le curseur de marche du profil agit sur le classement.
+- [x] Plus de nom de ligne non garanti affiche (fini "Metro A vers Part-Dieu") ; encadre "limites assumees du MVP" ajoute (section 7.3).
+- [x] CO2 ventile par leg conserve a l'enrichissement live (velo+transport 136 g < transport seul 159 g).
+- [x] Timeout reseau 8 s sur tous les appels externes (BAN, OSRM), pas seulement le GBFS.
+- [x] Crash latent nearestStop (profil PMR sans arret accessible) corrige : option non proposee plutot que plantage.
+- [x] Bundle decoupe : MapLibre en chunk charge a la demande (React.lazy), entree initiale ~115 kB gzip ; source maps desactivees en production.
+- [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levee.
+- [x] theme-color aligne (index.html/manifest), scripts npm e2e/screens exposes, chemin Chromium configurable, filtre Rhonexpress.
+- [x] Dossier : 27 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, economie chiffree, table de nomenclature, identifiant F4, justification IA.
+- [x] 12 tests unitaires verts, lint 0 erreur, build OK, scenario E2E de navigation vert.
+
+## 9. Preuves concretes
 
 - Application PWA: `package.json`, `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/icons/icon-192.png`, `public/icons/icon-512.png`.
 - F1 inscription/connexion/profil: `src/lib/auth.ts`, `src/App.tsx` (`AuthScreen`, `ProfilePanel`).

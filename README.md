@@ -29,12 +29,17 @@ Chaque flux a un fallback local (`public/data/`) signalé dans l'UI ; les incide
 npm install
 python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 
-npm run generate:gtfs    # régénère le feed GTFS depuis le zip officiel TCL
+cp .env.example .env     # renseigner GTFS_SOURCE_URL (jeton, jamais committé)
+npm run generate:gtfs    # régénère le feed GTFS depuis la source officielle TCL
 npm run generate:icons   # icônes PWA
 npm run generate:pdf     # dossier projet PDF
-npm run check            # lint + 9 tests unitaires + build production
+npm run check            # lint + 12 tests unitaires + build production
+npm run e2e              # scénario E2E de navigation GPS (Playwright)
 npm run dev              # serveur de développement
 ```
+
+Le feed `public/data/gtfs-feed.json` est déjà versionné : `GTFS_SOURCE_URL` ne sert qu'à le régénérer.
+Chemin Chromium des scripts configurable via `CHROME_BIN`.
 
 ## Sécurité / RGPD
 
