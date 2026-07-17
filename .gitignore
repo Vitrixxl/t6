@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.venv/
+tmp/
+.DS_Store
+npm-debug.log*
+tsconfig.tsbuildinfo
+# captures intermediaires de sessions de travail (les finales sont dans output/screens/)
+output/*.png
