@@ -4,8 +4,11 @@ import { chromium } from 'playwright-core';
 const ORIGIN = { latitude: 45.7578, longitude: 4.832 };
 const DEST = { latitude: 45.7606, longitude: 4.8594 };
 
+const CHROME_BIN =
+  process.env.CHROME_BIN || process.env.CHROMIUM_PATH || '/usr/sbin/chromium';
+
 const browser = await chromium.launch({
-  executablePath: '/usr/sbin/chromium',
+  executablePath: CHROME_BIN,
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--force-device-scale-factor=2'],
 });
 const context = await browser.newContext({

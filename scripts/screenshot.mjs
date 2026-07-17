@@ -5,8 +5,13 @@ const [, , urlPath = '/', out = 'tmp/screenshots/shot.png', ...flags] = process.
 const mobile = flags.includes('--mobile');
 const actionsFlag = flags.find((f) => f.startsWith('--actions='));
 
+// Chemin du binaire Chromium: configurable pour tourner sur une autre machine
+// (CHROME_BIN), avec un repli sur les emplacements Linux usuels.
+const CHROME_BIN =
+  process.env.CHROME_BIN || process.env.CHROMIUM_PATH || '/usr/sbin/chromium';
+
 const browser = await chromium.launch({
-  executablePath: '/usr/sbin/chromium',
+  executablePath: CHROME_BIN,
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--force-device-scale-factor=2'],
 });
 const context = await browser.newContext({

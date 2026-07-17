@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "check": "npm run lint && npm run test && npm run build",
+    "e2e": "node scripts/e2e-navigation.mjs",
+    "screens": "node scripts/screenshot.mjs",
     "generate:gtfs": "python3 scripts/fetch_gtfs.py",
     "generate:icons": ".venv/bin/python scripts/generate_icons.py",
     "generate:pdf": ".venv/bin/python scripts/generate_dossier.py"

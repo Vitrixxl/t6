@@ -1,0 +1,37 @@
+name: CI
+
+# Chaine de verification bloquante : elle rejoue exactement `npm run check`
+# (lint + tests unitaires + build de production) sur chaque push et chaque
+# pull request visant main. Aucun increment ne peut etre fusionne si un
+# de ces trois controles echoue.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Lint, tests et build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Analyse statique (ESLint)
+        run: npm run lint
+
+      - name: Tests unitaires (Vitest)
+        run: npm run test
+
+      - name: Build de production (TypeScript + Vite)
+        run: npm run build
