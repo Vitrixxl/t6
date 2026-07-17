@@ -591,7 +591,7 @@ function MobilityMapApp({
             <div className="relative h-full w-full overflow-hidden rounded-r-2xl">
               <div className="pointer-events-none absolute inset-0 z-20 rounded-r-2xl shadow-[inset_0_0_24px_3px_rgba(0,0,0,0.22)]" />
 
-              <div className="pointer-events-auto absolute left-0 top-0 z-30 max-w-[calc(100%-0.5rem)]">
+              <div className="pointer-events-auto absolute left-0 top-0 z-30 w-[min(720px,calc(100%-3rem))]">
                 <CommandSearchBar
                   leftRailOpen={leftRailOpen}
                   onToggleLeftRail={() => setLeftRailOpen((current) => !current)}
@@ -1061,7 +1061,7 @@ function CommandSearchBar({
   onDestinationSelect: (point: GeoPoint) => void;
 }) {
   return (
-    <div className="flex min-h-14 max-w-[min(780px,100%)] items-stretch rounded-br-2xl bg-[var(--shell)] p-1.5">
+    <div className="flex min-h-14 w-full items-stretch rounded-br-2xl bg-[var(--shell)] p-1.5">
       <Button
         type="button"
         variant="ghost"
@@ -1073,7 +1073,7 @@ function CommandSearchBar({
         {leftRailOpen ? <PanelLeftClose className="size-4" aria-hidden="true" /> : <PanelLeftOpen className="size-4" aria-hidden="true" />}
       </Button>
       <div className="mx-2 my-1 w-px shrink-0 self-stretch bg-border/80" aria-hidden />
-      <div className="grid min-w-0 grid-cols-2 gap-1.5">
+      <div className="flex min-w-0 flex-1 gap-1.5">
         <PlaceSearchBox
           searchOrigin={origin}
           value={origin}
@@ -1082,7 +1082,7 @@ function CommandSearchBar({
           onSelect={onOriginSelect}
           inputId="desktop-origin-search"
           placeholder="Adresse de depart"
-          className="w-[clamp(220px,24vw,320px)]"
+          className="min-w-0 flex-1"
         />
         <PlaceSearchBox
           searchOrigin={origin}
@@ -1092,7 +1092,7 @@ function CommandSearchBar({
           onSelect={onDestinationSelect}
           inputId="desktop-destination-search"
           placeholder="Adresse d'arrivee"
-          className="w-[clamp(240px,28vw,360px)]"
+          className="min-w-0 flex-1"
         />
       </div>
     </div>
