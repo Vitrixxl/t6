@@ -1,10 +1,11 @@
 """Integre le GTFS statique reel du reseau TCL (SYTRAL, licence ODbL).
 
-Telecharge le zip GTFS officiel publie sur transport.data.gouv.fr, extrait les
-arrets et lignes structurantes autour du centre de la metropole et genere
-`public/data/gtfs-feed.json` consomme par l'application.
+Telecharge le zip GTFS officiel (ressource "Reseau urbain TCL" referencee sur
+transport.data.gouv.fr, distribuee via une URL a jeton fournie par la variable
+d'environnement GTFS_SOURCE_URL), extrait les arrets et lignes structurantes
+autour du centre de la metropole et genere `public/data/gtfs-feed.json`.
 
-Aucune dependance externe: stdlib uniquement.
+Aucune dependance externe: stdlib uniquement. Aucun secret dans le code.
 """
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ import csv
 import io
 import json
 import math
+import os
+import sys
 import time
 import urllib.request
 import zipfile
@@ -22,11 +25,11 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "tmp" / "gtfs" / "lyon_tcl.zip"
 OUTPUT = ROOT / "public" / "data" / "gtfs-feed.json"
 
-# URL officielle de la ressource GTFS "Reseau urbain TCL" (transport.data.gouv.fr, ODbL).
-GTFS_URL = (
-    "https://gtech-transit-prod.apigee.net/v1/google/gtfs/odbl/lyon_tcl.zip"
-    "?apikey=BasyG6OFZXgXnzWdQLTwJFGcGmeOs204&secret=gNo6F5PhQpsGRBCK"
-)
+# La ressource GTFS "Reseau urbain TCL" (SYTRAL, ODbL) est referencee sur
+# transport.data.gouv.fr et distribuee via une URL a jeton. Ce jeton est un
+# SECRET: il n'est jamais code en dur ni versionne. Il est fourni au build par
+# la variable d'environnement GTFS_SOURCE_URL (voir .env.example et le README).
+GTFS_URL = os.environ.get("GTFS_SOURCE_URL", "").strip()
 
 CENTER_LAT = 45.7578
 CENTER_LON = 4.8320
@@ -37,6 +40,9 @@ CACHE_MAX_AGE_HOURS = 24
 # route_type GTFS: 0 tram, 1 metro, 3 bus, 7 funiculaire.
 KEPT_ROUTE_TYPES = {0, 1, 7}
 HEADWAY_BY_TYPE = {1: 4, 0: 8, 7: 10}
+# Lignes ecartees : navette aeroport Rhonexpress (service premium payant ~16 EUR,
+# non representatif de la mobilite urbaine quotidienne visee par la plateforme).
+EXCLUDED_ROUTE_SHORT_NAMES = {"RX", "RHONEXPRESS"}
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -51,6 +57,16 @@ def download_gtfs() -> Path:
     if CACHE.exists() and (time.time() - CACHE.stat().st_mtime) < CACHE_MAX_AGE_HOURS * 3600:
         print(f"Cache GTFS reutilise: {CACHE}")
         return CACHE
+    if not GTFS_URL:
+        print(
+            "Erreur: variable d'environnement GTFS_SOURCE_URL absente.\n"
+            "Definir l'URL du GTFS TCL (voir .env.example), par exemple:\n"
+            "  export GTFS_SOURCE_URL='https://.../lyon_tcl.zip?apikey=...'\n"
+            "puis relancer: npm run generate:gtfs\n"
+            "Le feed public/data/gtfs-feed.json deja versionne reste utilisable sans re-telechargement.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
     print("Telechargement du GTFS TCL (~43 Mo)...")
     request = urllib.request.Request(GTFS_URL, headers={"User-Agent": "urbanflow-mobility-build"})
     with urllib.request.urlopen(request, timeout=180) as response, CACHE.open("wb") as target:
@@ -80,6 +96,7 @@ def build_feed(archive: zipfile.ZipFile) -> dict:
         }
         for row in read_csv(archive, "routes.txt")
         if int(row.get("route_type", 3) or 3) in KEPT_ROUTE_TYPES
+        and row.get("route_short_name", "").strip().upper() not in EXCLUDED_ROUTE_SHORT_NAMES
     ]
     routes.sort(key=lambda route: (route["route_type"], route["route_short_name"]))
 

@@ -7,3 +7,5 @@ npm-debug.log*
 tsconfig.tsbuildinfo
 # captures intermediaires de sessions de travail (les finales sont dans output/screens/)
 output/*.png
+# secrets locaux (jeton GTFS) — .env.example est versionne, .env non
+.env
