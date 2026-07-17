@@ -1,0 +1,1175 @@
+{
+  "agency": {
+    "agency_id": "1",
+    "agency_name": "TCL",
+    "agency_url": "https://www.tcl.fr/",
+    "agency_timezone": "Europe/Paris"
+  },
+  "stops": [
+    {
+      "stop_id": "30103",
+      "stop_name": "Bellecour",
+      "stop_lat": 45.75763,
+      "stop_lon": 4.83302,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "48375",
+      "stop_name": "Bellecour St Exupéry",
+      "stop_lat": 45.75775,
+      "stop_lon": 4.83029,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10683",
+      "stop_name": "Simon Maupin",
+      "stop_lat": 45.75892,
+      "stop_lon": 4.83395,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2450",
+      "stop_name": "Pont Bonaparte",
+      "stop_lat": 45.75976,
+      "stop_lon": 4.83009,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "48",
+      "stop_name": "Quai Tilsitt",
+      "stop_lat": 45.75809,
+      "stop_lon": 4.82827,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "11518",
+      "stop_name": "Bellecour A. Poncet",
+      "stop_lat": 45.75594,
+      "stop_lon": 4.8347,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10685",
+      "stop_name": "Jacobins",
+      "stop_lat": 45.7605,
+      "stop_lon": 4.83405,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2234",
+      "stop_name": "Passerelle Pal. Justice",
+      "stop_lat": 45.76111,
+      "stop_lon": 4.83122,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10386",
+      "stop_name": "Vieux Lyon Cat. St-Jean",
+      "stop_lat": 45.75948,
+      "stop_lon": 4.82771,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2666",
+      "stop_name": "Sala",
+      "stop_lat": 45.75671,
+      "stop_lon": 4.82672,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10678",
+      "stop_name": "Antoine Vollon",
+      "stop_lat": 45.75546,
+      "stop_lon": 4.82727,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10680",
+      "stop_name": "Ste Hélène",
+      "stop_lat": 45.75374,
+      "stop_lon": 4.832,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2486",
+      "stop_name": "Pont Guillotière RD",
+      "stop_lat": 45.75907,
+      "stop_lon": 4.83773,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10008",
+      "stop_name": "Pont de l'Université",
+      "stop_lat": 45.75398,
+      "stop_lon": 4.83459,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2808",
+      "stop_name": "St-Georges",
+      "stop_lat": 45.75757,
+      "stop_lon": 4.82576,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "17393",
+      "stop_name": "Terrasses Presqu'Île",
+      "stop_lat": 45.76219,
+      "stop_lon": 4.83113,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10888",
+      "stop_name": "Pont Wilson",
+      "stop_lat": 45.76064,
+      "stop_lon": 4.83809,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10687",
+      "stop_name": "Tupin",
+      "stop_lat": 45.76319,
+      "stop_lon": 4.83422,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10698",
+      "stop_name": "Ampère - Victor Hugo",
+      "stop_lat": 45.75247,
+      "stop_lon": 4.82903,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10679",
+      "stop_name": "Franklin",
+      "stop_lat": 45.75202,
+      "stop_lon": 4.83111,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "47321",
+      "stop_name": "Ctre Nautique T.Bertrand",
+      "stop_lat": 45.75411,
+      "stop_lon": 4.83866,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "11078",
+      "stop_name": "Romain Rolland",
+      "stop_lat": 45.76343,
+      "stop_lon": 4.82915,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10676",
+      "stop_name": "Ainay",
+      "stop_lat": 45.75353,
+      "stop_lon": 4.8259,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "47425",
+      "stop_name": "Fosse aux Ours",
+      "stop_lat": 45.75689,
+      "stop_lon": 4.84063,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "31866",
+      "stop_name": "Franklin - Joffre",
+      "stop_lat": 45.75368,
+      "stop_lon": 4.82511,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "42114",
+      "stop_name": "Augagneur Servient",
+      "stop_lat": 45.75974,
+      "stop_lon": 4.84094,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2558",
+      "stop_name": "Quarantaine",
+      "stop_lat": 45.75407,
+      "stop_lon": 4.82361,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "30377",
+      "stop_name": "Rue de l'Université",
+      "stop_lat": 45.75146,
+      "stop_lon": 4.83657,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10689",
+      "stop_name": "St Nizier",
+      "stop_lat": 45.76472,
+      "stop_lon": 4.83428,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "10944",
+      "stop_name": "Pont Gallieni RD",
+      "stop_lat": 45.75062,
+      "stop_lon": 4.83227,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32112",
+      "stop_name": "Liberté",
+      "stop_lat": 45.75887,
+      "stop_lon": 4.84249,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "30212",
+      "stop_name": "Minimes Théatres Romains",
+      "stop_lat": 45.75861,
+      "stop_lon": 4.82144,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10675",
+      "stop_name": "Gensoul",
+      "stop_lat": 45.75204,
+      "stop_lon": 4.82482,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10945",
+      "stop_name": "Cordeliers",
+      "stop_lat": 45.764,
+      "stop_lon": 4.83848,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32108",
+      "stop_name": "Saint-André",
+      "stop_lat": 45.75289,
+      "stop_lon": 4.84108,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1377",
+      "stop_name": "La Feuillée",
+      "stop_lat": 45.76612,
+      "stop_lon": 4.83067,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "10696",
+      "stop_name": "Guillotière Gabriel Péri",
+      "stop_lat": 45.75506,
+      "stop_lon": 4.84351,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32104",
+      "stop_name": "Quai Claude Bernard",
+      "stop_lat": 45.74962,
+      "stop_lon": 4.8353,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "30383",
+      "stop_name": "Square Jussieu",
+      "stop_lat": 45.7633,
+      "stop_lon": 4.84136,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "30215",
+      "stop_name": "Fourvière",
+      "stop_lat": 45.76211,
+      "stop_lon": 4.82139,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2512",
+      "stop_name": "Pont Kitchener RD",
+      "stop_lat": 45.75229,
+      "stop_lon": 4.82219,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "23467",
+      "stop_name": "Perrache",
+      "stop_lat": 45.74945,
+      "stop_lon": 4.8278,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "30000",
+      "stop_name": "Gare Saint-Paul",
+      "stop_lat": 45.76614,
+      "stop_lon": 4.82736,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "46289",
+      "stop_name": "Terreaux La Feuillée",
+      "stop_lat": 45.7669,
+      "stop_lon": 4.83152,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10520",
+      "stop_name": "Pont Kitchener R.G.",
+      "stop_lat": 45.75033,
+      "stop_lon": 4.82381,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1120",
+      "stop_name": "Saxe - Préfecture",
+      "stop_lat": 45.75912,
+      "stop_lon": 4.84584,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10383",
+      "stop_name": "Choulans - Tourelles",
+      "stop_lat": 45.75384,
+      "stop_lon": 4.8191,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "146",
+      "stop_name": "Béchevelin",
+      "stop_lat": 45.74897,
+      "stop_lon": 4.83891,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2709",
+      "stop_name": "Saxe - Paul Bert",
+      "stop_lat": 45.75674,
+      "stop_lon": 4.84634,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "34753",
+      "stop_name": "Verdun - Rambaud",
+      "stop_lat": 45.75007,
+      "stop_lon": 4.82272,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "35054",
+      "stop_name": "Terreaux Tobie Robatel",
+      "stop_lat": 45.76789,
+      "stop_lon": 4.83142,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10854",
+      "stop_name": "Pont Gallieni RG",
+      "stop_lat": 45.7474,
+      "stop_lon": 4.83326,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2893",
+      "stop_name": "St-Vincent",
+      "stop_lat": 45.76794,
+      "stop_lon": 4.82802,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2705",
+      "stop_name": "Saxe - Lafayette",
+      "stop_lat": 45.76316,
+      "stop_lon": 4.84502,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "48311",
+      "stop_name": "Saxe - Bonnel",
+      "stop_lat": 45.76168,
+      "stop_lon": 4.84664,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "46026",
+      "stop_name": "Place Guichard",
+      "stop_lat": 45.75936,
+      "stop_lon": 4.84765,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10068",
+      "stop_name": "Saxe - Gambetta",
+      "stop_lat": 45.75345,
+      "stop_lon": 4.84671,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32140",
+      "stop_name": "Centre Berthelot",
+      "stop_lat": 45.74702,
+      "stop_lon": 4.83631,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1239",
+      "stop_name": "Jaricot",
+      "stop_lat": 45.75963,
+      "stop_lon": 4.81596,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2332",
+      "stop_name": "Pierre Scize",
+      "stop_lat": 45.76737,
+      "stop_lon": 4.82328,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "3011",
+      "stop_name": "Trois Artichauts",
+      "stop_lat": 45.75275,
+      "stop_lon": 4.81733,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "25035",
+      "stop_name": "Lyon - Place Varillon",
+      "stop_lat": 45.7575,
+      "stop_lon": 4.8156,
+      "wheelchair_boarding": 0
+    },
+    {
+      "stop_id": "1676",
+      "stop_name": "Les Etroits",
+      "stop_lat": 45.75052,
+      "stop_lon": 4.81922,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "17395",
+      "stop_name": "Saint-Vincent",
+      "stop_lat": 45.76826,
+      "stop_lon": 4.82474,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2975",
+      "stop_name": "Thibaudière",
+      "stop_lat": 45.75001,
+      "stop_lon": 4.84465,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32002",
+      "stop_name": "Palais Justice Mairie 3e",
+      "stop_lat": 45.76044,
+      "stop_lon": 4.84848,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2826",
+      "stop_name": "Saint-Just",
+      "stop_lat": 45.75786,
+      "stop_lon": 4.81503,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1046",
+      "stop_name": "Génovéfains",
+      "stop_lat": 45.75358,
+      "stop_lon": 4.81614,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "842",
+      "stop_name": "Edgar Quinet",
+      "stop_lat": 45.7658,
+      "stop_lon": 4.84455,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2759",
+      "stop_name": "St-Alexandre",
+      "stop_lat": 45.75647,
+      "stop_lon": 4.81508,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10139",
+      "stop_name": "Mairie du 1er",
+      "stop_lat": 45.76964,
+      "stop_lon": 4.83033,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1191",
+      "stop_name": "Hôtel de Ville L. Pradel",
+      "stop_lat": 45.76923,
+      "stop_lon": 4.83778,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "44819",
+      "stop_name": "Homme de la Roche RD",
+      "stop_lat": 45.76669,
+      "stop_lon": 4.82013,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2933",
+      "stop_name": "Place des Archives",
+      "stop_lat": 45.74653,
+      "stop_lon": 4.82485,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "46975",
+      "stop_name": "Claudius Collonge",
+      "stop_lat": 45.74772,
+      "stop_lon": 4.8218,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1449",
+      "stop_name": "La Sarra",
+      "stop_lat": 45.76129,
+      "stop_lon": 4.81497,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1518",
+      "stop_name": "Le Bastion",
+      "stop_lat": 45.7593,
+      "stop_lon": 4.81419,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2646",
+      "stop_name": "Rouville",
+      "stop_lat": 45.7695,
+      "stop_lon": 4.82501,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "3023",
+      "stop_name": "Université - Jean Jaurès",
+      "stop_lat": 45.74793,
+      "stop_lon": 4.84344,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "44818",
+      "stop_name": "Homme de la Roche RG",
+      "stop_lat": 45.76785,
+      "stop_lon": 4.82064,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10137",
+      "stop_name": "Tables Claudiennes",
+      "stop_lat": 45.7709,
+      "stop_lon": 4.83313,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "11853",
+      "stop_name": "Jean Macé",
+      "stop_lat": 45.74671,
+      "stop_lon": 4.84243,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32244",
+      "stop_name": "Leclerc - Nadaud",
+      "stop_lat": 45.74448,
+      "stop_lon": 4.83147,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2012",
+      "stop_name": "Moncey - Bonnel",
+      "stop_lat": 45.76194,
+      "stop_lon": 4.8502,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "3003",
+      "stop_name": "Trion",
+      "stop_lat": 45.75755,
+      "stop_lon": 4.81285,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1237",
+      "stop_name": "Jardin des Plantes",
+      "stop_lat": 45.77101,
+      "stop_lon": 4.82897,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10787",
+      "stop_name": "Croix-Paquet",
+      "stop_lat": 45.77092,
+      "stop_lon": 4.83617,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "35434",
+      "stop_name": "Marc-Antoine Petit",
+      "stop_lat": 45.74538,
+      "stop_lon": 4.82463,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "3501",
+      "stop_name": "Jean Macé - Chevreul",
+      "stop_lat": 45.7471,
+      "stop_lon": 4.84372,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10177",
+      "stop_name": "Abondance",
+      "stop_lat": 45.7529,
+      "stop_lon": 4.85,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "31362",
+      "stop_name": "Neyret",
+      "stop_lat": 45.77131,
+      "stop_lon": 4.83137,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "47285",
+      "stop_name": "Pouteau",
+      "stop_lat": 45.77145,
+      "stop_lon": 4.83356,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "30343",
+      "stop_name": "Trion - 4 Colonnes",
+      "stop_lat": 45.75868,
+      "stop_lon": 4.81206,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "42742",
+      "stop_name": "Foch",
+      "stop_lat": 45.76871,
+      "stop_lon": 4.8445,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10352",
+      "stop_name": "Leclerc - Général Frère",
+      "stop_lat": 45.74375,
+      "stop_lon": 4.8299,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "39922",
+      "stop_name": "Domer - Chevreul",
+      "stop_lat": 45.74684,
+      "stop_lon": 4.84486,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "46883",
+      "stop_name": "Cimetière de Loyasse",
+      "stop_lat": 45.76305,
+      "stop_lon": 4.81311,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "2111",
+      "stop_name": "Nadaud - Vitriolerie",
+      "stop_lat": 45.7435,
+      "stop_lon": 4.83394,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "11277",
+      "stop_name": "St-Irenée",
+      "stop_lat": 45.75502,
+      "stop_lon": 4.81174,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "46151",
+      "stop_name": "Part-Dieu Servient",
+      "stop_lat": 45.76099,
+      "stop_lon": 4.8522,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10524",
+      "stop_name": "1ère D.F.L.",
+      "stop_lat": 45.75039,
+      "stop_lon": 4.81415,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "47060",
+      "stop_name": "Garibaldi Paul Bert",
+      "stop_lat": 45.75726,
+      "stop_lon": 4.85278,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "47191",
+      "stop_name": "Subsistances",
+      "stop_lat": 45.76781,
+      "stop_lon": 4.81686,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "31350",
+      "stop_name": "Allouche",
+      "stop_lat": 45.77232,
+      "stop_lon": 4.83026,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "36694",
+      "stop_name": "Duroc",
+      "stop_lat": 45.76895,
+      "stop_lon": 4.81852,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "31353",
+      "stop_name": "Place Morel",
+      "stop_lat": 45.77188,
+      "stop_lon": 4.82642,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "34813",
+      "stop_name": "Ravat",
+      "stop_lat": 45.74349,
+      "stop_lon": 4.82605,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "574",
+      "stop_name": "Colbert",
+      "stop_lat": 45.77262,
+      "stop_lon": 4.83439,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "36994",
+      "stop_name": "Halles Paul Bocuse",
+      "stop_lat": 45.76397,
+      "stop_lon": 4.85148,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32366",
+      "stop_name": "Bas de Loyasse",
+      "stop_lat": 45.75981,
+      "stop_lon": 4.81074,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "46988",
+      "stop_name": "Rancy",
+      "stop_lat": 45.75515,
+      "stop_lon": 4.85315,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "50203",
+      "stop_name": "Grande Côte",
+      "stop_lat": 45.77292,
+      "stop_lon": 4.83215,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "2960",
+      "stop_name": "Terrasse",
+      "stop_lat": 45.74794,
+      "stop_lon": 4.81544,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1108",
+      "stop_name": "Greillon",
+      "stop_lat": 45.76721,
+      "stop_lon": 4.81489,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "34836",
+      "stop_name": "Sainte-Blandine",
+      "stop_lat": 45.74419,
+      "stop_lon": 4.82215,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "32118",
+      "stop_name": "Part-Dieu Auditorium",
+      "stop_lat": 45.76066,
+      "stop_lon": 4.85383,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1749",
+      "stop_name": "Les Pommières",
+      "stop_lat": 45.75701,
+      "stop_lon": 4.80966,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2437",
+      "stop_name": "Pré Gaudry - Yves Farge",
+      "stop_lat": 45.74195,
+      "stop_lon": 4.83302,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1015",
+      "stop_name": "Garibaldi - Gambetta",
+      "stop_lat": 45.75179,
+      "stop_lon": 4.85331,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "10889",
+      "stop_name": "Pont De Lattre RD",
+      "stop_lat": 45.77364,
+      "stop_lon": 4.8383,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "693",
+      "stop_name": "Debrousse",
+      "stop_lat": 45.7484,
+      "stop_lon": 4.81266,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "31352",
+      "stop_name": "Les Chartreux",
+      "stop_lat": 45.77271,
+      "stop_lon": 4.82169,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1864",
+      "stop_name": "Mairie du 4eme",
+      "stop_lat": 45.77406,
+      "stop_lon": 4.82751,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "11058",
+      "stop_name": "Croix-Rousse",
+      "stop_lat": 45.77436,
+      "stop_lon": 4.83196,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "2526",
+      "stop_name": "Pont Koenig RG",
+      "stop_lat": 45.76927,
+      "stop_lon": 4.81467,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "42955",
+      "stop_name": "Mairie du 6ème",
+      "stop_lat": 45.76834,
+      "stop_lon": 4.85054,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1437",
+      "stop_name": "La Poudrière",
+      "stop_lat": 45.77073,
+      "stop_lon": 4.81688,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "30445",
+      "stop_name": "Garibaldi",
+      "stop_lat": 45.75147,
+      "stop_lon": 4.85421,
+      "wheelchair_boarding": 1
+    },
+    {
+      "stop_id": "1740",
+      "stop_name": "Les Pépinières",
+      "stop_lat": 45.7595,
+      "stop_lon": 4.80809,
+      "wheelchair_boarding": 2
+    },
+    {
+      "stop_id": "204",
+      "stop_name": "Bir Hakeim",
+      "stop_lat": 45.75312,
+      "stop_lon": 4.85511,
+      "wheelchair_boarding": 1
+    }
+  ],
+  "routes": [
+    {
+      "route_id": "RX",
+      "route_short_name": "Rhônexpress",
+      "route_long_name": "Rhônexpress Gare Part-Dieu - Aéroport St Exupéry",
+      "route_type": 0,
+      "route_color": "B61B29",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "T1",
+      "route_short_name": "T1",
+      "route_long_name": "Debourg - IUT Feyssine",
+      "route_type": 0,
+      "route_color": "863E96",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "T2",
+      "route_short_name": "T2",
+      "route_long_name": "Montrochet - Saint Priest Bel Air",
+      "route_type": 0,
+      "route_color": "863E96",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "T3",
+      "route_short_name": "T3",
+      "route_long_name": "Gare Part-Dieu Villette - Meyzieu les Panettes",
+      "route_type": 0,
+      "route_color": "863E96",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "T4",
+      "route_short_name": "T4",
+      "route_long_name": "La Doua Gaston Berger  - Hôpital Feyzin Vénissieux",
+      "route_type": 0,
+      "route_color": "863E96",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "T5",
+      "route_short_name": "T5",
+      "route_long_name": "Grange Blanche - Eurexpo",
+      "route_type": 0,
+      "route_color": "863E96",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "T6",
+      "route_short_name": "T6",
+      "route_long_name": "Debourg - La Doua",
+      "route_type": 0,
+      "route_color": "F191A3",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "T7",
+      "route_short_name": "T7",
+      "route_long_name": "Vaulx-en-Velin La Soie - Décines - OL Vallée",
+      "route_type": 0,
+      "route_color": "863E96",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "A",
+      "route_short_name": "A",
+      "route_long_name": "Perrache - Vaulx-en-Velin La Soie",
+      "route_type": 1,
+      "route_color": "E8308A",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "B",
+      "route_short_name": "B",
+      "route_long_name": "Charpennes - Saint-Genis-Laval Hôpital Lyon Sud",
+      "route_type": 1,
+      "route_color": "0077C0",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "C",
+      "route_short_name": "C",
+      "route_long_name": "Hôtel de Ville - Cuire",
+      "route_type": 1,
+      "route_color": "F79727",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "D",
+      "route_short_name": "D",
+      "route_long_name": "Gare de Vaise G. Collomb - Gare de Vénissieux",
+      "route_type": 1,
+      "route_color": "009E3D",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "F1",
+      "route_short_name": "F1",
+      "route_long_name": "Vieux Lyon - Saint Just",
+      "route_type": 7,
+      "route_color": "95C23D",
+      "route_text_color": "FFFFFF"
+    },
+    {
+      "route_id": "F2",
+      "route_short_name": "F2",
+      "route_long_name": "Vieux Lyon - Fourvière",
+      "route_type": 7,
+      "route_color": "95C23D",
+      "route_text_color": "FFFFFF"
+    }
+  ],
+  "trips": [
+    {
+      "trip_id": "RX-service",
+      "route_id": "RX",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 2,
+      "occupancy": "high"
+    },
+    {
+      "trip_id": "T1-service",
+      "route_id": "T1",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 1,
+      "occupancy": "medium"
+    },
+    {
+      "trip_id": "T2-service",
+      "route_id": "T2",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 2,
+      "occupancy": "high"
+    },
+    {
+      "trip_id": "T3-service",
+      "route_id": "T3",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 0,
+      "occupancy": "low"
+    },
+    {
+      "trip_id": "T4-service",
+      "route_id": "T4",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 1,
+      "occupancy": "medium"
+    },
+    {
+      "trip_id": "T5-service",
+      "route_id": "T5",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 2,
+      "occupancy": "high"
+    },
+    {
+      "trip_id": "T6-service",
+      "route_id": "T6",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 0,
+      "occupancy": "low"
+    },
+    {
+      "trip_id": "T7-service",
+      "route_id": "T7",
+      "service_id": "weekday",
+      "headway_minutes": 8,
+      "realtime_delay_minutes": 1,
+      "occupancy": "medium"
+    },
+    {
+      "trip_id": "A-service",
+      "route_id": "A",
+      "service_id": "weekday",
+      "headway_minutes": 4,
+      "realtime_delay_minutes": 2,
+      "occupancy": "high"
+    },
+    {
+      "trip_id": "B-service",
+      "route_id": "B",
+      "service_id": "weekday",
+      "headway_minutes": 4,
+      "realtime_delay_minutes": 0,
+      "occupancy": "low"
+    },
+    {
+      "trip_id": "C-service",
+      "route_id": "C",
+      "service_id": "weekday",
+      "headway_minutes": 4,
+      "realtime_delay_minutes": 1,
+      "occupancy": "medium"
+    },
+    {
+      "trip_id": "D-service",
+      "route_id": "D",
+      "service_id": "weekday",
+      "headway_minutes": 4,
+      "realtime_delay_minutes": 2,
+      "occupancy": "high"
+    },
+    {
+      "trip_id": "F1-service",
+      "route_id": "F1",
+      "service_id": "weekday",
+      "headway_minutes": 10,
+      "realtime_delay_minutes": 2,
+      "occupancy": "high"
+    },
+    {
+      "trip_id": "F2-service",
+      "route_id": "F2",
+      "service_id": "weekday",
+      "headway_minutes": 10,
+      "realtime_delay_minutes": 0,
+      "occupancy": "low"
+    }
+  ],
+  "incidents": [
+    {
+      "id": "inc-demo-1",
+      "severity": "medium",
+      "title": "Travaux quai Saint-Antoine (simulation)",
+      "affected_modes": [
+        "bike",
+        "scooter"
+      ],
+      "message": "Piste cyclable deviee entre Bellecour et Cordeliers. Flux SIRI operateur sous cle: incident simule."
+    },
+    {
+      "id": "inc-demo-2",
+      "severity": "high",
+      "title": "Affluence forte pole Part-Dieu (simulation)",
+      "affected_modes": [
+        "transit"
+      ],
+      "message": "Prevoir 5 min supplementaires en correspondance. Flux SIRI operateur sous cle: incident simule."
+    }
+  ],
+  "weather": {
+    "condition": "clear",
+    "temperature_celsius": 21,
+    "wind_kmh": 12,
+    "updated_at": "2026-09-14T08:00:00+02:00"
+  }
+}

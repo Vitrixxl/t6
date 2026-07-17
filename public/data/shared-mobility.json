@@ -1,0 +1,74 @@
+{
+  "last_updated": 1789365900,
+  "ttl": 60,
+  "version": "3.0",
+  "data": {
+    "stations": [
+      {
+        "station_id": "s-bel-01",
+        "name": "Bellecour Nord",
+        "lat": 45.759,
+        "lon": 4.8325,
+        "capacity": 34,
+        "bikes_available": 19,
+        "scooters_available": 8,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "s-pd-01",
+        "name": "Part-Dieu Vivier Merle",
+        "lat": 45.7612,
+        "lon": 4.8588,
+        "capacity": 48,
+        "bikes_available": 13,
+        "scooters_available": 14,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "s-con-01",
+        "name": "Confluence Docks",
+        "lat": 45.7402,
+        "lon": 4.8189,
+        "capacity": 30,
+        "bikes_available": 22,
+        "scooters_available": 5,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "s-grg-01",
+        "name": "Grange Blanche Hopital",
+        "lat": 45.7432,
+        "lon": 4.8793,
+        "capacity": 26,
+        "bikes_available": 6,
+        "scooters_available": 7,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "s-vai-01",
+        "name": "Vaise Gare",
+        "lat": 45.7791,
+        "lon": 4.8046,
+        "capacity": 24,
+        "bikes_available": 9,
+        "scooters_available": 4,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      }
+    ]
+  }
+}
