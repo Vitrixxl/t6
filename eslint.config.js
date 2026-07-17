@@ -14,6 +14,7 @@ export default tseslint.config(
       'public/sw.js',
       'public/icons',
       'scripts/screenshot.mjs',
+      'scripts/e2e-navigation.mjs',
     ],
   },
   js.configs.recommended,

@@ -147,9 +147,14 @@ function upsertSearchHistory(entries: SearchHistoryEntry[], origin: GeoPoint, de
   return [nextEntry, ...entries.filter((entry) => entry.id !== id)].slice(0, SEARCH_HISTORY_LIMIT);
 }
 
+const NAVIGATION_ARRIVAL_PROGRESS = 0.97;
+
 function navigationInstruction(routeOption: RouteOption, progress: number): RouteInstruction | null {
   if (routeOption.instructions.length === 0) {
     return null;
+  }
+  if (progress >= NAVIGATION_ARRIVAL_PROGRESS) {
+    return { text: 'Arrivee a destination', distanceMeters: 0, detail: routeOption.title, kind: 'arrive' };
   }
   const instructionIndex = Math.min(Math.floor(progress * routeOption.instructions.length), routeOption.instructions.length - 1);
   return routeOption.instructions[instructionIndex];
@@ -2291,8 +2296,9 @@ function MobileNavigationStatus({
   progress: number;
   onRequestStop: () => void;
 }) {
-  const remainingRatio = Math.max(1 - progress, 0);
-  const remainingMinutes = Math.max(Math.ceil(routeOption.durationMinutes * remainingRatio), 1);
+  const arrived = instruction?.kind === 'arrive';
+  const remainingRatio = arrived ? 0 : Math.max(1 - progress, 0);
+  const remainingMinutes = arrived ? 0 : Math.max(Math.ceil(routeOption.durationMinutes * remainingRatio), 1);
   const remainingKm = Math.max(routeOption.distanceKm * remainingRatio, 0);
 
   return (
@@ -2300,12 +2306,23 @@ function MobileNavigationStatus({
       <div className="rounded-2xl border border-primary bg-primary/8 p-3 shadow-soft">
         <div className="grid grid-cols-[1fr_auto] items-center gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Guidage en cours</p>
-            <h2 className="truncate text-lg font-semibold tracking-normal">{instruction?.text ?? routeOption.title}</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
+              {arrived ? 'Trajet termine' : 'Guidage en cours'}
+            </p>
+            <h2 className="flex items-center gap-1.5 truncate text-lg font-semibold tracking-normal">
+              {arrived ? <Check className="size-5 shrink-0 text-primary" aria-hidden="true" /> : null}
+              {instruction?.text ?? routeOption.title}
+            </h2>
             <p className="mt-1 truncate text-xs text-muted-foreground">{instruction?.detail ?? routeOption.summary}</p>
           </div>
-          <Button type="button" variant="outline" size="sm" className="rounded-full bg-white" onClick={onRequestStop}>
-            Quitter
+          <Button
+            type="button"
+            variant={arrived ? 'default' : 'outline'}
+            size="sm"
+            className={arrived ? 'rounded-full' : 'rounded-full bg-white'}
+            onClick={onRequestStop}
+          >
+            {arrived ? 'Terminer' : 'Quitter'}
           </Button>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2">
