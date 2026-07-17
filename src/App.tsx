@@ -1,5 +1,8 @@
 import {
+  type ComponentProps,
   FormEvent,
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useRef,
@@ -21,7 +24,7 @@ import { enhanceRoutesWithLiveRouting, searchPlaces, type PlaceSearchResult } fr
 import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from './lib/savedRoutes';
 import { getFeedFreshness, loadTransportNetwork } from './lib/transportApi';
 import { LANDMARKS, haversineDistanceKm, planRoutes } from './lib/routePlanner';
-import { getRouteColor, UrbanMap } from './components/UrbanMap';
+import { getRouteColor } from './lib/routeColors';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
@@ -50,6 +53,24 @@ import {
   UserRound,
   Zap,
 } from 'lucide-react';
+
+// La carte embarque MapLibre (~2/3 du poids applicatif). On la charge a la
+// demande, apres l'ecran de connexion, pour alleger le bundle initial.
+const LazyUrbanMap = lazy(() => import('./components/UrbanMap').then((module) => ({ default: module.UrbanMap })));
+
+function UrbanMap(props: ComponentProps<typeof LazyUrbanMap>) {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid h-full w-full place-items-center bg-muted text-sm font-medium text-muted-foreground">
+          Chargement de la carte...
+        </div>
+      }
+    >
+      <LazyUrbanMap {...props} />
+    </Suspense>
+  );
+}
 
 const MODE_OPTIONS: Array<{ mode: MobilityMode; label: string }> = [
   { mode: 'walk', label: 'Marche' },

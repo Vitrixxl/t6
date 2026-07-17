@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl, { type GeoJSONSource, type Map as MaplibreMap } from 'maplibre-gl';
 import type { GeoPoint, RouteOption, TransportNetwork } from '../types';
+import { getRouteColor } from '../lib/routeColors';
 
 type LayerState = {
   transitStops: boolean;
@@ -24,20 +25,6 @@ type FeatureCollection = {
         };
   }>;
 };
-
-const ROUTE_COLORS: Record<string, string> = {
-  transit: '#2f6cb3',
-  bike: '#1d6b4f',
-  scooter: '#d97706',
-  carpool: '#7c5cbf',
-};
-
-export function getRouteColor(route: RouteOption): string {
-  if (route.modes.includes('transit')) return ROUTE_COLORS.transit;
-  if (route.modes.includes('bike')) return ROUTE_COLORS.bike;
-  if (route.modes.includes('scooter')) return ROUTE_COLORS.scooter;
-  return ROUTE_COLORS.carpool;
-}
 
 export function UrbanMap({
   origin,
