@@ -31,10 +31,12 @@ OUTPUT = ROOT / "public" / "data" / "gtfs-feed.json"
 # la variable d'environnement GTFS_SOURCE_URL (voir .env.example et le README).
 GTFS_URL = os.environ.get("GTFS_SOURCE_URL", "").strip()
 
+# Perimetre produit: la metropole de Lyon entiere (le reseau metro/tram/funiculaire
+# s'etend jusqu'a ~13 km du centre - Meyzieu, Venissieux, Vaulx-en-Velin).
 CENTER_LAT = 45.7578
 CENTER_LON = 4.8320
-RADIUS_KM = 3.2
-MAX_STOPS = 130
+RADIUS_KM = 16.0
+MAX_STOPS = 600
 CACHE_MAX_AGE_HOURS = 24
 
 # route_type GTFS: 0 tram, 1 metro, 3 bus, 7 funiculaire.

@@ -9,3 +9,6 @@ tsconfig.tsbuildinfo
 output/*.png
 # secrets locaux (jeton GTFS) — .env.example est versionne, .env non
 .env
+scripts/__pycache__/
+# metriques regenerees par npm run metrics:build (lues par generate:pdf)
+output/metrics/

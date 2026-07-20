@@ -78,6 +78,7 @@ export function planRoutes(request: RouteRequest): RouteOption[] {
     createBikeOption(request, directKm),
     createScooterOption(request, directKm),
     createCarpoolOption(request, directKm),
+    createWalkOption(request, directKm),
   ].filter((option): option is RouteOption => Boolean(option));
 
   return candidates
@@ -88,6 +89,14 @@ export function planRoutes(request: RouteRequest): RouteOption[] {
 // RG5 : minutes de marche cumulees d'une option (segments a pied uniquement).
 export function totalWalkMinutes(option: RouteOption): number {
   return option.legs.filter((leg) => leg.mode === 'walk').reduce((sum, leg) => sum + leg.durationMinutes, 0);
+}
+
+// RG1 : seuls les modes actives par l'utilisateur produisent des options visibles.
+// La marche est un mode d'appoint : une option n'est filtree sur la marche que si
+// elle est exclusivement pietonne.
+export function matchesEnabledModes(option: RouteOption, enabledModes: MobilityMode[]): boolean {
+  const primaryModes = option.modes.filter((mode) => mode !== 'walk');
+  return primaryModes.length === 0 ? enabledModes.includes('walk') : primaryModes.every((mode) => enabledModes.includes(mode));
 }
 
 function createTransitOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
@@ -131,8 +140,8 @@ function createTransitOption({ origin, destination, profile, network }: RouteReq
 
   return buildOption({
     id: 'transit',
-    title: 'Metro/tram optimise',
-    summary: 'Combine marche courte et transport public GTFS avec delais temps reel.',
+    title: 'Transport en commun',
+    summary: 'Marche courte puis transport en commun avec delais temps reel.',
     modes: ['walk', 'transit'],
     legs,
     reliabilityScore: trip.realtime_delay_minutes > 2 ? 74 : 88,
@@ -205,8 +214,8 @@ function createBikeTransitOption({ origin, destination, profile, network }: Rout
 
   return buildOption({
     id: 'bike-transit',
-    title: 'Velo + metro combine',
-    summary: 'Combine velo partage, marche courte et transport public pour optimiser la correspondance.',
+    title: 'Velo + transport en commun',
+    summary: 'Velo partage puis transport en commun avec correspondance a un arret proche.',
     modes: ['walk', 'bike', 'transit'],
     legs,
     reliabilityScore: trip.realtime_delay_minutes > 2 || rainWarning ? 78 : 90,
@@ -254,8 +263,8 @@ function createBikeOption({ origin, destination, profile, network }: RouteReques
 
   return buildOption({
     id: 'bike',
-    title: 'Velo partage bas carbone',
-    summary: 'Utilise les disponibilites GBFS locales et minimise les emissions.',
+    title: 'Velo',
+    summary: 'Velo partage selon les disponibilites des stations proches.',
     modes: ['walk', 'bike'],
     legs,
     reliabilityScore: rainWarning ? 71 : 86,
@@ -302,8 +311,8 @@ function createScooterOption({ origin, destination, profile, network }: RouteReq
 
   return buildOption({
     id: 'scooter',
-    title: 'Trottinette rapide',
-    summary: 'Solution directe pour distance courte avec disponibilite temps reel.',
+    title: 'Trottinette',
+    summary: 'Trajet direct en trottinette partagee selon disponibilite.',
     modes: ['walk', 'scooter'],
     legs,
     reliabilityScore: 80,
@@ -316,7 +325,7 @@ function createCarpoolOption({ origin, destination, network }: RouteRequest, dir
   const trafficFactor = incident ? 1.18 : 1.08;
   const legs: RouteLeg[] = [
     {
-      ...createLeg('carpool-core', 'carpool', 'Covoiturage dynamique', origin.label, destination.label, directKm * trafficFactor, true, [
+      ...createLeg('carpool-core', 'carpool', 'Covoiturage', origin.label, destination.label, directKm * trafficFactor, true, [
         origin,
         midpoint(origin, destination, 0.018),
         destination,
@@ -328,12 +337,34 @@ function createCarpoolOption({ origin, destination, network }: RouteRequest, dir
 
   return buildOption({
     id: 'carpool',
-    title: 'Covoiturage dynamique',
+    title: 'Covoiturage',
     summary: 'Alternative mutualisee si les modes doux sont moins adaptes.',
     modes: ['carpool'],
     legs,
     reliabilityScore: incident ? 68 : 78,
     warnings: incident ? [incident.message] : [],
+  });
+}
+
+function createWalkOption({ origin, destination }: RouteRequest, directKm: number): RouteOption {
+  // Facteur de voirie: un itineraire pieton reel est plus long que le vol d'oiseau.
+  const walkKm = directKm * 1.18;
+  const legs: RouteLeg[] = [
+    createLeg('walk-core', 'walk', 'Marche', origin.label, destination.label, walkKm, true, [
+      origin,
+      midpoint(origin, destination, 0.004),
+      destination,
+    ]),
+  ];
+
+  return buildOption({
+    id: 'walk',
+    title: 'A pied',
+    summary: 'Itineraire pieton direct, zero emission.',
+    modes: ['walk'],
+    legs,
+    reliabilityScore: 92,
+    warnings: [],
   });
 }
 

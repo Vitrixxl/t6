@@ -1,4 +1,13 @@
+import { webcrypto } from 'node:crypto';
 import { beforeEach } from 'vitest';
+
+// jsdom n'implemente pas Web Crypto subtle (PBKDF2): on expose celle de Node.
+if (typeof globalThis.crypto === 'undefined' || !globalThis.crypto.subtle) {
+  Object.defineProperty(globalThis, 'crypto', {
+    value: webcrypto,
+    configurable: true,
+  });
+}
 
 function createStorage(): Storage {
   let store: Record<string, string> = {};

@@ -150,3 +150,50 @@ body {
   backdrop-filter: blur(12px);
   font-size: 10px !important;
 }
+
+/* Popup de details des points (arrets, stations, incidents). */
+.ufm-popup .maplibregl-popup-content {
+  border-radius: 0.875rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  padding: 0.7rem 0.85rem 0.75rem;
+  box-shadow: var(--shadow-float);
+}
+
+.ufm-popup .maplibregl-popup-content strong {
+  display: block;
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+
+.ufm-popup .maplibregl-popup-content p {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+}
+
+.ufm-popup .ufm-popup-kind {
+  margin: 0 0 0.3rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.ufm-popup .ufm-popup-kind-alert {
+  color: var(--destructive);
+}
+
+.ufm-popup .maplibregl-popup-close-button {
+  padding: 2px 8px;
+  font-size: 15px;
+  color: var(--muted-foreground);
+}
+
+.ufm-popup .maplibregl-popup-tip {
+  border-top-color: var(--card);
+}

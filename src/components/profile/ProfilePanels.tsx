@@ -1,0 +1,191 @@
+// Module profil : preferences de mobilite, objectifs carbone et compte.
+import { FormEvent, useEffect, useState } from 'react';
+import { Check, CircleHelp, LogOut, Trash2, UserRound } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../ui/drawer';
+import { Input } from '../ui/input';
+import type { MobilityMode, MobilityProfile, SessionUser } from '../../types';
+import { MODE_ICON, MODE_OPTIONS } from '../app/shared';
+
+export function ProfileDrawer({
+  user,
+  open,
+  onOpenChange,
+  onSave,
+  onStartTutorial,
+  onDeleteAccount,
+  onLogout }: {
+  user: SessionUser;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (profile: MobilityProfile) => void;
+  onStartTutorial: () => void;
+  onDeleteAccount: () => void;
+  onLogout: () => void;
+}) {
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="mx-auto w-[calc(100%-1.5rem)] max-w-[1400px] overflow-hidden bg-[var(--shell)] p-0 sm:w-[calc(100%-3rem)]">
+        <DrawerHeader className="items-center border-b border-border px-6 pb-4 pt-3 text-center sm:text-center">
+          <DrawerTitle className="font-display">Profil et preferences</DrawerTitle>
+          <DrawerDescription className="truncate">{user.email}</DrawerDescription>
+        </DrawerHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8">
+          <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <section className="overflow-hidden rounded-xl border border-border bg-background">
+              <ProfilePanel user={user} onSave={onSave} onDeleteAccount={onDeleteAccount} />
+            </section>
+            <section className="grid content-start gap-3 rounded-xl border border-border bg-background p-4">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <UserRound className="size-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <strong className="block truncate text-sm">{user.displayName}</strong>
+                  <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
+                </span>
+              </div>
+              <p className="text-xs leading-5 text-muted-foreground">
+                Preferences utilisees pour calculer les itineraires, filtrer les options PMR et suivre tes objectifs carbone.
+              </p>
+              <Button type="button" variant="outline" className="w-full justify-center" onClick={onStartTutorial}>
+                <CircleHelp className="size-4" aria-hidden="true" />
+                Revoir le tutoriel
+              </Button>
+              <Button type="button" variant="destructive" className="w-full justify-center" onClick={onLogout}>
+                <LogOut className="size-4" aria-hidden="true" />
+                Deconnexion
+              </Button>
+            </section>
+          </div>
+        </div>
+        <DrawerFooter className="mx-auto w-full max-w-5xl border-t border-border px-5 py-4">
+          <DrawerClose asChild>
+            <Button type="button" className="w-full justify-center bg-foreground text-background hover:bg-foreground/90">
+              Fermer
+            </Button>
+          </DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+export function ProfilePanel({
+  user,
+  onSave,
+  onDeleteAccount }: {
+  user: SessionUser;
+  onSave: (profile: MobilityProfile) => void;
+  onDeleteAccount: () => void;
+}) {
+  const [profile, setProfile] = useState<MobilityProfile>(user.profile);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setProfile(user.profile);
+  }, [user]);
+
+  const toggleMode = (mode: MobilityMode) => {
+    setProfile((currentProfile) => ({
+      ...currentProfile,
+      preferredModes: currentProfile.preferredModes.includes(mode)
+        ? currentProfile.preferredModes.filter((item) => item !== mode)
+        : [...currentProfile.preferredModes, mode] }));
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onSave(profile);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1600);
+  };
+
+  return (
+    <section className="p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="grid size-8 place-items-center rounded-lg bg-secondary text-secondary-foreground">
+          <UserRound className="size-4" aria-hidden="true" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Profil</p>
+          <h2 className="font-semibold">{user.displayName}</h2>
+        </div>
+      </div>
+      <form className="grid gap-3" onSubmit={handleSubmit}>
+        <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-display-name">
+          Nom affiche
+          <Input
+            id="profile-display-name"
+            value={profile.displayName}
+            onChange={(event) => setProfile({ ...profile, displayName: event.target.value })}
+          />
+        </label>
+        <fieldset className="grid gap-2">
+          <legend className="text-sm font-medium">Modes preferes</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {MODE_OPTIONS.map((option) => {
+              const Icon = MODE_ICON[option.mode];
+              const active = profile.preferredModes.includes(option.mode);
+              return (
+                <button
+                  key={option.mode}
+                  type="button"
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
+                    active ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'
+                  }`}
+                  onClick={() => toggleMode(option.mode)}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+        <label className="grid gap-1.5 text-sm font-medium">
+          Marche max: {profile.maxWalkMinutes} min
+          <input
+            type="range"
+            min="5"
+            max="45"
+            step="5"
+            value={profile.maxWalkMinutes}
+            onChange={(event) => setProfile({ ...profile, maxWalkMinutes: Number(event.target.value) })}
+            className="accent-primary"
+          />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-carbon-goal">
+          Budget carbone hebdomadaire (g)
+          <Input
+            id="profile-carbon-goal"
+            type="number"
+            min={250}
+            max={20000}
+            step={250}
+            value={profile.carbonGoalGramsPerWeek}
+            onChange={(event) => setProfile({ ...profile, carbonGoalGramsPerWeek: Number(event.target.value) })}
+          />
+        </label>
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={profile.accessibilityNeed}
+            onChange={(event) => setProfile({ ...profile, accessibilityNeed: event.target.checked })}
+            className="size-4 accent-primary"
+          />
+          Priorite PMR
+        </label>
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" className="flex-1">
+            {saved ? <Check className="size-4" aria-hidden="true" /> : null}
+            Enregistrer
+          </Button>
+          <Button type="button" variant="outline" size="compactIcon" onClick={onDeleteAccount} aria-label="Supprimer les donnees locales">
+            <Trash2 className="size-4" aria-hidden="true" />
+          </Button>
+        </div>
+      </form>
+    </section>
+  );
+}

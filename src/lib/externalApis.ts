@@ -10,10 +10,14 @@ function withTimeout(signal?: AbortSignal): AbortSignal {
   return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }
 
+/** Nature du lieu, affichee dans les resultats de recherche. */
+export type PlaceKind = 'Quartier' | 'Ville' | 'Gare' | 'Rue' | 'Adresse' | 'Lieu';
+
 export interface PlaceSearchResult extends GeoPoint {
   id: string;
   context: string;
-  source: 'api-adresse' | 'local';
+  kind: PlaceKind;
+  source: 'api-adresse' | 'photon' | 'local';
 }
 
 interface AdresseFeature {
@@ -23,6 +27,7 @@ interface AdresseFeature {
     label: string;
     context?: string;
     name?: string;
+    type?: string;
   };
   geometry: {
     type: 'Point';
@@ -32,6 +37,29 @@ interface AdresseFeature {
 
 interface AdresseResponse {
   features: AdresseFeature[];
+}
+
+interface PhotonFeature {
+  type: 'Feature';
+  properties: {
+    osm_id?: number;
+    osm_key?: string;
+    osm_value?: string;
+    type?: string;
+    name?: string;
+    city?: string;
+    district?: string;
+    postcode?: string;
+    countrycode?: string;
+  };
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
+}
+
+interface PhotonResponse {
+  features: PhotonFeature[];
 }
 
 interface OsrmRouteResponse {
@@ -69,22 +97,45 @@ const LIVE_EMISSIONS_G_PER_KM: Record<MobilityMode | 'privateCar', number> = {
   privateCar: 180,
 };
 
-export async function searchPlaces(query: string, origin?: GeoPoint, signal?: AbortSignal): Promise<PlaceSearchResult[]> {
-  const trimmedQuery = query.trim();
-  if (trimmedQuery.length < 2) {
-    return [];
-  }
+// Perimetre produit: la recherche est bornee a la metropole de Lyon.
+// Deux sources complementaires, fusionnees :
+// - BAN (api-adresse) pour les adresses et rues, filtree au departement 69 ;
+// - Photon (OpenStreetMap) pour les quartiers, gares et lieux ("Part-Dieu",
+//   "Croix-Rousse"...), que la BAN ignore, borne a la bbox de la metropole.
+const SEARCH_CENTER = { lat: 45.7578, lon: 4.832 };
+const SEARCH_DEPARTMENT = '69';
+const METRO_BBOX = { minLon: 4.62, minLat: 45.55, maxLon: 5.08, maxLat: 45.94 };
 
+function inMetroBbox(lon: number, lat: number): boolean {
+  return lon >= METRO_BBOX.minLon && lon <= METRO_BBOX.maxLon && lat >= METRO_BBOX.minLat && lat <= METRO_BBOX.maxLat;
+}
+
+function banKind(type: string | undefined): PlaceKind {
+  if (type === 'housenumber') return 'Adresse';
+  if (type === 'street') return 'Rue';
+  if (type === 'locality') return 'Quartier';
+  if (type === 'municipality') return 'Ville';
+  return 'Adresse';
+}
+
+function photonKind(properties: PhotonFeature['properties']): PlaceKind {
+  const osmValue = properties.osm_value ?? '';
+  if (properties.osm_key === 'railway' || osmValue === 'station' || osmValue === 'halt') return 'Gare';
+  if (properties.type === 'district' || ['suburb', 'neighbourhood', 'quarter', 'borough'].includes(osmValue)) return 'Quartier';
+  if (properties.type === 'city' || ['city', 'town', 'village'].includes(osmValue)) return 'Ville';
+  if (properties.type === 'street') return 'Rue';
+  if (properties.type === 'house') return 'Adresse';
+  return 'Lieu';
+}
+
+async function searchBan(query: string, proximity: Pick<GeoPoint, 'lat' | 'lon'>, signal?: AbortSignal): Promise<PlaceSearchResult[]> {
   const params = new URLSearchParams({
-    q: trimmedQuery,
-    limit: '7',
+    q: query,
+    limit: '6',
     autocomplete: '1',
+    lat: String(proximity.lat),
+    lon: String(proximity.lon),
   });
-
-  if (origin) {
-    params.set('lat', String(origin.lat));
-    params.set('lon', String(origin.lon));
-  }
 
   const response = await fetch(`https://api-adresse.data.gouv.fr/search/?${params.toString()}`, {
     signal: withTimeout(signal),
@@ -98,14 +149,107 @@ export async function searchPlaces(query: string, origin?: GeoPoint, signal?: Ab
   }
 
   const payload = (await response.json()) as AdresseResponse;
-  return payload.features.map((feature, index) => ({
-    id: feature.properties.id ?? `${feature.properties.label}-${index}`,
-    label: feature.properties.label,
-    context: feature.properties.context ?? '',
-    lon: feature.geometry.coordinates[0],
-    lat: feature.geometry.coordinates[1],
-    source: 'api-adresse',
-  }));
+  return payload.features
+    .filter((feature) => (feature.properties.context ?? '').trim().startsWith(SEARCH_DEPARTMENT))
+    .map((feature, index) => ({
+      id: feature.properties.id ?? `${feature.properties.label}-${index}`,
+      label: feature.properties.label,
+      context: feature.properties.context ?? '',
+      kind: banKind(feature.properties.type),
+      lon: feature.geometry.coordinates[0],
+      lat: feature.geometry.coordinates[1],
+      source: 'api-adresse' as const,
+    }));
+}
+
+async function searchPhoton(query: string, proximity: Pick<GeoPoint, 'lat' | 'lon'>, signal?: AbortSignal): Promise<PlaceSearchResult[]> {
+  const params = new URLSearchParams({
+    q: query,
+    limit: '6',
+    lang: 'fr',
+    lat: String(proximity.lat),
+    lon: String(proximity.lon),
+    bbox: `${METRO_BBOX.minLon},${METRO_BBOX.minLat},${METRO_BBOX.maxLon},${METRO_BBOX.maxLat}`,
+  });
+
+  const response = await fetch(`https://photon.komoot.io/api/?${params.toString()}`, {
+    signal: withTimeout(signal),
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Recherche de lieux indisponible (${response.status})`);
+  }
+
+  const payload = (await response.json()) as PhotonResponse;
+  return payload.features
+    .filter((feature) => {
+      const [lon, lat] = feature.geometry.coordinates;
+      const country = feature.properties.countrycode ?? 'FR';
+      return Boolean(feature.properties.name) && country === 'FR' && inMetroBbox(lon, lat);
+    })
+    .map((feature, index) => {
+      const properties = feature.properties;
+      const contextParts = [properties.district, properties.city, properties.postcode].filter(
+        (part, partIndex, parts) => part && parts.indexOf(part) === partIndex && part !== properties.name,
+      );
+      return {
+        id: properties.osm_id ? `osm-${properties.osm_id}` : `photon-${properties.name}-${index}`,
+        label: properties.name ?? '',
+        context: contextParts.join(', '),
+        kind: photonKind(properties),
+        lon: feature.geometry.coordinates[0],
+        lat: feature.geometry.coordinates[1],
+        source: 'photon' as const,
+      };
+    });
+}
+
+// Fusion: les lieux nommes (quartiers, gares, villes) d'abord - c'est ce qu'on
+// tape le plus souvent ("part dieu") - puis les rues et adresses de la BAN.
+// Dedoublonnage grossier par nom + ~150 m.
+function mergePlaceResults(places: PlaceSearchResult[], addresses: PlaceSearchResult[]): PlaceSearchResult[] {
+  const named = places.filter((place) => ['Quartier', 'Gare', 'Ville', 'Lieu'].includes(place.kind));
+  const rest = places.filter((place) => !named.includes(place));
+  const merged: PlaceSearchResult[] = [];
+
+  for (const candidate of [...named, ...addresses, ...rest]) {
+    const duplicate = merged.some(
+      (item) =>
+        item.label.toLowerCase() === candidate.label.toLowerCase() &&
+        Math.abs(item.lat - candidate.lat) < 0.0015 &&
+        Math.abs(item.lon - candidate.lon) < 0.0015,
+    );
+    if (!duplicate) {
+      merged.push(candidate);
+    }
+  }
+
+  return merged.slice(0, 8);
+}
+
+export async function searchPlaces(query: string, origin?: GeoPoint, signal?: AbortSignal): Promise<PlaceSearchResult[]> {
+  const trimmedQuery = query.trim();
+  if (trimmedQuery.length < 2) {
+    return [];
+  }
+
+  const proximity = origin ?? SEARCH_CENTER;
+  const [banOutcome, photonOutcome] = await Promise.allSettled([
+    searchBan(trimmedQuery, proximity, signal),
+    searchPhoton(trimmedQuery, proximity, signal),
+  ]);
+
+  if (banOutcome.status === 'rejected' && photonOutcome.status === 'rejected') {
+    throw banOutcome.reason instanceof Error ? banOutcome.reason : new Error('Recherche indisponible');
+  }
+
+  return mergePlaceResults(
+    photonOutcome.status === 'fulfilled' ? photonOutcome.value : [],
+    banOutcome.status === 'fulfilled' ? banOutcome.value : [],
+  );
 }
 
 export async function enhanceRoutesWithLiveRouting(

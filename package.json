@@ -10,11 +10,14 @@
     "lint": "eslint .",
     "test": "vitest run",
     "check": "npm run lint && npm run test && npm run build",
-    "e2e": "node scripts/e2e-navigation.mjs",
+    "e2e": "node scripts/e2e-planning.mjs",
+    "audit:a11y": "node scripts/audit-a11y.mjs",
+    "bench:perf": "node scripts/perf-bench.mjs",
+    "metrics:build": "node scripts/build-metrics.mjs",
     "screens": "node scripts/screenshot.mjs",
     "generate:gtfs": "python3 scripts/fetch_gtfs.py",
     "generate:icons": ".venv/bin/python scripts/generate_icons.py",
-    "generate:pdf": ".venv/bin/python scripts/generate_dossier.py"
+    "generate:pdf": "node scripts/build-metrics.mjs && .venv/bin/python scripts/generate_dossier.py"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.2.10",
@@ -27,6 +30,7 @@
     "maplibre-gl": "^5.24.0",
     "radix-ui": "^1.6.2",
     "react": "^19.1.0",
+    "react-day-picker": "^10.0.1",
     "react-dom": "^19.1.0",
     "shadcn": "^4.13.0",
     "tailwind-merge": "^3.6.0",
@@ -36,9 +40,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "axe-core": "^4.12.1",
     "eslint": "^9.30.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^5.2.0",

@@ -1,20 +1,6 @@
-import type { CarbonSummary, RouteOption, TripRecord } from '../types';
+import type { CarbonSummary, TripRecord } from '../types';
 
 const TRIP_HISTORY_PREFIX = 'ufm.tripHistory.';
-
-export function createTripRecord(userId: string, option: RouteOption, now: Date = new Date()): TripRecord {
-  return {
-    id: crypto.randomUUID(),
-    userId,
-    routeTitle: option.title,
-    modes: option.modes,
-    distanceKm: option.distanceKm,
-    durationMinutes: option.durationMinutes,
-    carbonGrams: option.carbonGrams,
-    carbonSavedGrams: option.carbonSavedGrams,
-    createdAt: now.toISOString(),
-  };
-}
 
 export function summarizeCarbon(records: TripRecord[], weeklyGoalGrams: number): CarbonSummary {
   const totalDistanceKm = round(records.reduce((sum, record) => sum + record.distanceKm, 0), 2);

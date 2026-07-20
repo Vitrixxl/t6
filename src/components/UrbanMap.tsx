@@ -1,7 +1,43 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import maplibregl, { type GeoJSONSource, type Map as MaplibreMap } from 'maplibre-gl';
 import type { GeoPoint, RouteOption, TransportNetwork } from '../types';
 import { getRouteColor } from '../lib/routeColors';
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char
+  ));
+}
+
+// Popup de details au clic sur un point (arret, station, incident).
+function bindPointPopup(
+  map: MaplibreMap,
+  layerId: string,
+  popupRef: MutableRefObject<maplibregl.Popup | null>,
+  buildHtml: (properties: Record<string, unknown>) => string,
+) {
+  map.on('click', layerId, (event) => {
+    const feature = event.features?.[0];
+    if (!feature) {
+      return;
+    }
+    const coordinates =
+      feature.geometry.type === 'Point'
+        ? (feature.geometry.coordinates as [number, number])
+        : ([event.lngLat.lng, event.lngLat.lat] as [number, number]);
+    popupRef.current?.remove();
+    popupRef.current = new maplibregl.Popup({ closeButton: true, maxWidth: '280px', offset: 14, className: 'ufm-popup' })
+      .setLngLat(coordinates)
+      .setHTML(buildHtml(feature.properties ?? {}))
+      .addTo(map);
+  });
+  map.on('mouseenter', layerId, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+  map.on('mouseleave', layerId, () => {
+    map.getCanvas().style.cursor = '';
+  });
+}
 
 type LayerState = {
   transitStops: boolean;
@@ -33,23 +69,22 @@ export function UrbanMap({
   selectedRoute,
   network,
   layers,
-  overviewSignal,
   navigationPoint,
-  navigationActive = false,
 }: {
-  origin: GeoPoint;
-  destination: GeoPoint;
+  origin: GeoPoint | null;
+  destination: GeoPoint | null;
   routes: RouteOption[];
   selectedRoute: RouteOption | null;
   network: TransportNetwork;
   layers: LayerState;
-  overviewSignal: number;
+  /** Position GPS de l'utilisateur ("Ma position"), affichee comme repere. */
   navigationPoint?: GeoPoint | null;
-  navigationActive?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MaplibreMap | null>(null);
-  const initialOriginRef = useRef(origin);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  // Centre initial: le depart s'il existe deja, sinon le centre de la metropole.
+  const initialCenterRef = useRef<Pick<GeoPoint, 'lat' | 'lon'>>(origin ?? { lat: 45.758, lon: 4.845 });
   const [loaded, setLoaded] = useState(false);
 
   const routeData = useMemo<FeatureCollection>(
@@ -76,16 +111,24 @@ export function UrbanMap({
     () => ({
       type: 'FeatureCollection',
       features: [
-        {
-          type: 'Feature',
-          properties: { kind: 'origin', label: origin.label, color: '#111827' },
-          geometry: { type: 'Point', coordinates: [origin.lon, origin.lat] },
-        },
-        {
-          type: 'Feature',
-          properties: { kind: 'destination', label: destination.label, color: '#ef4444' },
-          geometry: { type: 'Point', coordinates: [destination.lon, destination.lat] },
-        },
+        ...(origin
+          ? [
+              {
+                type: 'Feature' as const,
+                properties: { kind: 'origin', label: origin.label, color: '#111827' },
+                geometry: { type: 'Point' as const, coordinates: [origin.lon, origin.lat] },
+              },
+            ]
+          : []),
+        ...(destination
+          ? [
+              {
+                type: 'Feature' as const,
+                properties: { kind: 'destination', label: destination.label, color: '#ef4444' },
+                geometry: { type: 'Point' as const, coordinates: [destination.lon, destination.lat] },
+              },
+            ]
+          : []),
         ...(navigationPoint
           ? [
               {
@@ -137,13 +180,17 @@ export function UrbanMap({
     () => ({
       type: 'FeatureCollection',
       features: network.gtfs.incidents.map((incident, index) => {
-        const anchor = network.gtfs.stops[index % network.gtfs.stops.length];
+        // Les alertes TCL n'ont pas de coordonnees (portee ligne/reseau) : on
+        // les ancre sur des arrets repartis dans tout le reseau (pas d'amas).
+        const stride = Math.max(1, Math.floor(network.gtfs.stops.length / Math.max(network.gtfs.incidents.length, 1)));
+        const anchor = network.gtfs.stops[(index * stride) % network.gtfs.stops.length];
         return {
           type: 'Feature',
           properties: {
             kind: 'incident',
             label: incident.title,
             severity: incident.severity,
+            message: incident.message,
           },
           geometry: { type: 'Point', coordinates: [anchor.stop_lon + 0.003, anchor.stop_lat + 0.003] },
         };
@@ -159,7 +206,7 @@ export function UrbanMap({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      center: [initialOriginRef.current.lon, initialOriginRef.current.lat],
+      center: [initialCenterRef.current.lon, initialCenterRef.current.lat],
       zoom: 12.2,
       minZoom: 2,
       maxZoom: 19,
@@ -183,6 +230,12 @@ export function UrbanMap({
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
     map.on('load', () => setLoaded(true));
     mapRef.current = map;
+    if (import.meta.env.DEV) {
+      // Poignees de debug pour les tests manuels/E2E (dev uniquement).
+      // Deux instances co-existent (layouts desktop et mobile).
+      const debugWindow = window as { __ufmMaps?: MaplibreMap[] };
+      debugWindow.__ufmMaps = [...(debugWindow.__ufmMaps ?? []), map];
+    }
 
     return () => {
       map.remove();
@@ -202,6 +255,34 @@ export function UrbanMap({
     setGeoJsonSource(map, 'stations', stationData);
     setGeoJsonSource(map, 'incidents', incidentData);
 
+    if (!map.getLayer('routes-casing')) {
+      // Lisere blanc sous le trace : le rend lisible sur tous les fonds de rue.
+      map.addLayer({
+        id: 'routes-casing',
+        type: 'line',
+        source: 'routes',
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': '#ffffff',
+          // Le zoom doit etre dans un interpolate de premier niveau (contrainte
+          // des expressions camera MapLibre), le case porte sur les sorties.
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            11,
+            ['case', ['==', ['get', 'selected'], true], 9, 5],
+            15,
+            ['case', ['==', ['get', 'selected'], true], 16, 8],
+          ],
+          'line-opacity': ['case', ['==', ['get', 'selected'], true], 0.9, 0.35],
+        },
+      });
+    }
+
     if (!map.getLayer('routes-line')) {
       map.addLayer({
         id: 'routes-line',
@@ -213,8 +294,16 @@ export function UrbanMap({
         },
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': ['case', ['==', ['get', 'selected'], true], 8, 4],
-          'line-opacity': ['case', ['==', ['get', 'selected'], true], 0.96, 0.38],
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            11,
+            ['case', ['==', ['get', 'selected'], true], 6, 3],
+            15,
+            ['case', ['==', ['get', 'selected'], true], 11, 5],
+          ],
+          'line-opacity': ['case', ['==', ['get', 'selected'], true], 0.98, 0.45],
         },
       });
     }
@@ -255,13 +344,20 @@ export function UrbanMap({
         type: 'circle',
         source: 'stops',
         paint: {
-          'circle-radius': 3.5,
-          'circle-color': '#2f6cb3',
-          'circle-opacity': 0.85,
+          // Taille liee au zoom pour rester lisible en vue metropole comme en vue rue.
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 12, 5.5, 15, 9],
+          // Bleu vif vs vert lime des stations : contraste net entre les couches.
+          'circle-color': '#2563eb',
+          'circle-opacity': 0.95,
           'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 1,
+          'circle-stroke-width': 1.75,
         },
       });
+      bindPointPopup(map, 'stops-circle', popupRef, (properties) => `
+        <p class="ufm-popup-kind">Arret transport public</p>
+        <strong>${escapeHtml(properties.label)}</strong>
+        <p>${properties.accessible === true || properties.accessible === 'true' ? 'Accessible PMR' : 'Accessibilite PMR non garantie'}</p>
+      `);
     }
 
     if (!map.getLayer('stations-circle')) {
@@ -270,13 +366,18 @@ export function UrbanMap({
         type: 'circle',
         source: 'stations',
         paint: {
-          'circle-radius': 3.5,
-          'circle-color': '#0f766e',
-          'circle-opacity': 0.85,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 1,
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 12, 5.5, 15, 9],
+          'circle-color': '#84cc16',
+          'circle-opacity': 0.95,
+          'circle-stroke-color': '#3f6212',
+          'circle-stroke-width': 1.5,
         },
       });
+      bindPointPopup(map, 'stations-circle', popupRef, (properties) => `
+        <p class="ufm-popup-kind">Station partagee</p>
+        <strong>${escapeHtml(properties.label)}</strong>
+        <p>${escapeHtml(properties.bikes)} velo(s) &middot; ${escapeHtml(properties.scooters)} trottinette(s) disponibles</p>
+      `);
     }
 
     if (!map.getLayer('incidents-circle')) {
@@ -285,13 +386,18 @@ export function UrbanMap({
         type: 'circle',
         source: 'incidents',
         paint: {
-          'circle-radius': 7,
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 14, 11],
           'circle-color': '#ef4444',
-          'circle-opacity': 0.88,
+          'circle-opacity': 0.92,
           'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 2,
+          'circle-stroke-width': 2.5,
         },
       });
+      bindPointPopup(map, 'incidents-circle', popupRef, (properties) => `
+        <p class="ufm-popup-kind ufm-popup-kind-alert">Incident ${escapeHtml(properties.severity)}</p>
+        <strong>${escapeHtml(properties.label)}</strong>
+        <p>${escapeHtml(properties.message)}</p>
+      `);
     }
 
     setLayerVisibility(map, 'stops-circle', layers.transitStops);
@@ -307,60 +413,27 @@ export function UrbanMap({
 
     const bounds = new maplibregl.LngLatBounds();
     selectedRoute.path.forEach((point) => bounds.extend([point.lon, point.lat]));
-    bounds.extend([origin.lon, origin.lat]);
-    bounds.extend([destination.lon, destination.lat]);
+    if (origin) {
+      bounds.extend([origin.lon, origin.lat]);
+    }
+    if (destination) {
+      bounds.extend([destination.lon, destination.lat]);
+    }
 
+    // Cadre le trajet selectionne pour qu'il remplisse la zone visible de la
+    // carte (le conteneur exclut deja les rails lateraux) en evitant seulement
+    // la barre de recherche en haut et le bandeau d'options en bas.
     map.fitBounds(bounds, {
       padding: {
-        top: 110,
-        right: window.innerWidth >= 1024 ? 430 : 32,
-        bottom: window.innerWidth >= 768 ? 80 : 280,
-        left: window.innerWidth >= 1024 ? 380 : 32,
+        top: window.innerWidth >= 1024 ? 96 : 140,
+        right: 48,
+        bottom: window.innerWidth >= 1024 ? 88 : 300,
+        left: 48,
       },
-      maxZoom: 13.2,
+      maxZoom: 16.2,
       duration: 650,
     });
   }, [destination, loaded, origin, selectedRoute]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !loaded || overviewSignal === 0) {
-      return;
-    }
-
-    const bounds = new maplibregl.LngLatBounds();
-    routes.forEach((routeOption) => {
-      routeOption.path.forEach((point) => bounds.extend([point.lon, point.lat]));
-    });
-    network.gtfs.stops.forEach((stop) => bounds.extend([stop.stop_lon, stop.stop_lat]));
-    network.sharedMobility.data.stations.forEach((station) => bounds.extend([station.lon, station.lat]));
-    bounds.extend([origin.lon, origin.lat]);
-    bounds.extend([destination.lon, destination.lat]);
-
-    map.fitBounds(bounds, {
-      padding: {
-        top: 120,
-        right: window.innerWidth >= 1024 ? 470 : 36,
-        bottom: window.innerWidth >= 768 ? 120 : 320,
-        left: window.innerWidth >= 1024 ? 420 : 36,
-      },
-      maxZoom: 11,
-      duration: 700,
-    });
-  }, [destination, loaded, network, origin, overviewSignal, routes]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !loaded || !navigationActive || !navigationPoint) {
-      return;
-    }
-
-    map.easeTo({
-      center: [navigationPoint.lon, navigationPoint.lat],
-      zoom: Math.max(map.getZoom(), 15.4),
-      duration: 650,
-    });
-  }, [loaded, navigationActive, navigationPoint]);
 
   return <div ref={containerRef} className="absolute inset-0 h-full w-full" aria-label="Carte des trajets UrbanFlow" />;
 }

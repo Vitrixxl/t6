@@ -12,6 +12,8 @@ export const DEFAULT_PROFILE: MobilityProfile = {
   accessibilityNeed: false,
   avoidRain: true,
   carbonGoalGramsPerWeek: 2500,
+  weeklyTripsGoal: 5,
+  weeklySavedGoalGrams: 2000,
 };
 
 export interface AuthInput {
@@ -22,11 +24,6 @@ export interface AuthInput {
 export interface RegisterInput extends AuthInput {
   displayName: string;
 }
-
-export const DEMO_CREDENTIALS: AuthInput = {
-  email: DEMO_EMAIL,
-  password: DEMO_PASSWORD,
-};
 
 export async function registerUser(input: RegisterInput): Promise<SessionUser> {
   await ensureDemoAccount();
@@ -104,6 +101,8 @@ export function saveMobilityProfile(userId: string, profile: MobilityProfile): S
     preferredModes: sanitizeModes(profile.preferredModes),
     maxWalkMinutes: clampNumber(profile.maxWalkMinutes, 5, 45),
     carbonGoalGramsPerWeek: clampNumber(profile.carbonGoalGramsPerWeek, 250, 20000),
+    weeklyTripsGoal: clampNumber(profile.weeklyTripsGoal ?? DEFAULT_PROFILE.weeklyTripsGoal ?? 5, 1, 60),
+    weeklySavedGoalGrams: clampNumber(profile.weeklySavedGoalGrams ?? DEFAULT_PROFILE.weeklySavedGoalGrams ?? 2000, 100, 50000),
   };
 
   users[index] = {
@@ -118,7 +117,17 @@ export function saveMobilityProfile(userId: string, profile: MobilityProfile): S
 export function deleteLocalAccount(userId: string): void {
   persistUsers(loadUsers().filter((user) => user.id !== userId));
   sessionStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(`ufm.tripHistory.${userId}`);
+  // Droit a l'effacement (RGPD): toutes les cles locales de l'utilisateur sont
+  // supprimees par balayage (historique carbone, itineraires sauvegardes,
+  // historique de recherche et toute cle future portant l'identifiant).
+  const userKeys: string[] = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key && key.includes(userId)) {
+      userKeys.push(key);
+    }
+  }
+  userKeys.forEach((key) => localStorage.removeItem(key));
 }
 
 export function loadUsers(): StoredUser[] {

@@ -3,6 +3,7 @@ import type {
   NetworkSources,
   SharedMobilityFeed,
   SharedStation,
+  TransportIncident,
   TransportNetwork,
   WeatherSignal,
 } from '../types';
@@ -18,10 +19,13 @@ const DOTT_VEHICLES_URL = 'https://gbfs.api.ridedott.com/public/v2/lyon/free_bik
 const OPEN_METEO_URL =
   'https://api.open-meteo.com/v1/forecast?latitude=45.7578&longitude=4.832&current=temperature_2m,wind_speed_10m,precipitation,weather_code';
 
-const CITY_CENTER = { lat: 45.7578, lon: 4.832 };
-const STATION_RADIUS_KM = 2.8;
-const MAX_VELOV_STATIONS = 90;
-const MAX_DOTT_VEHICLES = 80;
+// Perimetre produit: toute la metropole de Lyon (Velo'v couvre Lyon/Villeurbanne,
+// Dott et TCL debordent sur les communes limitrophes).
+export const CITY_CENTER = { lat: 45.7578, lon: 4.832 };
+export const METRO_RADIUS_KM = 16;
+const STATION_RADIUS_KM = METRO_RADIUS_KM;
+const MAX_VELOV_STATIONS = 500;
+const MAX_DOTT_VEHICLES = 300;
 const FETCH_TIMEOUT_MS = 8000;
 
 interface VelovStationInformation {
@@ -204,13 +208,103 @@ async function fetchLiveSharedMobility(fetcher: typeof fetch): Promise<SharedMob
   };
 }
 
+// --- Alertes trafic TCL (SIRI Situation Exchange via data.grandlyon.com) ----
+// L'endpoint /api/tcl-alertes est un proxy du serveur (vite.config.ts) qui
+// injecte les identifiants du compte Grand Lyon cote serveur. Sans compte
+// configure, il repond 401 et les incidents simules du feed prennent le relais.
+
+// Schema observe du flux tclalertetrafic_2 (extrait): titre, message, cause,
+// type (Information/Perturbation...), mode (Metro/Tramway/Bus...), ligne_cli,
+// ligne_com, typeseverite (effets type GTFS-RT: NO_SERVICE, OTHER_EFFECT...),
+// niveauseverite (numerique), debut, fin ("YYYY-MM-DD HH:MM:SS").
+interface TclAlertRecord {
+  [key: string]: unknown;
+}
+
+function alertText(record: TclAlertRecord, keys: string[]): string {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
+function alertSeverity(record: TclAlertRecord): TransportIncident['severity'] {
+  const effect = alertText(record, ['typeseverite']).toUpperCase();
+  if (['NO_SERVICE', 'SIGNIFICANT_DELAYS', 'STOP_MOVED'].includes(effect)) {
+    return 'high';
+  }
+  if (['REDUCED_SERVICE', 'DETOUR', 'MODIFIED_SERVICE'].includes(effect)) {
+    return 'medium';
+  }
+  // Simple information (renfort d'offre, prolongation...) ou effet inconnu.
+  return alertText(record, ['type']).toLowerCase() === 'information' ? 'low' : 'medium';
+}
+
+function alertStillActive(record: TclAlertRecord, now: Date): boolean {
+  const end = alertText(record, ['fin']);
+  if (!end) {
+    return true;
+  }
+  const parsed = Date.parse(end.replace(' ', 'T'));
+  return Number.isNaN(parsed) ? true : parsed >= now.getTime();
+}
+
+/** Convertit les enregistrements bruts du flux alertes TCL en incidents types. */
+export function mapTclAlerts(
+  payload: { values?: TclAlertRecord[] },
+  now: Date = new Date(),
+): TransportIncident[] {
+  const records = payload.values ?? [];
+  return records
+    .filter((record) => alertStillActive(record, now))
+    .map((record, index): TransportIncident | null => {
+      const title = alertText(record, ['titre', 'cause', 'type']);
+      const message = alertText(record, ['message']);
+      if (!title && !message) {
+        return null;
+      }
+      const line = alertText(record, ['ligne_com', 'ligne_cli']);
+      const recordNumber = record.n;
+      return {
+        id: `tcl-alerte-${typeof recordNumber === 'number' || typeof recordNumber === 'string' ? recordNumber : index}`,
+        severity: alertSeverity(record),
+        // Le reseau TCL est du transport public quel que soit le sous-mode.
+        affected_modes: ['transit'],
+        title: line ? `${line} - ${title || 'Perturbation'}` : title || 'Perturbation TCL',
+        message: message || title,
+      };
+    })
+    .filter((incident): incident is TransportIncident => incident !== null)
+    .slice(0, 40);
+}
+
+async function fetchTclIncidents(fetcher: typeof fetch): Promise<TransportIncident[]> {
+  const payload = await fetchJson<{ values?: TclAlertRecord[] }>('/api/tcl-alertes', fetcher);
+  const incidents = mapTclAlerts(payload);
+  if (incidents.length === 0) {
+    throw new Error('Flux alertes TCL vide.');
+  }
+  return incidents;
+}
+
 export async function loadTransportNetwork(fetcher: typeof fetch = fetch): Promise<TransportNetwork> {
   const gtfs = await fetchJson<GtfsFeed>('/data/gtfs-feed.json', fetcher);
   const sources: NetworkSources = {
     gtfs: gtfs.agency.agency_id === 'ufm-metropole' ? 'local' : 'tcl-odbl',
     sharedMobility: 'local',
     weather: 'local',
+    incidents: 'local',
   };
+
+  try {
+    gtfs.incidents = await fetchTclIncidents(fetcher);
+    sources.incidents = 'tcl-live';
+  } catch {
+    // Compte Grand Lyon absent ou flux indisponible: incidents simules du feed.
+  }
 
   let sharedMobility: SharedMobilityFeed;
   try {

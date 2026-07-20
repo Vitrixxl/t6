@@ -16,6 +16,9 @@ export interface MobilityProfile {
   accessibilityNeed: boolean;
   avoidRain: boolean;
   carbonGoalGramsPerWeek: number;
+  /** Objectifs hebdomadaires saisis par l'utilisateur (absents sur les anciens profils). */
+  weeklyTripsGoal?: number;
+  weeklySavedGoalGrams?: number;
 }
 
 export interface StoredUser {
@@ -119,6 +122,7 @@ export interface NetworkSources {
   gtfs: 'tcl-odbl' | 'local';
   sharedMobility: 'gbfs-live' | 'local';
   weather: 'open-meteo' | 'local';
+  incidents?: 'tcl-live' | 'local';
 }
 
 export interface TransportNetwork {
@@ -207,4 +211,61 @@ export interface CarbonSummary {
   totalCarbonGrams: number;
   totalSavedGrams: number;
   goalUsagePercent: number;
+}
+
+export type PlannedTripStatus = 'planned' | 'done' | 'cancelled';
+
+export interface PlannedTrip {
+  id: string;
+  userId: string;
+  label: string;
+  origin: GeoPoint;
+  destination: GeoPoint;
+  modes: MobilityMode[];
+  distanceKm: number;
+  durationMinutes: number;
+  carbonGrams: number;
+  carbonSavedGrams: number;
+  /** Date/heure prevue du depart (ISO). */
+  scheduledFor: string;
+  status: PlannedTripStatus;
+  /** Renseigne quand l'occurrence provient d'un trajet recurrent. */
+  recurringTripId: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface RecurringTrip {
+  id: string;
+  userId: string;
+  label: string;
+  origin: GeoPoint;
+  destination: GeoPoint;
+  modes: MobilityMode[];
+  distanceKm: number;
+  durationMinutes: number;
+  carbonGrams: number;
+  carbonSavedGrams: number;
+  /** Jours actifs, convention JS Date.getDay() : 0 = dimanche ... 6 = samedi. */
+  daysOfWeek: number[];
+  /** Heure de depart "HH:MM". */
+  departureTime: string;
+  /** Heure du retour "HH:MM" pour un aller-retour, sinon null. */
+  returnTime: string | null;
+  paused: boolean;
+  createdAt: string;
+}
+
+export interface TripActivitySummary {
+  doneTotal: number;
+  /** Semaine calendaire en cours (depuis lundi). */
+  doneThisWeek: number;
+  savedThisWeekGrams: number;
+  /** Mois calendaire en cours (depuis le 1er). */
+  doneThisMonth: number;
+  savedThisMonthGrams: number;
+  savedTotalGrams: number;
+  distanceThisWeekKm: number;
+  upcomingCount: number;
+  recurringActiveCount: number;
 }

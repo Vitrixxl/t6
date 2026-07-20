@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from './auth';
-import { LANDMARKS, planRoutes, SCORING_WEIGHTS, totalWalkMinutes } from './routePlanner';
+import {
+  haversineDistanceKm,
+  LANDMARKS,
+  matchesEnabledModes,
+  planRoutes,
+  SCORING_WEIGHTS,
+  totalWalkMinutes,
+} from './routePlanner';
 import type { TransportNetwork } from '../types';
 
 const network: TransportNetwork = {
@@ -172,5 +179,128 @@ describe('planRoutes', () => {
     expect(routes.some((route) => route.modes.includes('bike') || route.modes.includes('scooter'))).toBe(false);
     // Le transport public reste disponible.
     expect(routes.some((route) => route.modes.includes('transit'))).toBe(true);
+  });
+
+  it("RG2 : aucune option transport public si aucun arret n'est accessible en profil PMR", () => {
+    const inaccessibleNetwork: TransportNetwork = {
+      ...network,
+      gtfs: {
+        ...network.gtfs,
+        stops: network.gtfs.stops.map((stop) => ({ ...stop, wheelchair_boarding: 2 as const })),
+      },
+    };
+
+    const pmrRoutes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      profile: { ...DEFAULT_PROFILE, accessibilityNeed: true },
+      network: inaccessibleNetwork,
+    });
+    // On n'invente pas une correspondance non conforme: pas d'option transit.
+    expect(pmrRoutes.some((route) => route.modes.includes('transit'))).toBe(false);
+
+    // Sans besoin PMR, les memes arrets produisent bien une option transit.
+    const standardRoutes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      profile: DEFAULT_PROFILE,
+      network: inaccessibleNetwork,
+    });
+    expect(standardRoutes.some((route) => route.modes.includes('transit'))).toBe(true);
+  });
+
+  it('RG4 : la pluie ajoute un avertissement et penalise le score si la sensibilite est activee', () => {
+    const rainyNetwork: TransportNetwork = {
+      ...network,
+      gtfs: {
+        ...network.gtfs,
+        weather: { ...network.gtfs.weather, condition: 'light_rain' },
+      },
+    };
+    const base = { origin: LANDMARKS[0], destination: LANDMARKS[1], network: rainyNetwork };
+
+    const sensitive = planRoutes({ ...base, profile: { ...DEFAULT_PROFILE, avoidRain: true } });
+    const indifferent = planRoutes({ ...base, profile: { ...DEFAULT_PROFILE, avoidRain: false } });
+
+    const bikeSensitive = sensitive.find((route) => route.id === 'bike');
+    const bikeIndifferent = indifferent.find((route) => route.id === 'bike');
+
+    expect(bikeSensitive?.warnings.some((warning) => /pluie/i.test(warning))).toBe(true);
+    expect(bikeIndifferent?.warnings.some((warning) => /pluie/i.test(warning))).toBe(false);
+    expect(bikeSensitive!.score).toBeLessThan(bikeIndifferent!.score);
+  });
+
+  it('borne chaque score sur l\'intervalle 0-100', () => {
+    const routes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[4], // Bellecour -> Vaise: option longue, penalites fortes
+      profile: { ...DEFAULT_PROFILE, maxWalkMinutes: 5, accessibilityNeed: true },
+      network,
+    });
+
+    expect(routes.length).toBeGreaterThan(0);
+    for (const route of routes) {
+      expect(route.score).toBeGreaterThanOrEqual(0);
+      expect(route.score).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it('ventile le CO2 par segment: le velo est plus sobre que le transport public sur la meme origine-destination', () => {
+    const routes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      profile: DEFAULT_PROFILE,
+      network,
+    });
+
+    const bike = routes.find((route) => route.id === 'bike');
+    const transit = routes.find((route) => route.id === 'transit');
+
+    expect(bike).toBeDefined();
+    expect(transit).toBeDefined();
+    expect(bike!.carbonGrams).toBeLessThan(transit!.carbonGrams);
+    // Le CO2 evite est toujours positif ou nul face a la reference voiture individuelle.
+    for (const route of routes) {
+      expect(route.carbonSavedGrams).toBeGreaterThanOrEqual(0);
+      expect(route.carbonGrams).toBe(route.legs.reduce((sum, leg) => sum + leg.carbonGrams, 0));
+    }
+  });
+});
+
+describe('haversineDistanceKm', () => {
+  it('retrouve la distance de reference d\'un degre de longitude a l\'equateur', () => {
+    expect(haversineDistanceKm({ lat: 0, lon: 0 }, { lat: 0, lon: 1 })).toBeCloseTo(111.2, 0);
+  });
+
+  it('est symetrique et nulle sur un point identique', () => {
+    expect(haversineDistanceKm(LANDMARKS[0], LANDMARKS[0])).toBe(0);
+    expect(haversineDistanceKm(LANDMARKS[0], LANDMARKS[1])).toBeCloseTo(
+      haversineDistanceKm(LANDMARKS[1], LANDMARKS[0]),
+      10,
+    );
+  });
+});
+
+describe('matchesEnabledModes (RG1)', () => {
+  const routes = planRoutes({
+    origin: LANDMARKS[0],
+    destination: LANDMARKS[1],
+    profile: DEFAULT_PROFILE,
+    network,
+  });
+
+  it('masque les options dont un mode principal est desactive', () => {
+    const bikeTransit = routes.find((route) => route.id === 'bike-transit');
+    expect(bikeTransit).toBeDefined();
+    expect(matchesEnabledModes(bikeTransit!, ['walk', 'bike', 'scooter', 'transit', 'carpool'])).toBe(true);
+    expect(matchesEnabledModes(bikeTransit!, ['walk', 'transit'])).toBe(false);
+    expect(matchesEnabledModes(bikeTransit!, ['walk', 'bike'])).toBe(false);
+  });
+
+  it('ne filtre pas la marche d\'approche des options multimodales', () => {
+    const transit = routes.find((route) => route.id === 'transit');
+    expect(transit).toBeDefined();
+    // La marche est desactivee mais reste un mode d'appoint: l'option transit survit.
+    expect(matchesEnabledModes(transit!, ['transit'])).toBe(true);
   });
 });
