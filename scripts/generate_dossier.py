@@ -202,7 +202,34 @@ ACCENT_REPLACEMENTS = (
     ("trajets programmes", "trajets programmés"), ("trajet programme", "trajet programmé"),
     ("est derive", "est dérivé"), ("derive de l'objectif", "dérivé de l'objectif"),
     # Mots sans ambiguite.
-    ("increment accepte", "incrément accepté"), ("explicitement acceptes", "explicitement acceptés"), ("qu'a l'usage", "qu'à l'usage"),
+    ("increment accepte", "incrément accepté"), ("explicitement acceptes", "explicitement acceptés"),
+    ("je prefere", "je préfère"), ("j'ai prefere", "j'ai préféré"),
+    ("me suis fixe", "me suis fixé"), ("me suis fixee", "me suis fixée"),
+    ("me suis impose", "me suis imposé"), ("me suis imposee", "me suis imposée"),
+    ("me suis pose", "me suis posé"), ("me suis posee", "me suis posée"),
+    ("j'ai pioche", "j'ai pioché"),
+    ("avoir constate", "avoir constaté"), ("Bogue constate", "Bogue constaté"),
+    ("perimetre impose", "périmètre imposé"), ("mode prefere", "mode préféré"),
+    ("cote produit", "côté produit"), ("et remplace un select", "et remplacé un select"),
+    ("concue", "conçue"), ("concus", "conçus"), ("concu", "conçu"),
+    ("regressions", "régressions"), ("regression", "régression"),
+    ("passe derive", "passe dérivé"), ("aleatoires", "aléatoires"), ("aleatoire", "aléatoire"),
+    ("velo partage", "vélo partagé"), ("creee", "créée"), ("crees", "créés"),
+    ("desactivees", "désactivées"), ("desactive", "désactivé"),
+    ("delegue", "délègue"), ("PWA persiste", "PWA persiste"),
+    ("ventilee", "ventilée"), ("ventile", "ventilé"),
+    ("regeneres", "régénérés"), ("regenere", "régénéré"),
+    ("isolee", "isolée"), ("j'ai isole", "j'ai isolé"),
+    ("etre exporte", "être exporté"), ("dedies", "dédiés"), ("dediee", "dédiée"), ("dedie", "dédié"),
+    ("verrouillee", "verrouillée"), ("verrouille par", "verrouillé par"),
+    ("abandonnes", "abandonnés"), ("ordonnees", "ordonnées"),
+    ("presentee", "présentée"), ("pilote reporte", "pilote reporté"),
+    ("jours ouvres", "jours ouvrés"), ("recuperables", "récupérables"),
+    ("facilite", "facilité"), ("vecus", "vécus"), ("econome", "économe"),
+    ("ecrite", "écrite"), ("hypotheque", "hypothèque"), ("regenerer", "régénérer"),
+    ("memoire", "mémoire"), ("decoule", "découle"), ("evidemment", "évidemment"),
+    ("derriere", "derrière"), ("fixee", "fixée"), ("posee", "posée"),
+    ("detaillent", "détaillent"), ("resserrant", "resserrant"), ("qu'a l'usage", "qu'à l'usage"),
     ("cote navigateur", "côté navigateur"), ("independants", "indépendants"),
     ("independante", "indépendante"), ("independant", "indépendant"),
     ("remplacables", "remplaçables"), ("remplacable", "remplaçable"),
@@ -861,9 +888,9 @@ def cover_page() -> list:
             [
                 ["Livrable", "Description"],
                 ["Application PWA", "React 19 + TypeScript, mobile first, installable, geolocalisation temps reel, carte MapLibre GL."],
-                ["APIs reelles", "GTFS TCL (ODbL), GBFS Velo'v v3, GBFS Dott, OSRM, api-adresse (BAN), Open-Meteo."],
-                ["Fonctionnalites", "F1 comptes + profils, F2 planificateur multimodal + GPS, F3 integration transport, option suivi carbone."],
-                ["Qualite", f"TypeScript strict, ESLint, {TEST_COUNT} tests unitaires Vitest, audit axe-core WCAG 2.1 A/AA sans violation sur {A11Y_SCREENS} ecrans, scenario E2E GPS bloquant et banc de performance scriptés ; RGPD par minimisation, limites documentees."],
+                ["APIs reelles", "GTFS TCL (ODbL), GBFS Velo'v v3, GBFS Dott, alertes trafic SIRI (data.grandlyon.com), OSRM, BAN, Photon, Open-Meteo."],
+                ["Fonctionnalites", "F1 comptes + profils et objectifs, F2 planificateur multimodal (trajets programmes, routines) + geolocalisation, F3 integration transport, option suivi carbone."],
+                ["Qualite", f"TypeScript strict, ESLint, {TEST_COUNT} tests unitaires Vitest, audit axe-core WCAG 2.1 A/AA sans violation sur {A11Y_SCREENS} ecrans, scenario E2E de planification bloquant et banc de performance scriptés ; RGPD par minimisation, limites documentees."],
             ],
             widths=[95, CONTENT_WIDTH - 95],
         ),
@@ -912,25 +939,25 @@ def section_1() -> list:
     return [
         p("1. Contexte, objectifs client et besoins", "h1"),
         p(
-            "Une metropole d'environ 500 000 habitants, engagee dans la transition ecologique, souhaite une plateforme "
-            "unifiee de mobilite urbaine. Le constat exprime par la commanditaire (Claire Henette, UrbanFlow Mobility) "
-            "tient en trois problemes structurels : la <b>congestion</b> des axes routiers aux heures de pointe, la "
-            "<b>pollution</b> generee par l'autosolisme, et la <b>fragmentation</b> des services de transport : chaque "
-            "operateur (transport public, velos en libre-service, trottinettes, covoiturage) impose aujourd'hui sa propre "
-            "application, ses comptes et sa billettique.",
+            "Le point de depart, c'est l'email de Claire Henette pour une metropole d'environ 500 000 habitants engagee "
+            "dans la transition ecologique. En le relisant plusieurs fois, j'y ai vu trois problemes de fond plutot qu'une "
+            "liste de fonctionnalites : la <b>congestion</b> aux heures de pointe, la <b>pollution</b> liee a l'autosolisme, "
+            "et surtout la <b>fragmentation</b> des services de transport. Aujourd'hui, chaque operateur (transport public, "
+            "velos en libre-service, trottinettes, covoiturage) impose sa propre application, ses comptes et sa billettique, "
+            "et c'est l'usager qui fait le travail d'assemblage.",
         ),
         p(
-            "UrbanFlow Mobility repond a ce besoin par une application web progressive (PWA) qui reunit la planification "
-            "multimodale, la disponibilite temps reel des services partages et la mesure de l'impact carbone de chaque "
-            "deplacement, avec une exigence forte : etre <b>mobile first</b>, car l'usage se fait en marchant, en attendant "
-            "un metro ou au guidon d'un velo.",
+            "Ma reponse est une application web progressive (PWA) qui reunit au meme endroit la planification multimodale, "
+            "la disponibilite temps reel des services partages et l'impact carbone de chaque deplacement. Je me suis impose "
+            "une exigence des le depart : concevoir <b>mobile first</b>, parce qu'on utilise ce genre d'outil en marchant, "
+            "en attendant un metro ou au guidon d'un velo, rarement assis devant un grand ecran.",
         ),
         p("1.1 Enjeux metiers et objectifs economiques", "h2"),
         p(
-            "Les enjeux sont hierarchises par priorite : <b>P1</b> conditionne la raison d'etre de la plateforme et est "
-            "traite dès le MVP ; <b>P2</b> est necessaire a la conformite et a l'adoption ; <b>P3</b> structure la trajectoire "
-            "economique a moyen terme. Cette hierarchisation determine l'ordre du backlog (section 5) et le perimetre "
-            "assume en section 2.3.",
+            "Pour ne pas tout traiter au meme niveau, j'ai classe les enjeux par priorite : <b>P1</b> pour ce qui justifie "
+            "l'existence meme de la plateforme (traite dès le MVP), <b>P2</b> pour ce qui conditionne la conformite et "
+            "l'adoption, <b>P3</b> pour la trajectoire economique a moyen terme. C'est ce classement qui a dicte l'ordre de "
+            "mon backlog (section 5) et le perimetre que j'ai choisi de ne pas couvrir (section 2.3).",
         ),
         table(
             [
@@ -955,9 +982,10 @@ def section_1() -> list:
         ),
         p("1.2 Economie du projet : couts de build et de run", "h2"),
         p(
-            "Les montants ci-dessous constituent un <b>scenario budgetaire interne</b>, et non un devis de marché. Ils utilisent "
-            "un TJM conventionnel de 450 EUR et 32 h analytiques par sprint (section 5.3). Une analyse de sensibilite est fournie "
-            "pour separer la decision d'architecture d'une fausse precision financiere ; le chiffrage final releve de la DSI.",
+            "Un mot d'honnetete avant les chiffres : les montants ci-dessous sont un <b>scenario budgetaire interne</b> que "
+            "j'ai construit avec un TJM conventionnel de 450 EUR et 32 h par sprint (section 5.3), pas un devis de marché. "
+            "J'ai prefere ajouter une analyse de sensibilite plutot que d'afficher une precision financiere que je ne peux "
+            "pas garantir ; le chiffrage final appartient a la DSI de la metropole.",
         ),
         table(
             [
@@ -972,10 +1000,11 @@ def section_1() -> list:
             widths=[125, 170, CONTENT_WIDTH - 295],
         ),
         p(
-            "<b>Lecture de l'arbitrage.</b> Dans le scenario interne, la PWA évite la duplication immediate de deux interfaces "
-            "natives. Le gain n'est pas presente comme un fait de marché : il depend du perimetre, des competences et des devis. "
-            "La decision reste robuste car une seule base de code reduit les surfaces de test et de maintenance, tandis que "
-            "l'architecture en adaptateurs preserve une migration native ou serveur ulterieure.",
+            "Ce que j'en retire pour la decision : la PWA m'évite de developper et de maintenir deux applications natives "
+            "en parallele. Je ne presente pas ce gain comme un fait de marché, il depend du perimetre, des competences et "
+            "des devis reels. Mais meme si mes hypotheses bougent, l'arbitrage tient : une seule base de code, c'est moins "
+            "de surface de test et de maintenance, et l'architecture en adaptateurs laisse la porte ouverte a une migration "
+            "native ou serveur plus tard.",
         ),
         p("1.3 Besoins utilisateurs par persona", "h2"),
         table(
@@ -1002,11 +1031,11 @@ def section_1() -> list:
         ),
         p("1.4 Ce que le document engage", "h2"),
         p(
-            "Ce dossier depasse la reponse aux besoins immediats : chaque choix (architecture en adaptateurs, standards "
-            "ouverts, modele de donnees type GTFS/GBFS, PWA installable) est motive par les <b>evolutions probables</b> du "
-            "service : ouverture a de nouveaux operateurs, passage a une API metropolitaine, montee en charge et "
-            "reglementations futures. Les sections 4 et 8 explicitent ces trajectoires pour ne pas figer la solution dans "
-            "ses choix initiaux.",
+            "J'ai essaye de ne pas repondre uniquement au besoin immediat. Derriere chaque choix (architecture en "
+            "adaptateurs, standards ouverts, modele de donnees type GTFS/GBFS, PWA installable), il y a une question que je "
+            "me suis posee : que se passe-t-il quand un nouvel operateur arrive, quand il faudra une API metropolitaine, "
+            "quand la charge ou la reglementation evoluera ? Les sections 4 et 8 detaillent ces trajectoires pour que la "
+            "solution ne reste pas figee dans ses choix initiaux.",
         ),
         PageBreak(),
     ]
@@ -1039,32 +1068,33 @@ def section_2() -> list:
             widths=[34, 150, CONTENT_WIDTH - 184],
         ),
         p(
-            "Identifiants : <b>F1 a F3</b> designent les fonctionnalites obligatoires du sujet, <b>F4</b> la fonctionnalite au "
-            "choix retenue. Ces identifiants sont utilises sans exception dans tout le dossier (sections 7, 11, 12 et 13) et "
-            "dans la checklist de tracabilite du depot.",
+            "Pour s'y retrouver : <b>F1 a F3</b> sont les fonctionnalites obligatoires du sujet et <b>F4</b> la "
+            "fonctionnalite au choix que j'ai retenue. Je garde ces identifiants tout au long du dossier (sections 7, 11, "
+            "12 et 13) et dans la checklist du depot, pour qu'on puisse suivre chaque exigence jusqu'a sa preuve.",
         ),
         p("2.2 Exigences non fonctionnelles (contraintes C1 a C12)", "h2"),
         p(
-            "Les douze contraintes du sujet sont traitees comme des exigences de premier rang, integrees au backlog au "
-            "meme titre que les fonctionnalites. La matrice de couverture complete, preuve par preuve, figure en "
-            "section 12. Trois d'entre elles ont structure la conception :",
+            "J'ai integre les douze contraintes du sujet dans le backlog au meme titre que les fonctionnalites, plutot "
+            "que de les traiter en fin de projet. La matrice de couverture complete est en section 12. Trois d'entre elles "
+            "ont vraiment façonne la conception :",
         ),
-        bullet("<b>C1 PWA / C10 performances</b> : application installable, service worker en strategie stale-while-revalidate sur le shell et les fallbacks locaux, page hors-ligne dediee ; les flux tiers ne sont pas annonces comme caches. Chaque appel externe a un timeout de 8 s et un repli explicite."),
-        bullet("<b>C2 responsive / UX mobile first</b> : la cible principale est un ecran de smartphone tenu d'une main : carte plein ecran, feuille de trajets glissable (bottom sheet), actions principales accessibles au pouce ; le bureau devient un shell trois colonnes."),
-        bullet("<b>C7 accessibilite / C12 normes transport</b> : navigation clavier complete, libelles ARIA, contrastes AA, et qualification PMR de chaque itineraire a partir du champ GTFS wheelchair_boarding."),
+        bullet("<b>C1 PWA / C10 performances</b> : l'application s'installe, le service worker garde en cache le shell et les fallbacks locaux (stale-while-revalidate), et une page hors-ligne prend le relais. Je n'annonce pas les flux tiers comme caches, ce serait faux ; en revanche chaque appel externe a un timeout de 8 s et un repli prevu."),
+        bullet("<b>C2 responsive / UX mobile first</b> : j'ai conçu d'abord pour un smartphone tenu d'une main, avec la carte en plein ecran, une feuille de trajets glissable et les actions principales sous le pouce. La version bureau en decoule, sous forme de shell a trois colonnes."),
+        bullet("<b>C7 accessibilite / C12 normes transport</b> : navigation clavier complete, libelles ARIA, contrastes AA, et surtout la qualification PMR de chaque itineraire a partir du champ GTFS wheelchair_boarding, parce qu'un badge d'accessibilite faux est pire que pas de badge."),
         p("2.3 Hors perimetre assume de cette version", "h2"),
         bullet("Reservation et paiement unifies : necessite des accords billettiques operateurs ; l'architecture cible (section 8) reserve l'emplacement d'un service dedie."),
         bullet("Covoiturage dynamique et gamification : demandent une masse critique d'utilisateurs simultanes et un backend de comptes centralises ; le mode covoiturage est deja present dans le moteur de scoring pour une activation future."),
         bullet("Guidage GPS pas-a-pas embarque : le produit assume un positionnement de pur planificateur (comparer, programmer, suivre ses objectifs) ; le guidage temps reel releve des applications de navigation dediees vers lesquelles un trajet peut etre exporte a terme."),
         p("2.4 Optimisation par IA : une phase 1 a base de regles, assumee", "h2"),
         p(
-            "Le sujet evoque une IA d'optimisation des itineraires. Le MVP met en oeuvre un moteur de recommandation <b>a base "
-            "de regles ponderees</b> (section 7.1) plutot qu'un modele appris, et ce choix est deliberatement motive :",
+            "Le sujet evoque une IA d'optimisation des itineraires. J'ai choisi pour ce MVP un moteur de recommandation "
+            "<b>a base de regles ponderees</b> (section 7.1) plutot qu'un modele appris, et ce n'est pas un renoncement "
+            "par facilite. Voici mon raisonnement :",
         ),
-        bullet("<b>Demarrage a froid</b> : un modele appris exige des donnees d'usage (trajets proposes, choisis, abandonnes) ; au lancement il n'en existe aucune. Les regles produisent precisement ces donnees labellisees."),
-        bullet("<b>Tension avec le RGPD</b> : une personnalisation apprise suppose de centraliser les donnees de deplacement, exactement ce que la minimisation locale (C8, C11) s'interdit. L'arbitrage a ete tranche en faveur du RGPD."),
-        bullet("<b>Explicabilite</b> : un refus d'option a une personne PMR se justifie par une regle lisible (arret non accessible), la ou un score appris serait indefendable devant une collectivite garante d'un service universel."),
-        bullet("<b>Trajectoire</b> : le scoring pondere est la phase 1 obligatoire de tout systeme de recommandation ; un re-ordonnancement appris sur les donnees collectees est prevu au palier 2, une fois le backend et une base legale en place."),
+        bullet("<b>Demarrage a froid</b> : un modele appris a besoin de donnees d'usage (trajets proposes, choisis, abandonnes), et au lancement il n'y en a aucune. Le moteur a regles produit justement ces donnees labellisees."),
+        bullet("<b>Tension avec le RGPD</b> : personnaliser par apprentissage suppose de centraliser les donnees de deplacement, exactement ce que ma strategie de minimisation locale (C8, C11) s'interdit. J'ai tranche en faveur du RGPD."),
+        bullet("<b>Explicabilite</b> : quand l'application ecarte une option pour une personne PMR, je peux montrer la regle (arret non accessible). Un score appris serait indefendable devant une collectivite garante d'un service universel."),
+        bullet("<b>Trajectoire</b> : le scoring pondere est de toute facon la phase 1 de n'importe quel systeme de recommandation. Un re-ordonnancement appris sur les donnees collectees viendra au palier 2, une fois le backend et une base legale en place."),
         PageBreak(),
     ]
 
@@ -1184,9 +1214,11 @@ def section_3() -> list:
             widths=[82, 130, 160, CONTENT_WIDTH - 372],
         ),
         p(
-            "<b>Arbitrage methodologique.</b> Scrum adapte borne le risque d'API a une semaine ; Kanban fournit la visibilite "
-            "quotidienne et les pratiques XP (tests, integration continue, refactoring) securisent chaque increment. Le projet "
-            "ne pretend pas reproduire une equipe fictive : les roles sont des angles de responsabilite portes par un candidat unique.",
+            "Au final, je n'ai pas choisi une methode contre les autres, j'ai pioche. Scrum adapte me donne des sprints "
+            "d'une semaine, ce qui limite a quelques jours le cout d'une hypothese fausse sur une API. Kanban m'apporte la "
+            "visibilite quotidienne, et les pratiques XP (tests, integration continue, refactoring) securisent chaque "
+            "increment. Je ne pretends pas avoir reproduit une equipe : les roles decrits plus loin sont des angles de "
+            "responsabilite que j'ai portes seul.",
         ),
         Spacer(1, 10),
     ]
@@ -1197,10 +1229,11 @@ def section_4() -> list:
         p("4. Recommandation et arbitrages", "h1"),
         p("4.1 Recommandation", "h2"),
         p(
-            "<b>Lancer le scenario B (PWA autonome) comme MVP en s'interdisant tout choix qui bloquerait le scenario C "
-            "(PWA + API modulaire), qui constitue la cible.</b> La PWA livree prouve les parcours critiques avec de vraies "
-            "donnees open data ; la couche d'acces aux donnees est isolee dans des adaptateurs (transportApi, externalApis) "
-            "dont la signature ne changera pas quand les appels passeront par l'API metropolitaine.",
+            "Ma recommandation tient en une phrase : <b>lancer le scenario B (PWA autonome) comme MVP, en s'interdisant "
+            "tout choix qui bloquerait le scenario C (PWA + API modulaire), qui reste la cible</b>. Concretement, la PWA "
+            "livree prouve les parcours critiques avec de vraies donnees open data, et j'ai isole toute la couche d'acces "
+            "aux donnees dans des adaptateurs (transportApi, externalApis) dont la signature ne changera pas le jour ou "
+            "les appels passeront par l'API metropolitaine.",
         ),
         p("4.2 Consequences explicites de chaque arbitrage", "h2"),
         table(
@@ -1256,12 +1289,12 @@ def section_5() -> list:
         p("5. Pilotage : methode, roles, outils, amelioration continue", "h1"),
         p("5.1 Approche iterative retenue : Scrum adapte", "h2"),
         p(
-            "Le projet est conduit en <b>Scrum</b> avec des sprints d'une semaine, adaptes a un contexte individuel de "
-            "certification : les ceremonies sont conservees mais resserrees, et leur deroulement precis est detaille au "
-            "paragraphe 5.2. Le choix d'un cycle court est motive par le risque principal du projet : la dependance a des "
-            "APIs open data dont le comportement reel ne se decouvre qu'a l'usage. Un sprint d'une semaine borne le cout "
-            "d'une mauvaise hypothese a cinq jours. Le kanban (A faire / En cours / En revue / Termine) rend l'avancement "
-            "visible en continu, et la checklist de tracabilite (paragraphe 5.4) relie chaque exigence du sujet a sa preuve.",
+            "J'ai conduit le projet en <b>Scrum</b> avec des sprints d'une semaine, adaptes a un contexte individuel de "
+            "certification : j'ai garde les ceremonies mais en les resserrant (le deroulement precis est au paragraphe "
+            "5.2). Pourquoi un cycle aussi court ? Parce que mon principal risque etait la dependance a des APIs open data "
+            "dont le comportement reel ne se decouvre qu'a l'usage. Avec une semaine par sprint, une mauvaise hypothese me "
+            "coute au pire cinq jours. À côté, un kanban (A faire / En cours / En revue / Termine) me rend l'avancement "
+            "visible en continu, et la checklist de tracabilite (5.4) relie chaque exigence du sujet a sa preuve.",
         ),
         sprint_timeline(),
         p("Figure 1 - Planification des 6 sprints du MVP, avec revue de conformite et retrospective a chaque iteration.", "caption"),
@@ -1280,11 +1313,11 @@ def section_5() -> list:
         ]),
         p("5.3 Roles, responsabilites et charges (matrice RACI)", "h2"),
         p(
-            "Sur ce projet de certification, un contributeur unique cumule tous les roles : ils sont neanmoins distingues "
-            "explicitement car ils correspondent a des <b>responsabilites et des moments de decision differents</b>, et parce "
-            "que la trajectoire cible (section 8.2) suppose une equipe reelle. La charge indiquee est une <b>ventilation "
-            "analytique des 32 h du candidat</b>, pas la somme de cinq personnes. Elle inclut developpement, ceremonies, QA "
-            "et documentation. <b>R</b> = realise, <b>A</b> = approuve (responsable final), "
+            "Sur ce projet, je cumule evidemment tous les roles. Je les distingue quand meme, parce qu'ils correspondent "
+            "a des <b>moments de decision differents</b> (prioriser n'est pas coder, accepter n'est pas tester) et parce "
+            "que la trajectoire cible (section 8.2) suppose une vraie equipe. La charge indiquee est une <b>ventilation "
+            "analytique de mes 32 h hebdomadaires</b>, pas la somme de cinq personnes ; elle couvre developpement, "
+            "ceremonies, QA et documentation. <b>R</b> = realise, <b>A</b> = approuve (responsable final), "
             "<b>C</b> = consulte, <b>I</b> = informe.",
         ),
         table(
@@ -1343,10 +1376,11 @@ def section_5() -> list:
             widths=[58, CONTENT_WIDTH - 58],
         ),
         p(
-            "Bilan d'iteration (esprit Kaizen) : chaque retrospective a produit au moins un ajustement applique au sprint "
-            "suivant : reduction de la taille des marqueurs carte apres surcharge visuelle constatee, message de statut des "
-            "sources de donnees apres confusion live/simule, verrouillage du select natif au profit d'un composant accessible. "
-            "Les frictions restantes et leur traitement sont detailles en section 10.",
+            "Dans l'esprit Kaizen, je me suis impose que chaque retrospective produise au moins un ajustement applique "
+            "des le sprint suivant. Quelques exemples vecus : j'ai reduit la taille des marqueurs de la carte apres avoir "
+            "constate la surcharge visuelle avec les donnees reelles, ajoute un message de statut des sources apres m'etre "
+            "moi-meme demande si je regardais du live ou du simule, et remplace un select natif par un composant "
+            "accessible. Les frictions restantes et leur traitement sont en section 10.",
         ),
         Spacer(1, 10),
     ]
@@ -1427,7 +1461,8 @@ def section_6() -> list:
                 ["Moteur d'itineraires", "RoutePlanner (fonction planRoutes)", ":RoutePlanner (Fig. 3 et 4)", "src/lib/routePlanner.ts"],
                 ["Adaptateur transport", "TransportApi (loadTransportNetwork)", ":TransportApi (Fig. 4)", "src/lib/transportApi.ts"],
                 ["Adaptateur APIs externes", "ExternalApis (searchPlaces, enhanceRoutes...)", ":ExternalApis (Fig. 4)", "src/lib/externalApis.ts"],
-                ["Suivi carbone", "CarbonTracker (createTripRecord, summarizeCarbon)", ":CarbonTracker (Fig. 3 et 4)", "src/lib/carbon.ts"],
+                ["Trajet programme / routine", "PlannedTrip, RecurringTrip (plannedTrips.ts)", "Programmer trajets et routines (Fig. 2)", "src/lib/plannedTrips.ts"],
+                ["Suivi carbone", "CarbonTracker (saveTripRecord, summarizeCarbon)", ":CarbonTracker (Fig. 3 et 4)", "src/lib/carbon.ts"],
             ],
             widths=[95, 130, 105, CONTENT_WIDTH - 330],
         ),
@@ -1446,9 +1481,9 @@ def section_7() -> list:
     return [
         p("7. Specifications de la fonctionnalite cle", "h1"),
         p(
-            "Fonctionnalite retenue : <b>le planificateur d'itineraires multimodal avec geolocalisation temps reel</b> (F2), "
-            "coeur de la proposition de valeur et point de convergence de F1 (profil), F3 (donnees transport) et F4 "
-            "(suivi carbone).",
+            "J'ai choisi de specifier en detail <b>le planificateur d'itineraires multimodal avec geolocalisation temps "
+            "reel</b> (F2). C'est le coeur de la proposition de valeur, et c'est la que tout converge : le profil (F1) "
+            "alimente le scoring, les donnees transport (F3) alimentent les options, et le suivi carbone (F4) en decoule.",
         ),
         p("7.1 Specification fonctionnelle", "h2"),
         table(
@@ -1458,7 +1493,7 @@ def section_7() -> list:
                 ["Entrees", "Depart, arrivee (GeoPoint), profil de mobilite : modes preferes, marche maximale (min), priorite PMR, sensibilite pluie ; reseau transport (arrets GTFS, stations GBFS, incidents, meteo)."],
                 ["Regles de gestion", "RG1 : seuls les modes actives par l'utilisateur produisent des options. RG2 : si priorite PMR, tout segment transport public doit partir et arriver a un arret wheelchair_boarding=1, sinon l'option est marquee non accessible (et si aucun arret accessible n'est a proximite, l'option n'est pas proposee). RG3 : un segment velo/trottinette n'est propose que si une station avec au moins 1 vehicule disponible (GBFS live) est a moins de 400 m ; sinon l'option est ecartee. RG4 : en cas de pluie signalee et sensibilite activee, les options concernees portent un avertissement et voient leur score penalise. RG5 : au-dela de la marche maximale du profil, un avertissement est ajoute et le score penalise d'un point par minute excedentaire (le curseur de marche du profil agit donc directement sur le classement)."],
                 ["Scoring", "Modele additif a penalites, borne sur 0-100. On part de la fiabilite de l'option, on ajoute un bonus par mode prefere (+8 chacun), puis on retranche : la duree (x0,85 par minute), le carbone (/55), une penalite d'inaccessibilite sur profil PMR (-45), et les avertissements (-6 chacun, dont le depassement de marche RG5). Les six coefficients sont regroupes dans une constante SCORING_WEIGHTS en tete de routePlanner.ts et couverts par un test unitaire."],
-                ["Sorties", "2 a 5 options RouteOption ordonnees : titre, resume, segments detailles (from/to, distance, duree, CO2), avertissements, score, badge PMR, geometrie affichable et instructions pas-a-pas."],
+                ["Sorties", "Jusqu'a 6 options RouteOption ordonnees : titre, resume, segments detailles (from/to, distance, duree, CO2), avertissements, score, badge PMR, geometrie affichable et instructions pas-a-pas."],
                 ["Geolocalisation", "Position temps reel utilisable comme point de depart (« Ma position ») : premiere acquisition getCurrentPosition puis suivi watchPosition (haute precision, timeout 10 s) qui maintient le repere sur la carte, precision affichee dans la barre de statut ; hors metropole, bandeau explicite d'offre reduite."],
                 ["Etats d'erreur", "Permission GPS refusee : saisie manuelle du depart via la recherche, statut affiché. API de routage indisponible : trace directe locale avec statut degradé affiché. Flux GBFS indisponible : fallback local date et signale. Aucune option possible : message explicite et suggestions de modes a activer."],
             ],
@@ -1481,9 +1516,9 @@ def section_7() -> list:
         ),
         p("7.3 Limites assumees du MVP heuristique", "h2"),
         p(
-            "Conformement a l'exigence de ne pas figer la solution par des choix implicites, les limites du moteur du MVP sont "
-            "nommees explicitement. Elles ne remettent pas en cause les parcours, mais bornent la portee des resultats et "
-            "definissent le perimetre du service d'itineraires cible (section 8.2).",
+            "Je prefere nommer moi-meme les limites de mon moteur plutot que de laisser un lecteur les decouvrir. Elles "
+            "ne remettent pas en cause les parcours, mais elles disent honnetement jusqu'ou vont les resultats, et elles "
+            "dessinent en creux le service d'itineraires cible (section 8.2).",
         ),
         table(
             [
@@ -1496,11 +1531,11 @@ def section_7() -> list:
             widths=[110, CONTENT_WIDTH - 280, 170],
         ),
         p("7.4 Criteres d'acceptation verifies", "h2"),
-        bullet(f"Un trajet Bellecour vers Part-Dieu produit six options multimodales scorees (preuve fonctionnelle en section 11). Le banc local ({PERF_RUNS} repetitions, cache froid) mesure un premier rendu médian de {FCP_MED} ms (p95 {FCP_P95} ms) ; la meme campagne reste a rejouer sur appareil mobile et reseau 4G documentes pour engager un seuil contractuel."),
+        bullet(f"Un trajet Bellecour vers Part-Dieu produit six options multimodales scorees (je le montre en section 11). Mon banc local ({PERF_RUNS} repetitions, cache froid) mesure un premier rendu médian de {FCP_MED} ms (p95 {FCP_P95} ms) ; il faudra rejouer la meme campagne sur un vrai telephone et un reseau 4G avant de s'engager sur un seuil."),
         bullet("Le CO2 est ventile par leg : une option velo + transport public affiche une empreinte inferieure a une option 100 % transport public sur la meme distance (verifie section 11.2 sur le trajet Bellecour vers Part-Dieu)."),
         bullet("Le profil PMR ne propose que des correspondances accessibles et l'affiche explicitement ; les cinq regles de gestion RG1 a RG5 sont couvertes par des tests unitaires (filtrage des modes, arrets accessibles, station a 400 m, pluie, marche maximale)."),
         bullet("La coupure du reseau apres chargement initial laisse l'application utilisable : shell servi par le service worker, fallback transport local signale."),
-        bullet("Le parcours complet de planification (recherche, options, programmation datee, marquage fait, statistiques mises a jour) est verrouille par le scenario E2E rejouable (npm run e2e)."),
+        bullet("Le parcours complet de planification (recherche, options, programmation datee, marquage fait, statistiques mises a jour) est couvert par le scenario E2E que je peux rejouer a la demande (npm run e2e)."),
         Spacer(1, 10),
     ]
 
@@ -1516,10 +1551,10 @@ def section_8() -> list:
             "caption",
         ),
         p("8.1 Principes structurants", "h2"),
-        bullet("<b>Separation stricte des responsabilites</b> : interface decoupee en modules fonctionnels (auth, planification, trajets programmes, carbone, profil, tutoriel, layout) orchestrés par MobilityMapApp, App.tsx ramené a un shell compact ; services metier (routePlanner, plannedTrips, carbon), adaptateurs de donnees (transportApi, externalApis), securite (auth). Aucune logique metier dans les composants d'affichage."),
+        bullet("<b>Separation des responsabilites</b> : j'ai decoupe l'interface en modules fonctionnels (auth, planification, trajets programmes, carbone, profil, tutoriel, layout) orchestrés par MobilityMapApp, avec App.tsx ramené a un simple shell. Les services metier (routePlanner, plannedTrips, carbon), les adaptateurs de donnees (transportApi, externalApis) et la securite (auth) vivent a part : je ne mets aucune logique metier dans les composants d'affichage."),
         bullet("<b>Contrats de donnees standards</b> : les types GTFS/GBFS reprennent les champs utiles des references [S4-S5]. Un nouvel operateur conforme passe par un adaptateur ; la validation runtime complete des schemas reste un verrou du palier 2."),
-        bullet("<b>Degradation gracieuse systematique</b> : chaque dependance externe a un comportement de repli defini (fallback local, trace directe, incidents simules etiquetes) et un statut visible : l'application n'a pas d'etat mort."),
-        bullet(f"<b>Mobile first et eco-conception</b> : bundle d'entree mesuré a {ENTRY_KB} kB gzip (build courant), carte chargee a la demande, polices auto-hebergees, donnees plafonnees, cache offline et zero tracker. Ces indicateurs prouvent une reduction des transferts initiaux, sans revendiquer un bilan environnemental complet."),
+        bullet("<b>Degradation gracieuse systematique</b> : je me suis fixe la regle qu'aucune dependance externe n'existe sans comportement de repli (fallback local, trace directe, incidents simules etiquetes) ni statut visible. L'application ne doit jamais avoir d'etat mort."),
+        bullet(f"<b>Mobile first et eco-conception</b> : bundle d'entree mesuré a {ENTRY_KB} kB gzip sur le build courant, carte chargee a la demande, polices auto-hebergees, donnees plafonnees, cache offline et zero tracker. Ces indicateurs montrent une vraie reduction des transferts initiaux ; je ne pretends pas pour autant avoir fait un bilan environnemental complet."),
         p("8.2 Evolutivite : trajectoire en trois paliers", "h2"),
         table(
             [
@@ -1536,10 +1571,10 @@ def section_8() -> list:
         ),
         p("8.3 Maintenabilite mesuree", "h2"),
         bullet("TypeScript strict detecte les incoherences internes a la compilation ; il ne valide pas les JSON externes a l'execution. Les adaptateurs, tests de mapping et fallbacks bornent ce risque ; une validation de schema runtime est planifiee au palier 2."),
-        bullet(f"{TEST_COUNT} tests unitaires cibles sur les fonctions a risque (scoring et RG1 a RG5, trajets programmes et routines recurrentes, alertes TCL (mapping SIRI), authentification PBKDF2, effacement RGPD par balayage, carbone, fusion GBFS, fallbacks reseau, adaptateurs BAN/OSRM mockés) : campagne Vitest complete en moins de 2 secondes, rejouée a chaque build."),
+        bullet(f"J'ai concentre mes {TEST_COUNT} tests unitaires sur les fonctions ou une regression ferait le plus mal : scoring et regles RG1 a RG5, trajets programmes et routines recurrentes, mapping des alertes TCL (SIRI), authentification PBKDF2, effacement RGPD, carbone, fusion GBFS, fallbacks reseau, adaptateurs BAN/OSRM mockés. La campagne Vitest complete tient en moins de 2 secondes et tourne a chaque build."),
         bullet("Interface modulaire : le plus grand module UI (l'orchestrateur MobilityMapApp) reste sous les 600 lignes ; chaque domaine fonctionnel est un module indépendant, remplaçable et révisable isolément."),
         bullet("ESLint avec regles react-hooks et jsx-a11y bloquantes : les regressions d'accessibilite sont traitees comme des erreurs de build."),
-        bullet("Une commande unique de verification (npm run check) et des scripts reproductibles (generate:gtfs, screens) : tout contributeur reconstruit l'ensemble a l'identique."),
+        bullet("Enfin, une commande unique de verification (npm run check) et des scripts reproductibles (generate:gtfs, screens) : n'importe quel contributeur, moi compris dans six mois, reconstruit l'ensemble a l'identique."),
         Spacer(1, 10),
     ]
 
@@ -1549,9 +1584,10 @@ def section_9() -> list:
         p("9. Securite (OWASP) et protection des donnees (RGPD)", "h1"),
         p("9.1 Couverture raisonnee de l'OWASP Top 10:2025 [S1]", "h2"),
         p(
-            "La version livree est un demonstrateur autonome sans backend : la session locale prouve F1 mais ne constitue "
-            "pas une frontiere d'autorisation pour un service public. Le tableau distingue donc les mesures effectives des "
-            "controles requis dans l'architecture metropolitaine.",
+            "Je prefere etre clair sur le statut de l'authentification : la version livree est un demonstrateur autonome "
+            "sans backend. La session locale prouve F1, mais je ne pretends pas qu'elle constitue une frontiere "
+            "d'autorisation pour un service public. C'est pourquoi le tableau distingue ce que j'ai reellement mis en "
+            "place de ce qui devra exister dans l'architecture metropolitaine.",
         ),
         table(
             [
@@ -1576,16 +1612,19 @@ def section_9() -> list:
                 ["Consentement prealable", "La geolocalisation n'est jamais activee sans action explicite ; refus = mode manuel etiquete, sans perte de fonctionnalite de planification."],
                 ["Minimisation", "Seuls sont conserves les agregats utiles au suivi carbone (mode, distance, CO2, date) : jamais de trace GPS brute persistee."],
                 ["Localite des donnees", "Dans cette version, profils et historiques restent dans le navigateur de l'usager : aucune transmission a un serveur UrbanFlow."],
-                ["Droit a l'effacement", "Suppression de l'historique en un clic ; la suppression de compte purge par balayage toutes les clés locales de l'utilisateur (profil, trajets enregistrés, itineraires sauvegardés, historique de recherche, session), comportement verifié par test unitaire."],
+                ["Droit a l'effacement", "Suppression de l'historique en un clic ; la suppression de compte purge par balayage toutes les clés locales de l'utilisateur (profil, trajets programmes et routines, itineraires sauvegardés, historique carbone, session), comportement verifié par test unitaire."],
                 ["Transparence", "La provenance de chaque flux (live ou simule) et l'usage de la position sont affiches dans l'interface."],
             ],
             widths=[92, CONTENT_WIDTH - 92],
         ),
         p(
-            "Les appels aux APIs publiques (BAN, OSRM, GBFS, Open-Meteo) transitent en HTTPS et ne portent pas "
-            "d'identifiant de compte UrbanFlow. Ils ne sont toutefois <b>pas anonymes</b> : les tiers voient notamment "
-            "l'adresse IP et, pour le geocodage/routage/meteo, des lieux ou coordonnees ponctuels. La notice de transparence "
-            "doit donc nommer ces destinataires, finalites et durees ; un proxy metropolitain constitue la cible [S3]. Le flux d'alertes TCL applique deja ce principe : les identifiants du compte data.grandlyon.com restent cote serveur (endpoint /api/tcl-alertes avec cache), jamais exposes au navigateur.",
+            "Un point auquel je tiens : les appels aux APIs publiques (BAN, Photon, OSRM, GBFS, Open-Meteo) passent en "
+            "HTTPS et ne portent aucun identifiant de compte UrbanFlow, mais ils ne sont <b>pas anonymes</b> pour autant. "
+            "Les tiers voient l'adresse IP et, pour le geocodage, le routage ou la meteo, des lieux ponctuels. La notice "
+            "de transparence devra donc nommer ces destinataires, finalites et durees, et un proxy metropolitain reste la "
+            "cible [S3]. J'ai d'ailleurs deja applique ce principe pour le flux d'alertes TCL : les identifiants du compte "
+            "data.grandlyon.com restent cote serveur (endpoint /api/tcl-alertes avec cache) et n'atteignent jamais le "
+            "navigateur.",
         ),
         Spacer(1, 10),
     ]
@@ -1612,9 +1651,9 @@ def section_10() -> list:
         bug_workflow_diagram(),
         p("Figure 6 - Cycle de vie d'un bogue, de la detection a la recette en preproduction.", "caption"),
         bullet("<b>Qualification</b> : chaque ticket contient environnement, etapes de reproduction, resultat attendu/observe, capture et criticite (bloqueur / majeur / mineur)."),
-        bullet("<b>Regle de non-regression</b> : tout bogue sur une fonction pure (scoring, carbone, fusion de flux) donne lieu a un test unitaire ecrit avant le correctif : le bogue ne peut pas revenir silencieusement."),
+        bullet("<b>Regle de non-regression</b> : pour tout bogue sur une fonction pure (scoring, carbone, fusion de flux), j'ecris d'abord le test unitaire qui le reproduit, puis le correctif. Comme ca, le bogue ne peut pas revenir sans que je le sache."),
         bullet("<b>Preproduction</b> : recette sur donnees figees (GTFS cache, GBFS fallback) pour etre deterministe, smoke tests PWA (installation, offline, permissions GPS refusees), audit contrastes et navigation clavier."),
-        bullet("<b>Criteres de sortie</b> : zero bloqueur, majeurs explicitement acceptes par le PO, npm run check vert, checklist de deploiement signee."),
+        bullet("<b>Criteres de sortie</b> : zero bloqueur, les majeurs restants explicitement acceptes cote produit, npm run check vert et checklist de deploiement signee."),
         p("10.3 Exemples reels traites pendant la production", "h2"),
         table(
             [
@@ -1642,8 +1681,9 @@ def section_11() -> list:
     return [
         p("11. Realisation : parcours applicatifs commentes", "h1"),
         p(
-            "Les captures suivantes sont generees automatiquement (Playwright + Chromium) sur l'application en fonctionnement "
-            "reel, connectee aux flux publics : elles sont reproductibles a l'identique via les scripts du depot.",
+            "Plutot que de decrire l'application, je prefere la montrer. Les captures suivantes sont prises par script "
+            "(Playwright + Chromium) sur l'application en fonctionnement reel, connectee aux flux publics : n'importe qui "
+            "peut les regenerer a l'identique depuis le depot.",
         ),
         p("11.1 Authentification et identite visuelle", "h2"),
         screenshot("01-auth-desktop-crop.png", 152,
@@ -1723,28 +1763,31 @@ def section_13() -> list:
         ),
         p("13.2 Bilan au regard du besoin", "h2"),
         p(
-            "La version livree couvre le perimetre impose : F1, F2, F3 et F4 sont démontrables sur les parcours complets, "
-            "alimentés par des donnees reelles la ou elles sont accessibles (GTFS statique TCL, alertes trafic TCL SIRI via compte data.grandlyon.com, disponibilites GBFS Velo'v et "
-            "Dott, geometries OSRM, geocodage BAN + Photon, meteo Open-Meteo), dans une PWA installable, mobile first, concue vers "
-            "WCAG 2.1 AA et minimisant les donnees personnelles. Ce bilan s'entend dans les limites documentees en "
-            "section 7.3 : la partie transport public reste heuristique (pas de graphe horaire), certains delais restent "
-            "estimés (pas de SIRI Estimated Timetables branché) et les alertes simulées ne servent plus que de repli sans compte operateur. Les choix d'architecture "
-            "n'hypothequent aucune evolution : la trajectoire vers l'API metropolitaine est documentee et les contrats de "
-            "donnees sont stables.",
+            "Au moment de conclure, je crois pouvoir dire que la version livree couvre le perimetre impose : F1, F2, F3 "
+            "et F4 se demontrent sur des parcours complets, alimentes par des donnees reelles partout ou elles sont "
+            "accessibles (GTFS statique TCL, alertes trafic SIRI via le compte data.grandlyon.com, disponibilites GBFS "
+            "Velo'v et Dott, geometries OSRM, geocodage BAN + Photon, meteo Open-Meteo), dans une PWA installable, mobile "
+            "first, concue vers WCAG 2.1 AA et econome en donnees personnelles. Je maintiens ce bilan dans les limites que "
+            "j'ai documentees en section 7.3 : la partie transport public reste heuristique (pas de graphe horaire), "
+            "certains delais sont encore estimés (pas de SIRI Estimated Timetables branché), et les alertes simulées ne "
+            "servent plus que de repli quand aucun compte operateur n'est configure. Surtout, aucun choix d'architecture "
+            "n'hypotheque la suite : la trajectoire vers l'API metropolitaine est ecrite et les contrats de donnees sont "
+            "stables.",
         ),
         p("13.3 Perspectives", "h2"),
-        bullet("Etendre l'integration SIRI aux prochains passages et positions vehicules (Estimated Timetables / Vehicle Monitoring) via le compte data.grandlyon.com deja utilise pour les alertes."),
+        bullet("Etendre l'integration SIRI aux prochains passages et aux positions des vehicules (Estimated Timetables / Vehicle Monitoring) : le compte data.grandlyon.com que j'utilise deja pour les alertes ouvre ces flux."),
         bullet("Migrer l'API Adresse depreciee vers le service de geocodage de la Geoplateforme, l'adaptateur isolant ce changement [S8]."),
         bullet("Deployer l'API metropolitaine (palier 2) : comptes centralises, historique multi-appareils, notifications push."),
-        bullet("Ajouter une validation runtime des schemas externes et des tests de contrat ; TypeScript seul ne valide pas le JSON recu."),
+        bullet("Ajouter une validation runtime des schemas externes et des tests de contrat : TypeScript me protege a la compilation, pas contre un JSON inattendu recu a l'execution."),
         bullet("Ouvrir la reservation unifiee et le covoiturage dynamique (palier 3), puis mesurer le report modal reel via les indicateurs agreges anonymises."),
         bullet("Etendre les preuves : tests de composants React, audit manuel clavier/lecteur d'ecran complétant l'audit axe-core deja vert (et rejoué en CI a chaque push), et campagne de performance rejouée sur appareil mobile et reseau 4G documentes."),
         Spacer(1, 14),
         table(
             [
                 ["UrbanFlow Mobility - synthese"],
-                ["Une plateforme de mobilite urbaine intelligente, sobre et interoperable : concue mobile first, construite "
-                 "sur les standards ouverts du transport, verifiee par des preuves reproductibles, et prete a grandir avec la metropole."],
+                ["Une plateforme de mobilite urbaine sobre et interoperable : je l'ai concue mobile first, construite sur "
+                 "les standards ouverts du transport, verifiee par des preuves que chacun peut rejouer, et pensee pour "
+                 "grandir avec la metropole."],
             ],
             widths=[CONTENT_WIDTH],
             header=True,
@@ -1759,8 +1802,9 @@ def section_14() -> list:
         p("14. Sources, hypotheses et preparation aux criteres oraux", "h1"),
         p("14.1 References officielles consultees", "h2"),
         p(
-            "Les references sont datees de consultation au 18/07/2026. Elles etayent les standards et les limites ; elles "
-            "ne transforment pas une preuve de conception en certification automatique.",
+            "J'ai date toutes mes references au jour de consultation (18/07/2026). Elles etayent les standards que "
+            "j'utilise et les limites que je reconnais ; je ne m'en sers pas pour transformer une preuve de conception en "
+            "certification automatique.",
         ),
         table(
             [
@@ -1795,9 +1839,10 @@ def section_14() -> list:
         PageBreak(),
         p("14.3 Simulation C2.3 : perte des services critiques avant lancement", "h2"),
         p(
-            "<b>Scenario.</b> Sept jours avant le pilote citoyen, le serveur OSRM communautaire refuse l'usage applicatif et "
-            "l'API Adresse depreciee devient instable. La fonctionnalite F2, coeur de la valeur, est menacee. La methode combine "
-            "5 pourquoi (cause racine), matrice impact/probabilite et ideation contrainte par le delai.",
+            "<b>Le scenario que je me suis pose.</b> Sept jours avant le pilote citoyen, le serveur OSRM communautaire "
+            "refuse l'usage applicatif et l'API Adresse depreciee devient instable. F2, le coeur de la valeur, est menacee. "
+            "Pour y repondre, je combine les 5 pourquoi (cause racine), une matrice impact/probabilite et une ideation "
+            "contrainte par le delai.",
         ),
         table(
             [
@@ -1811,9 +1856,9 @@ def section_14() -> list:
             widths=[145, CONTENT_WIDTH - 145],
         ),
         p(
-            "Cette reponse preserve les actifs passes, traite d'abord la continuite de service et transforme le risque identifie "
-            "en exigences d'exploitation mesurables. Elle couvre explicitement les quatre criteres C2.3 : source, impact, court "
-            "terme et moyen terme.",
+            "Ce qui me semble important dans cette reponse : elle preserve ce qui a deja ete construit, elle traite "
+            "d'abord la continuite de service, et elle transforme un incident en exigences d'exploitation mesurables. "
+            "Elle couvre les quatre attendus du critere C2.3 : source, impact, court terme et moyen terme.",
         ),
     ]
 
@@ -1823,11 +1868,11 @@ def section_15() -> list:
         PageBreak(),
         p("15. Matrice d'evaluation et dossier de preuves", "h1"),
         p(
-            "Cette annexe rend explicite la correspondance entre chaque critere du dossier ecrit et une preuve localisable. "
-            "L'echelle de la grille (<b>non satisfait = 0 %, partiellement satisfait = 50 %, satisfait = 100 %</b>) est "
-            "rappelee pour la lecture ; ce document ne s'auto-note pas : pour chaque critere, il propose une preuve et "
-            "laisse au jury l'attribution du niveau. Les criteres reserves a l'oral, a la simulation ou a la revue de code "
-            "sont prepares en 15.5.",
+            "Cette annexe relie chaque critere du dossier ecrit a une preuve localisable. Je rappelle l'echelle de la "
+            "grille (<b>non satisfait = 0 %, partiellement satisfait = 50 %, satisfait = 100 %</b>) pour faciliter la "
+            "lecture, mais je ne me note pas moi-meme : pour chaque critere, je propose une preuve et je laisse au jury "
+            "l'attribution du niveau. Les criteres qui se jouent a l'oral, en simulation ou en revue de code sont prepares "
+            "en 15.5.",
         ),
         p("15.1 Matrice des criteres evaluables sur le dossier ecrit", "h2"),
         table(
@@ -1867,19 +1912,19 @@ def section_15() -> list:
             widths=[170, CONTENT_WIDTH - 242, 72],
         ),
         p(
-            "<b>Synthese de lecture :</b> chacun des 10 criteres evaluables sur l'ecrit dispose d'une preuve localisable, "
-            "citee dans la colonne centrale et verifiable dans le depot ou dans ce document. L'appreciation de chaque "
-            "critere, sur l'echelle de la grille, releve du jury et des epreuves en face-a-face.",
+            "<b>Ce que cette matrice dit, et ce qu'elle ne dit pas :</b> chacun des 10 criteres evaluables sur l'ecrit a "
+            "une preuve localisable, citee dans la colonne centrale et verifiable dans le depot ou dans ce document. "
+            "L'appreciation elle-meme, sur l'echelle de la grille, appartient au jury et aux epreuves en face-a-face.",
         ),
         PageBreak(),
         p("15.2 Artefacts de pilotage datés et versionnés", "h2"),
         p(
-            "Le journal ci-dessous est extrait de l'historique Git du 17/07/2026. Chaque identifiant court permet de "
-            "retrouver le diff, la motivation et les fichiers touches par l'increment.",
+            "Le journal ci-dessous vient de mon historique Git. Chaque identifiant court permet de retrouver le diff, la "
+            "motivation et les fichiers touches par l'increment : c'est ma memoire de projet, telle quelle.",
         ),
         table(
             [
-                ["Commit", "Increment / decision", "Trace exploitable par le jury"],
+                ["Commit", "Increment / decision", "Ce qu'on peut y verifier"],
                 ["63a2129", "Socle Vite, React et TypeScript", "Configuration stricte, lint et build : point de depart reproductible."],
                 ["1a21f5d", "Application UrbanFlow complete", "F1-F4, architecture UI/services et premier parcours de bout en bout."],
                 ["7dcf047", "Etat d'arrivee mobile et premier scenario E2E", "Increment issu d'une friction de parcours ; test rejouable par npm run e2e."],
@@ -1893,10 +1938,10 @@ def section_15() -> list:
             widths=[62, 165, CONTENT_WIDTH - 227],
         ),
         p(
-            "Les artefacts de travail consultables sont <i>CHECKLIST.md</i> (exigence vers preuve), "
-            "<i>.github/workflows/ci.yml</i> (verrou qualite), les tests <i>src/lib/*.test.ts</i>, les scripts de generation "
-            "et les captures reproductibles dans <i>output/screens/</i>. Aucune validation d'un client ou d'un pair n'est "
-            "revendiquee lorsqu'elle n'a pas eu lieu.",
+            "Pour verifier par vous-memes : <i>CHECKLIST.md</i> (exigence vers preuve), <i>.github/workflows/ci.yml</i> "
+            "(verrou qualite), les tests <i>src/lib/*.test.ts</i>, les scripts de generation et les captures "
+            "reproductibles dans <i>output/screens/</i>. Et une regle que je me suis fixee : je ne revendique aucune "
+            "validation d'un client ou d'un pair qui n'a pas eu lieu.",
         ),
         p("15.3 Proces-verbal de verification terminale", "h2"),
         table(
@@ -1916,8 +1961,9 @@ def section_15() -> list:
         PageBreak(),
         p("15.4 Registre des hypotheses financieres et portes de decision", "h2"),
         p(
-            "Les valeurs budgetaires ne sont pas presentees comme des prix de marché. Le registre distingue leur base, "
-            "leur domaine de validite et l'action qui les transforme en engagement opposable.",
+            "Je le redis ici : mes valeurs budgetaires ne sont pas des prix de marché. Ce registre precise sur quoi "
+            "chaque hypothese repose, jusqu'ou elle est valable, et surtout quelle action la transformerait en engagement "
+            "opposable.",
         ),
         table(
             [
