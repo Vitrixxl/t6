@@ -84,7 +84,7 @@ A11Y_VIOLATIONS = A11Y_M["violations"]
 A11Y_SCREENS = A11Y_M["screens"]
 A11Y_DATE = _fr_date(A11Y_M["generatedAt"])
 E2E_DATE = _fr_date(E2E_M["generatedAt"])
-E2E_STATUS = "4/4 assertions bloquantes passees" if E2E_M["passed"] else "ECHEC"
+E2E_STATUS = f"{E2E_M['assertions']}/{E2E_M['assertions']} assertions bloquantes passees" if E2E_M["passed"] else "ECHEC"
 
 _test_files = sorted((ROOT / "src" / "lib").glob("*.test.ts"))
 TEST_FILES = len(_test_files)
@@ -560,10 +560,10 @@ def use_case_diagram() -> Drawing:
     # Cas d'utilisation du citoyen (colonne gauche), espaces pour loger les stereotypes.
     citizen_cases = [
         ("S'inscrire /\nse connecter", 186, 239),
-        ("Gerer profil\nde mobilite", 186, 187),
-        ("Planifier trajet\nmultimodal", 186, 135),
-        ("Suivre\nnavigation GPS", 186, 83),
-        ("Sauvegarder\nses trajets", 186, 31),
+        ("Gerer profil\net objectifs", 186, 187),
+        ("Comparer options\nmultimodales", 186, 135),
+        ("Programmer trajets\net routines", 186, 83),
+        ("Suivre trajets faits\net historique", 186, 31),
     ]
     for label, cx, cy in citizen_cases:
         oval_label(d, cx, cy, 108, 30, label)
@@ -583,11 +583,11 @@ def use_case_diagram() -> Drawing:
     d.add(Line(444, 74, 382, 182, strokeColor=MUTED))
 
     # Relations UML normalisees (trait pointille, fleche ouverte, stereotype).
-    # <<include>> : le guidage GPS reutilise obligatoirement un trajet planifie.
+    # <<include>> : programmer un trajet (date ou routine) reutilise obligatoirement une option comparee.
     dashed_stereotype_arrow(d, 186, 98, 186, 120, "<<include>>")
-    # <<include>> : toute planification charge le profil de mobilite (scoring RG1/RG2/RG5).
+    # <<include>> : toute comparaison charge le profil de mobilite (scoring RG1/RG2/RG5).
     dashed_stereotype_arrow(d, 186, 150, 186, 172, "<<include>>")
-    # <<extend>> : le suivi carbone etend la sauvegarde de trajet (comportement optionnel).
+    # <<extend>> : le suivi carbone etend le marquage "fait" d'un trajet (comportement optionnel).
     dashed_stereotype_arrow(d, 288, 84, 232, 42, "<<extend>>")
     return d
 
@@ -979,16 +979,20 @@ def section_2() -> list:
                 ["ID", "Exigence du sujet", "Implementation livree"],
                 ["F1", "Inscription / connexion et profils de mobilite personnalises",
                  "Comptes locaux avec mot de passe derive PBKDF2-SHA-256 (120 000 iterations, sel aleatoire, Web Crypto), "
-                 "profil : modes preferes, marche max, priorite PMR, sensibilite pluie, objectif CO2 hebdomadaire."],
+                 "profil : modes preferes, marche max, priorite PMR, sensibilite pluie, budget CO2 et objectifs "
+                 "hebdomadaires de trajets et de CO2 evite."],
                 ["F2", "Planificateur d'itineraires multimodal avec geolocalisation temps reel",
-                 "Moteur planRoutes : options marche / velo partage / trottinette / metro-tram / combinaisons, suivi GPS "
-                 "watchPosition haute precision, navigation pas-a-pas avec progression et instructions."],
+                 "Moteur planRoutes : six options (a pied, velo partage, trottinette, transport en commun, combinaison "
+                 "velo + transport en commun, covoiturage) comparees et scorees ; position GPS temps reel utilisable comme "
+                 "point de depart (watchPosition, precision affichee) ; trajets programmables a une date ou en routines "
+                 "recurrentes (aller-retour, pause/reprise) avec marquage fait/annule."],
                 ["F3", "Integration d'APIs de transport (GTFS, velos/trottinettes partages)",
                  "GTFS statique reel TCL-SYTRAL (ODbL) integre au build ; GBFS v3 Velo'v et GBFS v2.3 Dott interroges en "
                  "direct dans le navigateur ; fallback local documente en cas de coupure reseau."],
                 ["F4", "Fonctionnalite au choix : calculateur d'empreinte carbone avec suivi personnel",
-                 "CO2 par trajet (facteurs g/km par mode), CO2 évité vs voiture individuelle, historique local, "
-                 "objectif hebdomadaire avec jauge de progression, suppression en un clic (RGPD)."],
+                 "CO2 par trajet (facteurs g/km par mode), CO2 évité vs voiture individuelle, historique alimente par les "
+                 "trajets marques faits, objectifs hebdomadaires et mensuels avec jauges de progression, suppression en un "
+                 "clic (RGPD)."],
             ],
             widths=[34, 150, CONTENT_WIDTH - 184],
         ),
@@ -1009,7 +1013,7 @@ def section_2() -> list:
         p("2.3 Hors perimetre assume de cette version", "h2"),
         bullet("Reservation et paiement unifies : necessite des accords billettiques operateurs ; l'architecture cible (section 8) reserve l'emplacement d'un service dedie."),
         bullet("Covoiturage dynamique et gamification : demandent une masse critique d'utilisateurs simultanes et un backend de comptes centralises ; le mode covoiturage est deja present dans le moteur de scoring pour une activation future."),
-        bullet("Incidents temps reel operateur : le flux SIRI Lite du reseau TCL est publie sous cle d'API ; les incidents sont simules et clairement etiquetes comme tels dans l'interface."),
+        bullet("Guidage GPS pas-a-pas embarque : le produit assume un positionnement de pur planificateur (comparer, programmer, suivre ses objectifs) ; le guidage temps reel releve des applications de navigation dediees vers lesquelles un trajet peut etre exporte a terme."),
         p("2.4 Optimisation par IA : une phase 1 a base de regles, assumee", "h2"),
         p(
             "Le sujet evoque une IA d'optimisation des itineraires. Le MVP met en oeuvre un moteur de recommandation <b>a base "
@@ -1095,7 +1099,7 @@ def section_3() -> list:
                  "Faible",
                  "6 semaines",
                  "Tres bonne (bundle optimise, cache)",
-                 "Limitee sans backend : persistance locale, pas de temps reel operateur sous cle."],
+                 "Limitee sans backend : persistance locale, secrets operateurs cantonnes a un endpoint proxy du serveur."],
                 ["C. PWA + API modulaire (cible)",
                  "Moyen",
                  "MVP 6 semaines puis increments",
@@ -1195,8 +1199,9 @@ def section_4() -> list:
                  "L'API actuelle est isolee dans externalApis.ts ; migration planifiee vers le service de geocodage de la Geoplateforme, sans modifier l'UI [S8]."],
                 ["Montee en charge au-dela du client seul", "Certaine a terme", "Fort",
                  "Trajectoire scenario C documentee (section 8) ; aucun couplage UI/donnees bloquant."],
-                ["Flux temps reel operateur sous cle (SIRI/GTFS-RT)", "Actee", "Faible au MVP",
-                 "Incidents simules etiquetes ; convention a signer avec SYTRAL en phase de deploiement reel."],
+                ["Indisponibilite du flux alertes TCL (SIRI, compte data.grandlyon.com)", "Possible", "Faible",
+                 "Endpoint proxy avec cache memoire servi en cas d'erreur amont ; sans compte configure, repli sur des "
+                 "incidents simules explicitement etiquetes dans l'interface."],
             ],
             widths=[140, 65, 70, CONTENT_WIDTH - 275],
         ),
@@ -1259,9 +1264,9 @@ def section_5() -> list:
                 ["Product Owner (metropole)", "Priorise le backlog par valeur citoyenne, valide les demos, arbitre le perimetre.", "Role analytique simule : chaque increment est confronte au sujet officiel ; aucune validation d'un client reel n'est revendiquee."],
                 ["Scrum Master", "Garantit la methode, leve les blocages, anime les retrospectives.", "Role analytique : checklist et journal de decisions ; actions de retrospective verifiees au sprint suivant."],
                 ["Tech Lead / architecte", "Tranche les choix techniques, contient la dette, revoit le code.", "Decisions consignees en sections 3, 4 et 8 ; auto-revue structuree, historique Git et CI. Aucune revue par un pair n'est inventee."],
-                ["Developpeur front / PWA", "Implemente UI, accessibilite, service worker, cartographie.", "Sprints 2, 3 et 5 (auth, carte, GPS, suivi carbone)."],
+                ["Developpeur front / PWA", "Implemente UI, accessibilite, service worker, cartographie.", "Sprints 2, 3 et 5 (auth, carte, planificateur et routines, suivi carbone)."],
                 ["Developpeur data / API", "Adaptateurs GTFS/GBFS, scripts d'ingestion, contrats de donnees.", "Sprint 4 (fetch_gtfs.py, transportApi.ts et ses tests)."],
-                ["QA", "Strategie de tests, non-regression, recette de preproduction.", "Tests Vitest, scenario E2E de navigation, verification terminale avant chaque livraison."],
+                ["QA", "Strategie de tests, non-regression, recette de preproduction.", "Tests Vitest, scenario E2E de planification, verification terminale avant chaque livraison."],
             ],
             widths=[92, 168, CONTENT_WIDTH - 260],
         ),
@@ -1276,7 +1281,7 @@ def section_5() -> list:
                  "Verrou automatique : un increment ne peut etre fusionne si l'un de ces controles echoue. Localement, la meme chaine est rejouee par <i>npm run check</i> et les scripts d'audit."],
                 ["Suivi du backlog", "Backlog et tracabilite exigence &rarr; preuve tenus dans <i>CHECKLIST.md</i> versionne ; kanban (A faire / En cours / En revue / Termine) pour l'avancement",
                  "L'etat d'avancement est revu a chaque daily ; la checklist conditionne la definition of done et sert de support a la recette."],
-                ["Qualite", "ESLint (react-hooks, jsx-a11y), Vitest + jsdom, Playwright (E2E navigation, audit axe-core, banc de performance)", f"Lint bloquant et {TEST_COUNT} tests unitaires executes avant tout build ; parcours GPS, audit WCAG et mesures de charge rejouables a la demande et rejoues en CI (npm run e2e / audit:a11y / bench:perf)."],
+                ["Qualite", "ESLint (react-hooks, jsx-a11y), Vitest + jsdom, Playwright (E2E planification, audit axe-core, banc de performance)", f"Lint bloquant et {TEST_COUNT} tests unitaires executes avant tout build ; parcours de planification, audit WCAG et mesures de charge rejouables a la demande et rejoues en CI (npm run e2e / audit:a11y / bench:perf)."],
                 ["UI / design", "Tailwind CSS 4, shadcn/ui, MapLibre GL, Bricolage Grotesque / Figtree", "Systeme de design tokenise (oklch), composants accessibles."],
                 ["Donnees", "python3 stdlib (fetch_gtfs.py), APIs open data", "Ingestion GTFS reproductible au build, flux GBFS live au runtime."],
                 ["Livraison", "npm run check (lint + test + build), generation PDF ReportLab", "Une commande unique valide l'ensemble avant livraison."],
@@ -1290,7 +1295,7 @@ def section_5() -> list:
                 ["Define", "Irritant cible par sprint, ex. sprint 4 : les donnees transport simulees ne prouvent pas l'interoperabilite reelle. "],
                 ["Measure", "Indicateurs objectifs : nombre de tests verts, temps de build, poids du bundle, nombre d'arrets/stations reels charges, avertissements lint."],
                 ["Analyze", "Analyse de cause : le blocage venait du format GTFS (zip CSV volumineux) inadapte a un client web."],
-                ["Improve", "Solution : ingestion au build (130 arrets TCL reels filtres) + GBFS interroge en direct ; verification par captures et tests."],
+                ["Improve", "Solution : ingestion au build (600 arrets TCL reels sur toute la metropole) + GBFS interroge en direct ; verification par captures et tests."],
                 ["Control", "Verrouillage : tests unitaires sur la fusion GBFS, npm run check bloquant, statut des sources visible dans l'UI."],
             ],
             widths=[58, CONTENT_WIDTH - 58],
@@ -1319,12 +1324,13 @@ def section_6() -> list:
         scaled(use_case_diagram(), 0.92),
         p(
             "Figure 2 - Le citoyen accede a cinq cas d'utilisation apres authentification. Trois relations normalisees "
-            "structurent le modele : <b>&lt;&lt;include&gt;&gt;</b> de « Suivre navigation GPS » vers « Planifier trajet multimodal » "
-            "(le guidage reutilise obligatoirement un trajet planifie) ; <b>&lt;&lt;include&gt;&gt;</b> de « Planifier trajet multimodal » "
-            "vers « Gerer profil de mobilite » (toute planification charge les preferences qui alimentent le scoring, RG1/RG2/RG5) ; "
-            "<b>&lt;&lt;extend&gt;&gt;</b> de « Suivre empreinte carbone » vers « Sauvegarder ses trajets » (l'enregistrement est volontaire, "
-            "donc un comportement optionnel qui etend le cas de base). L'operateur de mobilite alimente le systeme en flux "
-            "GTFS/GBFS et signale les incidents ; la metropole administre et consulte les indicateurs d'usage.",
+            "structurent le modele : <b>&lt;&lt;include&gt;&gt;</b> de « Programmer trajets et routines » vers « Comparer options "
+            "multimodales » (programmer un trajet - a une date ou en routine recurrente - reutilise obligatoirement une option "
+            "comparee) ; <b>&lt;&lt;include&gt;&gt;</b> de « Comparer options multimodales » vers « Gerer profil et objectifs » "
+            "(toute comparaison charge les preferences qui alimentent le scoring, RG1/RG2/RG5) ; <b>&lt;&lt;extend&gt;&gt;</b> de "
+            "« Suivre empreinte carbone » vers « Suivre trajets faits et historique » (le marquage fait est volontaire, donc un "
+            "comportement optionnel qui etend le cas de base). L'operateur de mobilite alimente le systeme en flux GTFS/GBFS et "
+            "signale les incidents (alertes SIRI) ; la metropole administre et consulte les indicateurs d'usage.",
             "caption",
         ),
         KeepTogether([
@@ -1411,8 +1417,8 @@ def section_7() -> list:
                 ["Regles de gestion", "RG1 : seuls les modes actives par l'utilisateur produisent des options. RG2 : si priorite PMR, tout segment transport public doit partir et arriver a un arret wheelchair_boarding=1, sinon l'option est marquee non accessible (et si aucun arret accessible n'est a proximite, l'option n'est pas proposee). RG3 : un segment velo/trottinette n'est propose que si une station avec au moins 1 vehicule disponible (GBFS live) est a moins de 400 m ; sinon l'option est ecartee. RG4 : en cas de pluie signalee et sensibilite activee, les options concernees portent un avertissement et voient leur score penalise. RG5 : au-dela de la marche maximale du profil, un avertissement est ajoute et le score penalise d'un point par minute excedentaire (le curseur de marche du profil agit donc directement sur le classement)."],
                 ["Scoring", "Modele additif a penalites, borne sur 0-100. On part de la fiabilite de l'option, on ajoute un bonus par mode prefere (+8 chacun), puis on retranche : la duree (x0,85 par minute), le carbone (/55), une penalite d'inaccessibilite sur profil PMR (-45), et les avertissements (-6 chacun, dont le depassement de marche RG5). Les six coefficients sont regroupes dans une constante SCORING_WEIGHTS en tete de routePlanner.ts et couverts par un test unitaire."],
                 ["Sorties", "2 a 5 options RouteOption ordonnees : titre, resume, segments detailles (from/to, distance, duree, CO2), avertissements, score, badge PMR, geometrie affichable et instructions pas-a-pas."],
-                ["Geolocalisation", "Suivi continu watchPosition (haute precision, timeout 10 s) : recentrage de la carte, distance restante, validation du depart (l'utilisateur doit etre a moins de 120 m du point de depart pour lancer la navigation), progression le long du trace, etat d'arrivee a destination."],
-                ["Etats d'erreur", "Permission GPS refusee : mode manuel avec position demo etiquetee. API de routage indisponible : trace directe locale avec statut degradé affiché. Flux GBFS indisponible : fallback local date et signale. Aucune option possible : message explicite et suggestions de modes a activer."],
+                ["Geolocalisation", "Position temps reel utilisable comme point de depart (« Ma position ») : premiere acquisition getCurrentPosition puis suivi watchPosition (haute precision, timeout 10 s) qui maintient le repere sur la carte, precision affichee dans la barre de statut ; hors metropole, bandeau explicite d'offre reduite."],
+                ["Etats d'erreur", "Permission GPS refusee : saisie manuelle du depart via la recherche, statut affiche. API de routage indisponible : trace directe locale avec statut degradé affiché. Flux GBFS indisponible : fallback local date et signale. Aucune option possible : message explicite et suggestions de modes a activer."],
             ],
             widths=[78, CONTENT_WIDTH - 78],
         ),
@@ -1424,10 +1430,10 @@ def section_7() -> list:
                 ["Types de domaine (types.ts)", "GeoPoint, MobilityProfile, GtfsFeed, SharedMobilityFeed, RouteOption, RouteLeg, RouteInstruction, TripRecord : contrats TypeScript stricts partages par toute l'application, alignes sur les champs GTFS/GBFS officiels."],
                 ["Moteur (routePlanner.ts)", f"Fonctions pures sans effet de bord : haversineDistanceKm, generation d'options par mode, scoring a penalites. Testable unitairement ({PLANNER_TEST_COUNT} tests couvrant le scoring et les cinq regles RG1 a RG5), deterministe, independant du DOM : migrable tel quel cote serveur."],
                 ["Adaptateur transport (transportApi.ts)", "loadTransportNetwork() : GTFS local genere depuis le zip officiel TCL + fusion GBFS live : mergeVelovStations (station_information x station_status, GBFS v3) et mapDottVehicles (free_bike_status, v2.3) ; timeout 8 s et fallback local ; source de chaque flux exposee a l'UI."],
-                ["APIs externes (externalApis.ts)", "searchPlaces : api-adresse.data.gouv.fr (BAN) avec debounce 220 ms et AbortController ; enhanceRoutesWithLiveRouting : OSRM profils foot/bike/driving, geometries GeoJSON, instructions traduites en francais, recalcul duree/CO2/score."],
-                ["Ingestion GTFS (fetch_gtfs.py)", "Telecharge le GTFS officiel TCL (ODbL, ~43 Mo), filtre metro/tram/funiculaire et 130 arrets dans un rayon de 3,2 km, genere public/data/gtfs-feed.json ; cache 24 h, stdlib uniquement, reproductible (npm run generate:gtfs)."],
+                ["APIs externes (externalApis.ts)", "searchPlaces : fusion BAN (api-adresse, adresses et rues) + Photon/OSM (quartiers, gares, lieux), resultats types et bornes a la metropole (departement 69 + bbox), debounce 220 ms et AbortController ; enhanceRoutesWithLiveRouting : OSRM profils foot/bike/driving, geometries GeoJSON, instructions traduites en francais, recalcul duree/CO2/score."],
+                ["Ingestion GTFS (fetch_gtfs.py)", "Telecharge le GTFS officiel TCL (ODbL, ~43 Mo), filtre metro/tram/funiculaire et 600 arrets dans un rayon de 16 km (toute la metropole), genere public/data/gtfs-feed.json ; cache 24 h, stdlib uniquement, reproductible (npm run generate:gtfs)."],
                 ["Rendu carte (UrbanMap.tsx)", "MapLibre GL, sources GeoJSON reactives (traces, arrets, stations, incidents, position), mise a jour differentielle sans recreation de carte, ajustement de vue automatique sur le trajet selectionne."],
-                ["Performances", f"Debounce des recherches, annulation des requetes obsoletes, timeout reseau de 8 s, plafonds (130 arrets, 90 stations, 80 trottinettes). Build du {BUILD_DATE} : entree JS {ENTRY_KB} kB gzip ; MapLibre {MAPLIBRE_KB} kB gzip charge a la demande. Banc local reproductible ({PERF_RUNS} chargements a froid, Chromium) : premier rendu médian {FCP_MED} ms, p95 {FCP_P95} ms. Le service worker cache le shell et les fallbacks locaux, pas les reponses CORS tierces."],
+                ["Performances", f"Debounce des recherches, annulation des requetes obsoletes, timeout reseau de 8 s, plafonds (600 arrets, 500 stations, 300 trottinettes). Build du {BUILD_DATE} : entree JS {ENTRY_KB} kB gzip ; MapLibre {MAPLIBRE_KB} kB gzip charge a la demande. Banc local reproductible ({PERF_RUNS} chargements a froid, Chromium) : premier rendu médian {FCP_MED} ms, p95 {FCP_P95} ms. Le service worker cache le shell et les fallbacks locaux, pas les reponses CORS tierces."],
             ],
             widths=[105, CONTENT_WIDTH - 105],
         ),
@@ -1443,16 +1449,16 @@ def section_7() -> list:
                 ["Pas de graphe horaire GTFS", "stop_times.txt represente des centaines de milliers de lignes, incompatibles avec un traitement cote navigateur.", "Service d'itineraires serveur (OTP ou RAPTOR sur PostGIS) chargeant les horaires reels."],
                 ["Desserte approchee par frequence", "Sans horaires, on ne sait pas quelle ligne dessert quel arret : on retient un mode (metro/tram) sans afficher de numero de ligne, jamais garanti.", "Correspondances calculees sur la desserte reelle."],
                 ["Geometrie transit via profil OSRM voirie", "OSRM ne route pas le transport public ; le profil voirie approche la geometrie entre deux arrets (plus realiste que la ligne droite).", "Traces issus des shapes.txt du GTFS."],
-                ["Delais et occupation derives", "En l'absence de GTFS-RT (flux operateur sous cle), frequence et occupation sont estimees.", "Branchement GTFS-RT / SIRI apres conventionnement SYTRAL."],
+                ["Delais et occupation derives", "Les alertes trafic SIRI (SX) sont integrees en temps reel, mais sans GTFS-RT complet (Estimated Timetables), frequence et occupation restent estimees.", "Branchement SIRI ET/VM (prochains passages, positions vehicules) via le meme compte data.grandlyon.com."],
             ],
             widths=[110, CONTENT_WIDTH - 280, 170],
         ),
         p("7.4 Criteres d'acceptation verifies", "h2"),
-        bullet(f"Un trajet Bellecour vers Part-Dieu produit au moins 4 options multimodales scorees (preuve fonctionnelle en section 11). Le banc local ({PERF_RUNS} repetitions, cache froid) mesure un premier rendu médian de {FCP_MED} ms (p95 {FCP_P95} ms) ; la meme campagne reste a rejouer sur appareil mobile et reseau 4G documentes pour engager un seuil contractuel."),
-        bullet("Le CO2 est ventile par leg : une option velo + transport public affiche une empreinte inferieure a une option 100 % transport public sur la meme distance (verifie section 11.2 : 136 g contre 159 g)."),
+        bullet(f"Un trajet Bellecour vers Part-Dieu produit six options multimodales scorees (preuve fonctionnelle en section 11). Le banc local ({PERF_RUNS} repetitions, cache froid) mesure un premier rendu médian de {FCP_MED} ms (p95 {FCP_P95} ms) ; la meme campagne reste a rejouer sur appareil mobile et reseau 4G documentes pour engager un seuil contractuel."),
+        bullet("Le CO2 est ventile par leg : une option velo + transport public affiche une empreinte inferieure a une option 100 % transport public sur la meme distance (verifie section 11.2 sur le trajet Bellecour vers Part-Dieu)."),
         bullet("Le profil PMR ne propose que des correspondances accessibles et l'affiche explicitement ; les cinq regles de gestion RG1 a RG5 sont couvertes par des tests unitaires (filtrage des modes, arrets accessibles, station a 400 m, pluie, marche maximale)."),
         bullet("La coupure du reseau apres chargement initial laisse l'application utilisable : shell servi par le service worker, fallback transport local signale."),
-        bullet("Le suivi GPS met a jour position, distance restante et instruction courante sans rechargement, et bascule en etat d'arrivee a destination (scenario E2E rejouable, npm run e2e)."),
+        bullet("Le parcours complet de planification (recherche, options, programmation datee, marquage fait, statistiques mises a jour) est verrouille par le scenario E2E rejouable (npm run e2e)."),
         Spacer(1, 10),
     ]
 
@@ -1468,9 +1474,9 @@ def section_8() -> list:
             "caption",
         ),
         p("8.1 Principes structurants", "h2"),
-        bullet("<b>Separation stricte des responsabilites</b> : interface decoupee en modules fonctionnels (auth, planification, navigation, carbone, profil, layout) orchestrés par MobilityMapApp, App.tsx ramené a un shell de 77 lignes ; services metier (routePlanner, carbon, navigation), adaptateurs de donnees (transportApi, externalApis, searchHistory), securite (auth). Aucune logique metier dans les composants d'affichage."),
+        bullet("<b>Separation stricte des responsabilites</b> : interface decoupee en modules fonctionnels (auth, planification, trajets programmes, carbone, profil, tutoriel, layout) orchestrés par MobilityMapApp, App.tsx ramené a un shell compact ; services metier (routePlanner, plannedTrips, carbon), adaptateurs de donnees (transportApi, externalApis), securite (auth). Aucune logique metier dans les composants d'affichage."),
         bullet("<b>Contrats de donnees standards</b> : les types GTFS/GBFS reprennent les champs utiles des references [S4-S5]. Un nouvel operateur conforme passe par un adaptateur ; la validation runtime complete des schemas reste un verrou du palier 2."),
-        bullet("<b>Degradation gracieuse systematique</b> : chaque dependance externe a un comportement de repli defini (fallback local, trace directe, position demo) et un statut visible : l'application n'a pas d'etat mort."),
+        bullet("<b>Degradation gracieuse systematique</b> : chaque dependance externe a un comportement de repli defini (fallback local, trace directe, incidents simules etiquetes) et un statut visible : l'application n'a pas d'etat mort."),
         bullet("<b>Mobile first et eco-conception</b> : bundle d'entree mesuré a 115,45 kB gzip, carte chargee a la demande, polices auto-hebergees, donnees plafonnees, cache offline et zero tracker. Ces indicateurs prouvent une reduction des transferts initiaux, sans revendiquer un bilan environnemental complet."),
         p("8.2 Evolutivite : trajectoire en trois paliers", "h2"),
         table(
@@ -1488,8 +1494,8 @@ def section_8() -> list:
         ),
         p("8.3 Maintenabilite mesuree", "h2"),
         bullet("TypeScript strict detecte les incoherences internes a la compilation ; il ne valide pas les JSON externes a l'execution. Les adaptateurs, tests de mapping et fallbacks bornent ce risque ; une validation de schema runtime est planifiee au palier 2."),
-        bullet(f"{TEST_COUNT} tests unitaires cibles sur les fonctions a risque (scoring et RG1 a RG5, geometrie de navigation, historique de recherche, authentification PBKDF2, effacement RGPD par balayage, carbone, fusion GBFS, fallbacks reseau, adaptateurs BAN/OSRM mockés) : campagne Vitest complete en moins de 2 secondes, rejouée a chaque build."),
-        bullet("Interface modulaire : le plus grand module UI (l'orchestrateur MobilityMapApp) tient en 490 lignes ; chaque domaine fonctionnel est un module indépendant, remplaçable et révisable isolément."),
+        bullet(f"{TEST_COUNT} tests unitaires cibles sur les fonctions a risque (scoring et RG1 a RG5, trajets programmes et routines recurrentes, alertes TCL (mapping SIRI), authentification PBKDF2, effacement RGPD par balayage, carbone, fusion GBFS, fallbacks reseau, adaptateurs BAN/OSRM mockés) : campagne Vitest complete en moins de 2 secondes, rejouée a chaque build."),
+        bullet("Interface modulaire : le plus grand module UI (l'orchestrateur MobilityMapApp) reste sous les 600 lignes ; chaque domaine fonctionnel est un module indépendant, remplaçable et révisable isolément."),
         bullet("ESLint avec regles react-hooks et jsx-a11y bloquantes : les regressions d'accessibilite sont traitees comme des erreurs de build."),
         bullet("Une commande unique de verification (npm run check) et des scripts reproductibles (generate:gtfs, generate:pdf) : tout contributeur reconstruit l'ensemble a l'identique."),
         Spacer(1, 10),
@@ -1537,7 +1543,7 @@ def section_9() -> list:
             "Les appels aux APIs publiques (BAN, OSRM, GBFS, Open-Meteo) transitent en HTTPS et ne portent pas "
             "d'identifiant de compte UrbanFlow. Ils ne sont toutefois <b>pas anonymes</b> : les tiers voient notamment "
             "l'adresse IP et, pour le geocodage/routage/meteo, des lieux ou coordonnees ponctuels. La notice de transparence "
-            "doit donc nommer ces destinataires, finalites et durees ; un proxy metropolitain constitue la cible [S3].",
+            "doit donc nommer ces destinataires, finalites et durees ; un proxy metropolitain constitue la cible [S3]. Le flux d'alertes TCL applique deja ce principe : les identifiants du compte data.grandlyon.com restent cote serveur (endpoint /api/tcl-alertes avec cache), jamais exposes au navigateur.",
         ),
         Spacer(1, 10),
     ]
@@ -1550,12 +1556,12 @@ def section_10() -> list:
         table(
             [
                 ["Niveau", "Outillage", "Perimetre couvert"],
-                [f"Tests unitaires ({TEST_COUNT}, {TEST_FILES} fichiers)", "Vitest + jsdom", "Moteur d'itineraires (scoring, regles RG1 a RG5), authentification (PBKDF2, sel, messages generiques, bornes de profil, effacement RGPD), calcul carbone (facteurs, objectif, plafonds, corruption localStorage), fusion GBFS (Velo'v v3, Dott, plafonds), fallbacks de loadTransportNetwork, adaptateurs BAN et OSRM avec reseau mocké, classification meteo."],
+                [f"Tests unitaires ({TEST_COUNT}, {TEST_FILES} fichiers)", "Vitest + jsdom", "Moteur d'itineraires (scoring, regles RG1 a RG5), trajets programmes (occurrences recurrentes, pause, annulation idempotente, agregats hebdo/mensuels), authentification (PBKDF2, sel, messages generiques, bornes de profil, effacement RGPD), calcul carbone (facteurs, objectif, plafonds, corruption localStorage), fusion GBFS (Velo'v v3, Dott, plafonds), alertes TCL (mapping SIRI, severites, expiration), fallbacks de loadTransportNetwork, geocodage BAN + Photon avec reseau mocké, classification meteo."],
                 ["Analyse statique", "TypeScript strict + ESLint (react-hooks, jsx-a11y)", "Contrats de donnees, regles des hooks, accessibilite des composants : bloquant en build."],
-                ["Audit accessibilite automatisé", "axe-core injecté par Playwright sur le build de production (npm run audit:a11y)", f"{A11Y_SCREENS} ecrans audités (authentification, carte/planification, profil), regles WCAG 2.1 A et AA : {A11Y_VIOLATIONS} violation au {A11Y_DATE}. Ne remplace pas l'audit manuel clavier + lecteur d'ecran (protocole en 14.2)."],
-                ["Test de bout en bout (E2E)", "Playwright + Chromium, geolocalisation simulée (npm run e2e)", "Parcours complet sur build de production et APIs reelles, verrouille par 4 assertions bloquantes (echec du script si l'une echoue) : progression monotone, arrivee a 100 %, modale de sortie presente, retour a la planification."],
+                ["Audit accessibilite automatisé", "axe-core injecté par Playwright sur le build de production (npm run audit:a11y)", f"{A11Y_SCREENS} ecrans audités (authentification, carte/planification, hub planificateur, profil), regles WCAG 2.1 A et AA : {A11Y_VIOLATIONS} violation au {A11Y_DATE}. Ne remplace pas l'audit manuel clavier + lecteur d'ecran (protocole en 14.2)."],
+                ["Test de bout en bout (E2E)", "Playwright + Chromium, geolocalisation simulée (npm run e2e)", "Parcours complet de planification sur build de production et APIs reelles, verrouille par 5 assertions bloquantes (echec du script si l'une echoue) : options calculees, dialog de programmation, hub ouvert avec occurrence a venir, marquage fait, statistiques incrementees."],
                 ["Banc de performance", "Navigation Timing / Paint Timing, 10 chargements a froid (npm run bench:perf)", f"Premier rendu médian {FCP_MED} ms (p95 {FCP_P95} ms), chargement complet médian {LOAD_MED} ms, ~{TRANSFER_KB} kB transférés sur build local : protocole a rejouer sur appareil et reseau cibles."],
-                ["Tests manuels structures", "Scenarios de recette par sprint", "Parcours complets mobile et desktop : auth, planification, navigation GPS, offline, PMR, suppression RGPD."],
+                ["Tests manuels structures", "Scenarios de recette par sprint", "Parcours complets mobile et desktop : auth, planification, routines recurrentes, objectifs, offline, PMR, suppression RGPD."],
                 ["Verification de bout en bout", "npm run check + captures automatisees (Playwright)", f"Lint + {TEST_COUNT} tests + build production ; les ecrans de la section 11 sont generes par script, donc reproductibles."],
             ],
             widths=[92, 118, CONTENT_WIDTH - 210],
@@ -1571,12 +1577,12 @@ def section_10() -> list:
         table(
             [
                 ["Bogue constate", "Cause racine", "Correctif et verrouillage"],
-                ["Le clic 'compte demo' ne connectait pas dans les tests automatises",
-                 "Le bouton ne fait que pre-remplir le formulaire : la soumission restait necessaire",
-                 "Scenario de test corrige (remplir puis soumettre) ; libelles des actions clarifies."],
+                ["Ecrans perimes et HMR casse en developpement malgre les correctifs livres",
+                 "Service worker PWA enregistre aussi en dev : strategie cache-first servant d'anciens modules",
+                 "Enregistrement limite a la production, desinscription et purge du cache en dev ; verrouille par revue de configuration."],
                 ["Carte illisible apres branchement des donnees reelles (300+ marqueurs)",
-                 "Rayon de marqueur calibre pour 6 arrets simules, pas pour 130 arrets + 170 stations",
-                 "Rayon reduit (5 vers 3,5 px) et plafonds de donnees par couche ; controle visuel par capture avant/apres."],
+                 "Rayon de marqueur fixe calibre pour quelques arrets simules, pas pour 600 arrets + 500 stations reels",
+                 "Rayons interpoles par niveau de zoom et contrastes de couleur renforces par couche ; controle visuel par capture avant/apres."],
                 ["Erreurs lint 'process is not defined' apres ajout du script de captures",
                  "Script Node analyse avec l'environnement navigateur par defaut d'ESLint",
                  "Perimetre lint explicite (ignore du script outillage) : le check global reste bloquant."],
@@ -1600,29 +1606,32 @@ def section_11() -> list:
         p("11.1 Authentification et identite visuelle", "h2"),
         screenshot("01-auth-desktop-crop.png", 152,
                    "Ecran d'authentification (desktop) : identite 'eco-urbaine' (vert pin, creme, accent lime, Bricolage Grotesque), "
-                   "connexion, inscription et compte de demonstration. Mot de passe derive PBKDF2 avant tout stockage."),
-        screenshot_pair("02-auth-mobile.png", "07-navigation-mobile.png", 45,
-                        "A gauche : authentification mobile (mobile first, cibles tactiles genereuses). A droite : navigation GPS active : "
-                        "instruction courante, distance restante, progression et sortie protegee par confirmation."),
+                   "connexion et inscription sans aucun champ pre-rempli. Mot de passe derive PBKDF2 avant tout stockage."),
+        screenshot_pair("02-auth-mobile.png", "07-hub-mobile.png", 45,
+                        "A gauche : authentification mobile (mobile first, cibles tactiles genereuses). A droite : hub planificateur "
+                        "mobile : statistiques, objectifs hebdomadaires et mensuels avec progression, occurrences a venir a marquer "
+                        "faites ou a annuler."),
         PageBreak(),
         p("11.2 Planification multimodale sur donnees reelles", "h2"),
         screenshot("03-planner-desktop.png", 168,
-                   "Planificateur (desktop) : trajet Bellecour vers Part-Dieu. Options scorees (88/100), segments detailles : approche "
-                   "velo vers la station Velo'v BELLECOUR / ST EXUPERY (velos disponibles en GBFS live), correspondance transport public "
-                   "vers un arret GTFS TCL reel (le mode est affiché sans numero de ligne, non garanti par le MVP, cf. section 7.3). "
-                   "CO2 ventile par leg : l'option velo + transport public (136 g) est plus sobre que l'option 100 % transport public "
-                   "(159 g). Badge PMR compatible et bandeau de statut des sources live."),
+                   "Planificateur (desktop) : trajet Place Bellecour vers la gare Part-Dieu. Six options multimodales scorees "
+                   "(velo + transport en commun, transport en commun, velo, trottinette, a pied, covoiturage), segments detailles : "
+                   "approche velo vers une station Velo'v reelle (disponibilites GBFS live), correspondance vers un arret GTFS TCL "
+                   "(mode affiche sans numero de ligne, non garanti par le MVP, cf. section 7.3), CO2 ventile par segment, badge PMR "
+                   "et alertes trafic TCL temps reel affichees sur l'option concernee."),
         screenshot("06-planner-mobile.png", 54,
-                   "Meme parcours en mobile first : carte plein ecran, GPS actif (precision affichee), feuille de trajets glissable, "
-                   "alternatives comparables d'un geste et validation de proximite du depart avant navigation."),
+                   "Meme parcours en mobile first : carte plein ecran, GPS utilisable comme point de depart (precision affichee), "
+                   "feuille d'options glissable qui n'apparait qu'une fois depart et arrivee choisis, actions Planifier et Enregistrer."),
         PageBreak(),
-        p("11.3 Suivi carbone et profil de mobilite", "h2"),
-        screenshot("04-carbon-desktop.png", 168,
-                   "Apres enregistrement du trajet : 455 g de CO2 evites comptabilises, progression vers l'objectif hebdomadaire (8 %), "
-                   "historique effacable en un clic (RGPD). Le panneau de droite detaille le trajet actif et ses correspondances."),
+        p("11.3 Planificateur, objectifs et profil de mobilite", "h2"),
+        screenshot("04-planificateur-desktop.png", 168,
+                   "Hub planificateur (desktop) : routine 'Aller-retour travail' creee (jours ouvres, aller 08:30 / retour 18:00), "
+                   "occurrences materialisees sur 7 jours glissants, premier trajet marque fait qui alimente les objectifs "
+                   "hebdomadaires et mensuels (barres de progression) ainsi que le suivi carbone. En arriere-plan : une alerte "
+                   "trafic TCL temps reel (SIRI, data.grandlyon.com) remontee sur l'option transport en commun."),
         screenshot("05-profile-desktop.png", 148,
-                   "Profil et preferences : modes favoris, marche maximale, priorite PMR, deconnexion et suppression de compte. "
-                   "Ces preferences alimentent directement le scoring du planificateur (RG1, RG2, RG5)."),
+                   "Profil et preferences : modes favoris, marche maximale, budget carbone hebdomadaire, priorite PMR, relance du "
+                   "tutoriel, deconnexion et suppression de compte. Ces preferences alimentent directement le scoring (RG1, RG2, RG5)."),
         PageBreak(),
     ]
 
@@ -1638,10 +1647,10 @@ def section_12() -> list:
                 ["C3", "Normes et standards", "TypeScript strict, ESLint bloquant, standards GTFS/GBFS/GeoJSON, composants shadcn/Radix accessibles, conventions de nommage univoques."],
                 ["C4", "Securite OWASP", "Cartographie complete OWASP Top 10:2025, mesures livrees et controles cibles distingues. Auth locale explicitement limitee au demonstrateur (section 9.1)."],
                 ["C5", "Eco-conception", f"Bundle decoupe (entree {ENTRY_KB} kB gzip, carte a la demande), source maps desactivees en production, polices auto-hebergees, plafonds de donnees, cache offline, aucune ressource tierce superflue (pas de trackers)."],
-                ["C6", "Geolocalisation fiable", "watchPosition haute precision, precision affichee en metres, validation de proximite au depart, fallback manuel etiquete."],
+                ["C6", "Geolocalisation fiable", "Position temps reel (getCurrentPosition puis watchPosition haute precision), precision affichee en metres, repere carte maintenu a jour, bandeau hors-metropole, fallback manuel via la recherche."],
                 ["C7", "Accessibilite (cible WCAG 2.1 AA)", f"Navigation clavier, focus visible, libelles ARIA, jsx-a11y bloquant, filtrage PMR (RG2) et audit axe-core automatisé sans violation A/AA sur {A11Y_SCREENS} ecrans (10.1). L'audit manuel clavier + lecteur d'ecran reste requis pour la conformite complete ; protocole formalise en section 14.2 [S2]."],
                 ["C8", "RGPD", "Consentement geolocalisation, minimisation (pas de trace GPS persistee), donnees locales, effacement historique et compte (section 9.2)."],
-                ["C9", "Interoperabilite", "Champs GTFS/GBFS officiels dans les types, adaptateurs par operateur, GTFS TCL reel + GBFS Velo'v/Dott reels integres sans modification du moteur."],
+                ["C9", "Interoperabilite", "Champs GTFS/GBFS officiels dans les types, adaptateurs par operateur, GTFS TCL reel + GBFS Velo'v/Dott reels + alertes SIRI SX TCL integres sans modification du moteur."],
                 ["C10", "Performances / connectivite variable", f"Service worker, fallback local des flux, debounce et annulation des requetes, timeouts 8 s, etats de chargement et statuts visibles ; banc de charge local reproductible (premier rendu médian {FCP_MED} ms, p95 {FCP_P95} ms, 10.1)."],
                 ["C11", "Securite des donnees de deplacement", "Aucune trace GPS brute persistee ni serveur UrbanFlow. Les tiers recoivent IP et coordonnees ponctuelles : transparence requise et proxy cible documentes (section 9.2) [S3]."],
                 ["C12", "Normes transport (PMR)", "wheelchair_boarding exploite depuis le GTFS TCL reel, regle RG2 (correspondances accessibles), badge PMR compatible par option."],
@@ -1663,10 +1672,10 @@ def section_13() -> list:
                 ["Tests unitaires", "npm run test", f"{TEST_FILES} fichiers, {TEST_COUNT}/{TEST_COUNT} tests verts ; rejoués par la CI a chaque push."],
                 ["Build production", "npm run build", f"Build du {BUILD_DATE} : entree JS {ENTRY_KB} kB gzip, MapLibre differe {MAPLIBRE_KB} kB gzip (mesure par scripts/build-metrics.mjs)."],
                 ["Audit accessibilite", "npm run audit:a11y", f"{A11Y_DATE} : axe-core WCAG 2.1 A/AA sur {A11Y_SCREENS} ecrans du build de production, {A11Y_VIOLATIONS} violation."],
-                ["Scenario E2E navigation", "npm run e2e", f"{E2E_DATE} : parcours GPS complet sur APIs reelles, {E2E_STATUS} (progression monotone, arrivee, modale, retour planification)."],
+                ["Scenario E2E planification", "npm run e2e", f"{E2E_DATE} : parcours de planification complet sur APIs reelles, {E2E_STATUS} (options, programmation, hub, marquage fait, statistiques)."],
                 ["Banc de performance", "npm run bench:perf", f"{PERF_DATE} : {PERF_RUNS} chargements a froid, premier rendu médian {FCP_MED} ms, p95 {FCP_P95} ms (protocole local documente)."],
                 ["Chaine complete", "npm run check", "Lint + tests + build en une commande, bloquante avant toute livraison."],
-                ["Donnees reelles", "npm run generate:gtfs", "130 arrets et 14 lignes TCL reels regeneres depuis le GTFS officiel (ODbL)."],
+                ["Donnees reelles", "npm run generate:gtfs", "600 arrets et 14 lignes TCL reels (toute la metropole) regeneres depuis le GTFS officiel (ODbL)."],
                 ["Ce dossier", "npm run generate:pdf", "PDF genere par script (ReportLab), captures reproductibles, moins de 40 pages."],
             ],
             widths=[85, 118, CONTENT_WIDTH - 203],
@@ -1680,16 +1689,16 @@ def section_13() -> list:
         p("13.2 Bilan au regard du besoin", "h2"),
         p(
             "La version livree couvre le perimetre impose : F1, F2, F3 et F4 sont démontrables sur les parcours complets, "
-            "alimentés par des donnees reelles la ou elles sont ouvertes (GTFS statique TCL, disponibilites GBFS Velo'v et "
-            "Dott, geometries OSRM, geocodage BAN, meteo Open-Meteo), dans une PWA installable, mobile first, concue vers "
+            "alimentés par des donnees reelles la ou elles sont accessibles (GTFS statique TCL, alertes trafic TCL SIRI via compte data.grandlyon.com, disponibilites GBFS Velo'v et "
+            "Dott, geometries OSRM, geocodage BAN + Photon, meteo Open-Meteo), dans une PWA installable, mobile first, concue vers "
             "WCAG 2.1 AA et minimisant les donnees personnelles. Ce bilan s'entend dans les limites documentees en "
-            "section 7.3 : la partie transport public reste heuristique (pas de graphe horaire), certains delais sont "
-            "estimés et les incidents operateurs sont simulés et etiquetes comme tels. Les choix d'architecture "
+            "section 7.3 : la partie transport public reste heuristique (pas de graphe horaire), certains delais restent "
+            "estimés (pas de SIRI Estimated Timetables branché) et les alertes simulées ne servent plus que de repli sans compte operateur. Les choix d'architecture "
             "n'hypothequent aucune evolution : la trajectoire vers l'API metropolitaine est documentee et les contrats de "
             "donnees sont stables.",
         ),
         p("13.3 Perspectives", "h2"),
-        bullet("Conventionner avec SYTRAL l'acces aux flux temps reel (SIRI Lite / GTFS-RT) pour remplacer les incidents simules."),
+        bullet("Etendre l'integration SIRI aux prochains passages et positions vehicules (Estimated Timetables / Vehicle Monitoring) via le compte data.grandlyon.com deja utilise pour les alertes."),
         bullet("Migrer l'API Adresse depreciee vers le service de geocodage de la Geoplateforme, l'adaptateur isolant ce changement [S8]."),
         bullet("Deployer l'API metropolitaine (palier 2) : comptes centralises, historique multi-appareils, notifications push."),
         bullet("Ajouter une validation runtime des schemas externes et des tests de contrat ; TypeScript seul ne valide pas le JSON recu."),
@@ -1838,12 +1847,13 @@ def section_15() -> list:
                 ["Commit", "Increment / decision", "Trace exploitable par le jury"],
                 ["63a2129", "Socle Vite, React et TypeScript", "Configuration stricte, lint et build : point de depart reproductible."],
                 ["1a21f5d", "Application UrbanFlow complete", "F1-F4, architecture UI/services et premier parcours de bout en bout."],
-                ["7dcf047", "Etat d'arrivee mobile et scenario E2E GPS", "Increment issu d'une friction de navigation ; test rejouable par npm run e2e."],
+                ["7dcf047", "Etat d'arrivee mobile et premier scenario E2E", "Increment issu d'une friction de parcours ; test rejouable par npm run e2e."],
                 ["742f613", "Secret GTFS sorti du code", "Decision de securite : variable GTFS_SOURCE_URL, .env ignoré, feed versionné."],
                 ["0107bd3", "Scoring centralise, RG3/RG5 et CO2 par segment", "Correctifs metier accompagnes de tests unitaires de non-regression."],
                 ["7568701", "MapLibre chargé a la demande", "Arbitrage performance : entree initiale ramenee a 115,45 kB gzip."],
                 ["e23cd97", "Pipeline CI lint, tests et build", "Workflow .github/workflows/ci.yml exécuté sur push et pull request vers main."],
                 ["025b4d7", "Durcissement du dossier apres revue croisee", "Alignement grille, RACI, economie, UML et limites explicites."],
+                ["15679a0", "Pivot planificateur metropole (trajets programmes, routines, objectifs, SIRI live)", "Increment majeur : hub planificateur, alertes TCL temps reel via proxy, e2e planification 5 assertions."],
             ],
             widths=[62, 165, CONTENT_WIDTH - 227],
         ),
@@ -1858,10 +1868,10 @@ def section_15() -> list:
             [
                 [f"Execution locale du {BUILD_DATE}", "Resultat factuel", "Preuve / seuil de sortie"],
                 ["npm run lint", "Code de sortie 0, aucune erreur ESLint", "react-hooks et jsx-a11y inclus ; controle bloquant."],
-                ["npm run test", f"{TEST_FILES} fichiers, {TEST_COUNT}/{TEST_COUNT} tests verts", "Scoring et RG1 a RG5, navigation, historique de recherche, authentification PBKDF2, effacement RGPD, carbone, GBFS, fallbacks, BAN/OSRM et meteo."],
+                ["npm run test", f"{TEST_FILES} fichiers, {TEST_COUNT}/{TEST_COUNT} tests verts", "Scoring et RG1 a RG5, trajets programmes et routines, alertes TCL (SIRI), authentification PBKDF2, effacement RGPD, carbone, GBFS, fallbacks, BAN/Photon/OSRM et meteo."],
                 ["npm run build", f"Build du {BUILD_DATE} sans avertissement", f"TypeScript valide ; entree {ENTRY_KB} kB gzip, carte differee {MAPLIBRE_KB} kB gzip."],
                 ["npm run audit:a11y", f"{A11Y_VIOLATIONS} violation WCAG 2.1 A/AA (axe-core, {A11Y_SCREENS} ecrans)", "Une violation critique relevée par ce meme audit est corrigée et tracée en 10.3."],
-                ["npm run e2e", "Parcours GPS complet, progression monotone 0 a 100 %", "Scenario Playwright sur build de production et APIs reelles, sortie confirmée."],
+                ["npm run e2e", "Parcours de planification complet, 5/5 assertions", "Scenario Playwright sur build de production et APIs reelles : options, programmation, hub, marquage fait, statistiques."],
                 ["npm run bench:perf", f"Premier rendu médian {FCP_MED} ms, p95 {FCP_P95} ms ({PERF_RUNS} essais a froid)", "Protocole local documente ; a rejouer sur appareil et reseau cibles avant tout engagement de seuil."],
                 ["npm run check", "Chaine complete terminee avec code 0", "Lint, tests puis build executes sequentiellement ; echec de l'un bloque la livraison."],
                 ["Controle de tracabilite", "Checklist projet integralement renseignee", "Chaque exigence F1-F4 et C1-C12 renvoie vers un fichier ou une section du dossier."],

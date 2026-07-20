@@ -173,11 +173,13 @@ export function LayerPill({ active, onClick, children }: { active: boolean; onCl
 }
 
 export function Metric({ label, value, compact = false }: { label: string; value: string; compact?: boolean }) {
+  // <dl> auto-porteur : les dt/dd restent valides quel que soit le conteneur
+  // parent (grilles div), exigence WCAG verifiee par l'audit axe-core.
   return (
-    <div className={`rounded-lg border border-border/70 bg-background/75 ${compact ? 'px-2 py-1.5' : 'p-2.5'}`}>
+    <dl className={`m-0 rounded-lg border border-border/70 bg-background/75 ${compact ? 'px-2 py-1.5' : 'p-2.5'}`}>
       <dt className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-sm font-bold">{value}</dd>
-    </div>
+      <dd className="m-0 mt-1 text-sm font-bold">{value}</dd>
+    </dl>
   );
 }
 

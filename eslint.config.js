@@ -13,7 +13,7 @@ export default tseslint.config(
       'tmp',
       'public/sw.js',
       'public/icons',
-      'scripts/screenshot.mjs',
+      'scripts/make-screens.mjs',
       'scripts/e2e-planning.mjs',
       'scripts/audit-a11y.mjs',
       'scripts/perf-bench.mjs',

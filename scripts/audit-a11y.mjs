@@ -1,6 +1,7 @@
 // Audit d'accessibilite automatise axe-core (WCAG 2.1 A/AA) sur le build de
-// production servi par `vite preview`. Trois etats sont audites : l'ecran
-// d'authentification, l'ecran principal carte/planification et le profil.
+// production servi par `vite preview`. Quatre etats sont audites : l'ecran
+// d'authentification, l'ecran principal carte/planification, le hub
+// planificateur et le profil.
 // Limite assumee : axe-core ne remplace pas un audit manuel clavier + lecteur
 // d'ecran ; il detecte les violations programmatiquement verifiables.
 import { readFileSync } from 'node:fs';
@@ -51,11 +52,27 @@ await page.goto(BASE_URL, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
 totalViolations += await runAxe('Ecran authentification (mobile)');
 
+await page.fill('#auth-email', 'demo@urbanflow.local');
+await page.fill('#auth-password', 'UrbanFlow2026!');
 await page.getByRole('button', { name: /ouvrir la carte/i }).click();
 await page.waitForTimeout(6000);
+const skipTutorial = page.getByRole('button', { name: /passer le tutoriel/i });
+if (await skipTutorial.count()) {
+  await skipTutorial.first().click();
+  await page.waitForTimeout(600);
+}
 totalViolations += await runAxe('Ecran principal carte + planification (mobile)');
 
-const profileButton = page.getByRole('button', { name: /profil/i }).first();
+const plannerButton = page.getByRole('button', { name: /ouvrir le planificateur/i }).first();
+if (await plannerButton.count()) {
+  await plannerButton.click();
+  await page.waitForTimeout(1200);
+  totalViolations += await runAxe('Hub planificateur de trajets (mobile)');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(600);
+}
+
+const profileButton = page.getByRole('button', { name: /ouvrir le profil/i }).first();
 if (await profileButton.count()) {
   await profileButton.click();
   await page.waitForTimeout(1200);
@@ -71,7 +88,7 @@ mkdirSync('output/metrics', { recursive: true });
 writeFileSync(
   'output/metrics/a11y.json',
   JSON.stringify(
-    { generatedAt: new Date().toISOString(), screens: 3, tags: TAGS, violations: totalViolations },
+    { generatedAt: new Date().toISOString(), screens: 4, tags: TAGS, violations: totalViolations },
     null,
     2,
   ) + '\n',
