@@ -189,6 +189,48 @@ S = styles()
 # respecter l'orthographe francaise. Les remplacements ne s'appliquent qu'aux
 # textes rendus (paragraphes, tableaux et libelles), jamais aux identifiants du code.
 ACCENT_REPLACEMENTS = (
+    # Expressions figees d'abord (prioritaires sur les mots isoles).
+    ("a la demande", "à la demande"), ("a froid", "à froid"), ("a jour", "à jour"),
+    ("a la main", "à la main"), ("a chaque", "à chaque"), ("a terme", "à terme"),
+    ("a partir", "à partir"), ("a moins de", "à moins de"), ("a destination", "à destination"),
+    ("a venir", "à venir"), ("a portee", "à portée"), ("a rejouer", "à rejouer"),
+    ("a ajouter", "à ajouter"), ("a signer", "à signer"), ("a une date", "à une date"),
+    ("a l'identique", "à l'identique"), ("a l'execution", "à l'exécution"),
+    ("grace a", "grâce à"), ("jusqu'a", "jusqu'à"), ("au-dela", "au-delà"),
+    ("des que", "dès que"), ("des le", "dès le"), ("cote serveur", "côté serveur"),
+    ("cote client", "côté client"),
+    ("trajets programmes", "trajets programmés"), ("trajet programme", "trajet programmé"),
+    ("est derive", "est dérivé"), ("derive de l'objectif", "dérivé de l'objectif"),
+    # Mots sans ambiguite.
+    ("increment accepte", "incrément accepté"), ("explicitement acceptes", "explicitement acceptés"), ("qu'a l'usage", "qu'à l'usage"),
+    ("cote navigateur", "côté navigateur"), ("independants", "indépendants"),
+    ("independante", "indépendante"), ("independant", "indépendant"),
+    ("remplacables", "remplaçables"), ("remplacable", "remplaçable"),
+    ("deterministe", "déterministe"), ("preferes", "préférés"), ("preferee", "préférée"),
+    ("inferieures", "inférieures"), ("inferieure", "inférieure"), ("inferieur", "inférieur"),
+    ("decouvre", "découvre"),
+    ("meteo", "météo"), ("mobilite", "mobilité"), ("developpement", "développement"),
+    ("limitees", "limitées"), ("limitee", "limitée"), ("pousses", "poussés"),
+    ("criteres", "critères"), ("critere", "critère"), ("retrospectives", "rétrospectives"),
+    ("retrospective", "rétrospective"), ("amelioration", "amélioration"),
+    ("systemes", "systèmes"), ("systeme", "système"), ("metropolitaine", "métropolitaine"),
+    ("metropolitain", "métropolitain"), ("metropole", "métropole"),
+    ("reseaux", "réseaux"), ("reseau", "réseau"), ("departs", "départs"), ("depart", "départ"),
+    ("geocodage", "géocodage"), ("geometries", "géométries"), ("geometrie", "géométrie"),
+    ("demonstrateur", "démonstrateur"), ("demonstration", "démonstration"),
+    ("versionnes", "versionnés"), ("versionne", "versionné"),
+    ("proposees", "proposées"), ("proposee", "proposée"),
+    ("increments", "incréments"), ("increment", "incrément"),
+    ("rejouee", "rejouée"), ("rejoues", "rejoués"), ("simulees", "simulées"),
+    ("operer", "opérer"), ("etats", "états"), ("etat", "état"),
+    ("verifications", "vérifications"), ("verification", "vérification"),
+    ("perimetre", "périmètre"), ("severites", "sévérités"), ("severite", "sévérité"),
+    ("materialisees", "matérialisées"), ("agregats", "agrégats"),
+    ("recurrentes", "récurrentes"), ("recurrente", "récurrente"),
+    ("recurrents", "récurrents"), ("recurrent", "récurrent"),
+    ("etiquetees", "étiquetées"), ("etiquetee", "étiquetée"), ("bornee", "bornée"),
+    ("acces", "accès"), ("interet", "intérêt"), ("premiere", "première"),
+    ("generees", "générées"), ("generee", "générée"), ("generes", "générés"),
     ("fonctionnalites", "fonctionnalités"), ("fonctionnalite", "fonctionnalité"),
     ("documentees", "documentées"), ("documentee", "documentée"),
     ("engagee", "engagée"), ("unifiee", "unifiée"), ("exprime", "exprimé"),
@@ -546,7 +588,7 @@ def dashed_stereotype_arrow(d: Drawing, x1, y1, x2, y2, stereotype: str) -> None
 def use_case_diagram() -> Drawing:
     d = Drawing(500, 290)
     d.add(Rect(112, 12, 286, 262, fillColor=colors.HexColor("#fbfaf5"), strokeColor=LINE, rx=6, ry=6))
-    d.add(String(255, 262, "Systeme UrbanFlow Mobility", fontName=FONT_BOLD, fontSize=9.5, fillColor=PINE_DARK, textAnchor="middle"))
+    d.add(String(255, 262, fr("Systeme UrbanFlow Mobility"), fontName=FONT_BOLD, fontSize=9.5, fillColor=PINE_DARK, textAnchor="middle"))
 
     actors = [("Citoyen", 46, 176), ("Operateur mobilite", 456, 202), ("Metropole (admin)", 456, 74)]
     for label, x, y in actors:
@@ -555,7 +597,7 @@ def use_case_diagram() -> Drawing:
         d.add(Line(x - 12, y + 8, x + 12, y + 8, strokeColor=INK))
         d.add(Line(x, y - 8, x - 9, y - 24, strokeColor=INK))
         d.add(Line(x, y - 8, x + 9, y - 24, strokeColor=INK))
-        d.add(String(x, y - 38, label, fontName=FONT_BOLD, fontSize=7.6, textAnchor="middle", fillColor=INK))
+        d.add(String(x, y - 38, fr(label), fontName=FONT_BOLD, fontSize=7.6, textAnchor="middle", fillColor=INK))
 
     # Cas d'utilisation du citoyen (colonne gauche), espaces pour loger les stereotypes.
     citizen_cases = [
@@ -597,12 +639,12 @@ def combined_fragment(d: Drawing, x, y, w, h, operator: str, guard: str, divider
     d.add(Rect(x, y, w, h, fillColor=None, strokeColor=AMBER, strokeWidth=0.8))
     d.add(Rect(x, y + h - 12, 30, 12, fillColor=colors.HexColor("#fdf4e6"), strokeColor=AMBER, strokeWidth=0.8))
     d.add(String(x + 15, y + h - 8.5, operator, fontName=FONT_BOLD, fontSize=6, fillColor=AMBER, textAnchor="middle"))
-    d.add(String(x + 36, y + h - 8.5, guard, fontName=FONT_REGULAR, fontSize=5.8, fillColor=AMBER))
+    d.add(String(x + 36, y + h - 8.5, fr(guard), fontName=FONT_REGULAR, fontSize=5.8, fillColor=AMBER))
     if divider_y is not None:
         divider = Line(x, divider_y, x + w, divider_y, strokeColor=AMBER, strokeWidth=0.6)
         divider.strokeDashArray = [3, 2]
         d.add(divider)
-        d.add(String(x + 4, divider_y + 3, guard2, fontName=FONT_REGULAR, fontSize=5.8, fillColor=AMBER))
+        d.add(String(x + 4, divider_y + 3, fr(guard2), fontName=FONT_REGULAR, fontSize=5.8, fillColor=AMBER))
 
 
 def sequence_diagram() -> Drawing:
@@ -655,10 +697,10 @@ def sequence_diagram() -> Drawing:
             d.add(Line(x1 + 4, y, x1 + 26, y, strokeColor=BLUE, strokeWidth=1))
             d.add(Line(x1 + 26, y, x1 + 26, y - 10, strokeColor=BLUE, strokeWidth=1))
             arrow(d, x1 + 26, y - 10, x1 + 4, y - 10, BLUE)
-            d.add(String(x1 + 32, y - 4, label, fontName=FONT_REGULAR, fontSize=6.4, fillColor=INK))
+            d.add(String(x1 + 32, y - 4, fr(label), fontName=FONT_REGULAR, fontSize=6.4, fillColor=INK))
             continue
         arrow(d, x1, y, x2, y, BLUE, dashed=dashed)
-        d.add(String((x1 + x2) / 2, y + 5, label, fontName=FONT_REGULAR, fontSize=6.6, fillColor=INK, textAnchor="middle"))
+        d.add(String((x1 + x2) / 2, y + 5, fr(label), fontName=FONT_REGULAR, fontSize=6.6, fillColor=INK, textAnchor="middle"))
     return d
 
 
@@ -691,14 +733,14 @@ def communication_diagram() -> Drawing:
         x1, y1 = start
         x2, y2 = end
         arrow(d, x1, y1, x2, y2, MUTED)
-        d.add(String((x1 + x2) / 2 + label_dx, (y1 + y2) / 2 + label_dy, label, fontName=FONT_BOLD, fontSize=6.6, fillColor=PINE_DARK, textAnchor="middle"))
+        d.add(String((x1 + x2) / 2 + label_dx, (y1 + y2) / 2 + label_dy, fr(label), fontName=FONT_BOLD, fontSize=6.6, fillColor=PINE_DARK, textAnchor="middle"))
     return d
 
 
 def architecture_diagram() -> Drawing:
     d = Drawing(500, 265)
     d.add(Rect(10, 150, 225, 105, fillColor=colors.HexColor("#fbfaf5"), strokeColor=LINE, rx=6, ry=6))
-    d.add(String(122, 242, "Client PWA (livre)", fontName=FONT_BOLD, fontSize=8.6, fillColor=PINE_DARK, textAnchor="middle"))
+    d.add(String(122, 242, "Client PWA (livré)", fontName=FONT_BOLD, fontSize=8.6, fillColor=PINE_DARK, textAnchor="middle"))
     rect_label(d, 22, 208, 95, 24, "UI React 19", fill=LIGHT, size=7)
     rect_label(d, 128, 208, 95, 24, "Service worker", fill=LIGHT, size=7)
     rect_label(d, 22, 178, 95, 24, "RoutePlanner", fill=LIGHT, size=7)
@@ -706,7 +748,7 @@ def architecture_diagram() -> Drawing:
     rect_label(d, 22, 156, 201, 18, "LocalStorage (profils, trajets, CO2)", fill=colors.white, size=6.6)
 
     d.add(Rect(265, 150, 225, 105, fillColor=colors.HexColor("#f4f8fb"), strokeColor=LINE, rx=6, ry=6))
-    d.add(String(377, 242, "APIs open data (reelles)", fontName=FONT_BOLD, fontSize=8.6, fillColor=BLUE, textAnchor="middle"))
+    d.add(String(377, 242, fr("APIs open data (reelles)"), fontName=FONT_BOLD, fontSize=8.6, fillColor=BLUE, textAnchor="middle"))
     rect_label(d, 277, 208, 95, 24, "api-adresse BAN", fill=colors.white, stroke=BLUE, size=6.6)
     rect_label(d, 383, 208, 95, 24, "OSRM (OSM.de)", fill=colors.white, stroke=BLUE, size=6.6)
     rect_label(d, 277, 178, 95, 24, "GBFS Velo'v v3", fill=colors.white, stroke=BLUE, size=6.6)
@@ -718,7 +760,7 @@ def architecture_diagram() -> Drawing:
     d.add(String(250, 205, "HTTPS", fontName=FONT_REGULAR, fontSize=6, fillColor=MUTED, textAnchor="middle"))
 
     d.add(Rect(10, 14, 480, 112, fillColor=colors.HexColor("#f7f6ef"), strokeColor=LINE, rx=6, ry=6))
-    d.add(String(250, 112, "Architecture cible metropolitaine (evolution)", fontName=FONT_BOLD, fontSize=8.6, fillColor=AMBER, textAnchor="middle"))
+    d.add(String(250, 112, fr("Architecture cible metropolitaine (evolution)"), fontName=FONT_BOLD, fontSize=8.6, fillColor=AMBER, textAnchor="middle"))
     rect_label(d, 22, 72, 100, 26, "API Gateway", fill=colors.white, stroke=AMBER, size=6.8)
     rect_label(d, 134, 72, 100, 26, "Auth OIDC/JWT", fill=colors.white, stroke=AMBER, size=6.8)
     rect_label(d, 246, 72, 110, 26, "Service itineraires", fill=colors.white, stroke=AMBER, size=6.8)
@@ -744,9 +786,9 @@ def sprint_timeline() -> Drawing:
     x = 6
     for title, detail, fill in sprints:
         d.add(Rect(x, 34, 76, 56, fillColor=fill, strokeColor=PINE, strokeWidth=1, rx=4, ry=4))
-        d.add(String(x + 38, 74, title, fontName=FONT_BOLD, fontSize=6.8, fillColor=PINE_DARK, textAnchor="middle"))
+        d.add(String(x + 38, 74, fr(title), fontName=FONT_BOLD, fontSize=6.8, fillColor=PINE_DARK, textAnchor="middle"))
         for line_index, line in enumerate(detail.split("\n")):
-            d.add(String(x + 38, 60 - line_index * 9, line, fontName=FONT_REGULAR, fontSize=5.9, fillColor=INK, textAnchor="middle"))
+            d.add(String(x + 38, 60 - line_index * 9, fr(line), fontName=FONT_REGULAR, fontSize=5.9, fillColor=INK, textAnchor="middle"))
         if x > 6:
             arrow(d, x - 7, 62, x + 1, 62, PINE)
         x += 83
@@ -769,11 +811,11 @@ def sprint_zoom_diagram() -> Drawing:
     for day, activity, deliverable, fill in days:
         d.add(Rect(x, 30, 76, 100, fillColor=fill, strokeColor=PINE, strokeWidth=1, rx=4, ry=4))
         d.add(Rect(x, 112, 76, 18, fillColor=PINE, strokeColor=PINE, strokeWidth=1))
-        d.add(String(x + 38, 118, day, fontName=FONT_BOLD, fontSize=6.6, fillColor=colors.white, textAnchor="middle"))
+        d.add(String(x + 38, 118, fr(day), fontName=FONT_BOLD, fontSize=6.6, fillColor=colors.white, textAnchor="middle"))
         for line_index, line in enumerate(activity.split("\n")):
-            d.add(String(x + 38, 100 - line_index * 9, line, fontName=FONT_BOLD, fontSize=5.9, fillColor=INK, textAnchor="middle"))
+            d.add(String(x + 38, 100 - line_index * 9, fr(line), fontName=FONT_BOLD, fontSize=5.9, fillColor=INK, textAnchor="middle"))
         for line_index, line in enumerate(deliverable.split("\n")):
-            d.add(String(x + 38, 70 - line_index * 8, line, fontName=FONT_REGULAR, fontSize=5.4, fillColor=MUTED, textAnchor="middle"))
+            d.add(String(x + 38, 70 - line_index * 8, fr(line), fontName=FONT_REGULAR, fontSize=5.4, fillColor=MUTED, textAnchor="middle"))
         if x > 4:
             arrow(d, x - 7, 80, x + 1, 80, PINE)
         x += 83
@@ -789,7 +831,7 @@ def bug_workflow_diagram() -> Drawing:
         fill = LIGHT if index % 2 == 0 else colors.white
         d.add(Rect(x, 18, 74, 44, fillColor=fill, strokeColor=PINE, strokeWidth=1, rx=4, ry=4))
         for line_index, line in enumerate(step.split("\n")):
-            d.add(String(x + 37, 44 - line_index * 10, line, fontName=FONT_REGULAR, fontSize=6.1, fillColor=INK, textAnchor="middle"))
+            d.add(String(x + 37, 44 - line_index * 10, fr(line), fontName=FONT_REGULAR, fontSize=6.1, fillColor=INK, textAnchor="middle"))
         if index < len(steps) - 1:
             arrow(d, x + 76, 40, x + 84, 40, PINE)
         x += 83
@@ -980,7 +1022,7 @@ def section_2() -> list:
                 ["F1", "Inscription / connexion et profils de mobilite personnalises",
                  "Comptes locaux avec mot de passe derive PBKDF2-SHA-256 (120 000 iterations, sel aleatoire, Web Crypto), "
                  "profil : modes preferes, marche max, priorite PMR, sensibilite pluie, budget CO2 et objectifs "
-                 "hebdomadaires de trajets et de CO2 evite."],
+                 "hebdomadaires de trajets et de CO2 évité."],
                 ["F2", "Planificateur d'itineraires multimodal avec geolocalisation temps reel",
                  "Moteur planRoutes : six options (a pied, velo partage, trottinette, transport en commun, combinaison "
                  "velo + transport en commun, covoiturage) comparees et scorees ; position GPS temps reel utilisable comme "
@@ -1284,7 +1326,7 @@ def section_5() -> list:
                 ["Qualite", "ESLint (react-hooks, jsx-a11y), Vitest + jsdom, Playwright (E2E planification, audit axe-core, banc de performance)", f"Lint bloquant et {TEST_COUNT} tests unitaires executes avant tout build ; parcours de planification, audit WCAG et mesures de charge rejouables a la demande et rejoues en CI (npm run e2e / audit:a11y / bench:perf)."],
                 ["UI / design", "Tailwind CSS 4, shadcn/ui, MapLibre GL, Bricolage Grotesque / Figtree", "Systeme de design tokenise (oklch), composants accessibles."],
                 ["Donnees", "python3 stdlib (fetch_gtfs.py), APIs open data", "Ingestion GTFS reproductible au build, flux GBFS live au runtime."],
-                ["Livraison", "npm run check (lint + test + build), generation PDF ReportLab", "Une commande unique valide l'ensemble avant livraison."],
+                ["Livraison", "npm run check (lint + test + build)", "Une commande unique valide l'ensemble avant livraison."],
             ],
             widths=[70, 150, CONTENT_WIDTH - 220],
         ),
@@ -1418,7 +1460,7 @@ def section_7() -> list:
                 ["Scoring", "Modele additif a penalites, borne sur 0-100. On part de la fiabilite de l'option, on ajoute un bonus par mode prefere (+8 chacun), puis on retranche : la duree (x0,85 par minute), le carbone (/55), une penalite d'inaccessibilite sur profil PMR (-45), et les avertissements (-6 chacun, dont le depassement de marche RG5). Les six coefficients sont regroupes dans une constante SCORING_WEIGHTS en tete de routePlanner.ts et couverts par un test unitaire."],
                 ["Sorties", "2 a 5 options RouteOption ordonnees : titre, resume, segments detailles (from/to, distance, duree, CO2), avertissements, score, badge PMR, geometrie affichable et instructions pas-a-pas."],
                 ["Geolocalisation", "Position temps reel utilisable comme point de depart (« Ma position ») : premiere acquisition getCurrentPosition puis suivi watchPosition (haute precision, timeout 10 s) qui maintient le repere sur la carte, precision affichee dans la barre de statut ; hors metropole, bandeau explicite d'offre reduite."],
-                ["Etats d'erreur", "Permission GPS refusee : saisie manuelle du depart via la recherche, statut affiche. API de routage indisponible : trace directe locale avec statut degradé affiché. Flux GBFS indisponible : fallback local date et signale. Aucune option possible : message explicite et suggestions de modes a activer."],
+                ["Etats d'erreur", "Permission GPS refusee : saisie manuelle du depart via la recherche, statut affiché. API de routage indisponible : trace directe locale avec statut degradé affiché. Flux GBFS indisponible : fallback local date et signale. Aucune option possible : message explicite et suggestions de modes a activer."],
             ],
             widths=[78, CONTENT_WIDTH - 78],
         ),
@@ -1477,12 +1519,12 @@ def section_8() -> list:
         bullet("<b>Separation stricte des responsabilites</b> : interface decoupee en modules fonctionnels (auth, planification, trajets programmes, carbone, profil, tutoriel, layout) orchestrés par MobilityMapApp, App.tsx ramené a un shell compact ; services metier (routePlanner, plannedTrips, carbon), adaptateurs de donnees (transportApi, externalApis), securite (auth). Aucune logique metier dans les composants d'affichage."),
         bullet("<b>Contrats de donnees standards</b> : les types GTFS/GBFS reprennent les champs utiles des references [S4-S5]. Un nouvel operateur conforme passe par un adaptateur ; la validation runtime complete des schemas reste un verrou du palier 2."),
         bullet("<b>Degradation gracieuse systematique</b> : chaque dependance externe a un comportement de repli defini (fallback local, trace directe, incidents simules etiquetes) et un statut visible : l'application n'a pas d'etat mort."),
-        bullet("<b>Mobile first et eco-conception</b> : bundle d'entree mesuré a 115,45 kB gzip, carte chargee a la demande, polices auto-hebergees, donnees plafonnees, cache offline et zero tracker. Ces indicateurs prouvent une reduction des transferts initiaux, sans revendiquer un bilan environnemental complet."),
+        bullet(f"<b>Mobile first et eco-conception</b> : bundle d'entree mesuré a {ENTRY_KB} kB gzip (build courant), carte chargee a la demande, polices auto-hebergees, donnees plafonnees, cache offline et zero tracker. Ces indicateurs prouvent une reduction des transferts initiaux, sans revendiquer un bilan environnemental complet."),
         p("8.2 Evolutivite : trajectoire en trois paliers", "h2"),
         table(
             [
                 ["Palier", "Declencheur", "Evolution", "Ce qui ne change pas"],
-                ["1. MVP livre", "Preuve des parcours", "PWA + open data directs", "-"],
+                ["1. MVP livré", "Preuve des parcours", "PWA + open data directs", "-"],
                 ["2. API metropolitaine", "Au-dela de quelques milliers d'utilisateurs, besoin de comptes centralises",
                  "API Gateway, OIDC/JWT, PostgreSQL/PostGIS, cache Redis, workers d'ingestion GTFS-RT/SIRI sous convention operateur",
                  "L'UI, le moteur de scoring, les types de domaine : les adaptateurs changent d'URL, pas de signature."],
@@ -1497,7 +1539,7 @@ def section_8() -> list:
         bullet(f"{TEST_COUNT} tests unitaires cibles sur les fonctions a risque (scoring et RG1 a RG5, trajets programmes et routines recurrentes, alertes TCL (mapping SIRI), authentification PBKDF2, effacement RGPD par balayage, carbone, fusion GBFS, fallbacks reseau, adaptateurs BAN/OSRM mockés) : campagne Vitest complete en moins de 2 secondes, rejouée a chaque build."),
         bullet("Interface modulaire : le plus grand module UI (l'orchestrateur MobilityMapApp) reste sous les 600 lignes ; chaque domaine fonctionnel est un module indépendant, remplaçable et révisable isolément."),
         bullet("ESLint avec regles react-hooks et jsx-a11y bloquantes : les regressions d'accessibilite sont traitees comme des erreurs de build."),
-        bullet("Une commande unique de verification (npm run check) et des scripts reproductibles (generate:gtfs, generate:pdf) : tout contributeur reconstruit l'ensemble a l'identique."),
+        bullet("Une commande unique de verification (npm run check) et des scripts reproductibles (generate:gtfs, screens) : tout contributeur reconstruit l'ensemble a l'identique."),
         Spacer(1, 10),
     ]
 
@@ -1515,7 +1557,7 @@ def section_9() -> list:
             [
                 ["Risque OWASP", "Mesure appliquee dans la version livree", "Complement en architecture cible"],
                 ["A01 Broken Access Control", "Session locale et purge des donnees pour le prototype ; aucune autorisation serveur n'est revendiquee.", "Controle d'acces par ressource, politique deny-by-default et tests d'autorisation."],
-                ["A02 Security Misconfiguration", "Configuration TypeScript stricte, secrets de build hors depot, .env ignore et flux runtime publics.", "CSP, en-tetes de securite, configuration durcie et verifiee par environnement."],
+                ["A02 Security Misconfiguration", "Configuration TypeScript stricte, secrets de build hors depot, .env ignoré et flux runtime publics.", "CSP, en-tetes de securite, configuration durcie et verifiee par environnement."],
                 ["A03 Software Supply Chain", "package-lock versionne, npm ci en CI et versions bornees.", "Audit de dependances, SBOM et politique de mise a jour documentee."],
                 ["A04 Cryptographic Failures", "PBKDF2-SHA-256 avec sel évite le mot de passe en clair, mais 120 000 iterations restent un choix de demonstration inferieur au repere OWASP actuel [S6].", "Authentification OIDC ; Argon2id serveur ou PBKDF2-HMAC-SHA256 calibre, stockage protege."],
                 ["A05 Injection", "Pas d'evaluation dynamique ; React echappe le rendu ; URLs construites par URLSearchParams.", "Validation de schema, requetes parametrees et tests d'entrees hostiles."],
@@ -1560,7 +1602,7 @@ def section_10() -> list:
                 ["Analyse statique", "TypeScript strict + ESLint (react-hooks, jsx-a11y)", "Contrats de donnees, regles des hooks, accessibilite des composants : bloquant en build."],
                 ["Audit accessibilite automatisé", "axe-core injecté par Playwright sur le build de production (npm run audit:a11y)", f"{A11Y_SCREENS} ecrans audités (authentification, carte/planification, hub planificateur, profil), regles WCAG 2.1 A et AA : {A11Y_VIOLATIONS} violation au {A11Y_DATE}. Ne remplace pas l'audit manuel clavier + lecteur d'ecran (protocole en 14.2)."],
                 ["Test de bout en bout (E2E)", "Playwright + Chromium, geolocalisation simulée (npm run e2e)", "Parcours complet de planification sur build de production et APIs reelles, verrouille par 5 assertions bloquantes (echec du script si l'une echoue) : options calculees, dialog de programmation, hub ouvert avec occurrence a venir, marquage fait, statistiques incrementees."],
-                ["Banc de performance", "Navigation Timing / Paint Timing, 10 chargements a froid (npm run bench:perf)", f"Premier rendu médian {FCP_MED} ms (p95 {FCP_P95} ms), chargement complet médian {LOAD_MED} ms, ~{TRANSFER_KB} kB transférés sur build local : protocole a rejouer sur appareil et reseau cibles."],
+                ["Banc de performance", "Navigation Timing / Paint Timing, 10 chargements a froid (npm run bench:perf)", f"Premier rendu médian {FCP_MED} ms (p95 {FCP_P95} ms), ~{TRANSFER_KB} kB transférés sur build local : protocole a rejouer sur appareil et reseau cibles."],
                 ["Tests manuels structures", "Scenarios de recette par sprint", "Parcours complets mobile et desktop : auth, planification, routines recurrentes, objectifs, offline, PMR, suppression RGPD."],
                 ["Verification de bout en bout", "npm run check + captures automatisees (Playwright)", f"Lint + {TEST_COUNT} tests + build production ; les ecrans de la section 11 sont generes par script, donc reproductibles."],
             ],
@@ -1579,7 +1621,7 @@ def section_10() -> list:
                 ["Bogue constate", "Cause racine", "Correctif et verrouillage"],
                 ["Ecrans perimes et HMR casse en developpement malgre les correctifs livres",
                  "Service worker PWA enregistre aussi en dev : strategie cache-first servant d'anciens modules",
-                 "Enregistrement limite a la production, desinscription et purge du cache en dev ; verrouille par revue de configuration."],
+                 "Enregistrement limité a la production, desinscription et purge du cache en dev ; verrouille par revue de configuration."],
                 ["Carte illisible apres branchement des donnees reelles (300+ marqueurs)",
                  "Rayon de marqueur fixe calibre pour quelques arrets simules, pas pour 600 arrets + 500 stations reels",
                  "Rayons interpoles par niveau de zoom et contrastes de couleur renforces par couche ; controle visuel par capture avant/apres."],
@@ -1676,15 +1718,8 @@ def section_13() -> list:
                 ["Banc de performance", "npm run bench:perf", f"{PERF_DATE} : {PERF_RUNS} chargements a froid, premier rendu médian {FCP_MED} ms, p95 {FCP_P95} ms (protocole local documente)."],
                 ["Chaine complete", "npm run check", "Lint + tests + build en une commande, bloquante avant toute livraison."],
                 ["Donnees reelles", "npm run generate:gtfs", "600 arrets et 14 lignes TCL reels (toute la metropole) regeneres depuis le GTFS officiel (ODbL)."],
-                ["Ce dossier", "npm run generate:pdf", "PDF genere par script (ReportLab), captures reproductibles, moins de 40 pages."],
             ],
             widths=[85, 118, CONTENT_WIDTH - 203],
-        ),
-        p(
-            "<b>Provenance des chiffres.</b> Les tailles, dates et resultats de cette section et du proces-verbal "
-            "(15.3) ne sont pas saisis a la main : ils sont extraits des artefacts mesures (output/metrics/*.json, "
-            "produits par les scripts de build, d'audit et de banc) au moment ou ce PDF est généré. Une divergence "
-            "entre le dossier et le build livré est donc structurellement impossible.",
         ),
         p("13.2 Bilan au regard du besoin", "h2"),
         p(
@@ -1850,7 +1885,7 @@ def section_15() -> list:
                 ["7dcf047", "Etat d'arrivee mobile et premier scenario E2E", "Increment issu d'une friction de parcours ; test rejouable par npm run e2e."],
                 ["742f613", "Secret GTFS sorti du code", "Decision de securite : variable GTFS_SOURCE_URL, .env ignoré, feed versionné."],
                 ["0107bd3", "Scoring centralise, RG3/RG5 et CO2 par segment", "Correctifs metier accompagnes de tests unitaires de non-regression."],
-                ["7568701", "MapLibre chargé a la demande", "Arbitrage performance : entree initiale ramenee a 115,45 kB gzip."],
+                ["7568701", "MapLibre chargé a la demande", "Arbitrage performance : la carte est isolee dans un chunk differe, hors du chemin critique initial."],
                 ["e23cd97", "Pipeline CI lint, tests et build", "Workflow .github/workflows/ci.yml exécuté sur push et pull request vers main."],
                 ["025b4d7", "Durcissement du dossier apres revue croisee", "Alignement grille, RACI, economie, UML et limites explicites."],
                 ["15679a0", "Pivot planificateur metropole (trajets programmes, routines, objectifs, SIRI live)", "Increment majeur : hub planificateur, alertes TCL temps reel via proxy, e2e planification 5 assertions."],
