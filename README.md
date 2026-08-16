@@ -6,7 +6,7 @@ Application PWA React/TypeScript **mobile first** pour le sujet T6 CDSD "Urban F
 
 - `src/` : application fonctionnelle (auth + profils, planificateur multimodal, trajets programmes et routines, objectifs, suivi carbone).
 - `public/manifest.webmanifest` + `public/sw.js` : PWA installable avec cache offline.
-- `output/pdf/dossier-projet-urbanflow.pdf` : dossier projet (30 pages, généré par script).
+- `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` : dossier projet (30 pages, généré par script).
 - `output/screens/` : captures automatisées (Playwright) intégrées au dossier.
 - `CHECKLIST.md` : traçabilité exigences → preuves.
 

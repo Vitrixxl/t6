@@ -31,7 +31,7 @@ from reportlab.platypus import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "output" / "pdf" / "dossier-projet-urbanflow.pdf"
+OUTPUT = ROOT / "output" / "pdf" / "CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf"
 SCREENS = ROOT / "output" / "screens"
 METRICS = ROOT / "output" / "metrics"
 
@@ -883,7 +883,8 @@ def cover_page() -> list:
         Spacer(1, 4),
         p("<b>Dossier projet</b> - Titre 6 Concepteur Developpeur de Solutions Digitales (RNCP 36146)", "subtitle"),
         p("Session septembre 2026 - B3DEV - Digital Campus", "subtitle"),
-        Spacer(1, 26),
+        p("<b>Candidat :</b> Cacsales Vitrice", "subtitle"),
+        Spacer(1, 10),
         table(
             [
                 ["Livrable", "Description"],
@@ -2038,7 +2039,7 @@ def main() -> None:
         topMargin=17 * mm,
         bottomMargin=16 * mm,
         title="Dossier projet UrbanFlow Mobility - T6 CDSD septembre 2026",
-        author="Candidat T6 CDSD",
+        author="Cacsales Vitrice",
     )
     doc.build(build_story(), onFirstPage=header_footer, onLaterPages=header_footer)
     print(OUTPUT)

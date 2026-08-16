@@ -112,7 +112,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - APIs reelles: `src/lib/externalApis.ts` pour `api-adresse.data.gouv.fr` et OSRM public; fallback local explicite pour transport GTFS/GBFS sans endpoint operateur.
 - F3 integration transport: `src/lib/transportApi.ts`, `public/data/gtfs-feed.json`, `public/data/shared-mobility.json`.
 - Option carbone: `src/lib/carbon.ts`, `src/App.tsx` (`CarbonDashboard`).
-- Contraintes C1-C12: matrice de couverture dans `output/pdf/dossier-projet-urbanflow.pdf`, section 12.
-- Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/dossier-projet-urbanflow.pdf` (30 pages, limite 40 pages respectee).
+- Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
+- Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectee).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et controlees en planche-contact et pleine page.
 - Verification terminal finale: `npm run check` OK (`eslint .`, 64 tests Vitest, `tsc -b && vite build`), `npm run audit:a11y` OK (0 violation), `npm run e2e` OK, `npm run bench:perf` OK, puis `npm run generate:pdf` OK.
