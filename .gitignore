@@ -12,3 +12,9 @@ output/*.png
 scripts/__pycache__/
 # metriques regenerees par npm run metrics:build (lues par generate:pdf)
 output/metrics/
+output/**/*.png
+output/**/*.jpg
+output/**/*.jpeg
+output/**/*.gif
+output/**/*.webp
+
