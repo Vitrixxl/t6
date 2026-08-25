@@ -21,6 +21,14 @@ export default tseslint.config(
     ],
   },
   js.configs.recommended,
+  {
+    // Scripts d'outillage executes par Node : leurs globales ne sont pas celles
+    // du navigateur.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly' },
+    },
+  },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],

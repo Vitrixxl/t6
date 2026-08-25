@@ -1,100 +1,27 @@
-import type { Connect, Plugin } from 'vite';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-// Endpoint /api/tcl-alertes : alertes trafic TCL (SIRI SX, data.grandlyon.com).
-// Le serveur appelle l'amont avec les identifiants du compte Grand Lyon (HTTP
-// Basic, cote serveur uniquement - jamais exposes au navigateur), avec un cache
-// memoire : chaque requete cliente redeclenche un appel amont au plus une fois
-// par fenetre (limite de frequence), et le cache n'est reecrit que si la donnee
-// a change. Sans identifiants valides, l'endpoint relaie l'erreur et
-// l'application retombe sur les incidents simules du feed.
-function tclAlertsEndpoint(env: Record<string, string>): Plugin {
-  const UPSTREAM_URL =
-    'https://download.data.grandlyon.com/ws/rdata/tcl_sytral.tclalertetrafic_2/all.json?maxfeatures=200';
-  const MIN_UPSTREAM_INTERVAL_MS = 30_000;
-
-  const login = env.GRANDLYON_LOGIN ?? '';
-  const password = env.GRANDLYON_PASSWORD ?? '';
-  const authorization = login ? `Basic ${Buffer.from(`${login}:${password}`).toString('base64')}` : null;
-
-  const cache = {
-    body: null as string | null,
-    status: 503,
-    lastFetchAt: 0,
-    lastChangeAt: 0,
-  };
-  let inflight: Promise<void> | null = null;
-
-  async function refreshFromUpstream(): Promise<void> {
-    try {
-      const response = await fetch(UPSTREAM_URL, {
-        headers: authorization ? { Authorization: authorization, Accept: 'application/json' } : { Accept: 'application/json' },
-        signal: AbortSignal.timeout(10_000),
-      });
-      const body = await response.text();
-      if (response.ok) {
-        if (body !== cache.body) {
-          cache.body = body;
-          cache.lastChangeAt = Date.now();
-        }
-        cache.status = 200;
-      } else if (cache.status !== 200) {
-        // Pas encore de donnee valide en cache: on relaie l'erreur amont.
-        cache.body = body;
-        cache.status = response.status;
-      }
-      // En cas d'erreur amont avec un cache valide, on continue de servir le cache.
-    } catch {
-      if (cache.status !== 200) {
-        cache.body = JSON.stringify({ detail: 'Flux alertes TCL injoignable.' });
-        cache.status = 503;
-      }
-    } finally {
-      cache.lastFetchAt = Date.now();
-    }
-  }
-
-  const handler: Connect.NextHandleFunction = (req, res, next) => {
-    if (!req.url || !req.url.startsWith('/api/tcl-alertes')) {
-      next();
-      return;
-    }
-    void (async () => {
-      const stale = Date.now() - cache.lastFetchAt >= MIN_UPSTREAM_INTERVAL_MS;
-      if (stale) {
-        inflight ??= refreshFromUpstream().finally(() => {
-          inflight = null;
-        });
-      }
-      if (inflight) {
-        await inflight;
-      }
-      res.statusCode = cache.status;
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Cache-Control', 'no-store');
-      res.setHeader('X-Upstream-Fetched-At', String(cache.lastFetchAt));
-      res.setHeader('X-Upstream-Changed-At', String(cache.lastChangeAt));
-      res.end(cache.body ?? JSON.stringify({ detail: 'Flux alertes TCL indisponible.' }));
-    })();
-  };
-
-  return {
-    name: 'urbanflow-tcl-alerts-endpoint',
-    configureServer(server) {
-      server.middlewares.use(handler);
-    },
-    configurePreviewServer(server) {
-      server.middlewares.use(handler);
-    },
-  };
-}
-
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const apiTarget = env.API_URL ?? `http://127.0.0.1:${env.API_PORT ?? 4000}`;
   return {
-  plugins: [react(), tailwindcss(), tclAlertsEndpoint(env)],
+  plugins: [react(), tailwindcss()],
+  server: {
+    // Le serveur de developpement relaie /api vers l'API : le navigateur ne
+    // voit qu'une seule origine. Le cookie de session reste donc de premiere
+    // partie et aucun en-tete CORS n'est necessaire (surface d'attaque en
+    // moins). Si l'API n'est pas demarree, le relais echoue et l'application
+    // bascule d'elle-meme en mode autonome.
+    proxy: {
+      '/api': { target: apiTarget, changeOrigin: false },
+    },
+  },
+  preview: {
+    proxy: {
+      '/api': { target: apiTarget, changeOrigin: false },
+    },
+  },
   build: {
     // Pas de source map publiee en production : evite ~4 Mo de poids et
     // n'expose pas le code source. Reactiver ponctuellement pour deboguer un build.
@@ -117,6 +44,9 @@ export default defineConfig(({ mode }) => {
     },
   },
   test: {
+    // Les tests du serveur tournent sous `bun test` (bun:sqlite, Bun.password) :
+    // Vitest ne doit pas essayer de les charger dans un environnement Node.
+    exclude: ['node_modules/**', 'dist/**', 'server/**'],
     environment: 'jsdom',
     environmentOptions: {
       jsdom: {
