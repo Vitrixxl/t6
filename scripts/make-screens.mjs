@@ -1,5 +1,5 @@
 // Genere l'ensemble des captures du dossier (output/screens/) sur l'application
-// en fonctionnement reel. Reproductible : npm run screens (serveur sur 5173 ou
+// en fonctionnement reel. Reproductible : bun run screens (serveur sur 5173 ou
 // SCREENS_BASE_URL).
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright-core';

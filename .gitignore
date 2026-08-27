@@ -21,3 +21,8 @@ output/**/*.webp
 
 # base SQLite locale du serveur (donnees de comptes, jamais versionnees)
 server/data/
+
+# lockfile unique du projet : bun.lock (npm/pnpm/yarn ne sont pas utilises)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock

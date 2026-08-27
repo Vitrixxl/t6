@@ -14,7 +14,7 @@ const entry = pick(/^index-.*\.js$/);
 const maplibre = pick(/^maplibre-.*\.js$/);
 const css = pick(/^index-.*\.css$/);
 if (!entry || !maplibre || !css) {
-  console.error('Artefacts introuvables dans dist/assets : lancer `npm run build` d\'abord.');
+  console.error('Artefacts introuvables dans dist/assets : lancer `bun run build` d\'abord.');
   process.exit(1);
 }
 

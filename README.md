@@ -71,7 +71,7 @@ Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/au
 | Routage | OSRM `routing.openstreetmap.de` (foot/bike/driving) | live navigateur |
 | Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | live navigateur |
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | live navigateur |
-| Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | intégré au build (`npm run generate:gtfs`) |
+| Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | intégré au build (`bun run generate:gtfs`) |
 | Météo | Open-Meteo | live navigateur |
 | Alertes trafic TCL | SIRI SX `data.grandlyon.com` (compte gratuit) | relais API `/api/tcl-alertes` (cache 30 s partage) |
 
@@ -80,20 +80,25 @@ Chaque flux a un fallback local (`public/data/`) signalé dans l'UI ; sans compt
 ## Commandes
 
 ```bash
-npm install
+bun install              # bun.lock est le seul lockfile du projet
 python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 
 cp .env.example .env     # secrets (jeton GTFS, compte Grand Lyon) et réglages API, jamais committés
-npm run dev              # API + client ensemble (Ctrl+C coupe les deux)
-npm run seed:demo        # compte de démonstration côté serveur
-npm run generate:gtfs    # régénère le feed GTFS depuis la source officielle TCL
-npm run generate:icons   # icônes PWA
-npm run generate:pdf     # dossier projet PDF
-npm run check            # lint + typage (client et serveur) + tests + build production
-npm run e2e              # scénario E2E de planification (Playwright, 5 assertions)
+bun run dev              # API + client ensemble (Ctrl+C coupe les deux)
+bun run seed:demo        # compte de démonstration côté serveur
+bun run generate:gtfs    # régénère le feed GTFS depuis la source officielle TCL
+bun run generate:icons   # icônes PWA
+bun run generate:pdf     # dossier projet PDF
+bun run check            # lint + typage (client et serveur) + tests + build production
+bun run e2e              # scénario E2E de planification (Playwright, 5 assertions)
 ```
 
-`npm run dev:web` lance le client seul : sans API, l'application démarre en mode autonome.
+`bun run dev:web` lance le client seul : sans API, l'application démarre en mode autonome.
+
+**Toute la chaîne JavaScript tourne sous Bun** : gestionnaire de paquets, exécution de l'API, serveur de
+développement et build Vite (`--bun`), tests client (Vitest) et tests d'API (`bun test`), scripts d'outillage.
+Seules l'ingestion GTFS et la génération du dossier restent en Python, faute d'équivalent dans l'écosystème
+JavaScript.
 L'API tourne sous Bun, sans étape de compilation et sans dépendance native à compiler : `bun server/src/index.ts`
 suffit. La surface spécifique à Bun se limite à trois fichiers (`db/index.ts`, `security/password.ts`,
 `config/index.ts`) : le portage vers Node se ferait via `@elysiajs/node`, `node:sqlite` et scrypt.

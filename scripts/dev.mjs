@@ -2,11 +2,11 @@
 // groupe : Ctrl+C coupe les deux, aucun processus orphelin ne garde un port.
 import { spawn } from 'node:child_process';
 
-// L'API tourne sous Bun (runtime d'Elysia et de bun:sqlite), le client sous
-// Vite/Node : deux processus, un seul Ctrl+C.
+// Les deux processus tournent sous Bun : l'API directement, le client via Vite
+// force sur le runtime Bun (--bun). Un seul Ctrl+C coupe les deux.
 const processes = [
   { name: 'api', command: 'bun', args: ['server/src/index.ts'] },
-  { name: 'web', command: 'npx', args: ['vite', '--host', '0.0.0.0'] },
+  { name: 'web', command: 'bunx', args: ['--bun', 'vite', '--host', '0.0.0.0'] },
 ];
 
 const children = processes.map(({ name, command, args }) => {

@@ -115,7 +115,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectee).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et controlees en planche-contact et pleine page.
-- Verification terminal finale: `npm run check` OK (`eslint .`, 64 tests Vitest, `tsc -b && vite build`), `npm run audit:a11y` OK (0 violation), `npm run e2e` OK, `npm run bench:perf` OK, puis `npm run generate:pdf` OK.
+- Verification terminal finale: `bun run check` OK (`eslint .`, 64 tests Vitest, `tsc -b && vite build`), `bun run audit:a11y` OK (0 violation), `bun run e2e` OK, `bun run bench:perf` OK, puis `bun run generate:pdf` OK.
 
 ## 10. Backend (ajout post-audit)
 
@@ -146,3 +146,14 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Carte eclatee (composant, popups avec echappement HTML, sources) et type `LayerState` dedoublonne.
 - [x] Geolocalisation et calcul d'itineraires extraits en hooks testables.
 - [x] Aucun fichier de plus de 450 lignes ; verification apres chaque etape par lint, typage, tests et scenario E2E 5/5.
+
+## 12. Chaine d'outillage unifiee sous Bun
+
+- [x] Gestionnaire de paquets : `bun install`, `bun.lock` seul lockfile versionne (package-lock.json retire).
+- [x] API : `bun server/src/index.ts`, sans etape de compilation ni dependance native.
+- [x] Serveur de developpement et build Vite forces sur le runtime Bun (`bun --bun vite`).
+- [x] Tests client : Vitest execute sous Bun (`bun --bun vitest run`), 72 tests verts.
+- [x] Tests d'API : `bun test server`, 27 tests verts.
+- [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) executes par Bun.
+- [x] Verifications rejouees apres bascule : `bun run check` complet, E2E 5/5, audit axe-core 0 violation sur 4 ecrans.
+- [x] Limite assumee : l'ingestion GTFS et la generation du dossier restent en Python, faute d'equivalent JavaScript.
