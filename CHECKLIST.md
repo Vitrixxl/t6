@@ -116,3 +116,33 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectee).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et controlees en planche-contact et pleine page.
 - Verification terminal finale: `npm run check` OK (`eslint .`, 64 tests Vitest, `tsc -b && vite build`), `npm run audit:a11y` OK (0 violation), `npm run e2e` OK, `npm run bench:perf` OK, puis `npm run generate:pdf` OK.
+
+## 10. Backend (ajout post-audit)
+
+- [x] API HTTP dediee (`server/`) : Elysia sur Bun + SQLite via `bun:sqlite`, aucune dependance native, aucune etape de compilation.
+- [x] Schema relationnel migre au demarrage (users, sessions, trip_records, planned_trips, recurring_trips, saved_routes, applied_operations) avec cles etrangeres et suppression en cascade.
+- [x] Inscription / connexion / deconnexion serveur : `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/session`.
+- [x] Mots de passe argon2id 19 Mio / t=2 / p=1 (parametres OWASP, fonction memory-hard) via Bun.password ; comparaison a temps constant.
+- [x] Sessions opaques 256 bits, seule l'empreinte SHA-256 est stockee, revocation en base a la deconnexion, purge des sessions expirees.
+- [x] Cookie `httpOnly` + `SameSite=Lax` + `Secure` en production : verifie en navigateur reel (`document.cookie` ne voit pas le jeton).
+- [x] Validation TypeBox de toutes les entrees, limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
+- [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
+- [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
+- [x] Synchronisation hors ligne : file d'attente cliente (patron outbox), lot atomique, operations idempotentes (`applied_operations`), rejeu sans doublon.
+- [x] Repli automatique : sonde `/api/health` au demarrage, mode autonome si l'API est absente (verifie en navigateur, sans serveur).
+- [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17), file d'attente purgee avec le compte.
+- [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
+- [x] Relais des alertes trafic TCL deplace du serveur de developpement Vite vers l'API : identifiants cote serveur, cache 30 s partage entre tous les clients.
+- [x] 35 tests supplementaires (27 d'integration API via `app.handle`, 8 sur la file de synchronisation) : 99 tests verts au total (72 Vitest + 27 bun test).
+- [x] Verification bout en bout en navigateur : inscription depuis l'interface -> ligne SQLite avec empreinte scrypt -> session restauree apres rechargement par cookie httpOnly, zero erreur de page.
+
+## 11. Architecture de fichiers (revue de code)
+
+- [x] API decoupee par responsabilite : `config/`, `db/`, `models/`, `repositories/`, `services/`, `plugins/`, `routes/` ; 113 lignes au maximum par fichier.
+- [x] Module trajets eclate : 955 lignes -> 11 fichiers (hub, quatre listes, formulaire, objectifs, briques, formats).
+- [x] Moteur d'itineraires eclate : 559 lignes -> 13 fichiers, un generateur par mode dans `options/`.
+- [x] Couche transport eclatee : 780 lignes -> 14 fichiers (`geocoding/`, `routing/`, `feeds/`), une source externe par fichier.
+- [x] Module d'authentification eclate : crypto, validation, defauts, stockage local, arbitrage API/autonome.
+- [x] Carte eclatee (composant, popups avec echappement HTML, sources) et type `LayerState` dedoublonne.
+- [x] Geolocalisation et calcul d'itineraires extraits en hooks testables.
+- [x] Aucun fichier de plus de 450 lignes ; verification apres chaque etape par lint, typage, tests et scenario E2E 5/5.
