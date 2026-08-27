@@ -14,10 +14,10 @@ import type {
   TransportNetwork,
   TripRecord,
 } from '../../types';
-import { enhanceRoutesWithLiveRouting } from '../../lib/externalApis';
+import { enhanceRoutesWithLiveRouting } from '../../lib/transport';
 import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from '../../lib/savedRoutes';
 import { haversineDistanceKm, matchesEnabledModes, planRoutes } from '../../lib/planner';
-import { CITY_CENTER, METRO_RADIUS_KM } from '../../lib/transportApi';
+import { CITY_CENTER, METRO_RADIUS_KM } from '../../lib/transport';
 import { summarizeCarbon } from '../../lib/carbon';
 import {
   createPlannedTrip,

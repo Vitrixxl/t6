@@ -6,7 +6,7 @@ import {
   saveMobilityProfile } from './lib/auth';
 import { clearTripHistory, loadTripHistory, saveTripRecord } from './lib/carbon';
 import { bootstrapSync, startBackgroundSync } from './lib/api/sync';
-import { loadTransportNetwork } from './lib/transportApi';
+import { loadTransportNetwork } from './lib/transport';
 import { Card, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import type { SessionUser, TransportNetwork, TripRecord } from './types';
 import { AuthScreen } from './components/auth/AuthScreen';

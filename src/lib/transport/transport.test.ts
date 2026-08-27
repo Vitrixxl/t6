@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enhanceRoutesWithLiveRouting, searchPlaces } from './externalApis';
-import type { RouteOption } from '../types';
+import { enhanceRoutesWithLiveRouting, searchPlaces } from './index';
+import type { RouteOption } from '../../types';
 
 const origin = { label: 'Bellecour', lat: 45.7578, lon: 4.832 };
 const destination = { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { fetchJson, loadTransportNetwork, mapDottVehicles, mapTclAlerts, mergeVelovStations, weatherFromOpenMeteo } from './transportApi';
-import type { GtfsFeed, SharedMobilityFeed } from '../types';
+import { fetchJson, loadTransportNetwork, mapDottVehicles, mapTclAlerts, mergeVelovStations, weatherFromOpenMeteo } from './feeds';
+import type { GtfsFeed, SharedMobilityFeed } from '../../types';
 
 describe('mergeVelovStations', () => {
   it('fusionne information et status GBFS v3 en stations exploitables', () => {

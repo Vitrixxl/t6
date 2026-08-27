@@ -4,7 +4,7 @@ import { Building2, CalendarClock, Landmark, LocateFixed, MapPin, PanelLeftClose
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import type { GeoPoint} from '../../types';
-import { searchPlaces, type PlaceKind, type PlaceSearchResult } from '../../lib/externalApis';
+import { searchPlaces, type PlaceKind, type PlaceSearchResult } from '../../lib/transport';
 
 const PLACE_KIND_ICON: Record<PlaceKind, typeof MapPin> = {
   Quartier: Landmark,
