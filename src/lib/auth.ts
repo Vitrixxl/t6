@@ -1,7 +1,19 @@
 import type { MobilityMode, MobilityProfile, SessionUser, StoredUser } from '../types';
+import { isApiOnline } from './api/availability';
+import { ApiUnavailableError } from './api/errors';
+import { apiRequest } from './api/http';
+import type { RemoteState } from './api/operations';
+import { discardOperations, enqueueOperation } from './api/outbox';
+import {
+  cacheSessionUser,
+  clearActiveSession,
+  getActiveSessionId,
+  readCachedSessionUser,
+  setActiveSessionId,
+} from './api/session';
+import { adoptRemoteSession } from './api/sync';
 
 const USERS_KEY = 'ufm.users';
-const SESSION_KEY = 'ufm.session';
 const DEMO_EMAIL = 'demo@urbanflow.local';
 const DEMO_PASSWORD = 'UrbanFlow2026!';
 
@@ -26,6 +38,27 @@ export interface RegisterInput extends AuthInput {
 }
 
 export async function registerUser(input: RegisterInput): Promise<SessionUser> {
+  if (isApiOnline()) {
+    try {
+      const { user } = await apiRequest<{ user: SessionUser; state: RemoteState }>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: input.email,
+          password: input.password,
+          displayName: input.displayName,
+        }),
+      });
+      adoptRemoteSession(user);
+      return user;
+    } catch (error) {
+      // Une erreur metier (email deja pris, mot de passe refuse) doit remonter
+      // telle quelle ; seule une panne reseau justifie le repli local.
+      if (!(error instanceof ApiUnavailableError)) {
+        throw error;
+      }
+    }
+  }
+
   await ensureDemoAccount();
   const email = normalizeEmail(input.email);
   validateEmail(email);
@@ -56,6 +89,21 @@ export async function registerUser(input: RegisterInput): Promise<SessionUser> {
 }
 
 export async function loginUser(input: AuthInput): Promise<SessionUser> {
+  if (isApiOnline()) {
+    try {
+      const { user, state } = await apiRequest<{ user: SessionUser; state: RemoteState }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: input.email, password: input.password }),
+      });
+      adoptRemoteSession(user, state);
+      return user;
+    } catch (error) {
+      if (!(error instanceof ApiUnavailableError)) {
+        throw error;
+      }
+    }
+  }
+
   await ensureDemoAccount();
   const email = normalizeEmail(input.email);
   const user = loadUsers().find((item) => item.email === email);
@@ -74,9 +122,14 @@ export async function loginUser(input: AuthInput): Promise<SessionUser> {
 }
 
 export function getCurrentSession(): SessionUser | null {
-  const userId = sessionStorage.getItem(SESSION_KEY);
+  const userId = getActiveSessionId();
   if (!userId) {
     return null;
+  }
+
+  const remote = readCachedSessionUser();
+  if (remote && remote.id === userId) {
+    return remote;
   }
 
   const user = loadUsers().find((item) => item.id === userId);
@@ -84,14 +137,20 @@ export function getCurrentSession(): SessionUser | null {
 }
 
 export function logoutUser(): void {
-  sessionStorage.removeItem(SESSION_KEY);
+  clearActiveSession();
+  if (isApiOnline()) {
+    // La session est revoquee cote serveur ; l'echec reseau eventuel ne doit
+    // pas empecher la deconnexion locale, deja effectuee ci-dessus.
+    void apiRequest('/auth/logout', { method: 'POST' }).catch(() => undefined);
+  }
 }
 
 export function saveMobilityProfile(userId: string, profile: MobilityProfile): SessionUser {
   const users = loadUsers();
   const index = users.findIndex((user) => user.id === userId);
+  const remote = readCachedSessionUser();
 
-  if (index === -1) {
+  if (index === -1 && (!remote || remote.id !== userId)) {
     throw new Error('Session introuvable.');
   }
 
@@ -105,18 +164,41 @@ export function saveMobilityProfile(userId: string, profile: MobilityProfile): S
     weeklySavedGoalGrams: clampNumber(profile.weeklySavedGoalGrams ?? DEFAULT_PROFILE.weeklySavedGoalGrams ?? 2000, 100, 50000),
   };
 
+  enqueueOperation(userId, { kind: 'profile.update', profile: sanitizedProfile });
+
+  if (index === -1) {
+    const session: SessionUser = {
+      ...(remote as SessionUser),
+      displayName: sanitizedProfile.displayName,
+      profile: sanitizedProfile,
+    };
+    cacheSessionUser(session);
+    return session;
+  }
+
   users[index] = {
     ...users[index],
     displayName: sanitizedProfile.displayName,
     profile: sanitizedProfile,
   };
   persistUsers(users);
-  return toSessionUser(users[index]);
+  const session = toSessionUser(users[index]);
+  if (remote && remote.id === userId) {
+    cacheSessionUser(session);
+  }
+  return session;
 }
 
 export function deleteLocalAccount(userId: string): void {
+  if (isApiOnline()) {
+    // Droit a l'effacement : la demande part aussi au serveur, qui supprime le
+    // compte et, en cascade, tous les trajets et itineraires associes.
+    void apiRequest('/me', { method: 'DELETE' }).catch(() => undefined);
+  }
+  // Les operations encore en attente concernent un compte qui n'existe plus.
+  discardOperations(userId);
   persistUsers(loadUsers().filter((user) => user.id !== userId));
-  sessionStorage.removeItem(SESSION_KEY);
+  clearActiveSession();
   // Droit a l'effacement (RGPD): toutes les cles locales de l'utilisateur sont
   // supprimees par balayage (historique carbone, itineraires sauvegardes,
   // historique de recherche et toute cle future portant l'identifiant).
@@ -175,7 +257,7 @@ function persistUsers(users: StoredUser[]): void {
 }
 
 function persistSession(userId: string): void {
-  sessionStorage.setItem(SESSION_KEY, userId);
+  setActiveSessionId(userId);
 }
 
 function toSessionUser(user: StoredUser): SessionUser {
