@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { PlannedTrip } from '../types';
+import type { PlannedTrip } from '../../types';
 import {
   createPlannedTrip,
   createRecurringTrip,
@@ -14,7 +14,7 @@ import {
   summarizeTripActivity,
   syncRecurringOccurrences,
   upcomingTrips,
-} from './plannedTrips';
+} from './index';
 
 const USER_ID = 'user-tests';
 

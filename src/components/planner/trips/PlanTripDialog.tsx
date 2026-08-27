@@ -6,7 +6,7 @@ import { Calendar } from '../../ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Input } from '../../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
-import { WEEKDAY_LABELS, type TripSource } from '../../../lib/plannedTrips';
+import { WEEKDAY_LABELS, type TripSource } from '../../../lib/trips';
 import { OriginDestination } from './atoms';
 import { FULL_DAY_FORMAT, toTimeInputValue } from './format';
 

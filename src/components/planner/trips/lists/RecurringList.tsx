@@ -2,7 +2,7 @@
 import { Pause, Play, Repeat, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { RecurringTrip } from '../../../../types';
-import { WEEKDAY_LABELS } from '../../../../lib/plannedTrips';
+import { WEEKDAY_LABELS } from '../../../../lib/trips';
 import { EmptyState, ModeIconRow, OriginDestination } from '../atoms';
 
 export function RecurringList({

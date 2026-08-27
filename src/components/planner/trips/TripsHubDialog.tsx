@@ -13,7 +13,7 @@ import type {
   SessionUser,
   TripActivitySummary,
 } from '../../../types';
-import { upcomingTrips, completedTrips } from '../../../lib/plannedTrips';
+import { upcomingTrips, completedTrips } from '../../../lib/trips';
 import { Metric } from '../../app/shared';
 import { TripGoalsCard } from './TripGoalsCard';
 import { HistoryList } from './lists/HistoryList';

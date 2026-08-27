@@ -2,41 +2,15 @@
 // planification des trajets (dates, recurrents, objectifs). Auth geree par App.
 import { useMemo, useState } from 'react';
 import { MapPin } from 'lucide-react';
-import type {
-  GeoPoint,
-  MobilityMode,
-  MobilityProfile,
-  PlannedTrip,
-  RecurringTrip,
-  RouteOption,
-  SavedRouteRecord,
-  SessionUser,
-  TransportNetwork,
-  TripRecord,
-} from '../../types';
-import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from '../../lib/savedRoutes';
+import type { GeoPoint, MobilityMode, MobilityProfile, RouteOption, SavedRouteRecord, SessionUser, TransportNetwork, TripRecord } from '../../types';
 import { haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
+import { useSavedRoutes } from './hooks/useSavedRoutes';
+import { useTripPlanning } from './hooks/useTripPlanning';
 import { useRouteOptions } from './hooks/useRouteOptions';
 import { CITY_CENTER, METRO_RADIUS_KM } from '../../lib/transport';
 import { summarizeCarbon } from '../../lib/carbon';
-import {
-  createPlannedTrip,
-  createRecurringTrip,
-  deletePlannedTrip,
-  deleteRecurringTrip,
-  loadRecurringTrips,
-  plannedTripToRecord,
-  prunePlannedForRecurring,
-  savePlannedTrip,
-  saveRecurringTrip,
-  setPlannedTripStatus,
-  setRecurringTripPaused,
-  summarizeTripActivity,
-  syncRecurringOccurrences,
-  upcomingTrips,
-  type TripSource,
-} from '../../lib/plannedTrips';
+import { summarizeTripActivity, upcomingTrips } from '../../lib/trips';
 import { UrbanMap, ALL_MOBILITY_MODES, DEFAULT_LAYERS, MergeFillet, type LayerState } from './shared';
 import { ShellSidebar } from '../layout/Shell';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
@@ -69,17 +43,27 @@ export function MobilityMapApp({
   const [destination, setDestination] = useState<GeoPoint | null>(null);
   const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [leftRailOpen, setLeftRailOpen] = useState(true);
-  const [savedRouteId, setSavedRouteId] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
-  const [savedRoutes, setSavedRoutes] = useState<SavedRouteRecord[]>(() => loadSavedRoutes(user.id));
+  const { savedRoutes, justSavedRouteId, saveRoute: persistRoute, deleteSavedRoute } = useSavedRoutes(user.id);
   const [enabledModes, setEnabledModes] = useState<MobilityMode[]>(ALL_MOBILITY_MODES);
 
   // Planification : occurrences datees + routines recurrentes.
-  const [plannedTrips, setPlannedTrips] = useState<PlannedTrip[]>(() => syncRecurringOccurrences(user.id));
-  const [recurringTrips, setRecurringTrips] = useState<RecurringTrip[]>(() => loadRecurringTrips(user.id));
   const [tripsHub, setTripsHub] = useState<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
-  const [planSource, setPlanSource] = useState<TripSource | null>(null);
   const [tutorialSignal, setTutorialSignal] = useState(0);
+
+  const {
+    plannedTrips,
+    recurringTrips,
+    planSource,
+    startPlanning,
+    cancelPlanning,
+    submitPlan: submitTripPlan,
+    markTripDone,
+    cancelTrip,
+    removeTrip,
+    toggleRecurringPaused,
+    removeRecurring,
+  } = useTripPlanning(user.id, onTripCompleted);
 
   const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
   const { routes, selectedRoute, setSelectedRouteId, routingApiStatus } = useRouteOptions({
@@ -115,16 +99,10 @@ export function MobilityMapApp({
     setDestination(point);
   };
 
-  // --- Itineraires enregistres -------------------------------------------
-
   const saveRoute = (routeOption: RouteOption) => {
-    if (!origin || !destination) {
-      return;
+    if (origin && destination) {
+      persistRoute(routeOption, origin, destination);
     }
-    const savedRouteRecord = createSavedRouteRecord(user.id, origin, destination, routeOption);
-    setSavedRoutes(saveSavedRouteRecord(savedRouteRecord));
-    setSavedRouteId(routeOption.id);
-    window.setTimeout(() => setSavedRouteId(''), 1800);
   };
 
   const loadSavedRoute = (entry: SavedRouteRecord) => {
@@ -132,10 +110,6 @@ export function MobilityMapApp({
     setDestination(entry.destination);
     setSelectedRouteId(entry.routeId);
     setTripsHub((hub) => ({ ...hub, open: false }));
-  };
-
-  const deleteSavedRoute = (entryId: string) => {
-    setSavedRoutes(deleteSavedRouteRecord(user.id, entryId));
   };
 
   const toggleEnabledMode = (mode: MobilityMode) => {
@@ -170,7 +144,7 @@ export function MobilityMapApp({
     if (!origin || !destination) {
       return;
     }
-    setPlanSource({
+    startPlanning({
       label: routeOption.title,
       origin,
       destination,
@@ -183,7 +157,7 @@ export function MobilityMapApp({
   };
 
   const planSavedRoute = (entry: SavedRouteRecord) => {
-    setPlanSource({
+    startPlanning({
       label: entry.routeTitle,
       origin: entry.origin,
       destination: entry.destination,
@@ -195,65 +169,13 @@ export function MobilityMapApp({
     });
   };
 
+  // La planification decide de l'onglet a ouvrir ; l'interface se contente de
+  // suivre ce que le domaine a conclu.
   const submitPlan = (plan: PlanTripSubmit) => {
-    if (!planSource) {
-      return;
+    const tab = submitTripPlan(plan);
+    if (tab) {
+      openHub(tab);
     }
-    const source = { ...planSource, label: plan.label };
-    if (plan.kind === 'once' && plan.scheduledFor) {
-      setPlannedTrips(savePlannedTrip(createPlannedTrip(user.id, source, plan.scheduledFor)));
-      setPlanSource(null);
-      openHub('upcoming');
-      return;
-    }
-    if (plan.kind === 'recurring' && plan.daysOfWeek && plan.departureTime) {
-      setRecurringTrips(
-        saveRecurringTrip(
-          createRecurringTrip(user.id, source, {
-            daysOfWeek: plan.daysOfWeek,
-            departureTime: plan.departureTime,
-            returnTime: plan.returnTime ?? null,
-          }),
-        ),
-      );
-      setPlannedTrips(syncRecurringOccurrences(user.id));
-      setPlanSource(null);
-      openHub('recurring');
-    }
-  };
-
-  const markTripDone = (trip: PlannedTrip) => {
-    const updated = setPlannedTripStatus(user.id, trip.id, 'done');
-    setPlannedTrips(updated);
-    const done = updated.find((item) => item.id === trip.id);
-    if (done) {
-      onTripCompleted(plannedTripToRecord(done));
-    }
-  };
-
-  const cancelTrip = (trip: PlannedTrip) => {
-    setPlannedTrips(setPlannedTripStatus(user.id, trip.id, 'cancelled'));
-  };
-
-  const removeTrip = (trip: PlannedTrip) => {
-    setPlannedTrips(deletePlannedTrip(user.id, trip.id));
-  };
-
-  const toggleRecurringPaused = (trip: RecurringTrip) => {
-    setRecurringTrips(setRecurringTripPaused(user.id, trip.id, !trip.paused));
-    if (trip.paused) {
-      // Reprise : rematerialiser les occurrences de la fenetre.
-      setPlannedTrips(syncRecurringOccurrences(user.id));
-    } else {
-      // Pause : les occurrences encore a faire disparaissent du plan.
-      setPlannedTrips(prunePlannedForRecurring(user.id, trip.id));
-    }
-  };
-
-  const removeRecurring = (trip: RecurringTrip) => {
-    const { recurring, planned } = deleteRecurringTrip(user.id, trip.id);
-    setRecurringTrips(recurring);
-    setPlannedTrips(planned);
   };
 
   return (
@@ -332,7 +254,7 @@ export function MobilityMapApp({
           {selectedRoute ? (
             <RouteDetailPanel
               routeOption={selectedRoute}
-              saved={savedRouteId === selectedRoute.id}
+              saved={justSavedRouteId === selectedRoute.id}
               onSave={() => saveRoute(selectedRoute)}
               onPlan={() => planRoute(selectedRoute)}
             />
@@ -382,7 +304,7 @@ export function MobilityMapApp({
           routeRequested={routeRequested}
           routes={routes}
           selectedRoute={selectedRoute}
-          savedRouteId={savedRouteId}
+          savedRouteId={justSavedRouteId}
           layers={layers}
           routingApiStatus={routingApiStatus}
           enabledModes={enabledModes}
@@ -436,7 +358,7 @@ export function MobilityMapApp({
         onPlanSavedRoute={planSavedRoute}
         onDeleteSavedRoute={deleteSavedRoute}
       />
-      <PlanTripDialog source={planSource} onOpenChange={(open) => (!open ? setPlanSource(null) : undefined)} onSubmit={submitPlan} />
+      <PlanTripDialog source={planSource} onOpenChange={(open) => (!open ? cancelPlanning() : undefined)} onSubmit={submitPlan} />
       <TutorialOverlay relaunchSignal={tutorialSignal} />
     </main>
   );

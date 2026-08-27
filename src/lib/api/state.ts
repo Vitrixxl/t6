@@ -4,7 +4,7 @@
 // ne parle jamais directement aux composants. Cette indirection est ce qui
 // permet a l'application de fonctionner a l'identique avec ou sans API.
 import { replaceTripHistory } from '../carbon';
-import { replacePlannedTrips, replaceRecurringTrips } from '../plannedTrips';
+import { replacePlannedTrips, replaceRecurringTrips } from '../trips';
 import { replaceSavedRoutes } from '../savedRoutes';
 import type { RemoteState } from './operations';
 
