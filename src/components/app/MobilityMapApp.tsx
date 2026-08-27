@@ -1,6 +1,6 @@
 // Orchestrateur principal : recherche d'itineraires, comparaison des options et
 // planification des trajets (dates, recurrents, objectifs). Auth geree par App.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import type {
   GeoPoint,
@@ -14,9 +14,10 @@ import type {
   TransportNetwork,
   TripRecord,
 } from '../../types';
-import { enhanceRoutesWithLiveRouting } from '../../lib/transport';
 import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from '../../lib/savedRoutes';
-import { haversineDistanceKm, matchesEnabledModes, planRoutes } from '../../lib/planner';
+import { haversineDistanceKm } from '../../lib/planner';
+import { useGeolocation } from './hooks/useGeolocation';
+import { useRouteOptions } from './hooks/useRouteOptions';
 import { CITY_CENTER, METRO_RADIUS_KM } from '../../lib/transport';
 import { summarizeCarbon } from '../../lib/carbon';
 import {
@@ -66,11 +67,6 @@ export function MobilityMapApp({
 }) {
   const [origin, setOrigin] = useState<GeoPoint | null>(null);
   const [destination, setDestination] = useState<GeoPoint | null>(null);
-  const [currentPosition, setCurrentPosition] = useState<GeoPoint | null>(null);
-  const [selectedRouteId, setSelectedRouteId] = useState('');
-  const [liveRoutes, setLiveRoutes] = useState<RouteOption[]>([]);
-  const [routingApiStatus, setRoutingApiStatus] = useState('En attente');
-  const [geoStatus, setGeoStatus] = useState('GPS non demande');
   const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [leftRailOpen, setLeftRailOpen] = useState(true);
   const [savedRouteId, setSavedRouteId] = useState('');
@@ -84,33 +80,19 @@ export function MobilityMapApp({
   const [tripsHub, setTripsHub] = useState<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
   const [planSource, setPlanSource] = useState<TripSource | null>(null);
   const [tutorialSignal, setTutorialSignal] = useState(0);
-  const watchIdRef = useRef<number | null>(null);
 
-  useEffect(
-    () => () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
-    },
-    [],
-  );
+  const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
+  const { routes, selectedRoute, setSelectedRouteId, routingApiStatus } = useRouteOptions({
+    origin,
+    destination,
+    profile: user.profile,
+    network,
+    enabledModes,
+  });
+
 
   const routeRequested = Boolean(origin && destination);
 
-  const localRoutes = useMemo(
-    () =>
-      origin && destination
-        ? planRoutes({
-            origin,
-            destination,
-            profile: user.profile,
-            network })
-        : [],
-    [destination, network, origin, user.profile],
-  );
-  const candidateRoutes = liveRoutes.length > 0 ? liveRoutes : localRoutes;
-  const routes = candidateRoutes.filter((routeOption) => matchesEnabledModes(routeOption, enabledModes));
-  const selectedRoute = routes.find((routeOption) => routeOption.id === selectedRouteId) ?? routes[0] ?? null;
   const carbonSummary = summarizeCarbon(tripRecords, user.profile.carbonGoalGramsPerWeek);
   const activitySummary = useMemo(() => summarizeTripActivity(plannedTrips, recurringTrips), [plannedTrips, recurringTrips]);
   const upcoming = useMemo(() => upcomingTrips(plannedTrips), [plannedTrips]);
@@ -124,86 +106,6 @@ export function MobilityMapApp({
   const coverageWarning = routeRequested && outsideMetro
     ? 'Hors metropole de Lyon : transport public et velos/trottinettes indisponibles, options limitees a la marche et au covoiturage.'
     : null;
-
-  useEffect(() => {
-    if (!origin || !destination) {
-      setLiveRoutes([]);
-      setRoutingApiStatus('En attente');
-      return;
-    }
-
-    const controller = new AbortController();
-    setRoutingApiStatus('Calcul OSRM en cours');
-    enhanceRoutesWithLiveRouting(localRoutes, origin, destination, controller.signal)
-      .then((enhancedRoutes) => {
-        setLiveRoutes(enhancedRoutes);
-        const hasLiveGeometry = enhancedRoutes.some((routeOption, index) => routeOption.path !== localRoutes[index]?.path);
-        setRoutingApiStatus(hasLiveGeometry ? 'Trace OSRM active' : 'Trace locale');
-      })
-      .catch(() => {
-        setLiveRoutes(localRoutes);
-        setRoutingApiStatus('Trace locale');
-      });
-
-    return () => controller.abort();
-  }, [destination, localRoutes, origin]);
-
-  useEffect(() => {
-    if (!selectedRoute || selectedRoute.id === selectedRouteId) {
-      return;
-    }
-    setSelectedRouteId(selectedRoute.id);
-  }, [selectedRoute, selectedRouteId]);
-
-  const applyGpsPosition = (position: GeolocationPosition): GeoPoint => {
-    const point = {
-      label: 'Ma position',
-      lat: position.coords.latitude,
-      lon: position.coords.longitude,
-      accuracyMeters: position.coords.accuracy };
-    setCurrentPosition(point);
-    setGeoStatus(`GPS ok - precision ${Math.round(position.coords.accuracy)} m`);
-    return point;
-  };
-
-  // Apres la premiere position, un suivi leger tient le repere "Ma position"
-  // a jour sur la carte (pas de guidage: uniquement l'affichage temps reel).
-  const startPositionWatch = () => {
-    if (watchIdRef.current !== null || !navigator.geolocation) {
-      return;
-    }
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      applyGpsPosition,
-      () => undefined,
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
-    );
-  };
-
-  const requestCurrentPosition = () =>
-    new Promise<GeoPoint | null>((resolve) => {
-      if (!navigator.geolocation) {
-        setGeoStatus('GPS indisponible');
-        resolve(null);
-        return;
-      }
-
-      setGeoStatus('GPS en cours');
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const point = applyGpsPosition(position);
-          startPositionWatch();
-          resolve(point);
-        },
-        (error) => {
-          setGeoStatus(`GPS refuse: ${error.message}`);
-          resolve(null);
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 3000,
-          timeout: 10000 },
-      );
-    });
 
   const selectOrigin = (point: GeoPoint) => {
     setOrigin(point);
