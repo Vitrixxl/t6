@@ -16,7 +16,7 @@ import type {
 } from '../../types';
 import { enhanceRoutesWithLiveRouting } from '../../lib/externalApis';
 import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from '../../lib/savedRoutes';
-import { haversineDistanceKm, matchesEnabledModes, planRoutes } from '../../lib/routePlanner';
+import { haversineDistanceKm, matchesEnabledModes, planRoutes } from '../../lib/planner';
 import { CITY_CENTER, METRO_RADIUS_KM } from '../../lib/transportApi';
 import { summarizeCarbon } from '../../lib/carbon';
 import {

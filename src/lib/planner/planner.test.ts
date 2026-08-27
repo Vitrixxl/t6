@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_PROFILE } from './auth';
+import { DEFAULT_PROFILE } from '../auth';
 import {
   haversineDistanceKm,
   LANDMARKS,
@@ -7,8 +7,8 @@ import {
   planRoutes,
   SCORING_WEIGHTS,
   totalWalkMinutes,
-} from './routePlanner';
-import type { TransportNetwork } from '../types';
+} from './index';
+import type { TransportNetwork } from '../../types';
 
 const network: TransportNetwork = {
   gtfs: {
