@@ -7,8 +7,8 @@ import {
   logoutUser,
   registerUser,
   saveMobilityProfile,
-} from './auth';
-import type { StoredUser } from '../types';
+} from './index';
+import type { StoredUser } from '../../types';
 
 const VALID_PASSWORD = 'UrbanFlow2026!';
 

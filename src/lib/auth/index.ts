@@ -1,32 +1,21 @@
-import type { MobilityMode, MobilityProfile, SessionUser, StoredUser } from '../types';
-import { isApiOnline } from './api/availability';
-import { ApiUnavailableError } from './api/errors';
-import { apiRequest } from './api/http';
-import type { RemoteState } from './api/operations';
-import { discardOperations, enqueueOperation } from './api/outbox';
-import {
-  cacheSessionUser,
-  clearActiveSession,
-  getActiveSessionId,
-  readCachedSessionUser,
-  setActiveSessionId,
-} from './api/session';
-import { adoptRemoteSession } from './api/sync';
-
-const USERS_KEY = 'ufm.users';
-const DEMO_EMAIL = 'demo@urbanflow.local';
-const DEMO_PASSWORD = 'UrbanFlow2026!';
-
-export const DEFAULT_PROFILE: MobilityProfile = {
-  displayName: 'Citoyen UrbanFlow',
-  preferredModes: ['transit', 'bike', 'walk'],
-  maxWalkMinutes: 15,
-  accessibilityNeed: false,
-  avoidRain: true,
-  carbonGoalGramsPerWeek: 2500,
-  weeklyTripsGoal: 5,
-  weeklySavedGoalGrams: 2000,
-};
+// Authentification : inscription, connexion, session et profil.
+//
+// Deux modes coexistent. Quand l'API repond, elle authentifie et le navigateur
+// ne detient qu'un cookie httpOnly. Sinon, le mode autonome prend le relais sur
+// le stockage local. Une erreur metier du serveur (email pris, mot de passe
+// refuse) remonte telle quelle : seule une panne reseau declenche le repli.
+import type { MobilityProfile, SessionUser, StoredUser } from '../../types';
+import { isApiOnline } from '../api/availability';
+import { ApiUnavailableError } from '../api/errors';
+import { apiRequest } from '../api/http';
+import type { RemoteState } from '../api/operations';
+import { discardOperations, enqueueOperation } from '../api/outbox';
+import { cacheSessionUser, clearActiveSession, getActiveSessionId, readCachedSessionUser } from '../api/session';
+import { adoptRemoteSession } from '../api/sync';
+import { hashPassword, randomBase64 } from './crypto';
+import { DEFAULT_PROFILE } from './defaults';
+import { ensureDemoAccount, loadUsers, persistSession, persistUsers, toSessionUser } from './storage';
+import { clampNumber, normalizeEmail, sanitizeDisplayName, sanitizeModes, validateEmail, validatePassword } from './validation';
 
 export interface AuthInput {
   email: string;
@@ -212,136 +201,5 @@ export function deleteLocalAccount(userId: string): void {
   userKeys.forEach((key) => localStorage.removeItem(key));
 }
 
-export function loadUsers(): StoredUser[] {
-  const payload = localStorage.getItem(USERS_KEY);
-  if (!payload) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(payload) as StoredUser[];
-  } catch {
-    localStorage.removeItem(USERS_KEY);
-    return [];
-  }
-}
-
-async function ensureDemoAccount(): Promise<void> {
-  const users = loadUsers();
-  if (users.some((user) => user.email === DEMO_EMAIL)) {
-    return;
-  }
-
-  const salt = randomBase64(16);
-  const demoUser: StoredUser = {
-    id: 'demo-urbanflow-user',
-    email: DEMO_EMAIL,
-    displayName: 'Demo UrbanFlow',
-    passwordHash: await hashPassword(DEMO_PASSWORD, salt),
-    passwordSalt: salt,
-    createdAt: new Date('2026-09-01T08:00:00+02:00').toISOString(),
-    profile: {
-      ...DEFAULT_PROFILE,
-      displayName: 'Demo UrbanFlow',
-      preferredModes: ['transit', 'bike', 'walk'],
-      accessibilityNeed: false,
-      carbonGoalGramsPerWeek: 2500,
-    },
-  };
-
-  persistUsers([demoUser, ...users]);
-}
-
-function persistUsers(users: StoredUser[]): void {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function persistSession(userId: string): void {
-  setActiveSessionId(userId);
-}
-
-function toSessionUser(user: StoredUser): SessionUser {
-  return {
-    id: user.id,
-    email: user.email,
-    displayName: user.displayName,
-    profile: user.profile,
-  };
-}
-
-function validateEmail(email: string): void {
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error('Email invalide.');
-  }
-}
-
-function validatePassword(password: string): void {
-  if (password.length < 12 || !/[a-z]/i.test(password) || !/[0-9]/.test(password)) {
-    throw new Error('Mot de passe requis: 12 caracteres minimum avec lettres et chiffres.');
-  }
-}
-
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-function sanitizeDisplayName(value: string): string {
-  const sanitized = value.trim().replace(/[<>]/g, '').slice(0, 80);
-  return sanitized || DEFAULT_PROFILE.displayName;
-}
-
-function sanitizeModes(modes: MobilityMode[]): MobilityMode[] {
-  const allowed: MobilityMode[] = ['walk', 'bike', 'scooter', 'transit', 'carpool'];
-  const sanitized = modes.filter((mode, index) => allowed.includes(mode) && modes.indexOf(mode) === index);
-  return sanitized.length > 0 ? sanitized : DEFAULT_PROFILE.preferredModes;
-}
-
-function clampNumber(value: number, min: number, max: number): number {
-  if (Number.isNaN(value)) {
-    return min;
-  }
-
-  return Math.min(Math.max(value, min), max);
-}
-
-async function hashPassword(password: string, saltBase64: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
-  const salt = toArrayBuffer(base64ToBytes(saltBase64));
-  const derivedBits = await crypto.subtle.deriveBits(
-    {
-      name: 'PBKDF2',
-      salt,
-      iterations: 120000,
-      hash: 'SHA-256',
-    },
-    keyMaterial,
-    256,
-  );
-  return bytesToBase64(new Uint8Array(derivedBits));
-}
-
-function randomBase64(length: number): string {
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return bytesToBase64(bytes);
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-  return btoa(binary);
-}
-
-function base64ToBytes(value: string): Uint8Array {
-  const binary = atob(value);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
-}
-
-function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-  const buffer = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(buffer).set(bytes);
-  return buffer;
-}
+export { DEFAULT_PROFILE } from './defaults';
+export { loadUsers } from './storage';
