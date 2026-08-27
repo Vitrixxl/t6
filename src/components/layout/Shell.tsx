@@ -3,7 +3,7 @@ import { CalendarClock, CircleHelp, Layers3, Navigation, UserRound } from 'lucid
 import { Button } from '../ui/button';
 import type { PlannedTrip, SessionUser, TransportNetwork, TripActivitySummary } from '../../types';
 import { LayerToggle, type LayerState } from '../app/shared';
-import { TripsSidebarSection, type TripsHubTab } from '../planner/TripsPanels';
+import { TripsSidebarSection, type TripsHubTab } from '../planner/trips';
 import { getFeedFreshness } from '../../lib/transportApi';
 
 function SidebarSectionHeader({

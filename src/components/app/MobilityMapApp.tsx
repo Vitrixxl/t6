@@ -41,7 +41,7 @@ import { ShellSidebar } from '../layout/Shell';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
 import { DesktopRouteStrip, MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
 import { MobileTripPanel } from '../planner/MobilePanels';
-import { PlanTripDialog, TripsHubDialog, type PlanTripSubmit, type TripsHubTab } from '../planner/TripsPanels';
+import { PlanTripDialog, TripsHubDialog, type PlanTripSubmit, type TripsHubTab } from '../planner/trips';
 import { CarbonPanel } from '../carbon/CarbonPanel';
 import { ProfileDrawer } from '../profile/ProfilePanels';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
