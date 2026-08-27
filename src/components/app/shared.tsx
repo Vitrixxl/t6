@@ -7,7 +7,7 @@ import { getRouteColor } from '../../lib/routeColors';
 
 // La carte embarque MapLibre (~2/3 du poids applicatif). On la charge a la
 // demande, apres l'ecran de connexion, pour alleger le bundle initial.
-export const LazyUrbanMap = lazy(() => import('../UrbanMap').then((module) => ({ default: module.UrbanMap })));
+export const LazyUrbanMap = lazy(() => import('../map/UrbanMap').then((module) => ({ default: module.UrbanMap })));
 
 export function UrbanMap(props: ComponentProps<typeof LazyUrbanMap>) {
   return (

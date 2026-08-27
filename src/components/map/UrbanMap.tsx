@@ -1,66 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import maplibregl, { type GeoJSONSource, type Map as MaplibreMap } from 'maplibre-gl';
-import type { GeoPoint, RouteOption, TransportNetwork } from '../types';
-import { getRouteColor } from '../lib/routeColors';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
+import type { GeoPoint, RouteOption, TransportNetwork } from '../../types';
+import { getRouteColor } from '../../lib/routeColors';
+import type { LayerState } from '../app/shared';
+import type { FeatureCollection } from './geojson';
+import { bindPointPopup, escapeHtml } from './popup';
+import { setGeoJsonSource, setLayerVisibility } from './sources';
 
-function escapeHtml(value: unknown): string {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char
-  ));
-}
 
-// Popup de details au clic sur un point (arret, station, incident).
-function bindPointPopup(
-  map: MaplibreMap,
-  layerId: string,
-  popupRef: MutableRefObject<maplibregl.Popup | null>,
-  buildHtml: (properties: Record<string, unknown>) => string,
-) {
-  map.on('click', layerId, (event) => {
-    const feature = event.features?.[0];
-    if (!feature) {
-      return;
-    }
-    const coordinates =
-      feature.geometry.type === 'Point'
-        ? (feature.geometry.coordinates as [number, number])
-        : ([event.lngLat.lng, event.lngLat.lat] as [number, number]);
-    popupRef.current?.remove();
-    popupRef.current = new maplibregl.Popup({ closeButton: true, maxWidth: '280px', offset: 14, className: 'ufm-popup' })
-      .setLngLat(coordinates)
-      .setHTML(buildHtml(feature.properties ?? {}))
-      .addTo(map);
-  });
-  map.on('mouseenter', layerId, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', layerId, () => {
-    map.getCanvas().style.cursor = '';
-  });
-}
-
-type LayerState = {
-  transitStops: boolean;
-  sharedMobility: boolean;
-  incidents: boolean;
-};
-
-type FeatureCollection = {
-  type: 'FeatureCollection';
-  features: Array<{
-    type: 'Feature';
-    properties: Record<string, string | number | boolean | null>;
-    geometry:
-      | {
-          type: 'LineString';
-          coordinates: number[][];
-        }
-      | {
-          type: 'Point';
-          coordinates: number[];
-        };
-  }>;
-};
 
 export function UrbanMap({
   origin,
@@ -436,23 +383,4 @@ export function UrbanMap({
   }, [destination, loaded, origin, selectedRoute]);
 
   return <div ref={containerRef} className="absolute inset-0 h-full w-full" aria-label="Carte des trajets UrbanFlow" />;
-}
-
-function setGeoJsonSource(map: MaplibreMap, id: string, data: FeatureCollection) {
-  const source = map.getSource(id) as GeoJSONSource | undefined;
-  if (source) {
-    source.setData(data);
-    return;
-  }
-
-  map.addSource(id, {
-    type: 'geojson',
-    data,
-  });
-}
-
-function setLayerVisibility(map: MaplibreMap, id: string, visible: boolean) {
-  if (map.getLayer(id)) {
-    map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
-  }
 }
