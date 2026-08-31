@@ -312,7 +312,6 @@ export function MobilityMapApp({
           </div>
         </header>
 
-        {routeRequested ? (
         <MobileTripPanel
           destination={destination}
           routeRequested={routeRequested}
@@ -330,8 +329,14 @@ export function MobilityMapApp({
           onSaveRoute={saveRoute}
           onPlanRoute={planRoute}
           onOpenHub={() => openHub('upcoming')}
+          network={network}
+          currentPosition={currentPosition}
+          origin={origin}
+          upcomingTrip={upcoming[0] ?? null}
+          carbonSummary={carbonSummary}
+          weeklyGoalGrams={user.profile.carbonGoalGramsPerWeek}
+          onUseCurrentPosition={() => void requestCurrentPosition().then((point) => point && setOrigin(point))}
         />
-        ) : null}
       </div>
 
       <ProfileDrawer

@@ -3,9 +3,17 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { CalendarClock, CalendarPlus, Check, Route } from 'lucide-react';
 import { Button } from '../ui/button';
-import type { GeoPoint, MobilityMode, RouteOption } from '../../types';
+import type {
+  CarbonSummary,
+  GeoPoint,
+  MobilityMode,
+  PlannedTrip,
+  RouteOption,
+  TransportNetwork,
+} from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 import { formatMeters, Metric, LayerPill, MODE_ICON, MODE_OPTIONS, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type LayerState, type MobileSheetLevel } from '../app/shared';
+import { MobileHomePanel } from './MobileHomePanel';
 
 export function MobileTripPanel({
   destination,
@@ -23,7 +31,14 @@ export function MobileTripPanel({
   onSelectRoute,
   onSaveRoute,
   onPlanRoute,
-  onOpenHub }: {
+  onOpenHub,
+  network,
+  currentPosition,
+  origin,
+  upcomingTrip,
+  carbonSummary,
+  weeklyGoalGrams,
+  onUseCurrentPosition }: {
   destination: GeoPoint | null;
   routeRequested: boolean;
   routes: RouteOption[];
@@ -40,6 +55,13 @@ export function MobileTripPanel({
   onSaveRoute: (routeOption: RouteOption) => void;
   onPlanRoute: (routeOption: RouteOption) => void;
   onOpenHub: () => void;
+  network: TransportNetwork;
+  currentPosition: GeoPoint | null;
+  origin: GeoPoint | null;
+  upcomingTrip: PlannedTrip | null;
+  carbonSummary: CarbonSummary;
+  weeklyGoalGrams: number;
+  onUseCurrentPosition: () => void;
 }) {
   const [sheetLevel, setSheetLevel] = useState<MobileSheetLevel>('mid');
   const dragStartY = useRef<number | null>(null);
@@ -133,8 +155,12 @@ export function MobileTripPanel({
       <div className={`${sheetSizing.content} overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itineraire</p>
-            <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Ou vas-tu ?'}</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              {routeRequested ? "Options d'itineraire" : 'Reseau en direct'}
+            </p>
+            <h1 className="truncate text-lg font-semibold tracking-normal">
+              {routeRequested ? (destination?.label ?? 'Ou vas-tu ?') : 'Autour de moi'}
+            </h1>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={onOpenHub} className="relative shrink-0 rounded-full bg-white">
             <CalendarClock className="size-4" aria-hidden="true" />
@@ -147,7 +173,21 @@ export function MobileTripPanel({
           </Button>
         </div>
 
-        {!isCollapsed ? (
+        {!routeRequested ? (
+          <MobileHomePanel
+            network={network}
+            currentPosition={currentPosition}
+            origin={origin}
+            upcomingTrip={upcomingTrip}
+            carbonSummary={carbonSummary}
+            weeklyGoalGrams={weeklyGoalGrams}
+            expanded={sheetLevel === 'expanded'}
+            onOpenHub={onOpenHub}
+            onUseCurrentPosition={onUseCurrentPosition}
+          />
+        ) : null}
+
+        {routeRequested && !isCollapsed ? (
           <>
             <div className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <LayerPill active={layers.transitStops} onClick={() => onLayersChange({ ...layers, transitStops: !layers.transitStops })}>
@@ -176,7 +216,7 @@ export function MobileTripPanel({
           </div>
         ) : null}
 
-        {routes.length > 0 ? (
+        {routeRequested && routes.length > 0 ? (
           <div className="grid grid-cols-2 gap-2 px-4 pb-3">
             {routes.slice(0, 4).map((routeOption) => (
               <MobileRouteTab
@@ -187,13 +227,13 @@ export function MobileTripPanel({
               />
             ))}
           </div>
-        ) : (
+        ) : routeRequested ? (
           <div className="px-4 pb-3">
             <div className="rounded-xl border border-border bg-background/80 px-3 py-3 text-sm font-medium text-muted-foreground">
-              {routeRequested ? 'Aucun trajet pour cette combinaison.' : 'Choisis un depart et une arrivee pour comparer les options.'}
+              Aucun trajet pour cette combinaison.
             </div>
           </div>
-        )}
+        ) : null}
 
         {selectedRoute ? (
           <div className="grid grid-cols-[1.2fr_0.8fr] gap-2 px-4 pb-3">

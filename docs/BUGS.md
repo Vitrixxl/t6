@@ -183,6 +183,23 @@ Depot : <https://github.com/Vitrixxl/t6>
 Identifies et reproduits, pas encore corriges. Documentes ici plutot que
 laisses a decouvrir.
 
+### O0 — L'ecran mobile n'avait aucun etat de repos (corrige)
+
+- **Criticite** : majeur (l'application paraissait vide sur mobile)
+- **Symptome** : avant d'avoir saisi un depart **et** une arrivee, l'ecran
+  mobile se reduisait a une carte de points, une barre de recherche et une
+  pastille GPS. Aucune donnee.
+- **Cause racine** : le panneau mobile etait rendu sous condition
+  `routeRequested ? <MobileTripPanel/> : null`. Tant que les deux champs
+  n'etaient pas remplis, il n'existait pas.
+- **Correctif** : le panneau est desormais toujours monte et possede un etat de
+  repos (`MobileHomePanel`) : station Velo'v, trottinette et arret les plus
+  proches avec distance et disponibilite reelles, meteo, alertes en cours,
+  prochain trajet planifie et progression carbone.
+- **Commit** : voir l'historique de `src/components/planner/MobileHomePanel.tsx`
+- **Verrouillage** : **faible** — scenario E2E et audit a11y couvrent la
+  non-regression du parcours, pas le contenu du panneau lui-meme.
+
 ### O1 — Deux instances MapLibre montees simultanement
 
 - **Criticite** : majeur (performance, C5 et C10)
@@ -191,7 +208,9 @@ laisses a decouvrir.
   en 0x0.
 - **Cause racine** : la mise en page bureau (`MobilityMapApp.tsx`, `hidden lg:grid`)
   et la mise en page mobile (`lg:hidden`) rendent chacune `<UrbanMap>`. Le CSS
-  en masque une, mais `display: none` ne demonte pas un composant React.
+  en masque une, mais `display: none` ne demonte pas un composant React. Le
+  probleme depasse la carte : **les deux mises en page entieres sont montees**,
+  y compris la barre de statut bureau, presente en 0x0 sur telephone.
 - **Consequence** : deux contextes WebGL, deux chargements de style, et chaque
   mise a jour de source executee deux fois. Sur telephone, la carte bureau est
   montee elle aussi.

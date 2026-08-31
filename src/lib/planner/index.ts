@@ -34,3 +34,4 @@ export { haversineDistanceKm } from './geo';
 export { LANDMARKS } from './constants';
 export { SCORING_WEIGHTS } from './scoring';
 export { matchesEnabledModes, totalWalkMinutes } from './rules';
+export { findNearby, formatDistance, walkMinutes, type Nearby } from './nearby';
