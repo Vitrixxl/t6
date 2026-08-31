@@ -16,6 +16,7 @@ import { ShellSidebar } from '../layout/Shell';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
 import { DesktopRouteStrip, MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
 import { MobileTripPanel } from '../planner/MobilePanels';
+import { MobileActionRail } from '../planner/MobileQuickPanels';
 import { PlanTripDialog, TripsHubDialog, type PlanTripSubmit, type TripsHubTab } from '../planner/trips';
 import { CarbonPanel } from '../carbon/CarbonPanel';
 import { ProfileDrawer } from '../profile/ProfilePanels';
@@ -312,9 +313,25 @@ export function MobilityMapApp({
           </div>
         </header>
 
+        <MobileActionRail
+          network={network}
+          currentPosition={currentPosition}
+          origin={origin}
+          upcomingTrip={upcoming[0] ?? null}
+          carbonSummary={carbonSummary}
+          weeklyGoalGrams={user.profile.carbonGoalGramsPerWeek}
+          layers={layers}
+          enabledModes={enabledModes}
+          routingApiStatus={routingApiStatus}
+          onLayersChange={setLayers}
+          onToggleMode={toggleEnabledMode}
+          onOpenHub={() => openHub('upcoming')}
+          onLocate={() => void requestCurrentPosition().then((point) => point && setOrigin(point))}
+        />
+
+        {routeRequested ? (
         <MobileTripPanel
           destination={destination}
-          routeRequested={routeRequested}
           routes={routes}
           selectedRoute={selectedRoute}
           savedRouteId={justSavedRouteId}
@@ -329,14 +346,8 @@ export function MobilityMapApp({
           onSaveRoute={saveRoute}
           onPlanRoute={planRoute}
           onOpenHub={() => openHub('upcoming')}
-          network={network}
-          currentPosition={currentPosition}
-          origin={origin}
-          upcomingTrip={upcoming[0] ?? null}
-          carbonSummary={carbonSummary}
-          weeklyGoalGrams={user.profile.carbonGoalGramsPerWeek}
-          onUseCurrentPosition={() => void requestCurrentPosition().then((point) => point && setOrigin(point))}
         />
+        ) : null}
       </div>
 
       <ProfileDrawer

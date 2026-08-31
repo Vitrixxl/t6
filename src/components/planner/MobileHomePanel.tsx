@@ -1,13 +1,9 @@
-// Etat de repos du panneau mobile : ce que l'application montre avant qu'un
-// itineraire soit demande.
+// Contenu du tiroir "Autour de moi" sur mobile.
 //
-// Auparavant, ce panneau n'existait pas : tant que depart et arrivee n'etaient
-// pas renseignes, l'ecran mobile se reduisait a une carte de points. L'appli ne
-// repondait a aucune des questions qu'on se pose en sortant de chez soi.
-//
-// L'ordre des cartes suit celui de ces questions : qu'est-ce qui est
-// disponible autour de moi, dans quelles conditions je pars, et qu'est-ce qui
-// est prevu ensuite.
+// Ouvert a la demande depuis un bouton flottant, jamais impose : la carte
+// reste l'ecran principal. L'ordre des cartes suit celui des questions qu'on
+// se pose en sortant de chez soi — ce qui est disponible autour de moi, dans
+// quelles conditions je pars, et ce qui est prevu ensuite.
 import { useMemo } from 'react';
 import {
   AlertTriangle,
@@ -15,13 +11,11 @@ import {
   CalendarClock,
   ChevronRight,
   CloudRain,
-  Footprints,
   Leaf,
   TramFront,
   Wind,
   Zap,
 } from 'lucide-react';
-import { Button } from '../ui/button';
 import type { CarbonSummary, GeoPoint, PlannedTrip, TransportNetwork, WeatherSignal } from '../../types';
 import { findNearby, formatDistance, walkMinutes } from '../../lib/planner';
 import { formatScheduleLabel } from './trips';
@@ -77,7 +71,6 @@ export function MobileHomePanel({
   upcomingTrip,
   carbonSummary,
   weeklyGoalGrams,
-  expanded,
   onOpenHub,
   onUseCurrentPosition,
 }: {
@@ -87,7 +80,6 @@ export function MobileHomePanel({
   upcomingTrip: PlannedTrip | null;
   carbonSummary: CarbonSummary;
   weeklyGoalGrams: number;
-  expanded: boolean;
   onOpenHub: () => void;
   onUseCurrentPosition: () => void;
 }) {
@@ -223,38 +215,29 @@ export function MobileHomePanel({
         </p>
       </section>
 
-      {expanded ? (
-        <>
-          {incidents.length > 0 ? (
-            <section aria-label="Alertes en cours" className="flex flex-col gap-2">
-              <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">Alertes en cours</h2>
-              {incidents.slice(0, 5).map((incident) => (
-                <div key={incident.id} className="rounded-xl border border-border/70 bg-background/80 p-2.5">
-                  <p className="text-sm font-semibold leading-tight">{incident.title}</p>
-                  <p className="mt-0.5 text-[0.7rem] leading-4 text-muted-foreground">{incident.message}</p>
-                </div>
-              ))}
-            </section>
-          ) : null}
-
-          <section aria-label="Reseau" className="grid grid-cols-3 gap-2">
-            <NetworkStat label="Arrets" value={String(network.gtfs.stops.length)} />
-            <NetworkStat
-              label="Stations Velo'v"
-              value={String(network.sharedMobility.data.stations.filter((s) => s.kind === 'velov').length)}
-            />
-            <NetworkStat
-              label="Trottinettes"
-              value={String(network.sharedMobility.data.stations.filter((s) => s.kind === 'scooter').length)}
-            />
-          </section>
-        </>
+      {incidents.length > 0 ? (
+        <section aria-label="Alertes en cours" className="flex flex-col gap-2">
+          <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">Alertes en cours</h2>
+          {incidents.slice(0, 5).map((incident) => (
+            <div key={incident.id} className="rounded-xl border border-border/70 bg-background/80 p-2.5">
+              <p className="text-sm font-semibold leading-tight">{incident.title}</p>
+              <p className="mt-0.5 text-[0.7rem] leading-4 text-muted-foreground">{incident.message}</p>
+            </div>
+          ))}
+        </section>
       ) : null}
 
-      <Button type="button" variant="outline" className="w-full justify-center rounded-xl bg-white" onClick={onOpenHub}>
-        <Footprints className="size-4" aria-hidden="true" />
-        Mes trajets et objectifs
-      </Button>
+      <section aria-label="Reseau" className="grid grid-cols-3 gap-2">
+        <NetworkStat label="Arrets" value={String(network.gtfs.stops.length)} />
+        <NetworkStat
+          label="Stations Velo'v"
+          value={String(network.sharedMobility.data.stations.filter((s) => s.kind === 'velov').length)}
+        />
+        <NetworkStat
+          label="Trottinettes"
+          value={String(network.sharedMobility.data.stations.filter((s) => s.kind === 'scooter').length)}
+        />
+      </section>
     </div>
   );
 }
