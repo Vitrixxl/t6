@@ -153,8 +153,11 @@ export function MobileTripPanel({
               <LayerPill active={layers.transitStops} onClick={() => onLayersChange({ ...layers, transitStops: !layers.transitStops })}>
                 Arrets
               </LayerPill>
-              <LayerPill active={layers.sharedMobility} onClick={() => onLayersChange({ ...layers, sharedMobility: !layers.sharedMobility })}>
-                Velos
+              <LayerPill active={layers.velov} onClick={() => onLayersChange({ ...layers, velov: !layers.velov })}>
+                Velo'v
+              </LayerPill>
+              <LayerPill active={layers.scooters} onClick={() => onLayersChange({ ...layers, scooters: !layers.scooters })}>
+                Trottinettes
               </LayerPill>
               <LayerPill active={layers.incidents} onClick={() => onLayersChange({ ...layers, incidents: !layers.incidents })}>
                 Incidents

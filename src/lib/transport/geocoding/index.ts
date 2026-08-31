@@ -49,4 +49,5 @@ export async function searchPlaces(query: string, origin?: GeoPoint, signal?: Ab
   );
 }
 
+export { describePoint } from './reverse';
 export type { PlaceKind, PlaceSearchResult } from './types';

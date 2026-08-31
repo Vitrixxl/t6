@@ -8,7 +8,7 @@ import { useGeolocation } from './hooks/useGeolocation';
 import { useSavedRoutes } from './hooks/useSavedRoutes';
 import { useTripPlanning } from './hooks/useTripPlanning';
 import { useRouteOptions } from './hooks/useRouteOptions';
-import { CITY_CENTER, METRO_RADIUS_KM } from '../../lib/transport';
+import { CITY_CENTER, METRO_RADIUS_KM, describePoint } from '../../lib/transport';
 import { summarizeCarbon } from '../../lib/carbon';
 import { summarizeTripActivity, upcomingTrips } from '../../lib/trips';
 import { UrbanMap, ALL_MOBILITY_MODES, DEFAULT_LAYERS, MergeFillet, type LayerState } from './shared';
@@ -90,6 +90,18 @@ export function MobilityMapApp({
   const coverageWarning = routeRequested && outsideMetro
     ? 'Hors metropole de Lyon : transport public et velos/trottinettes indisponibles, options limitees a la marche et au covoiturage.'
     : null;
+
+  // Appui long sur la carte : le point est nomme par geocodage inverse avant
+  // d'atterrir dans le champ, sinon l'utilisateur y verrait des coordonnees.
+  const pickPointFromMap = (picked: { lat: number; lon: number }, role: 'origin' | 'destination') => {
+    void describePoint(picked.lat, picked.lon).then((point) => {
+      if (role === 'origin') {
+        setOrigin(point);
+      } else {
+        setDestination(point);
+      }
+    });
+  };
 
   const selectOrigin = (point: GeoPoint) => {
     setOrigin(point);
@@ -208,6 +220,7 @@ export function MobilityMapApp({
               network={network}
               layers={layers}
               navigationPoint={navigationPoint}
+          onPickPoint={pickPointFromMap}
             />
           </div>
 
@@ -275,6 +288,7 @@ export function MobilityMapApp({
             network={network}
             layers={layers}
             navigationPoint={navigationPoint}
+          onPickPoint={pickPointFromMap}
           />
         </div>
 

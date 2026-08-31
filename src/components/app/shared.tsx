@@ -42,7 +42,8 @@ export const MODE_ICON: Record<MobilityMode, typeof Footprints> = {
 
 export type LayerState = {
   transitStops: boolean;
-  sharedMobility: boolean;
+  velov: boolean;
+  scooters: boolean;
   incidents: boolean;
 };
 
@@ -50,7 +51,8 @@ export type MobileSheetLevel = 'collapsed' | 'mid' | 'expanded';
 
 export const DEFAULT_LAYERS: LayerState = {
   transitStops: true,
-  sharedMobility: true,
+  velov: true,
+  scooters: true,
   incidents: true };
 
 export const MOBILE_SHEET_ORDER: MobileSheetLevel[] = ['collapsed', 'mid', 'expanded'];

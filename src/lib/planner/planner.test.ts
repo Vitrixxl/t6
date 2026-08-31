@@ -59,6 +59,7 @@ const network: TransportNetwork = {
         {
           // A ~40 m de Bellecour (LANDMARKS[0]) : dans le rayon de marche RG3 (400 m).
           station_id: 's1',
+          kind: 'velov' as const,
           name: 'Station 1',
           lat: 45.758,
           lon: 4.8325,
@@ -73,6 +74,7 @@ const network: TransportNetwork = {
         {
           // A ~40 m de Part-Dieu (LANDMARKS[1]).
           station_id: 's2',
+          kind: 'velov' as const,
           name: 'Station 2',
           lat: 45.7605,
           lon: 4.859,

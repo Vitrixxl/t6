@@ -1,11 +1,15 @@
 // Velos et trottinettes en libre-service (GBFS).
 //
+// Aucun plafond d'affichage : le nombre annonce dans l'interface est le nombre
+// reellement disponible. Seul le perimetre metropolitain filtre les donnees,
+// et c'est une decision de service, pas une limite technique.
+//
 // Deux sources aux formats differents : Velo'v (GBFS v3, stations fixes, deux
 // documents a fusionner) et Dott (GBFS v2.3, vehicules libres). Elles sont
 // normalisees vers un meme type SharedStation pour que la carte et le moteur
 // n'aient qu'un modele a connaitre.
 import type { SharedMobilityFeed, SharedStation } from '../../../types';
-import { distanceToCenterKm, MAX_DOTT_VEHICLES, MAX_VELOV_STATIONS, STATION_RADIUS_KM } from './area';
+import { distanceToCenterKm, STATION_RADIUS_KM } from './area';
 import { fetchJson } from './fetch-json';
 
 export const VELOV_INFO_URL = 'https://api.cyclocity.fr/contracts/lyon/gbfs/v3/station_information.json';
@@ -65,10 +69,6 @@ export function mergeVelovStations(
 
   return information
     .filter((station) => distanceToCenterKm(station.lat, station.lon) <= STATION_RADIUS_KM)
-    .sort(
-      (a, b) => distanceToCenterKm(a.lat, a.lon) - distanceToCenterKm(b.lat, b.lon),
-    )
-    .slice(0, MAX_VELOV_STATIONS)
     .flatMap((station) => {
       const status = statusById.get(station.station_id);
       if (!status) {
@@ -77,6 +77,7 @@ export function mergeVelovStations(
       return [
         {
           station_id: `velov-${station.station_id}`,
+          kind: 'velov' as const,
           name: `Velo'v ${localizedName(station.name)}`,
           lat: station.lat,
           lon: station.lon,
@@ -100,10 +101,9 @@ export function mapDottVehicles(vehicles: DottVehicle[]): SharedStation[] {
         !vehicle.is_reserved &&
         distanceToCenterKm(vehicle.lat, vehicle.lon) <= STATION_RADIUS_KM,
     )
-    .sort((a, b) => distanceToCenterKm(a.lat, a.lon) - distanceToCenterKm(b.lat, b.lon))
-    .slice(0, MAX_DOTT_VEHICLES)
     .map((vehicle) => ({
       station_id: `dott-${vehicle.bike_id}`,
+      kind: 'scooter' as const,
       name: 'Trottinette Dott',
       lat: vehicle.lat,
       lon: vehicle.lon,

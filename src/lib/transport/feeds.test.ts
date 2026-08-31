@@ -170,8 +170,10 @@ describe('mapTclAlerts', () => {
   });
 });
 
-describe('mergeVelovStations - plafonds', () => {
-  it('plafonne le nombre de stations retenues (eco-conception, 500 max)', () => {
+describe('mergeVelovStations - perimetre', () => {
+  it('retient toutes les stations du perimetre, sans plafond d affichage', () => {
+    // Le nombre annonce dans l'interface doit etre le nombre reellement
+    // disponible : un plafond affiche comme une mesure serait un mensonge.
     const information = Array.from({ length: 560 }, (_, index) => ({
       station_id: `s${index}`,
       name: `STATION ${index}`,
@@ -188,7 +190,27 @@ describe('mergeVelovStations - plafonds', () => {
       last_reported: 1789365900,
     }));
 
-    expect(mergeVelovStations(information, statuses)).toHaveLength(500);
+    expect(mergeVelovStations(information, statuses)).toHaveLength(560);
+  });
+
+  it('ecarte ce qui sort du perimetre metropolitain', () => {
+    // Le rayon reste : c'est une decision de service, pas un plafond.
+    const information = [
+      { station_id: 'proche', name: 'PROCHE', lat: 45.7578, lon: 4.832, capacity: 20 },
+      { station_id: 'loin', name: 'LOIN', lat: 46.5, lon: 4.832, capacity: 20 },
+    ];
+    const statuses = information.map((station) => ({
+      station_id: station.station_id,
+      num_vehicles_available: 3,
+      is_installed: true,
+      is_renting: true,
+      is_returning: true,
+      last_reported: 1789365900,
+    }));
+
+    const merged = mergeVelovStations(information, statuses);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].name).toContain('PROCHE');
   });
 });
 
@@ -209,6 +231,7 @@ const localSharedMobility: SharedMobilityFeed = {
     stations: [
       {
         station_id: 'local-1',
+        kind: 'velov' as const,
         name: 'Station locale',
         lat: 45.7578,
         lon: 4.832,

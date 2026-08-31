@@ -70,8 +70,7 @@ export function mapTclAlerts(
         message: message || title,
       };
     })
-    .filter((incident): incident is TransportIncident => incident !== null)
-    .slice(0, 40);
+    .filter((incident): incident is TransportIncident => incident !== null);
 }
 
 export async function fetchTclIncidents(fetcher: typeof fetch): Promise<TransportIncident[]> {

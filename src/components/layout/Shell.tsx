@@ -127,8 +127,15 @@ export function LayerPanel({
   onLayersChange: (layers: LayerState) => void;
   network: TransportNetwork;
 }) {
-  const bikeCount = network.sharedMobility.data.stations.reduce((sum, station) => sum + station.bikes_available, 0);
-  const scooterCount = network.sharedMobility.data.stations.reduce((sum, station) => sum + station.scooters_available, 0);
+  const stations = network.sharedMobility.data.stations;
+  // Velo'v est un service a stations : on compte les stations et les velos qui
+  // s'y trouvent. Dott est en flotte libre : chaque trottinette est un point,
+  // il n'y a pas de station a compter. Les deux ne se resument donc pas de la
+  // meme facon, et les melanger sous un seul libelle rendait le chiffre faux.
+  const velovStations = stations.filter((station) => station.kind === 'velov');
+  const scooters = stations.filter((station) => station.kind === 'scooter');
+  const bikeCount = velovStations.reduce((sum, station) => sum + station.bikes_available, 0);
+  const scooterCount = scooters.reduce((sum, station) => sum + station.scooters_available, 0);
 
   return (
     <div className="px-3 pb-4">
@@ -141,11 +148,18 @@ export function LayerPanel({
           onClick={() => onLayersChange({ ...layers, transitStops: !layers.transitStops })}
         />
         <LayerToggle
-          label="Velos & trottinettes"
-          detail={`${bikeCount} velos - ${scooterCount} trottinettes`}
-          active={layers.sharedMobility}
+          label="Velo'v"
+          detail={`${bikeCount} velos dans ${velovStations.length} stations`}
+          active={layers.velov}
           color="bg-[#84cc16]"
-          onClick={() => onLayersChange({ ...layers, sharedMobility: !layers.sharedMobility })}
+          onClick={() => onLayersChange({ ...layers, velov: !layers.velov })}
+        />
+        <LayerToggle
+          label="Trottinettes"
+          detail={`${scooterCount} trottinettes en flotte libre`}
+          active={layers.scooters}
+          color="bg-[#f97316]"
+          onClick={() => onLayersChange({ ...layers, scooters: !layers.scooters })}
         />
         <LayerToggle
           label="Incidents transport"

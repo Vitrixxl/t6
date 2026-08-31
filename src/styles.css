@@ -197,3 +197,39 @@ body {
 .ufm-popup .maplibregl-popup-tip {
   border-top-color: var(--card);
 }
+
+/* Popover de selection d'un point par appui long sur la carte. Les boutons
+   respectent la cible tactile de 44 px recommandee par le WCAG 2.5.5, puisque
+   ce geste est d'abord destine au mobile. */
+.ufm-popup .ufm-picker-actions {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+
+.ufm-popup .ufm-picker-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.ufm-popup .ufm-picker-button:hover {
+  background: var(--accent);
+  border-color: var(--primary);
+}
+
+.ufm-popup .ufm-picker-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

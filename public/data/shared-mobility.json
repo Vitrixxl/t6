@@ -11,11 +11,12 @@
         "lon": 4.8325,
         "capacity": 34,
         "bikes_available": 19,
-        "scooters_available": 8,
+        "scooters_available": 0,
         "is_installed": true,
         "is_renting": true,
         "is_returning": true,
-        "last_reported": 1789365900
+        "last_reported": 1789365900,
+        "kind": "velov"
       },
       {
         "station_id": "s-pd-01",
@@ -24,11 +25,12 @@
         "lon": 4.8588,
         "capacity": 48,
         "bikes_available": 13,
-        "scooters_available": 14,
+        "scooters_available": 0,
         "is_installed": true,
         "is_renting": true,
         "is_returning": true,
-        "last_reported": 1789365900
+        "last_reported": 1789365900,
+        "kind": "velov"
       },
       {
         "station_id": "s-con-01",
@@ -37,11 +39,12 @@
         "lon": 4.8189,
         "capacity": 30,
         "bikes_available": 22,
-        "scooters_available": 5,
+        "scooters_available": 0,
         "is_installed": true,
         "is_renting": true,
         "is_returning": true,
-        "last_reported": 1789365900
+        "last_reported": 1789365900,
+        "kind": "velov"
       },
       {
         "station_id": "s-grg-01",
@@ -50,11 +53,12 @@
         "lon": 4.8793,
         "capacity": 26,
         "bikes_available": 6,
-        "scooters_available": 7,
+        "scooters_available": 0,
         "is_installed": true,
         "is_renting": true,
         "is_returning": true,
-        "last_reported": 1789365900
+        "last_reported": 1789365900,
+        "kind": "velov"
       },
       {
         "station_id": "s-vai-01",
@@ -63,6 +67,77 @@
         "lon": 4.8046,
         "capacity": 24,
         "bikes_available": 9,
+        "scooters_available": 0,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900,
+        "kind": "velov"
+      },
+      {
+        "station_id": "fallback-scooter-0",
+        "kind": "scooter",
+        "name": "Trottinette",
+        "lat": 45.7602,
+        "lon": 4.8337,
+        "capacity": 1,
+        "bikes_available": 0,
+        "scooters_available": 8,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "fallback-scooter-1",
+        "kind": "scooter",
+        "name": "Trottinette",
+        "lat": 45.7624,
+        "lon": 4.86,
+        "capacity": 1,
+        "bikes_available": 0,
+        "scooters_available": 14,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "fallback-scooter-2",
+        "kind": "scooter",
+        "name": "Trottinette",
+        "lat": 45.7414,
+        "lon": 4.8201,
+        "capacity": 1,
+        "bikes_available": 0,
+        "scooters_available": 5,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "fallback-scooter-3",
+        "kind": "scooter",
+        "name": "Trottinette",
+        "lat": 45.7444,
+        "lon": 4.8805,
+        "capacity": 1,
+        "bikes_available": 0,
+        "scooters_available": 7,
+        "is_installed": true,
+        "is_renting": true,
+        "is_returning": true,
+        "last_reported": 1789365900
+      },
+      {
+        "station_id": "fallback-scooter-4",
+        "kind": "scooter",
+        "name": "Trottinette",
+        "lat": 45.7803,
+        "lon": 4.8058,
+        "capacity": 1,
+        "bikes_available": 0,
         "scooters_available": 4,
         "is_installed": true,
         "is_renting": true,

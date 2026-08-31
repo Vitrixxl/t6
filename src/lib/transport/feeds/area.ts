@@ -3,8 +3,6 @@
 export const CITY_CENTER = { lat: 45.7578, lon: 4.832 };
 export const METRO_RADIUS_KM = 16;
 export const STATION_RADIUS_KM = METRO_RADIUS_KM;
-export const MAX_VELOV_STATIONS = 500;
-export const MAX_DOTT_VEHICLES = 300;
 
 export function distanceToCenterKm(lat: number, lon: number): number {
   const earthRadiusKm = 6371;

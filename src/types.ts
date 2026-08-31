@@ -97,6 +97,12 @@ export interface GtfsFeed {
 
 export interface SharedStation {
   station_id: string;
+  /**
+   * Nature du point : station Velo'v (ancrage fixe) ou trottinette en flotte
+   * libre. Les deux services n'ont ni la meme densite ni le meme usage, on ne
+   * les melange donc pas dans l'interface.
+   */
+  kind: 'velov' | 'scooter';
   name: string;
   lat: number;
   lon: number;

@@ -6,6 +6,26 @@ import type { LayerState } from '../app/shared';
 import type { FeatureCollection } from './geojson';
 import { bindPointPopup, escapeHtml } from './popup';
 import { setGeoJsonSource, setLayerVisibility } from './sources';
+import { bindLongPress, createPickerContent, createPickerMarker, type PickedPoint } from './longPress';
+import type { SharedStation } from '../../types';
+
+/** Entites GeoJSON communes aux deux couches de mobilite partagee. */
+function toStationFeatures(stations: SharedStation[]): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: stations.map((station) => ({
+      type: 'Feature',
+      properties: {
+        kind: station.kind,
+        label: station.name,
+        bikes: station.bikes_available,
+        scooters: station.scooters_available,
+        capacity: station.capacity,
+      },
+      geometry: { type: 'Point', coordinates: [station.lon, station.lat] },
+    })),
+  };
+}
 
 
 
@@ -17,6 +37,7 @@ export function UrbanMap({
   network,
   layers,
   navigationPoint,
+  onPickPoint,
 }: {
   origin: GeoPoint | null;
   destination: GeoPoint | null;
@@ -26,8 +47,14 @@ export function UrbanMap({
   layers: LayerState;
   /** Position GPS de l'utilisateur ("Ma position"), affichee comme repere. */
   navigationPoint?: GeoPoint | null;
+  /**
+   * Appele quand l'utilisateur designe un point par appui long et choisit
+   * d'en faire son depart ou son arrivee. Absent, l'appui long est inactif.
+   */
+  onPickPoint?: (point: PickedPoint, role: 'origin' | 'destination') => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const pickerRef = useRef<{ popup: maplibregl.Popup; marker: maplibregl.Marker } | null>(null);
   const mapRef = useRef<MaplibreMap | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   // Centre initial: le depart s'il existe deja, sinon le centre de la metropole.
@@ -106,20 +133,15 @@ export function UrbanMap({
     [network],
   );
 
-  const stationData = useMemo<FeatureCollection>(
-    () => ({
-      type: 'FeatureCollection',
-      features: network.sharedMobility.data.stations.map((station) => ({
-        type: 'Feature',
-        properties: {
-          kind: 'station',
-          label: station.name,
-          bikes: station.bikes_available,
-          scooters: station.scooters_available,
-        },
-        geometry: { type: 'Point', coordinates: [station.lon, station.lat] },
-      })),
-    }),
+  // Velo'v et trottinettes sont deux couches distinctes : services differents,
+  // densites differentes, et l'utilisateur veut souvent n'en voir qu'une.
+  const velovData = useMemo<FeatureCollection>(
+    () => toStationFeatures(network.sharedMobility.data.stations.filter((station) => station.kind === 'velov')),
+    [network],
+  );
+
+  const scooterData = useMemo<FeatureCollection>(
+    () => toStationFeatures(network.sharedMobility.data.stations.filter((station) => station.kind === 'scooter')),
     [network],
   );
 
@@ -199,7 +221,8 @@ export function UrbanMap({
     setGeoJsonSource(map, 'routes', routeData);
     setGeoJsonSource(map, 'points', pointData);
     setGeoJsonSource(map, 'stops', stopData);
-    setGeoJsonSource(map, 'stations', stationData);
+    setGeoJsonSource(map, 'velov', velovData);
+    setGeoJsonSource(map, 'scooters', scooterData);
     setGeoJsonSource(map, 'incidents', incidentData);
 
     if (!map.getLayer('routes-casing')) {
@@ -307,11 +330,11 @@ export function UrbanMap({
       `);
     }
 
-    if (!map.getLayer('stations-circle')) {
+    if (!map.getLayer('velov-circle')) {
       map.addLayer({
-        id: 'stations-circle',
+        id: 'velov-circle',
         type: 'circle',
-        source: 'stations',
+        source: 'velov',
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 12, 5.5, 15, 9],
           'circle-color': '#84cc16',
@@ -320,10 +343,34 @@ export function UrbanMap({
           'circle-stroke-width': 1.5,
         },
       });
-      bindPointPopup(map, 'stations-circle', popupRef, (properties) => `
-        <p class="ufm-popup-kind">Station partagee</p>
+      bindPointPopup(map, 'velov-circle', popupRef, (properties) => `
+        <p class="ufm-popup-kind">Station Velo'v</p>
         <strong>${escapeHtml(properties.label)}</strong>
-        <p>${escapeHtml(properties.bikes)} velo(s) &middot; ${escapeHtml(properties.scooters)} trottinette(s) disponibles</p>
+        <p>${escapeHtml(properties.bikes)} velo(s) disponibles sur ${escapeHtml(properties.capacity)} places</p>
+      `);
+    }
+
+    if (!map.getLayer('scooters-circle')) {
+      map.addLayer({
+        id: 'scooters-circle',
+        type: 'circle',
+        source: 'scooters',
+        paint: {
+          // Plus petit que Velo'v : la flotte libre est dense, des points trop
+          // gros se recouvrent et masquent la carte.
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 12, 4, 15, 7],
+          // Orange contre le vert lime de Velo'v : les deux couches restent
+          // distinguables meme affichees ensemble.
+          'circle-color': '#f97316',
+          'circle-opacity': 0.9,
+          'circle-stroke-color': '#7c2d12',
+          'circle-stroke-width': 1.25,
+        },
+      });
+      bindPointPopup(map, 'scooters-circle', popupRef, (properties) => `
+        <p class="ufm-popup-kind">Trottinette en flotte libre</p>
+        <strong>${escapeHtml(properties.label)}</strong>
+        <p>${escapeHtml(properties.scooters)} disponible(s) a cet emplacement</p>
       `);
     }
 
@@ -348,9 +395,10 @@ export function UrbanMap({
     }
 
     setLayerVisibility(map, 'stops-circle', layers.transitStops);
-    setLayerVisibility(map, 'stations-circle', layers.sharedMobility);
+    setLayerVisibility(map, 'velov-circle', layers.velov);
+    setLayerVisibility(map, 'scooters-circle', layers.scooters);
     setLayerVisibility(map, 'incidents-circle', layers.incidents);
-  }, [incidentData, layers, loaded, pointData, routeData, stationData, stopData]);
+  }, [incidentData, layers, loaded, pointData, routeData, scooterData, stopData, velovData]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -381,6 +429,53 @@ export function UrbanMap({
       duration: 650,
     });
   }, [destination, loaded, origin, selectedRoute]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || !onPickPoint) {
+      return;
+    }
+
+    const closePicker = (): void => {
+      pickerRef.current?.popup.remove();
+      pickerRef.current?.marker.remove();
+      pickerRef.current = null;
+    };
+
+    const detach = bindLongPress(map, {
+      onPick: (point) => {
+        closePicker();
+
+        const content = createPickerContent(
+          {
+            title: `${point.lat.toFixed(5)}, ${point.lon.toFixed(5)}`,
+            origin: 'Definir comme depart',
+            destination: 'Definir comme arrivee',
+          },
+          (role) => {
+            onPickPoint(point, role);
+            closePicker();
+          },
+        );
+
+        const popup = new maplibregl.Popup({ closeButton: true, maxWidth: '260px', offset: 28, className: 'ufm-popup' })
+          .setLngLat([point.lon, point.lat])
+          .setDOMContent(content)
+          .addTo(map);
+        popup.on('close', () => {
+          pickerRef.current?.marker.remove();
+          pickerRef.current = null;
+        });
+
+        pickerRef.current = { popup, marker: createPickerMarker(map, point) };
+      },
+    });
+
+    return () => {
+      detach();
+      closePicker();
+    };
+  }, [loaded, onPickPoint]);
 
   return <div ref={containerRef} className="absolute inset-0 h-full w-full" aria-label="Carte des trajets UrbanFlow" />;
 }

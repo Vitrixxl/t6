@@ -36,7 +36,6 @@ GTFS_URL = os.environ.get("GTFS_SOURCE_URL", "").strip()
 CENTER_LAT = 45.7578
 CENTER_LON = 4.8320
 RADIUS_KM = 16.0
-MAX_STOPS = 600
 CACHE_MAX_AGE_HOURS = 24
 
 # route_type GTFS: 0 tram, 1 metro, 3 bus, 7 funiculaire.
@@ -131,8 +130,8 @@ def build_feed(archive: zipfile.ZipFile) -> dict:
             }
         )
 
-    stops.sort(key=lambda stop: stop["_distance"])
-    stops = stops[:MAX_STOPS]
+    # Aucun plafond : tous les arrets du rayon metropolitain sont retenus, pour
+    # que le nombre annonce dans l'interface soit le nombre reel.
     for stop in stops:
         stop.pop("_distance")
 
