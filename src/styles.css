@@ -198,9 +198,9 @@ body {
   border-top-color: var(--card);
 }
 
-/* Popover de selection d'un point par appui long sur la carte. Les boutons
-   respectent la cible tactile de 44 px recommandee par le WCAG 2.5.5, puisque
-   ce geste est d'abord destine au mobile. */
+/* Popover de selection d'un point par appui long sur la carte. Cible tactile
+   de 44 px, exprimee en pixels : la racine du document est a 14px, donc une
+   valeur en rem tomberait a 38,5 px. */
 .ufm-popup .ufm-picker-actions {
   display: grid;
   gap: 0.35rem;
@@ -211,7 +211,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.75rem;
+  min-height: 44px;
   padding: 0 0.85rem;
   border-radius: 0.7rem;
   border: 1px solid var(--border);
@@ -232,4 +232,12 @@ body {
 .ufm-popup .ufm-picker-button:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* Sur mobile, la barre d'actions occupe le bas de l'ecran : les commandes de
+   la carte remontent au-dessus d'elle plutot que de passer dessous. */
+@media (max-width: 1023px) {
+  .maplibregl-ctrl-bottom-right {
+    bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
+  }
 }

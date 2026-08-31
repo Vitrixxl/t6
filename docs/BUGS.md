@@ -228,6 +228,34 @@ laisses a decouvrir.
 - **Piste** : reutiliser les schemas TypeBox cote navigateur pour les trois
   formes de flux. Risque deja declare dans le dossier, section 4.3.
 
+### O5 — Cibles tactiles calculees en rem sous une racine a 14px
+
+- **Criticite** : mineur (accessibilite tactile), **corrige au passage**
+- **Constat** : la racine du document est a `font-size: 14px`. Toute taille
+  exprimee en rem vaut donc 12,5 % de moins qu'attendu : `min-h-12` rendait
+  42 px au lieu de 48, et le `min-height: 2.75rem` du popover d'appui long
+  tombait a 38,5 px au lieu de 44.
+- **Pourquoi l'audit ne l'a pas vu** : axe-core ne verifie pas la taille des
+  cibles. Le critere 2.5.5 (44 px) est de niveau AAA, hors du perimetre AA
+  audite ; la mesure a ete faite a la main dans le navigateur.
+- **Correctif** : cibles tactiles exprimees en pixels dans la barre d'actions
+  mobile, le composeur de modes et le popover d'appui long.
+- **A surveiller** : toute nouvelle cible tactile dimensionnee en rem heritera
+  du meme decalage.
+
+### O6 — Le scenario E2E depend d'une API tierce au demarrage
+
+- **Criticite** : mineur (test intermittent)
+- **Symptome** : `bun run e2e` a echoue sur `SyntaxError: Failed to parse JSON`,
+  puis a repasse sans modification du code.
+- **Cause racine** : le script resout sa destination via l'API Adresse avant
+  d'ouvrir le navigateur, sans reessai ni repli. Une reponse non-JSON de la BAN
+  fait echouer un test qui ne teste pourtant pas la BAN.
+- **Consequence** : le test bloquant de la chaine de verification est
+  intermittent pour une raison exterieure au projet.
+- **Piste** : coordonnees de destination figees dans le script, ou reessai avec
+  repli. Le geocodage a deja ses propres tests unitaires.
+
 ### O3 — Controles de carte en anglais
 
 - **Criticite** : mineur (finition, visible en demonstration)

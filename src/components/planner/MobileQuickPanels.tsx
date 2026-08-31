@@ -1,9 +1,14 @@
-// Actions flottantes de l'ecran mobile.
+// Barre d'actions flottante de l'ecran mobile.
 //
 // La carte est l'ecran principal : rien ne la recouvre tant que l'utilisateur
 // ne le demande pas. Les donnees du reseau et les reglages de couches vivent
-// donc derriere des boutons flottants, dans des tiroirs ouverts a la demande,
-// plutot que dans un panneau impose au chargement.
+// donc derriere des boutons, dans des tiroirs ouverts a la demande.
+//
+// La barre est en bas, dans la zone que le pouce atteint sans changer de prise
+// sur le telephone. Chaque bouton porte la couleur de ce qu'il ouvre : le vert
+// de la marque pour l'action de carte, le lime des Velo'v pour les
+// disponibilites, le bleu des arrets pour les couches. La couleur code une
+// information, elle ne decore pas.
 //
 // Seules les options d'itineraire s'affichent d'elles-memes, parce qu'elles
 // repondent a une action que l'utilisateur vient de faire.
@@ -14,32 +19,31 @@ import { LayerPill, MODE_ICON, MODE_OPTIONS, type LayerState } from '../app/shar
 import type { CarbonSummary, GeoPoint, MobilityMode, PlannedTrip, TransportNetwork } from '../../types';
 import { MobileHomePanel } from './MobileHomePanel';
 
-function FloatingButton({
+function ActionButton({
   label,
   badge,
-  active,
+  tone,
   onClick,
   children,
 }: {
   label: string;
   badge?: number;
-  active?: boolean;
+  tone: string;
   onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
-      aria-label={label}
       onClick={onClick}
-      // 44 px de cote : cible tactile minimale recommandee par le WCAG 2.5.5.
-      className={`pointer-events-auto relative grid size-11 place-items-center rounded-full border shadow-float backdrop-blur-xl transition-colors ${
-        active ? 'border-primary bg-primary text-primary-foreground' : 'border-white/80 bg-white/95 text-foreground'
-      }`}
+      // Hauteur en pixels, pas en rem : la racine du document est a 14px, une
+      // valeur en rem donnerait 42 px et raterait la cible de 44 px.
+      className={`pointer-events-auto relative inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl px-3 text-[0.8rem] font-bold shadow-float transition-transform active:scale-[0.97] ${tone}`}
     >
       {children}
+      <span className="truncate">{label}</span>
       {badge && badge > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[9px] font-bold leading-none text-white">
+        <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-destructive px-1 text-[10px] font-bold leading-none text-white">
           {Math.min(badge, 9)}
         </span>
       ) : null}
@@ -82,20 +86,21 @@ export function MobileActionRail({
 
   return (
     <>
-      <div className="pointer-events-none absolute right-3 top-[calc(env(safe-area-inset-top)+7.25rem)] z-40 flex flex-col gap-2">
-        <FloatingButton label="Centrer sur ma position" active={Boolean(currentPosition)} onClick={onLocate}>
-          <LocateFixed className="size-5" aria-hidden="true" />
-        </FloatingButton>
-        <FloatingButton
-          label="Voir ce qui est autour de moi"
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-stretch gap-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.85rem)]">
+        <ActionButton label="Ma position" tone="bg-primary text-primary-foreground" onClick={onLocate}>
+          <LocateFixed className="size-4 shrink-0" aria-hidden="true" />
+        </ActionButton>
+        <ActionButton
+          label="Autour de moi"
           badge={incidentCount}
+          tone="bg-[var(--lime)] text-[oklch(0.3_0.06_145)]"
           onClick={() => setNearbyOpen(true)}
         >
-          <Radar className="size-5" aria-hidden="true" />
-        </FloatingButton>
-        <FloatingButton label="Choisir les couches affichees" onClick={() => setLayersOpen(true)}>
-          <Layers className="size-5" aria-hidden="true" />
-        </FloatingButton>
+          <Radar className="size-4 shrink-0" aria-hidden="true" />
+        </ActionButton>
+        <ActionButton label="Couches" tone="bg-[#1d4ed8] text-white" onClick={() => setLayersOpen(true)}>
+          <Layers className="size-4 shrink-0" aria-hidden="true" />
+        </ActionButton>
       </div>
 
       <Drawer open={nearbyOpen} onOpenChange={setNearbyOpen}>
@@ -169,7 +174,7 @@ export function MobileActionRail({
                       type="button"
                       aria-pressed={active}
                       onClick={() => onToggleMode(mode)}
-                      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors ${
+                      className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors ${
                         active
                           ? 'border-primary bg-primary text-primary-foreground'
                           : 'border-border bg-background text-muted-foreground'

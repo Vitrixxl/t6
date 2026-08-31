@@ -313,6 +313,10 @@ export function MobilityMapApp({
           </div>
         </header>
 
+        {/* La barre laisse la place a la feuille d'options des qu'un itineraire
+            est demande : les couches restent accessibles depuis la feuille, et
+            le GPS depuis la barre de recherche. */}
+        {!routeRequested ? (
         <MobileActionRail
           network={network}
           currentPosition={currentPosition}
@@ -328,6 +332,7 @@ export function MobilityMapApp({
           onOpenHub={() => openHub('upcoming')}
           onLocate={() => void requestCurrentPosition().then((point) => point && setOrigin(point))}
         />
+        ) : null}
 
         {routeRequested ? (
         <MobileTripPanel
