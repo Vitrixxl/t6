@@ -91,7 +91,9 @@ Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localeme
 podman compose -f infra/osrm-compose.yml up -d   # ou docker compose
 ```
 
-Puis renseigner `OSRM_BASE_URL` dans `.env`. Prérequis : `podman` (ou `docker`) et `osmium-tool`. OSRM prépare un jeu de données par profil — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services.
+Puis renseigner `OSRM_BASE_URL` dans `.env`. Seul prérequis : `podman` (ou `docker`). `osmium` est facultatif — s'il est présent, la région est découpée autour de Lyon et le prétraitement est dix fois plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
+
+OSRM prépare un jeu de données par profil — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services.
 
 ## Commandes
 

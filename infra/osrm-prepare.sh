@@ -1,43 +1,60 @@
 #!/usr/bin/env bash
-# Prepare les donnees OSRM pour la metropole de Lyon.
+# Prepare les donnees OSRM pour le calcul d'itineraires local.
 #
-# A lancer une fois. Le decoupage evite de traiter toute la region : l'extrait
-# Rhone-Alpes pese quelques centaines de Mo, la boite de Lyon quelques dizaines,
-# et le pretraitement passe de plusieurs minutes a moins d'une.
+# A lancer une fois. Trois jeux de donnees sont produits, un par profil :
+# piaton, velo et voiture n'ont pas les memes regles sur les memes rues (sens
+# uniques, escaliers, zones pietonnes) et ne peuvent donc pas partager un index.
 #
-# Prerequis : podman (ou docker) et osmium-tool.
+# Prerequis : podman (ou docker). `osmium` est facultatif : s'il est installe,
+# la region est decoupee autour de Lyon, ce qui divise par dix le temps de
+# pretraitement. Sinon toute la region Rhone-Alpes est traitee — plus long, mais
+# sans dependance supplementaire, et le resultat est identique sur Lyon.
 set -euo pipefail
 
 ENGINE="${CONTAINER_ENGINE:-podman}"
+IMAGE="ghcr.io/project-osrm/osrm-backend:latest"
 DATA_DIR="$(cd "$(dirname "$0")" && pwd)/osrm-data"
 REGION_URL="https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf"
 # Boite englobant la metropole, un peu plus large que le rayon de 16 km du feed.
 BBOX="4.60,45.60,5.05,45.95"
 
+command -v "$ENGINE" >/dev/null || {
+  echo "Erreur : '$ENGINE' introuvable. Installer podman, ou definir CONTAINER_ENGINE=docker." >&2
+  exit 1
+}
+
 mkdir -p "$DATA_DIR"
 
 if [ ! -f "$DATA_DIR/rhone-alpes.osm.pbf" ]; then
-  echo "Telechargement de l'extrait Rhone-Alpes..."
-  curl -L --fail -o "$DATA_DIR/rhone-alpes.osm.pbf" "$REGION_URL"
+  echo "Telechargement de l'extrait Rhone-Alpes (~400 Mo)..."
+  curl -L --fail --progress-bar -o "$DATA_DIR/rhone-alpes.osm.pbf" "$REGION_URL"
 fi
 
-if [ ! -f "$DATA_DIR/lyon.osm.pbf" ]; then
-  echo "Decoupage de la metropole..."
-  osmium extract --bbox "$BBOX" --overwrite \
-    -o "$DATA_DIR/lyon.osm.pbf" "$DATA_DIR/rhone-alpes.osm.pbf"
+SOURCE="$DATA_DIR/rhone-alpes.osm.pbf"
+if command -v osmium >/dev/null; then
+  if [ ! -f "$DATA_DIR/lyon.osm.pbf" ]; then
+    echo "Decoupage de la metropole..."
+    osmium extract --bbox "$BBOX" --overwrite -o "$DATA_DIR/lyon.osm.pbf" "$SOURCE"
+  fi
+  SOURCE="$DATA_DIR/lyon.osm.pbf"
+else
+  echo "osmium absent : toute la region Rhone-Alpes sera traitee (comptez"
+  echo "une dizaine de minutes par profil, et ~8 Go de memoire au pic)."
 fi
 
-# Un jeu de donnees par profil. `mld` est l'algorithme adapte a un graphe qui
-# tient en memoire : pretraitement rapide, requetes en microsecondes.
+# `mld` est l'algorithme adapte a un graphe qui tient en memoire : pretraitement
+# rapide, et requetes en microsecondes une fois le service demarre.
 for profile in foot bike car; do
-  echo "Pretraitement du profil $profile..."
-  cp "$DATA_DIR/lyon.osm.pbf" "$DATA_DIR/lyon-$profile.osm.pbf"
-  "$ENGINE" run --rm -v "$DATA_DIR:/data" ghcr.io/project-osrm/osrm-backend:latest \
-    osrm-extract -p "/opt/$profile.lua" "/data/lyon-$profile.osm.pbf"
-  "$ENGINE" run --rm -v "$DATA_DIR:/data" ghcr.io/project-osrm/osrm-backend:latest \
-    osrm-partition "/data/lyon-$profile.osrm"
-  "$ENGINE" run --rm -v "$DATA_DIR:/data" ghcr.io/project-osrm/osrm-backend:latest \
-    osrm-customize "/data/lyon-$profile.osrm"
+  echo
+  echo "=== Profil $profile ==="
+  cp "$SOURCE" "$DATA_DIR/lyon-$profile.osm.pbf"
+  for step in "osrm-extract -p /opt/$profile.lua /data/lyon-$profile.osm.pbf" \
+              "osrm-partition /data/lyon-$profile.osrm" \
+              "osrm-customize /data/lyon-$profile.osrm"; do
+    # shellcheck disable=SC2086
+    "$ENGINE" run --rm -v "$DATA_DIR:/data" "$IMAGE" $step
+  done
+  rm -f "$DATA_DIR/lyon-$profile.osm.pbf"
 done
 
 echo
