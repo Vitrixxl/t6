@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from '../auth';
-import {
-  haversineDistanceKm,
-  LANDMARKS,
-  matchesEnabledModes,
-  planRoutes,
-  SCORING_WEIGHTS,
-  totalWalkMinutes,
-} from './index';
+import { haversineDistanceKm, LANDMARKS, planRoutes, SCORING_WEIGHTS, totalWalkMinutes } from './index';
 import type { TransportNetwork } from '../../types';
 
 const network: TransportNetwork = {
@@ -352,29 +345,5 @@ describe('haversineDistanceKm', () => {
       haversineDistanceKm(LANDMARKS[1], LANDMARKS[0]),
       10,
     );
-  });
-});
-
-describe('matchesEnabledModes (RG1)', () => {
-  const routes = planRoutes({
-    origin: LANDMARKS[0],
-    destination: LANDMARKS[1],
-    profile: DEFAULT_PROFILE,
-    network,
-  });
-
-  it('masque les options dont un mode principal est desactive', () => {
-    const bikeTransit = routes.find((route) => route.id === 'bike-transit');
-    expect(bikeTransit).toBeDefined();
-    expect(matchesEnabledModes(bikeTransit!, ['walk', 'bike', 'scooter', 'transit', 'carpool'])).toBe(true);
-    expect(matchesEnabledModes(bikeTransit!, ['walk', 'transit'])).toBe(false);
-    expect(matchesEnabledModes(bikeTransit!, ['walk', 'bike'])).toBe(false);
-  });
-
-  it('ne filtre pas la marche d\'approche des options multimodales', () => {
-    const transit = routes.find((route) => route.id === 'transit');
-    expect(transit).toBeDefined();
-    // La marche est desactivee mais reste un mode d'appoint: l'option transit survit.
-    expect(matchesEnabledModes(transit!, ['transit'])).toBe(true);
   });
 });

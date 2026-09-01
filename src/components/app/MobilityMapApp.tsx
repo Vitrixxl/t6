@@ -2,7 +2,7 @@
 // planification des trajets (dates, recurrents, objectifs). Auth geree par App.
 import { useMemo, useState } from 'react';
 import { MapPin } from 'lucide-react';
-import type { GeoPoint, MobilityMode, MobilityProfile, RouteOption, SavedRouteRecord, SessionUser, TransportNetwork, TripRecord } from '../../types';
+import type { GeoPoint, MobilityProfile, RouteOption, SavedRouteRecord, SessionUser, TransportNetwork, TripRecord } from '../../types';
 import { haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useSavedRoutes } from './hooks/useSavedRoutes';
@@ -11,7 +11,7 @@ import { useRouteOptions } from './hooks/useRouteOptions';
 import { CITY_CENTER, METRO_RADIUS_KM, describePoint } from '../../lib/transport';
 import { summarizeCarbon } from '../../lib/carbon';
 import { summarizeTripActivity, upcomingTrips } from '../../lib/trips';
-import { UrbanMap, ALL_MOBILITY_MODES, DEFAULT_LAYERS, MergeFillet, type LayerState } from './shared';
+import { UrbanMap, DEFAULT_LAYERS, MergeFillet, type LayerState } from './shared';
 import { ShellSidebar } from '../layout/Shell';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
 import { DesktopRouteStrip, MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
@@ -46,7 +46,6 @@ export function MobilityMapApp({
   const [leftRailOpen, setLeftRailOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const { savedRoutes, justSavedRouteId, saveRoute: persistRoute, deleteSavedRoute } = useSavedRoutes(user.id);
-  const [enabledModes, setEnabledModes] = useState<MobilityMode[]>(ALL_MOBILITY_MODES);
 
   // Planification : occurrences datees + routines recurrentes.
   const [tripsHub, setTripsHub] = useState<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
@@ -72,7 +71,6 @@ export function MobilityMapApp({
     destination,
     profile: user.profile,
     network,
-    enabledModes,
   });
 
 
@@ -125,14 +123,6 @@ export function MobilityMapApp({
     setTripsHub((hub) => ({ ...hub, open: false }));
   };
 
-  const toggleEnabledMode = (mode: MobilityMode) => {
-    setEnabledModes((currentModes) => {
-      if (currentModes.includes(mode)) {
-        return currentModes.length === 1 ? currentModes : currentModes.filter((item) => item !== mode);
-      }
-      return [...currentModes, mode];
-    });
-  };
 
   // --- Planification ------------------------------------------------------
 
@@ -327,10 +317,8 @@ export function MobilityMapApp({
           carbonSummary={carbonSummary}
           weeklyGoalGrams={user.profile.carbonGoalGramsPerWeek}
           layers={layers}
-          enabledModes={enabledModes}
           routingStatus={routingStatus}
           onLayersChange={setLayers}
-          onToggleMode={toggleEnabledMode}
           onOpenHub={() => openHub('upcoming')}
           onLocate={() => void requestCurrentPosition().then((point) => point && setOrigin(point))}
         />
@@ -344,11 +332,9 @@ export function MobilityMapApp({
           savedRouteId={justSavedRouteId}
           layers={layers}
           routingStatus={routingStatus}
-          enabledModes={enabledModes}
           upcomingCount={activitySummary.upcomingCount}
           coverageWarning={coverageWarning}
           onLayersChange={setLayers}
-          onToggleMode={toggleEnabledMode}
           onSelectRoute={setSelectedRouteId}
           onSaveRoute={saveRoute}
           onPlanRoute={planRoute}

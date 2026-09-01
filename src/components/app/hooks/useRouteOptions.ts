@@ -7,8 +7,8 @@
 // D'ou le statut ci-dessous, que l'interface affiche pour dire si la carte est
 // en train de se remplir, ou si elle ne pourra pas l'etre.
 import { useEffect, useMemo, useState } from 'react';
-import type { GeoPoint, MobilityMode, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
-import { applyRoutedLegs, matchesEnabledModes, planRoutes } from '../../../lib/planner';
+import type { GeoPoint, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
+import { applyRoutedLegs, planRoutes } from '../../../lib/planner';
 import { enhanceLegsWithLiveRouting, hasCompleteGeometry } from '../../../lib/transport';
 
 /**
@@ -43,9 +43,8 @@ export function useRouteOptions(input: {
   destination: GeoPoint | null;
   profile: MobilityProfile;
   network: TransportNetwork;
-  enabledModes: MobilityMode[];
 }): RouteOptions {
-  const { origin, destination, profile, network, enabledModes } = input;
+  const { origin, destination, profile, network } = input;
   const [routingStatus, setRoutingStatus] = useState<RoutingStatus>('idle');
   const [selectedRouteId, setSelectedRouteId] = useState('');
   const [selectedLegs, setSelectedLegs] = useState<RouteLeg[]>([]);
@@ -55,7 +54,11 @@ export function useRouteOptions(input: {
     [destination, network, origin, profile],
   );
 
-  const routes = localRoutes.filter((routeOption) => matchesEnabledModes(routeOption, enabledModes));
+  // Toutes les options calculables sont proposees. Un generateur qui ne peut
+  // rien produire — pas de station a portee, aucune ligne reliant les deux
+  // points — ne renvoie deja rien : filtrer en plus revenait a masquer des
+  // trajets valables sans jamais dire pourquoi.
+  const routes = localRoutes;
   const candidate = routes.find((routeOption) => routeOption.id === selectedRouteId) ?? routes[0] ?? null;
 
   // Les mesures de l'option affichee suivent celles de ses segments une fois

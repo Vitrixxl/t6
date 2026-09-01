@@ -15,8 +15,8 @@
 import { useState } from 'react';
 import { Layers, LocateFixed, Radar } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '../ui/drawer';
-import { LayerPill, MODE_ICON, MODE_OPTIONS, type LayerState } from '../app/shared';
-import type { CarbonSummary, GeoPoint, MobilityMode, PlannedTrip, TransportNetwork } from '../../types';
+import { LayerPill, type LayerState } from '../app/shared';
+import type { CarbonSummary, GeoPoint, PlannedTrip, TransportNetwork } from '../../types';
 import { MobileHomePanel } from './MobileHomePanel';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 
@@ -60,10 +60,8 @@ export function MobileActionRail({
   carbonSummary,
   weeklyGoalGrams,
   layers,
-  enabledModes,
   routingStatus,
   onLayersChange,
-  onToggleMode,
   onOpenHub,
   onLocate,
 }: {
@@ -74,10 +72,8 @@ export function MobileActionRail({
   carbonSummary: CarbonSummary;
   weeklyGoalGrams: number;
   layers: LayerState;
-  enabledModes: MobilityMode[];
   routingStatus: RoutingStatus;
   onLayersChange: (layers: LayerState) => void;
-  onToggleMode: (mode: MobilityMode) => void;
   onOpenHub: () => void;
   onLocate: () => void;
 }) {
@@ -133,8 +129,8 @@ export function MobileActionRail({
       <Drawer open={layersOpen} onOpenChange={setLayersOpen}>
         <DrawerContent>
           <DrawerHeader className="pb-2 text-left">
-            <DrawerTitle>Couches et modes</DrawerTitle>
-            <DrawerDescription>Ce qui apparait sur la carte et les modes retenus au calcul.</DrawerDescription>
+            <DrawerTitle>Couches</DrawerTitle>
+            <DrawerDescription>Ce qui apparait sur la carte.</DrawerDescription>
           </DrawerHeader>
           <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <section aria-label="Couches de la carte" className="flex flex-wrap gap-2">
@@ -161,33 +157,6 @@ export function MobileActionRail({
               </LayerPill>
             </section>
 
-            <section aria-label="Modes de deplacement" className="flex flex-col gap-2">
-              <h3 className="text-[0.7rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Modes pris en compte
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {MODE_OPTIONS.map(({ mode, label }) => {
-                  const Icon = MODE_ICON[mode];
-                  const active = enabledModes.includes(mode);
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => onToggleMode(mode)}
-                      className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors ${
-                        active
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background text-muted-foreground'
-                      }`}
-                    >
-                      <Icon className="size-3.5" aria-hidden="true" />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
 
             <p className="text-[0.7rem] text-muted-foreground">Routage : {ROUTING_STATUS_LABEL[routingStatus]}</p>
           </div>

@@ -3,10 +3,10 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { CalendarClock, CalendarPlus, Check, Route } from 'lucide-react';
 import { Button } from '../ui/button';
-import type { GeoPoint, MobilityMode, RouteOption } from '../../types';
+import type { GeoPoint, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
-import { formatMeters, Metric, LayerPill, MODE_ICON, MODE_OPTIONS, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type LayerState, type MobileSheetLevel } from '../app/shared';
+import { formatMeters, Metric, LayerPill, MODE_ICON, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type LayerState, type MobileSheetLevel } from '../app/shared';
 
 export function MobileTripPanel({
   destination,
@@ -15,11 +15,9 @@ export function MobileTripPanel({
   savedRouteId,
   layers,
   routingStatus,
-  enabledModes,
   upcomingCount,
   coverageWarning,
   onLayersChange,
-  onToggleMode,
   onSelectRoute,
   onSaveRoute,
   onPlanRoute,
@@ -30,11 +28,9 @@ export function MobileTripPanel({
   savedRouteId: string;
   layers: LayerState;
   routingStatus: RoutingStatus;
-  enabledModes: MobilityMode[];
   upcomingCount: number;
   coverageWarning: string | null;
   onLayersChange: (layers: LayerState) => void;
-  onToggleMode: (mode: MobilityMode) => void;
   onSelectRoute: (id: string) => void;
   onSaveRoute: (routeOption: RouteOption) => void;
   onPlanRoute: (routeOption: RouteOption) => void;
@@ -165,7 +161,6 @@ export function MobileTripPanel({
                 {ROUTING_STATUS_LABEL[routingStatus]}
               </LayerPill>
             </div>
-            <MobileModeComposer enabledModes={enabledModes} onToggleMode={onToggleMode} />
           </>
         ) : null}
 
@@ -217,36 +212,6 @@ export function MobileTripPanel({
   );
 }
 
-export function MobileModeComposer({
-  enabledModes,
-  onToggleMode }: {
-  enabledModes: MobilityMode[];
-  onToggleMode: (mode: MobilityMode) => void;
-}) {
-  return (
-    <div className="px-4 pb-3">
-      <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {MODE_OPTIONS.map((option) => {
-          const Icon = MODE_ICON[option.mode];
-          const active = enabledModes.includes(option.mode);
-          return (
-            <button
-              key={option.mode}
-              type="button"
-              className={`flex h-9 shrink-0 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition ${
-                active ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'
-              }`}
-              onClick={() => onToggleMode(option.mode)}
-            >
-              <Icon className="size-3.5" aria-hidden="true" />
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 export function MobileRouteTab({
   routeOption,
