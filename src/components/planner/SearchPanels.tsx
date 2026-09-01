@@ -1,6 +1,6 @@
 // Module planification - recherche : saisie depart/arrivee, geocodage BAN + Photon.
 import { useEffect, useState } from 'react';
-import { Building2, CalendarClock, Landmark, LocateFixed, MapPin, PanelLeftClose, PanelLeftOpen, Navigation, Search, TrainFront, UserRound} from 'lucide-react';
+import { ArrowUpDown, Building2, Landmark, LocateFixed, MapPin, PanelLeftClose, PanelLeftOpen, Search, TrainFront} from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import type { GeoPoint} from '../../types';
@@ -75,27 +75,54 @@ export function CommandSearchBar({
 export function MobileSearchShell({
   origin,
   destination,
-  upcomingCount,
   currentPosition,
   onOriginSelect,
   onDestinationSelect,
-  onCurrentPositionRequest,
-  onOpenTrips,
-  onOpenProfile }: {
+  onSwap,
+  onCurrentPositionRequest }: {
   origin: GeoPoint | null;
   destination: GeoPoint | null;
-  upcomingCount: number;
   currentPosition: GeoPoint | null;
   onOriginSelect: (point: GeoPoint) => void;
   onDestinationSelect: (point: GeoPoint) => void;
+  onSwap: () => void;
   onCurrentPositionRequest: () => Promise<GeoPoint | null>;
-  onOpenTrips: () => void;
-  onOpenProfile: () => void;
 }) {
+  // Deux temps. Tant qu'aucune destination n'est choisie, la barre ne pose
+  // qu'une question — ou va-t-on ? Demander un depart avant de savoir cela
+  // impose de remplir deux champs pour obtenir une reponse, alors que le
+  // depart est presque toujours la position courante.
+  //
+  // Une fois la destination choisie, les deux champs apparaissent, avec
+  // l'inversion : c'est le moment ou le trajet retour devient une intention
+  // plausible, pas avant.
+  const expanded = destination !== null;
+
+  if (!expanded) {
+    return (
+      <div className="relative z-[70] flex items-center gap-3 rounded-2xl border border-white/80 bg-white/95 px-3.5 py-3 shadow-float backdrop-blur-xl">
+        <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <PlaceSearchBox
+          searchOrigin={origin ?? currentPosition}
+          value={destination}
+          currentPosition={currentPosition}
+          onCurrentPositionRequest={onCurrentPositionRequest}
+          onSelect={onDestinationSelect}
+          inputId="mobile-destination-search"
+          placeholder="Ou vas-tu ?"
+          className="min-w-0 flex-1"
+          compact
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="relative z-[70] grid grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem] items-center gap-2 rounded-2xl border border-white/80 bg-white/95 px-2 py-2 shadow-float backdrop-blur-xl">
-      <div className="grid size-10 place-items-center self-start rounded-xl bg-primary text-primary-foreground">
-        <Navigation className="size-4" aria-hidden="true" />
+    <div className="relative z-[70] grid grid-cols-[1.25rem_minmax(0,1fr)_2.5rem] items-center gap-2.5 rounded-2xl border border-white/80 bg-white/95 px-3 py-2.5 shadow-float backdrop-blur-xl">
+      <div className="flex h-full flex-col items-center justify-center gap-1 py-1" aria-hidden="true">
+        <span className="size-2 rounded-full border-2 border-primary bg-white" />
+        <span className="w-px flex-1 bg-border" />
+        <span className="size-2 rounded-[2px] bg-destructive" />
       </div>
       <div className="grid min-w-0 gap-1">
         <PlaceSearchBox
@@ -122,31 +149,17 @@ export function MobileSearchShell({
           compact
         />
       </div>
-      <Button
+      <button
         type="button"
-        variant="outline"
-        onClick={onOpenTrips}
-        aria-label="Ouvrir le planificateur"
-        className="relative h-11 w-11 rounded-xl p-0"
-        data-tour="trips"
+        onClick={onSwap}
+        disabled={!origin}
+        aria-label="Inverser depart et arrivee"
+        // Taille en pixels : la racine du document est a 14 px, une valeur en
+        // rem raterait la cible tactile de 44 px.
+        className="grid size-[44px] place-items-center rounded-xl border border-border bg-background text-muted-foreground transition-colors active:bg-muted disabled:opacity-40"
       >
-        <CalendarClock className="size-5" aria-hidden="true" />
-        {upcomingCount > 0 ? (
-          <span className="absolute -right-1 -top-1 grid min-h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground">
-            {Math.min(upcomingCount, 9)}
-          </span>
-        ) : null}
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onOpenProfile}
-        aria-label="Ouvrir le profil"
-        className="h-11 w-11 rounded-xl p-0"
-        data-tour="profile"
-      >
-        <UserRound className="size-5" aria-hidden="true" />
-      </Button>
+        <ArrowUpDown className="size-4" aria-hidden="true" />
+      </button>
     </div>
   );
 }

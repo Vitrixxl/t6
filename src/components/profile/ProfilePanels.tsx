@@ -1,6 +1,7 @@
 // Module profil : preferences de mobilite, objectifs carbone et compte.
 import { FormEvent, useEffect, useState } from 'react';
 import { Check, CircleHelp, LogOut, Trash2, UserRound } from 'lucide-react';
+import { ConfirmDialog } from '../ui/confirm-dialog';
 import { Button } from '../ui/button';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { Input } from '../ui/input';
@@ -24,6 +25,8 @@ export function ProfileDrawer({
   onDeleteAccount: () => void;
   onLogout: () => void;
 }) {
+  const [confirming, setConfirming] = useState<'logout' | 'delete' | null>(null);
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto w-[calc(100%-1.5rem)] max-w-[1400px] overflow-hidden bg-[var(--shell)] p-0 sm:w-[calc(100%-3rem)]">
@@ -34,7 +37,7 @@ export function ProfileDrawer({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8">
           <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
             <section className="overflow-hidden rounded-xl border border-border bg-background">
-              <ProfilePanel user={user} onSave={onSave} onDeleteAccount={onDeleteAccount} />
+              <ProfilePanel user={user} onSave={onSave} />
             </section>
             <section className="grid content-start gap-3 rounded-xl border border-border bg-background p-4">
               <div className="flex items-center gap-3">
@@ -53,10 +56,16 @@ export function ProfileDrawer({
                 <CircleHelp className="size-4" aria-hidden="true" />
                 Revoir le tutoriel
               </Button>
-              <Button type="button" variant="destructive" className="w-full justify-center" onClick={onLogout}>
-                <LogOut className="size-4" aria-hidden="true" />
-                Deconnexion
-              </Button>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button type="button" variant="outline" className="w-full justify-center" onClick={() => setConfirming('logout')}>
+                  <LogOut className="size-4" aria-hidden="true" />
+                  Deconnexion
+                </Button>
+                <Button type="button" variant="destructive" className="w-full justify-center" onClick={() => setConfirming('delete')}>
+                  <Trash2 className="size-4" aria-hidden="true" />
+                  Supprimer le compte
+                </Button>
+              </div>
             </section>
           </div>
         </div>
@@ -68,17 +77,33 @@ export function ProfileDrawer({
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
+      <ConfirmDialog
+        open={confirming === 'logout'}
+        onOpenChange={(next) => setConfirming(next ? 'logout' : null)}
+        title="Se deconnecter ?"
+        description="Tes trajets et tes preferences restent enregistres sur ton compte. Tu les retrouveras a la prochaine connexion."
+        confirmLabel="Se deconnecter"
+        onConfirm={onLogout}
+      />
+
+      <ConfirmDialog
+        open={confirming === 'delete'}
+        onOpenChange={(next) => setConfirming(next ? 'delete' : null)}
+        title="Supprimer le compte ?"
+        description="Le compte, les trajets, les routines et les itineraires enregistres sont effaces definitivement. Cette action est irreversible."
+        confirmLabel="Supprimer le compte"
+        destructive
+        onConfirm={onDeleteAccount}
+      />
     </Drawer>
   );
 }
 
 export function ProfilePanel({
   user,
-  onSave,
-  onDeleteAccount }: {
+  onSave }: {
   user: SessionUser;
   onSave: (profile: MobilityProfile) => void;
-  onDeleteAccount: () => void;
 }) {
   const [profile, setProfile] = useState<MobilityProfile>(user.profile);
   const [saved, setSaved] = useState(false);
@@ -193,15 +218,10 @@ export function ProfilePanel({
           />
           Priorite PMR
         </label>
-        <div className="flex gap-2">
-          <Button type="submit" size="sm" className="flex-1">
-            {saved ? <Check className="size-4" aria-hidden="true" /> : null}
-            Enregistrer
-          </Button>
-          <Button type="button" variant="outline" size="compactIcon" onClick={onDeleteAccount} aria-label="Supprimer les donnees locales">
-            <Trash2 className="size-4" aria-hidden="true" />
-          </Button>
-        </div>
+        <Button type="submit" size="sm">
+          {saved ? <Check className="size-4" aria-hidden="true" /> : null}
+          Enregistrer
+        </Button>
       </form>
     </section>
   );

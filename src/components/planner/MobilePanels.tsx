@@ -1,46 +1,45 @@
 // Module planification - restitution mobile : feuille d'options, composeur de
 // modes et actions de planification.
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { CalendarClock, CalendarPlus, Check, Route } from 'lucide-react';
+import { CalendarClock, CalendarPlus, Check, Route, UserRound } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { GeoPoint, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
-import { formatMeters, Metric, LayerPill, MODE_ICON, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type LayerState, type MobileSheetLevel } from '../app/shared';
+import { Metric, MODE_ICON, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type MobileSheetLevel } from '../app/shared';
+import { RouteSteps } from './RouteSteps';
 
 export function MobileTripPanel({
   destination,
   routes,
   selectedRoute,
   savedRouteId,
-  layers,
   routingStatus,
   upcomingCount,
   coverageWarning,
-  onLayersChange,
   onSelectRoute,
   onSaveRoute,
   onPlanRoute,
-  onOpenHub }: {
+  onOpenHub,
+  onOpenProfile }: {
   destination: GeoPoint | null;
   routes: RouteOption[];
   selectedRoute: RouteOption | null;
   savedRouteId: string;
-  layers: LayerState;
   routingStatus: RoutingStatus;
   upcomingCount: number;
   coverageWarning: string | null;
-  onLayersChange: (layers: LayerState) => void;
   onSelectRoute: (id: string) => void;
   onSaveRoute: (routeOption: RouteOption) => void;
   onPlanRoute: (routeOption: RouteOption) => void;
   onOpenHub: () => void;
+  onOpenProfile: () => void;
 }) {
   const [sheetLevel, setSheetLevel] = useState<MobileSheetLevel>('mid');
   const dragStartY = useRef<number | null>(null);
   const dragMoved = useRef(false);
   const sheetSizing = MOBILE_SHEET_HEIGHT[sheetLevel];
-  const isCollapsed = sheetLevel === 'collapsed';
+
 
   const moveSheet = (direction: -1 | 1) => {
     setSheetLevel((current) => shiftMobileSheetLevel(current, direction));
@@ -130,36 +129,43 @@ export function MobileTripPanel({
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itineraire</p>
             <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Ou vas-tu ?'}</h1>
+            <p
+              className={`truncate text-[11px] font-medium ${
+                routingStatus === 'unavailable' ? 'text-destructive' : 'text-muted-foreground'
+              }`}
+            >
+              {ROUTING_STATUS_LABEL[routingStatus]}
+            </p>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={onOpenHub} className="relative shrink-0 rounded-full bg-white">
-            <CalendarClock className="size-4" aria-hidden="true" />
-            Mes trajets
-            {upcomingCount > 0 ? (
-              <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground">
-                {Math.min(upcomingCount, 9)}
-              </span>
-            ) : null}
-          </Button>
+          {/* La feuille recouvre la barre d'actions du bas : sans ces deux
+              boutons, le profil et les trajets deviendraient inatteignables des
+              qu'un itineraire est demande. */}
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onOpenHub}
+              aria-label="Mes trajets"
+              className="relative size-[44px] rounded-xl bg-white p-0"
+            >
+              <CalendarClock className="size-5" aria-hidden="true" />
+              {upcomingCount > 0 ? (
+                <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground">
+                  {Math.min(upcomingCount, 9)}
+                </span>
+              ) : null}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onOpenProfile}
+              aria-label="Ouvrir le profil"
+              className="size-[44px] rounded-xl bg-white p-0"
+            >
+              <UserRound className="size-5" aria-hidden="true" />
+            </Button>
+          </div>
         </div>
-
-        {!isCollapsed ? (
-          <>
-            <div className="flex gap-2 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <LayerPill active={layers.transitStops} onClick={() => onLayersChange({ ...layers, transitStops: !layers.transitStops })}>
-                Arrets
-              </LayerPill>
-              <LayerPill active={layers.velov} onClick={() => onLayersChange({ ...layers, velov: !layers.velov })}>
-                Velo'v
-              </LayerPill>
-              <LayerPill active={layers.scooters} onClick={() => onLayersChange({ ...layers, scooters: !layers.scooters })}>
-                Trottinettes
-              </LayerPill>
-              <LayerPill active={routingStatus === 'ready'} onClick={() => undefined}>
-                {ROUTING_STATUS_LABEL[routingStatus]}
-              </LayerPill>
-            </div>
-          </>
-        ) : null}
 
         {coverageWarning ? (
           <div className="px-4 pb-3">
@@ -199,9 +205,9 @@ export function MobileTripPanel({
           </div>
         ) : null}
 
-        {!isCollapsed && selectedRoute ? (
+        {selectedRoute ? (
           <div className="px-4 pb-3">
-            <MobileSelectedRouteCard routeOption={selectedRoute} expanded={sheetLevel === 'expanded'} />
+            <MobileSelectedRouteCard routeOption={selectedRoute} />
           </div>
         ) : null}
       </div>
@@ -241,12 +247,7 @@ export function MobileRouteTab({
   );
 }
 
-export function MobileSelectedRouteCard({
-  routeOption,
-  expanded }: {
-  routeOption: RouteOption;
-  expanded: boolean;
-}) {
+export function MobileSelectedRouteCard({ routeOption }: { routeOption: RouteOption }) {
   return (
     <article className="rounded-xl border border-primary bg-primary/8 p-3">
       <div className="grid grid-cols-[1fr_auto] gap-3">
@@ -264,27 +265,9 @@ export function MobileSelectedRouteCard({
         <Metric label="CO2" value={`${routeOption.carbonGrams}g`} compact />
         <Metric label="gain" value={`${routeOption.carbonSavedGrams}g`} compact />
       </div>
-      {expanded && routeOption.instructions.length > 0 ? (
-        <div className="mt-3 rounded-lg border border-border/70 bg-background/75 p-2.5">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Etapes de l'itineraire</p>
-          <ol className="mt-2 grid gap-2">
-            {routeOption.instructions.slice(0, 4).map((instruction, index) => (
-              <li key={`${instruction.kind}-${instruction.distanceMeters}-${index}`} className="flex min-w-0 items-start gap-2">
-                <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
-                  {index + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <strong className="block truncate text-xs">{instruction.text}</strong>
-                  <span className="block truncate text-[10px] text-muted-foreground">
-                    Dans {formatMeters(instruction.distanceMeters)}
-                    {instruction.detail ? ` - ${instruction.detail}` : ''}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      ) : null}
+      <div className="mt-3 rounded-lg border border-border/70 bg-background/75 p-2.5">
+        <RouteSteps routeOption={routeOption} />
+      </div>
     </article>
   );
 }

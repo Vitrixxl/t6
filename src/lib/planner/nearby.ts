@@ -81,3 +81,57 @@ export function formatDistance(distanceKm: number): string {
 export function walkMinutes(distanceKm: number): number {
   return Math.max(1, Math.ceil((distanceKm / 4.6) * 60));
 }
+
+/**
+ * Nombre reel d'elements dans le rayon, et les plus proches d'entre eux.
+ *
+ * Les deux sont distincts a dessein : la liste est bornee pour le rendu, le
+ * compte ne l'est pas. Annoncer la longueur de la liste reviendrait a presenter
+ * un plafond d'affichage comme une mesure, ce qui fut un vrai bogue (B9).
+ */
+export interface NearbyGroup<T> {
+  count: number;
+  items: NearbyItem<T>[];
+}
+
+export interface NearbyWithin {
+  velov: NearbyGroup<SharedStation>;
+  scooter: NearbyGroup<SharedStation>;
+  stop: NearbyGroup<GtfsStop>;
+}
+
+/** Elements listes par groupe. Au-dela, la liste cesse d'etre lisible. */
+const LISTED_PER_GROUP = 4;
+
+function within<T>(items: T[], point: GeoPoint, radiusKm: number, positionOf: (item: T) => GeoPoint): NearbyGroup<T> {
+  const matches: NearbyItem<T>[] = [];
+  for (const item of items) {
+    const distanceKm = haversineDistanceKm(positionOf(item), point);
+    if (distanceKm <= radiusKm) {
+      matches.push({ item, distanceKm });
+    }
+  }
+
+  matches.sort((a, b) => a.distanceKm - b.distanceKm);
+  return { count: matches.length, items: matches.slice(0, LISTED_PER_GROUP) };
+}
+
+export function findWithinRadius(network: TransportNetwork, point: GeoPoint, radiusKm: number): NearbyWithin {
+  const stations = network.sharedMobility.data.stations;
+
+  return {
+    velov: within(
+      stations.filter((s) => s.kind === 'velov' && s.is_renting && s.bikes_available > 0),
+      point,
+      radiusKm,
+      stationPosition,
+    ),
+    scooter: within(
+      stations.filter((s) => s.kind === 'scooter' && s.is_renting && s.scooters_available > 0),
+      point,
+      radiusKm,
+      stationPosition,
+    ),
+    stop: within(network.gtfs.stops, point, radiusKm, stopPosition),
+  };
+}

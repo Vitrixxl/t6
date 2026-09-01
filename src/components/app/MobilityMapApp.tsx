@@ -1,7 +1,6 @@
 // Orchestrateur principal : recherche d'itineraires, comparaison des options et
 // planification des trajets (dates, recurrents, objectifs). Auth geree par App.
 import { useMemo, useState } from 'react';
-import { MapPin } from 'lucide-react';
 import type { GeoPoint, MobilityProfile, RouteOption, SavedRouteRecord, SessionUser, TransportNetwork, TripRecord } from '../../types';
 import { haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
@@ -108,6 +107,14 @@ export function MobilityMapApp({
 
   const selectDestination = (point: GeoPoint) => {
     setDestination(point);
+  };
+
+  // Le depart bascule sur la position courante quand il n'a jamais ete saisi :
+  // inverser un trajet dont un bout est implicite doit rester possible.
+  const swapEndpoints = () => {
+    const start = origin ?? currentPosition;
+    setOrigin(destination);
+    setDestination(start);
   };
 
   const saveRoute = (routeOption: RouteOption) => {
@@ -290,36 +297,28 @@ export function MobilityMapApp({
             <MobileSearchShell
               origin={origin}
               destination={destination}
-              upcomingCount={activitySummary.upcomingCount}
               currentPosition={currentPosition}
               onOriginSelect={selectOrigin}
               onDestinationSelect={selectDestination}
+              onSwap={swapEndpoints}
               onCurrentPositionRequest={requestCurrentPosition}
-              onOpenTrips={() => openHub('upcoming')}
-              onOpenProfile={() => setProfileOpen(true)}
             />
-          </div>
-          <div className="pointer-events-auto relative z-40 flex h-8 max-w-full items-center gap-2 rounded-full bg-white/95 px-3 text-xs font-semibold text-foreground shadow-soft backdrop-blur-xl">
-            <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
-            <span className="truncate">{geoStatus}</span>
           </div>
         </header>
 
-        {/* La barre laisse la place a la feuille d'options des qu'un itineraire
-            est demande : les couches restent accessibles depuis la feuille, et
-            le GPS depuis la barre de recherche. */}
+        {/* La barre reste en place tant qu'aucun itineraire n'est demande. La
+            feuille d'options la recouvre ensuite : ses actions restent
+            atteignables en la repliant. */}
         {!routeRequested ? (
         <MobileActionRail
           network={network}
           currentPosition={currentPosition}
           origin={origin}
-          upcomingTrip={upcoming[0] ?? null}
-          carbonSummary={carbonSummary}
-          weeklyGoalGrams={user.profile.carbonGoalGramsPerWeek}
+          savedCount={savedRoutes.length}
           layers={layers}
-          routingStatus={routingStatus}
           onLayersChange={setLayers}
-          onOpenHub={() => openHub('upcoming')}
+          onOpenProfile={() => setProfileOpen(true)}
+          onOpenSavedTrips={() => openHub('saved')}
           onLocate={() => void requestCurrentPosition().then((point) => point && setOrigin(point))}
         />
         ) : null}
@@ -330,15 +329,14 @@ export function MobilityMapApp({
           routes={routes}
           selectedRoute={selectedRoute}
           savedRouteId={justSavedRouteId}
-          layers={layers}
           routingStatus={routingStatus}
           upcomingCount={activitySummary.upcomingCount}
           coverageWarning={coverageWarning}
-          onLayersChange={setLayers}
           onSelectRoute={setSelectedRouteId}
           onSaveRoute={saveRoute}
           onPlanRoute={planRoute}
           onOpenHub={() => openHub('upcoming')}
+          onOpenProfile={() => setProfileOpen(true)}
         />
         ) : null}
       </div>
