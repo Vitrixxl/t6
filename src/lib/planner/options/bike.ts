@@ -1,9 +1,7 @@
 // Generateur d'option : bike.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { SPEED_KMH } from '../constants';
 import { haversineDistanceKm, nearestStation, stationToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
-import { minutesForDistance } from '../metrics';
 
 export function createBikeOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
   const stations = network.sharedMobility.data.stations.filter(
@@ -39,8 +37,9 @@ export function createBikeOption({ origin, destination, profile, network }: Rout
         to: stationToPoint(toStation),
         distanceKm: bikeKm,
         accessible: !profile.accessibilityNeed,
+        // Deverrouillage a la borne et remise en station.
+        estimate: { overheadMinutes: 2 },
       }),
-      durationMinutes: minutesForDistance(bikeKm, SPEED_KMH.bike) + 2,
       detail: `${fromStation.bikes_available} velos disponibles au depart, retour autorise a destination.`,
     },
     createLeg({

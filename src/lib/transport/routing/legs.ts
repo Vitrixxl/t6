@@ -10,6 +10,8 @@
 // jamais une ligne inventee. Un trace faux se lit comme un itineraire reel et
 // envoie l'utilisateur ailleurs (B14).
 import type { RouteLeg } from '../../../types';
+import { legDuration } from '../../planner/legs';
+import { round } from '../../planner/metrics';
 import { fetchRouteGeometry } from './osrm';
 
 export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: AbortSignal): Promise<RouteLeg[]> {
@@ -28,7 +30,19 @@ export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: Abor
         return { ...leg, path: [] };
       }
 
-      return { ...leg, path: geometry.path };
+      // La distance et la duree du reseau routier remplacent l'estimation a vol
+      // d'oiseau. Les hypotheses du segment sont conservees : la congestion
+      // ajuste le temps de parcours, et l'attente ou la prise en charge s'y
+      // ajoutent — ce ne sont pas du trajet, le routage ne les connait pas.
+      const distanceKm = round(geometry.distanceMeters / 1000, 2);
+
+      return {
+        ...leg,
+        path: geometry.path,
+        distanceKm,
+        durationMinutes: legDuration(geometry.durationSeconds / 60, leg.estimate),
+        carbonGrams: Math.round(distanceKm * leg.estimate.carbonGramsPerKm),
+      };
     }),
   );
 }

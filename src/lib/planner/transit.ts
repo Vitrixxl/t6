@@ -188,10 +188,12 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
         // Seule geometrie reelle disponible sans appel reseau : le trace
         // publie de la ligne, deja decoupe entre les deux stations.
         path: ride.path,
+        // L'attente a quai et la correspondance ne sont pas du temps de
+        // parcours : elles ne doivent pas suivre la distance.
+        estimate: { overheadMinutes: ride.waitMinutes + transferMinutes },
       }),
       mapLabel: label,
       mapColor: `#${ride.route.route_color}`,
-      durationMinutes: rideMinutes(ride) + transferMinutes,
       detail:
         index > 0
           ? `Correspondance a ${ride.boarding.stop_name}, puis ${label} (attente ${ride.waitMinutes} min).`

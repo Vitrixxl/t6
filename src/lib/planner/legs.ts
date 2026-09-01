@@ -1,7 +1,7 @@
 // Construction des segments et assemblage d'une option a partir de ses
 // segments : distance, duree, carbone et accessibilite sont derives des
 // segments, jamais saisis en double.
-import type { GeoPoint, MobilityMode, RouteInstruction, RouteLeg, RouteOption } from '../../types';
+import type { GeoPoint, LegEstimate, MobilityMode, RouteInstruction, RouteLeg, RouteOption } from '../../types';
 import { EMISSIONS_G_PER_KM, SPEED_KMH } from './constants';
 import { MODE_LABELS } from './labels';
 import { minutesForDistance, round } from './metrics';
@@ -24,10 +24,23 @@ export interface LegInput {
    * vide jusqu'a la reponse du service de routage.
    */
   path?: GeoPoint[];
+  /** Hypotheses de calcul. Par defaut : ni congestion, ni attente, facteur du mode. */
+  estimate?: Partial<LegEstimate>;
+}
+
+/** Duree d'un segment : parcours ajuste de la congestion, plus le temps fixe. */
+export function legDuration(travelMinutes: number, estimate: LegEstimate): number {
+  return Math.max(Math.round(travelMinutes * estimate.travelFactor + estimate.overheadMinutes), 1);
 }
 
 export function createLeg(input: LegInput): RouteLeg {
   const roundedDistance = round(input.distanceKm, 2);
+  const estimate: LegEstimate = {
+    travelFactor: input.estimate?.travelFactor ?? 1,
+    overheadMinutes: input.estimate?.overheadMinutes ?? 0,
+    carbonGramsPerKm: input.estimate?.carbonGramsPerKm ?? EMISSIONS_G_PER_KM[input.mode],
+  };
+
   return {
     id: input.id,
     mode: input.mode,
@@ -38,10 +51,36 @@ export function createLeg(input: LegInput): RouteLeg {
     toPoint: input.to,
     path: input.path ?? [],
     distanceKm: roundedDistance,
-    durationMinutes: minutesForDistance(roundedDistance, SPEED_KMH[input.mode]),
-    carbonGrams: Math.round(roundedDistance * EMISSIONS_G_PER_KM[input.mode]),
+    durationMinutes: legDuration(minutesForDistance(roundedDistance, SPEED_KMH[input.mode]), estimate),
+    carbonGrams: Math.round(roundedDistance * estimate.carbonGramsPerKm),
     accessible: input.accessible,
     detail: `${MODE_LABELS[input.mode]} sur ${roundedDistance.toFixed(2)} km.`,
+    estimate,
+  };
+}
+
+/** Mesures d'une option, toutes derivees de ses segments. */
+export interface LegSummary {
+  path: GeoPoint[];
+  distanceKm: number;
+  durationMinutes: number;
+  carbonGrams: number;
+  carbonSavedGrams: number;
+  accessible: boolean;
+}
+
+export function summarizeLegs(legs: RouteLeg[]): LegSummary {
+  const distanceKm = round(legs.reduce((sum, leg) => sum + leg.distanceKm, 0), 2);
+  const carbonGrams = Math.round(legs.reduce((sum, leg) => sum + leg.carbonGrams, 0));
+
+  return {
+    path: mergeLegPaths(legs),
+    distanceKm,
+    durationMinutes: Math.ceil(legs.reduce((sum, leg) => sum + leg.durationMinutes, 0)),
+    carbonGrams,
+    // Reference : la meme distance parcourue seul en voiture.
+    carbonSavedGrams: Math.max(Math.round(distanceKm * EMISSIONS_G_PER_KM.privateCar - carbonGrams), 0),
+    accessible: legs.every((leg) => leg.accessible),
   };
 }
 
@@ -54,22 +93,22 @@ export function buildOption(input: {
   reliabilityScore: number;
   warnings: string[];
 }): RouteOption {
-  const distanceKm = round(input.legs.reduce((sum, leg) => sum + leg.distanceKm, 0), 2);
-  const durationMinutes = Math.ceil(input.legs.reduce((sum, leg) => sum + leg.durationMinutes, 0));
-  const carbonGrams = Math.round(input.legs.reduce((sum, leg) => sum + leg.carbonGrams, 0));
-  const carbonSavedGrams = Math.max(Math.round(distanceKm * EMISSIONS_G_PER_KM.privateCar - carbonGrams), 0);
-
   return {
     ...input,
-    path: mergeLegPaths(input.legs),
-    distanceKm,
-    durationMinutes,
-    carbonGrams,
-    carbonSavedGrams,
-    accessible: input.legs.every((leg) => leg.accessible),
+    ...summarizeLegs(input.legs),
     instructions: buildFallbackInstructions(input.legs),
     score: 0,
   };
+}
+
+/**
+ * Reporte sur l'option les mesures de ses segments une fois routes. Sans cela,
+ * l'entete afficherait l'estimation a vol d'oiseau pendant que le detail
+ * afficherait les distances reelles : deux chiffres differents pour le meme
+ * trajet.
+ */
+export function applyRoutedLegs(option: RouteOption, legs: RouteLeg[]): RouteOption {
+  return { ...option, legs, ...summarizeLegs(legs) };
 }
 
 /**

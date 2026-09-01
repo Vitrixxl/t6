@@ -12,4 +12,5 @@ export const DEFAULT_PROFILE: MobilityProfile = {
   carbonGoalGramsPerWeek: 2500,
   weeklyTripsGoal: 5,
   weeklySavedGoalGrams: 2000,
+  carpoolOccupants: 2,
 };

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { enhanceRoutesWithLiveRouting, searchPlaces } from './index';
-import type { RouteOption } from '../../types';
+import { enhanceLegsWithLiveRouting, searchPlaces } from './index';
+import type { RouteLeg } from '../../types';
 
 const origin = { label: 'Bellecour', lat: 45.7578, lon: 4.832 };
 const destination = { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 };
@@ -138,28 +138,26 @@ describe('searchPlaces', () => {
   });
 });
 
-describe('enhanceRoutesWithLiveRouting', () => {
-  const baseOption: RouteOption = {
-    id: 'bike-transit',
-    title: 'Velo + metro combine',
-    summary: 'Test',
-    modes: ['walk', 'bike', 'transit'],
-    legs: [],
+describe('enhanceLegsWithLiveRouting', () => {
+  const carpoolLeg: RouteLeg = {
+    id: 'carpool-core',
+    mode: 'carpool',
+    title: 'Covoiturage',
+    from: origin.label,
+    to: destination.label,
+    fromPoint: origin,
+    toPoint: destination,
     path: [],
     distanceKm: 2,
-    durationMinutes: 10,
-    carbonGrams: 60, // intensite carbone mixte de 30 g/km (velo + metro)
-    carbonSavedGrams: 300,
-    reliabilityScore: 90,
-    score: 80,
+    durationMinutes: 12,
+    carbonGrams: 180,
     accessible: true,
-    warnings: [],
-    instructions: [],
+    detail: 'Test',
+    // 1.2 de congestion, 6 min de prise en charge, 90 g/km (voiture a deux).
+    estimate: { travelFactor: 1.2, overheadMinutes: 6, carbonGramsPerKm: 90 },
   };
 
-  it('recale distance, duree et CO2 sur la geometrie routee en conservant l\'intensite carbone mixte', async () => {
-    // Le client consomme desormais le contrat de notre API, pas la reponse
-    // brute d'OSRM : le protocole du calculateur est entierement cote serveur.
+  it('reprend distance, duree et CO2 du reseau routier en gardant les hypotheses du segment', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
@@ -169,25 +167,23 @@ describe('enhanceRoutesWithLiveRouting', () => {
             [4.8594, 45.7606],
           ],
           distanceMeters: 3000,
-          durationSeconds: 900,
+          durationSeconds: 600,
           instructions: [],
           source: 'upstream',
         }),
       ),
     );
 
-    const [enhanced] = await enhanceRoutesWithLiveRouting([baseOption], origin, destination);
+    const [enhanced] = await enhanceLegsWithLiveRouting([carpoolLeg]);
 
     expect(enhanced.distanceKm).toBe(3);
-    expect(enhanced.durationMinutes).toBe(15);
-    // 30 g/km x 3 km: le trajet mixte n'est pas regonfle au facteur du mode dominant.
-    expect(enhanced.carbonGrams).toBe(90);
-    expect(enhanced.carbonSavedGrams).toBe(3 * 180 - 90);
+    // 10 min de parcours x 1.2 de congestion + 6 min de prise en charge.
+    expect(enhanced.durationMinutes).toBe(18);
+    expect(enhanced.carbonGrams).toBe(270);
     expect(enhanced.path).toHaveLength(2);
-    expect(enhanced.score).toBeLessThanOrEqual(baseOption.score);
   });
 
-  it('conserve l\'option locale inchangee si le routage echoue (degradation gracieuse)', async () => {
+  it("laisse le segment sans geometrie quand le routage echoue, sans inventer de trace", async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -195,7 +191,21 @@ describe('enhanceRoutesWithLiveRouting', () => {
       }),
     );
 
-    const [enhanced] = await enhanceRoutesWithLiveRouting([baseOption], origin, destination);
-    expect(enhanced).toEqual(baseOption);
+    const [enhanced] = await enhanceLegsWithLiveRouting([{ ...carpoolLeg, path: [origin, destination] }]);
+
+    expect(enhanced.path).toEqual([]);
+  });
+
+  it("n'envoie pas un segment de transport public au routage routier", async () => {
+    const stub = vi.fn(async () => jsonResponse({}));
+    vi.stubGlobal('fetch', stub);
+
+    const transitPath = [origin, destination];
+    const [enhanced] = await enhanceLegsWithLiveRouting([
+      { ...carpoolLeg, id: 'ride', mode: 'transit', path: transitPath },
+    ]);
+
+    expect(stub).not.toHaveBeenCalled();
+    expect(enhanced.path).toBe(transitPath);
   });
 });

@@ -1,9 +1,7 @@
 // Generateur d'option : bike + transit.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { SPEED_KMH } from '../constants';
 import { haversineDistanceKm, nearestStation, stationToPoint, stopToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
-import { minutesForDistance } from '../metrics';
 import { findTransitJourney, transitLegs } from '../transit';
 
 export function createBikeTransitOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
@@ -51,8 +49,8 @@ export function createBikeTransitOption({ origin, destination, profile, network 
         to: stopToPoint(boarding),
         distanceKm: bikeKm,
         accessible: !profile.accessibilityNeed,
+        estimate: { overheadMinutes: 2 },
       }),
-      durationMinutes: minutesForDistance(bikeKm, SPEED_KMH.bike) + 2,
       detail: `${fromStation.bikes_available} velos disponibles pour rejoindre la correspondance.`,
     },
     ...transitLegs(journey, 'hybrid'),

@@ -119,7 +119,17 @@ export function RouteChip({ routeOption, selected, onClick }: { routeOption: Rou
         {routeOption.durationMinutes}
       </span>
       <span className="min-w-0">
-        <strong className="block truncate text-sm">{routeOption.title}</strong>
+        <strong className="flex min-w-0 items-center gap-1.5 text-sm">
+          <span className="truncate">{routeOption.title}</span>
+          {/* Le covoiturage ne met aucun conducteur en relation. Le dire sur la
+              pastille elle-meme, et pas seulement dans le detail que personne
+              n'ouvre, evite de laisser croire a un service de mise en relation. */}
+          {routeOption.id === 'carpool' ? (
+            <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+              Estimation
+            </span>
+          ) : null}
+        </strong>
         <span className="block truncate text-xs text-muted-foreground">
           {routeOption.distanceKm.toFixed(1)} km - {routeOption.carbonGrams} g CO2
         </span>

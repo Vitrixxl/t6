@@ -6,13 +6,27 @@
 // partagee. Le dossier place le covoiturage dynamique hors perimetre (2.3) ;
 // l'interface ne doit rien annoncer de plus.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { SPEED_KMH } from '../constants';
+import { DEFAULT_CARPOOL_OCCUPANTS, EMISSIONS_G_PER_KM } from '../constants';
 import { buildOption, createLeg } from '../legs';
-import { minutesForDistance } from '../metrics';
 
-export function createCarpoolOption({ origin, destination, network }: RouteRequest, directKm: number): RouteOption {
+/** Minutes forfaitaires de prise en charge : detour du conducteur et rendez-vous. */
+const PICKUP_MINUTES = 6;
+
+export function carpoolCarbonPerKm(occupants: number): number {
+  // Le vehicule emet autant quel que soit son remplissage : la part de chaque
+  // passager est donc l'emission du vehicule divisee par le nombre de personnes
+  // a bord. C'est la convention ADEME. Simplification assumee : un vehicule
+  // plus charge consomme legerement plus, ce que ce modele ignore, et qui
+  // surestime l'economie de quelques pour cent.
+  return EMISSIONS_G_PER_KM.carpool / Math.max(occupants, 1);
+}
+
+export function createCarpoolOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption {
   const incident = network.gtfs.incidents.find((item) => item.affected_modes.includes('carpool'));
-  const trafficFactor = incident ? 1.18 : 1.08;
+  // Le calculateur d'itineraires raisonne en circulation fluide. Ce facteur est
+  // l'hypothese de congestion, plus forte quand un incident est signale.
+  const congestionFactor = incident ? 1.18 : 1.08;
+  const occupants = profile.carpoolOccupants ?? DEFAULT_CARPOOL_OCCUPANTS;
   const legs: RouteLeg[] = [
     {
       ...createLeg({
@@ -21,18 +35,22 @@ export function createCarpoolOption({ origin, destination, network }: RouteReque
         title: 'Covoiturage',
         from: origin,
         to: destination,
-        distanceKm: directKm * trafficFactor,
+        distanceKm: directKm,
         accessible: true,
+        estimate: {
+          travelFactor: congestionFactor,
+          overheadMinutes: PICKUP_MINUTES,
+          carbonGramsPerKm: carpoolCarbonPerKm(occupants),
+        },
       }),
-      durationMinutes: minutesForDistance(directKm * trafficFactor, SPEED_KMH.carpool) + 6,
-      detail: "Estimation d'un trajet en voiture partagee, avec 6 min de prise en charge. Aucun conducteur n'est mis en relation.",
+      detail: `Trajet en voiture partagee a ${occupants} personne${occupants > 1 ? 's' : ''}, avec ${PICKUP_MINUTES} min de prise en charge. Aucun conducteur n'est mis en relation.`,
     },
   ];
 
   return buildOption({
     id: 'carpool',
     title: 'Covoiturage',
-    summary: 'Point de comparaison en voiture partagee, sans mise en relation.',
+    summary: `Voiture partagee a ${occupants} personne${occupants > 1 ? 's' : ''} : point de comparaison, sans mise en relation.`,
     modes: ['carpool'],
     legs,
     reliabilityScore: incident ? 68 : 78,

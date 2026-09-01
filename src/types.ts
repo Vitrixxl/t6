@@ -19,6 +19,12 @@ export interface MobilityProfile {
   /** Objectifs hebdomadaires saisis par l'utilisateur (absents sur les anciens profils). */
   weeklyTripsGoal?: number;
   weeklySavedGoalGrams?: number;
+  /**
+   * Nombre de personnes a bord pour une option covoiturage. Un vehicule emet
+   * autant quel que soit son remplissage : c'est la part imputee a chaque
+   * passager qui change. Absent sur les anciens profils.
+   */
+  carpoolOccupants?: number;
 }
 
 export interface StoredUser {
@@ -179,6 +185,29 @@ export interface RouteLeg {
   carbonGrams: number;
   accessible: boolean;
   detail: string;
+  /**
+   * Hypotheses de calcul du segment, conservees a part. Sans elles, remplacer
+   * la distance et la duree par celles du reseau routier effacerait l'attente
+   * et la congestion, qui ne sont pas du temps de parcours.
+   */
+  estimate: LegEstimate;
+}
+
+export interface LegEstimate {
+  /**
+   * Multiplicateur du temps de parcours. Le calculateur d'itineraires raisonne
+   * en circulation fluide : il ne connait pas le trafic. Ce facteur est
+   * l'hypothese de congestion, assumee et affichee comme telle.
+   */
+  travelFactor: number;
+  /** Temps fixe hors parcours : deverrouiller un velo, attendre une rame, etre pris en charge. */
+  overheadMinutes: number;
+  /**
+   * Facteur d'emission retenu pour ce segment, en g/km et **par personne**.
+   * Pour le covoiturage il vaut l'emission du vehicule divisee par le nombre
+   * d'occupants.
+   */
+  carbonGramsPerKm: number;
 }
 
 export interface RouteInstruction {

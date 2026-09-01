@@ -1,9 +1,7 @@
 // Generateur d'option : scooter.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { SPEED_KMH } from '../constants';
 import { haversineDistanceKm, nearestStation, stationToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
-import { minutesForDistance } from '../metrics';
 
 export function createScooterOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
   const station = nearestStation(
@@ -34,8 +32,9 @@ export function createScooterOption({ origin, destination, profile, network }: R
         to: destination,
         distanceKm: directKm * 1.06,
         accessible: !profile.accessibilityNeed,
+        // Deverrouillage par l'application.
+        estimate: { overheadMinutes: 1 },
       }),
-      durationMinutes: minutesForDistance(directKm * 1.06, SPEED_KMH.scooter) + 1,
       detail: `${station.scooters_available} trottinettes disponibles au depart.`,
     },
   ];

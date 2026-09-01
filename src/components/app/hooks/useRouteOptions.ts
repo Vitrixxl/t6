@@ -8,8 +8,8 @@
 // en train de se remplir, ou si elle ne pourra pas l'etre.
 import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, MobilityMode, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
-import { matchesEnabledModes, planRoutes } from '../../../lib/planner';
-import { enhanceLegsWithLiveRouting, enhanceRoutesWithLiveRouting, hasCompleteGeometry } from '../../../lib/transport';
+import { applyRoutedLegs, matchesEnabledModes, planRoutes } from '../../../lib/planner';
+import { enhanceLegsWithLiveRouting, hasCompleteGeometry } from '../../../lib/transport';
 
 /**
  * Etat du trace. `pending` et `unavailable` sont deux choses differentes pour
@@ -46,7 +46,6 @@ export function useRouteOptions(input: {
   enabledModes: MobilityMode[];
 }): RouteOptions {
   const { origin, destination, profile, network, enabledModes } = input;
-  const [liveRoutes, setLiveRoutes] = useState<RouteOption[]>([]);
   const [routingStatus, setRoutingStatus] = useState<RoutingStatus>('idle');
   const [selectedRouteId, setSelectedRouteId] = useState('');
   const [selectedLegs, setSelectedLegs] = useState<RouteLeg[]>([]);
@@ -56,35 +55,28 @@ export function useRouteOptions(input: {
     [destination, network, origin, profile],
   );
 
-  const candidateRoutes = liveRoutes.length > 0 ? liveRoutes : localRoutes;
-  const routes = candidateRoutes.filter((routeOption) => matchesEnabledModes(routeOption, enabledModes));
-  const selectedRoute = routes.find((routeOption) => routeOption.id === selectedRouteId) ?? routes[0] ?? null;
+  const routes = localRoutes.filter((routeOption) => matchesEnabledModes(routeOption, enabledModes));
+  const candidate = routes.find((routeOption) => routeOption.id === selectedRouteId) ?? routes[0] ?? null;
+
+  // Les mesures de l'option affichee suivent celles de ses segments une fois
+  // routes : l'entete et le detail ne peuvent pas annoncer deux chiffres
+  // differents pour le meme trajet.
+  const selectedRoute = useMemo(
+    () => (candidate && routingStatus === 'ready' ? applyRoutedLegs(candidate, selectedLegs) : candidate),
+    [candidate, routingStatus, selectedLegs],
+  );
 
   useEffect(() => {
-    if (!origin || !destination) {
-      setLiveRoutes([]);
+    if (!candidate || candidate.id === selectedRouteId) {
       return;
     }
-
-    const controller = new AbortController();
-    enhanceRoutesWithLiveRouting(localRoutes, origin, destination, controller.signal)
-      .then(setLiveRoutes)
-      .catch(() => setLiveRoutes([]));
-
-    return () => controller.abort();
-  }, [destination, localRoutes, origin]);
-
-  useEffect(() => {
-    if (!selectedRoute || selectedRoute.id === selectedRouteId) {
-      return;
-    }
-    setSelectedRouteId(selectedRoute.id);
-  }, [selectedRoute, selectedRouteId]);
+    setSelectedRouteId(candidate.id);
+  }, [candidate, selectedRouteId]);
 
   // Seul l'itineraire affiche est route segment par segment : trois a quatre
   // appels au changement de selection, plutot que pour chacune des options.
   useEffect(() => {
-    if (!selectedRoute) {
+    if (!candidate) {
       setSelectedLegs([]);
       setRoutingStatus('idle');
       return;
@@ -93,11 +85,11 @@ export function useRouteOptions(input: {
     // Les segments sont d'abord poses sans geometrie : la carte n'affiche donc
     // rien de ce trajet tant que le routage n'a pas repondu, et l'interface
     // annonce un calcul en cours.
-    setSelectedLegs(selectedRoute.legs);
+    setSelectedLegs(candidate.legs);
     setRoutingStatus('pending');
 
     const controller = new AbortController();
-    enhanceLegsWithLiveRouting(selectedRoute.legs, controller.signal)
+    enhanceLegsWithLiveRouting(candidate.legs, controller.signal)
       .then((legs) => {
         setSelectedLegs(legs);
         setRoutingStatus(hasCompleteGeometry(legs) ? 'ready' : 'unavailable');
@@ -105,7 +97,7 @@ export function useRouteOptions(input: {
       .catch(() => setRoutingStatus('unavailable'));
 
     return () => controller.abort();
-  }, [selectedRoute]);
+  }, [candidate]);
 
   return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingStatus };
 }
