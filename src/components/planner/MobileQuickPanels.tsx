@@ -18,6 +18,7 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } f
 import { LayerPill, MODE_ICON, MODE_OPTIONS, type LayerState } from '../app/shared';
 import type { CarbonSummary, GeoPoint, MobilityMode, PlannedTrip, TransportNetwork } from '../../types';
 import { MobileHomePanel } from './MobileHomePanel';
+import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 
 function ActionButton({
   label,
@@ -60,7 +61,7 @@ export function MobileActionRail({
   weeklyGoalGrams,
   layers,
   enabledModes,
-  routingApiStatus,
+  routingStatus,
   onLayersChange,
   onToggleMode,
   onOpenHub,
@@ -74,7 +75,7 @@ export function MobileActionRail({
   weeklyGoalGrams: number;
   layers: LayerState;
   enabledModes: MobilityMode[];
-  routingApiStatus: string;
+  routingStatus: RoutingStatus;
   onLayersChange: (layers: LayerState) => void;
   onToggleMode: (mode: MobilityMode) => void;
   onOpenHub: () => void;
@@ -188,7 +189,7 @@ export function MobileActionRail({
               </div>
             </section>
 
-            <p className="text-[0.7rem] text-muted-foreground">Routage : {routingApiStatus}</p>
+            <p className="text-[0.7rem] text-muted-foreground">Routage : {ROUTING_STATUS_LABEL[routingStatus]}</p>
           </div>
         </DrawerContent>
       </Drawer>

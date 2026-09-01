@@ -76,4 +76,4 @@ export function round(value: number, decimals: number): number {
   return Math.round(value * factor) / factor;
 }
 
-export { enhanceLegsWithLiveRouting } from './legs';
+export { enhanceLegsWithLiveRouting, hasCompleteGeometry } from './legs';

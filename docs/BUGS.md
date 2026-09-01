@@ -265,6 +265,59 @@ laisses a decouvrir.
   identifiants rendus par la couche des alternatives ne contiennent plus celui
   du trajet selectionne.
 
+## B12 — Ligne de metro inventee et tracee sur la voirie
+
+- **Criticite** : bloqueur (l'itineraire affiche ne correspondait a aucun
+  trajet possible, C6/C10)
+- **Symptome** : des qu'un itineraire en transport public etait calcule, un
+  trait bleu partait a l'oppose de la destination, et l'etiquette posee dessus
+  annoncait « Metro » pour un trajet qui n'empruntait aucun metro.
+- **Cause racine** : trois defauts qui se cumulaient, tous nes de la meme
+  lacune — le feed ne disait pas quelle ligne dessert quel arret.
+  1. L'arret de montee etait le plus proche du depart, tous arrets confondus.
+     Sur 600 arrets, la quasi-totalite sont des arrets de bus : le voyageur
+     montait donc presque toujours a un arret qu'aucune ligne structurante ne
+     dessert.
+  2. La ligne affichee etait celle au passage le plus frequent du reseau
+     entier (`trips` trie par `headway_minutes`), sans aucun lien avec les deux
+     arrets du segment. « Metro » etait donc un libelle tire au hasard.
+  3. Le segment etait ensuite envoye a OSRM comme les autres. OSRM ne route pas
+     le rail : il repondait avec un itineraire *routier* entre les deux arrets,
+     quais et sens uniques compris. D'ou le detour.
+- **Correctif** : integration de la desserte reelle. Un nouveau script
+  d'ingestion lit le portail open data de la Metropole (licence ODbL, sans
+  jeton) et ajoute au feed ce que notre extraction GTFS ne donnait pas : les
+  lignes desservant chaque arret, et le trace reel de chaque ligne. Le moteur
+  ne retient plus que les stations effectivement desservies, ne propose un
+  trajet que si une ligne relie la montee a la descente — directement ou par
+  une correspondance a une station commune —, nomme la ligne exactement
+  (« Metro D ») et la dessine sur son trace, a sa couleur officielle. Les
+  segments de transport public ne passent plus par OSRM.
+- **Ou le voir** : `scripts/fetch_tcl_lines.py`, `src/lib/planner/transit.ts`,
+  `src/lib/planner/shape.ts`, `src/lib/transport/routing/legs.ts`
+- **Verrouillage** : **automatise** — `src/lib/planner/transit.test.ts`. Le
+  premier cas place un arret de bus a 10 m du depart et une station a 2 km :
+  il echoue si le moteur recommence a faire monter le voyageur au plus proche.
+
+## B13 — L'instance publique OSRM coupe le service sans prevenir
+
+- **Criticite** : majeur (plus aucun trace routier affiche)
+- **Symptome** : apres quelques recherches successives, les appels a
+  `routing.openstreetmap.de` echouent en `Failed to fetch` cote navigateur.
+  L'URL collee dans un onglet ne repond pas davantage.
+- **Cause racine** : `routing.openstreetmap.de` est une instance de
+  demonstration communautaire, sans engagement de service et limitee par
+  adresse IP. Une session de test un peu active suffit a la declencher. Le
+  quota etant partage par tous les utilisateurs derriere une meme sortie
+  reseau, il n'existe aucun moyen de le respecter depuis le navigateur.
+  S'ajoutait un defaut d'architecture : chaque navigateur appelait l'instance
+  directement, donc rien n'etait mutualise ni mis en cache.
+- **Correctif** : (en cours) le routage passe par l'API, qui met les reponses
+  en cache et bascule sur une instance de repli. L'URL de base devient
+  configurable, pour permettre l'auto-hebergement.
+- **Ou le voir** : `src/lib/transport/routing/osrm.ts`
+- **Verrouillage** : **ouvert** a la redaction de cette entree.
+
 ### O5 — Cibles tactiles calculees en rem sous une racine a 14px
 
 - **Criticite** : mineur (accessibilite tactile), **corrige au passage**

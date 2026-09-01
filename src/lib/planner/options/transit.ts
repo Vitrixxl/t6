@@ -1,58 +1,59 @@
 // Generateur d'option : transit.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { SPEED_KMH } from '../constants';
-import { haversineDistanceKm, midpoint, nearestStop, stopToPoint } from '../geo';
-import { routeLabel } from '../labels';
+import { haversineDistanceKm, stopToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
-import { minutesForDistance } from '../metrics';
+import { findTransitJourney, transitLegs } from '../transit';
 
-export function createTransitOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
-  const fromStop = nearestStop(network.gtfs.stops, origin, profile.accessibilityNeed);
-  const toStop = nearestStop(network.gtfs.stops, destination, profile.accessibilityNeed);
-  if (!fromStop || !toStop) {
-    // Profil PMR sans arret accessible a proximite: pas d'option transport public conforme.
+export function createTransitOption({ origin, destination, profile, network }: RouteRequest): RouteOption | null {
+  const journey = findTransitJourney(network, origin, destination, profile.accessibilityNeed);
+  if (!journey) {
+    // Aucune ligne ne relie les deux points en une correspondance au plus, ou
+    // aucune station accessible a proximite pour un profil PMR. On ne propose
+    // pas un trajet qui n'existe pas.
     return null;
   }
-  const trip = network.gtfs.trips.slice().sort((a, b) => a.headway_minutes - b.headway_minutes)[0];
-  const route = network.gtfs.routes.find((item) => item.route_id === trip.route_id) ?? network.gtfs.routes[0];
-  const firstWalkKm = haversineDistanceKm(origin, stopToPoint(fromStop));
-  const transitKm = Math.max(haversineDistanceKm(stopToPoint(fromStop), stopToPoint(toStop)) * 1.15, directKm * 0.7);
-  const lastWalkKm = haversineDistanceKm(stopToPoint(toStop), destination);
-  const waitMinutes = Math.ceil(trip.headway_minutes / 2 + trip.realtime_delay_minutes);
+
+  const boarding = journey.rides[0].boarding;
+  const alighting = journey.rides[journey.rides.length - 1].alighting;
+  const firstWalkKm = haversineDistanceKm(origin, stopToPoint(boarding));
+  const lastWalkKm = haversineDistanceKm(stopToPoint(alighting), destination);
   const trafficWarning = network.gtfs.incidents.find((incident) => incident.affected_modes.includes('transit'));
+  const delayed = journey.rides.some((ride) => ride.waitMinutes > 4);
+
   const legs: RouteLeg[] = [
-    createLeg('walk-to-stop', 'walk', 'Approche pietonne', origin.label, fromStop.stop_name, firstWalkKm, true, [
-      origin,
-      stopToPoint(fromStop),
-    ]),
-    {
-      ...createLeg(
-        'transit-core',
-        'transit',
-        `${routeLabel(route)} vers ${toStop.stop_name}`,
-        fromStop.stop_name,
-        toStop.stop_name,
-        transitKm,
-        fromStop.wheelchair_boarding === 1 && toStop.wheelchair_boarding === 1,
-        [stopToPoint(fromStop), midpoint(stopToPoint(fromStop), stopToPoint(toStop), 0.012), stopToPoint(toStop)],
-      ),
-      mapLabel: routeLabel(route),
-      durationMinutes: minutesForDistance(transitKm, SPEED_KMH.transit) + waitMinutes,
-      detail: `Attente estimee ${waitMinutes} min, occupation ${trip.occupancy}.`,
-    },
-    createLeg('walk-from-stop', 'walk', 'Derniers metres', toStop.stop_name, destination.label, lastWalkKm, true, [
-      stopToPoint(toStop),
-      destination,
-    ]),
+    createLeg({
+      id: 'walk-to-stop',
+      mode: 'walk',
+      title: 'Approche pietonne',
+      from: origin,
+      to: stopToPoint(boarding),
+      distanceKm: firstWalkKm,
+      accessible: true,
+    }),
+    ...transitLegs(journey, 'transit'),
+    createLeg({
+      id: 'walk-from-stop',
+      mode: 'walk',
+      title: 'Derniers metres',
+      from: stopToPoint(alighting),
+      to: destination,
+      distanceKm: lastWalkKm,
+      accessible: true,
+    }),
   ];
+
+  const lines = journey.rides.map((ride) => ride.route.route_short_name).join(' puis ');
 
   return buildOption({
     id: 'transit',
     title: 'Transport en commun',
-    summary: 'Marche courte puis transport en commun avec delais temps reel.',
+    summary:
+      journey.rides.length > 1
+        ? `Ligne ${lines} avec une correspondance a ${journey.rides[1].boarding.stop_name}.`
+        : `Ligne ${lines} directe de ${boarding.stop_name} a ${alighting.stop_name}.`,
     modes: ['walk', 'transit'],
     legs,
-    reliabilityScore: trip.realtime_delay_minutes > 2 ? 74 : 88,
+    reliabilityScore: delayed ? 74 : 88,
     warnings: trafficWarning ? [trafficWarning.message] : [],
   });
 }

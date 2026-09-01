@@ -19,8 +19,11 @@ const network: TransportNetwork = {
       agency_timezone: 'Europe/Paris',
     },
     stops: [
-      { stop_id: 'A', stop_name: 'Alpha', stop_lat: 45.75, stop_lon: 4.83, wheelchair_boarding: 1 },
-      { stop_id: 'B', stop_name: 'Beta', stop_lat: 45.76, stop_lon: 4.86, wheelchair_boarding: 1 },
+      { stop_id: 'A', stop_name: 'Alpha', stop_lat: 45.7578, stop_lon: 4.832, wheelchair_boarding: 1, routes: ['tram'] },
+      { stop_id: 'B', stop_name: 'Beta', stop_lat: 45.7605, stop_lon: 4.8595, wheelchair_boarding: 1, routes: ['tram'] },
+      // Arret de bus : aucune ligne structurante ne le dessert, le moteur ne
+      // doit jamais y faire monter le voyageur meme s'il est le plus proche.
+      { stop_id: 'C', stop_name: 'Gamma', stop_lat: 45.7579, stop_lon: 4.8321, wheelchair_boarding: 1, routes: [] },
     ],
     routes: [
       {
@@ -30,6 +33,11 @@ const network: TransportNetwork = {
         route_type: 0,
         route_color: '000000',
         route_text_color: 'ffffff',
+        shape: [
+          [4.832, 45.7578],
+          [4.8455, 45.759],
+          [4.8595, 45.7605],
+        ],
       },
     ],
     trips: [
@@ -104,6 +112,40 @@ describe('planRoutes', () => {
     expect(routes[0].score).toBeGreaterThanOrEqual(routes[1].score);
     expect(routes.some((route) => route.modes.includes('transit'))).toBe(true);
     expect(routes.some((route) => route.modes.includes('bike'))).toBe(true);
+  });
+
+  // Verrouille B14 : chaque generateur inserait un point intermediaire decale
+  // de plusieurs centaines de metres pour "arrondir" le trace. Le detour etait
+  // masque tant que le routage reel remplacait la geometrie, et reapparaissait
+  // des que le service tiers ne repondait plus.
+  it('ne fait sortir aucun segment du cadre de ses extremites', () => {
+    const routes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      profile: DEFAULT_PROFILE,
+      network,
+    });
+
+    // Marge : le trace approche relie ses extremites en ligne droite, il ne
+    // peut donc pas depasser leur cadre. 100 m absorbent les arrondis.
+    const toleranceDegrees = 0.001;
+
+    for (const route of routes) {
+      // Les segments de transport public suivent le trace publie de la ligne,
+      // qui peut legitimement sortir du cadre de ses deux stations quand la
+      // ligne fait une courbe. L'invariant ne porte que sur les geometries
+      // approchees, celles que les generateurs fabriquent eux-memes.
+      for (const leg of route.legs.filter((item) => item.mode !== 'transit')) {
+        const first = leg.path[0];
+        const last = leg.path[leg.path.length - 1];
+        for (const point of leg.path) {
+          expect(point.lat).toBeGreaterThanOrEqual(Math.min(first.lat, last.lat) - toleranceDegrees);
+          expect(point.lat).toBeLessThanOrEqual(Math.max(first.lat, last.lat) + toleranceDegrees);
+          expect(point.lon).toBeGreaterThanOrEqual(Math.min(first.lon, last.lon) - toleranceDegrees);
+          expect(point.lon).toBeLessThanOrEqual(Math.max(first.lon, last.lon) + toleranceDegrees);
+        }
+      }
+    }
   });
 
   it('penalizes inaccessible options when PMR profile is enabled', () => {

@@ -1,7 +1,7 @@
 // Generateur d'option : scooter.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
 import { SPEED_KMH } from '../constants';
-import { haversineDistanceKm, midpoint, nearestStation, stationToPoint } from '../geo';
+import { haversineDistanceKm, nearestStation, stationToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
 import { minutesForDistance } from '../metrics';
 
@@ -16,27 +16,25 @@ export function createScooterOption({ origin, destination, profile, network }: R
   }
 
   const legs: RouteLeg[] = [
-    createLeg(
-      'walk-to-scooter',
-      'walk',
-      'Rejoindre une trottinette',
-      origin.label,
-      station.name,
-      haversineDistanceKm(origin, stationToPoint(station)),
-      true,
-      [origin, stationToPoint(station)],
-    ),
+    createLeg({
+      id: 'walk-to-scooter',
+      mode: 'walk',
+      title: 'Rejoindre une trottinette',
+      from: origin,
+      to: stationToPoint(station),
+      distanceKm: haversineDistanceKm(origin, stationToPoint(station)),
+      accessible: true,
+    }),
     {
-      ...createLeg(
-        'scooter-core',
-        'scooter',
-        'Trottinette partagee',
-        station.name,
-        destination.label,
-        directKm * 1.06,
-        !profile.accessibilityNeed,
-        [stationToPoint(station), midpoint(stationToPoint(station), destination, 0.006), destination],
-      ),
+      ...createLeg({
+        id: 'scooter-core',
+        mode: 'scooter',
+        title: 'Trottinette partagee',
+        from: stationToPoint(station),
+        to: destination,
+        distanceKm: directKm * 1.06,
+        accessible: !profile.accessibilityNeed,
+      }),
       durationMinutes: minutesForDistance(directKm * 1.06, SPEED_KMH.scooter) + 1,
       detail: `${station.scooters_available} trottinettes disponibles au depart.`,
     },

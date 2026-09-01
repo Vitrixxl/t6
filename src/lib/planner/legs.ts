@@ -6,29 +6,42 @@ import { EMISSIONS_G_PER_KM, SPEED_KMH } from './constants';
 import { MODE_LABELS } from './labels';
 import { minutesForDistance, round } from './metrics';
 
-export function createLeg(
-  id: string,
-  mode: MobilityMode,
-  title: string,
-  from: string,
-  to: string,
-  distanceKm: number,
-  accessible: boolean,
-  path: GeoPoint[],
-): RouteLeg {
-  const roundedDistance = round(distanceKm, 2);
+/**
+ * Description d'un segment. Les extremites sont des points, pas des libelles :
+ * le routage a besoin des coordonnees, et l'interface tire le libelle du point.
+ */
+export interface LegInput {
+  id: string;
+  mode: MobilityMode;
+  title: string;
+  from: GeoPoint;
+  to: GeoPoint;
+  distanceKm: number;
+  accessible: boolean;
+  /**
+   * Geometrie reelle, quand la source en publie une — c'est le cas du trace
+   * d'une ligne de transport. Pour tout ce qui emprunte la voirie, elle reste
+   * vide jusqu'a la reponse du service de routage.
+   */
+  path?: GeoPoint[];
+}
+
+export function createLeg(input: LegInput): RouteLeg {
+  const roundedDistance = round(input.distanceKm, 2);
   return {
-    id,
-    mode,
-    title,
-    from,
-    to,
-    path,
+    id: input.id,
+    mode: input.mode,
+    title: input.title,
+    from: input.from.label,
+    to: input.to.label,
+    fromPoint: input.from,
+    toPoint: input.to,
+    path: input.path ?? [],
     distanceKm: roundedDistance,
-    durationMinutes: minutesForDistance(roundedDistance, SPEED_KMH[mode]),
-    carbonGrams: Math.round(roundedDistance * EMISSIONS_G_PER_KM[mode]),
-    accessible,
-    detail: `${MODE_LABELS[mode]} sur ${roundedDistance.toFixed(2)} km.`,
+    durationMinutes: minutesForDistance(roundedDistance, SPEED_KMH[input.mode]),
+    carbonGrams: Math.round(roundedDistance * EMISSIONS_G_PER_KM[input.mode]),
+    accessible: input.accessible,
+    detail: `${MODE_LABELS[input.mode]} sur ${roundedDistance.toFixed(2)} km.`,
   };
 }
 
@@ -59,9 +72,17 @@ export function buildOption(input: {
   };
 }
 
+/**
+ * Trace complet d'une option. Un segment dont la geometrie n'est pas encore
+ * connue n'apporte rien : le trace reste partiel plutot que d'etre complete par
+ * une ligne droite qui ferait croire a un itineraire.
+ */
 export function mergeLegPaths(legs: RouteLeg[]): GeoPoint[] {
   return legs.reduce<GeoPoint[]>((points, leg) => {
     const nextPoints = leg.path;
+    if (nextPoints.length === 0) {
+      return points;
+    }
     if (points.length === 0) {
       return [...nextPoints];
     }

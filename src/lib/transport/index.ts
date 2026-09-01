@@ -1,7 +1,7 @@
 // Integration des flux transport : geocodage, routage et sources de donnees.
 // Le reste de l'application importe d'ici et ignore le decoupage interne.
 export { describePoint, searchPlaces, type PlaceKind, type PlaceSearchResult } from './geocoding';
-export { enhanceLegsWithLiveRouting, enhanceRoutesWithLiveRouting } from './routing';
+export { enhanceLegsWithLiveRouting, enhanceRoutesWithLiveRouting, hasCompleteGeometry } from './routing';
 export {
   CITY_CENTER,
   METRO_RADIUS_KM,

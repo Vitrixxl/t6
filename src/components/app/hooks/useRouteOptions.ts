@@ -1,14 +1,29 @@
-// Calcul des itineraires : options locales, puis enrichissement par le routage
-// reel quand il repond.
+// Calcul des itineraires : options locales, puis geometrie reelle par le
+// service de routage.
 //
-// Le moteur local produit toujours un resultat, meme hors ligne ; OSRM ne fait
-// que remplacer la geometrie et les mesures. L'utilisateur voit donc toujours
-// des options, et le statut affiche lui dit laquelle des deux sources il
-// regarde.
+// Le moteur local produit toujours la liste des options et leurs estimations,
+// meme hors ligne. En revanche il ne produit **aucun trace** pour ce qui
+// emprunte la voirie : la geometrie vient du routage, ou elle n'existe pas.
+// D'ou le statut ci-dessous, que l'interface affiche pour dire si la carte est
+// en train de se remplir, ou si elle ne pourra pas l'etre.
 import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, MobilityMode, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
 import { matchesEnabledModes, planRoutes } from '../../../lib/planner';
-import { enhanceLegsWithLiveRouting, enhanceRoutesWithLiveRouting } from '../../../lib/transport';
+import { enhanceLegsWithLiveRouting, enhanceRoutesWithLiveRouting, hasCompleteGeometry } from '../../../lib/transport';
+
+/**
+ * Etat du trace. `pending` et `unavailable` sont deux choses differentes pour
+ * l'utilisateur : dans le premier cas la carte va se remplir, dans le second
+ * il faut lui dire que le service de routage ne repond pas.
+ */
+export type RoutingStatus = 'idle' | 'pending' | 'ready' | 'unavailable';
+
+export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
+  idle: 'En attente d\'un trajet',
+  pending: 'Calcul du trace en cours',
+  ready: 'Trace reel affiche',
+  unavailable: 'Service de routage indisponible',
+};
 
 export interface RouteOptions {
   routes: RouteOption[];
@@ -20,8 +35,7 @@ export interface RouteOptions {
   selectedLegs: RouteLeg[];
   selectedRouteId: string;
   setSelectedRouteId: (id: string) => void;
-  /** Etat du routage live, affiche tel quel dans l'interface. */
-  routingApiStatus: string;
+  routingStatus: RoutingStatus;
 }
 
 export function useRouteOptions(input: {
@@ -33,7 +47,7 @@ export function useRouteOptions(input: {
 }): RouteOptions {
   const { origin, destination, profile, network, enabledModes } = input;
   const [liveRoutes, setLiveRoutes] = useState<RouteOption[]>([]);
-  const [routingApiStatus, setRoutingApiStatus] = useState('En attente');
+  const [routingStatus, setRoutingStatus] = useState<RoutingStatus>('idle');
   const [selectedRouteId, setSelectedRouteId] = useState('');
   const [selectedLegs, setSelectedLegs] = useState<RouteLeg[]>([]);
 
@@ -49,23 +63,13 @@ export function useRouteOptions(input: {
   useEffect(() => {
     if (!origin || !destination) {
       setLiveRoutes([]);
-      setRoutingApiStatus('En attente');
       return;
     }
 
     const controller = new AbortController();
-    setRoutingApiStatus('Calcul OSRM en cours');
     enhanceRoutesWithLiveRouting(localRoutes, origin, destination, controller.signal)
-      .then((enhancedRoutes) => {
-        setLiveRoutes(enhancedRoutes);
-        const hasLiveGeometry = enhancedRoutes.some((routeOption, index) => routeOption.path !== localRoutes[index]?.path);
-        setRoutingApiStatus(hasLiveGeometry ? 'Trace OSRM active' : 'Trace locale');
-      })
-      .catch(() => {
-        // Repli assume : la geometrie locale reste affichee (C10).
-        setLiveRoutes(localRoutes);
-        setRoutingApiStatus('Trace locale');
-      });
+      .then(setLiveRoutes)
+      .catch(() => setLiveRoutes([]));
 
     return () => controller.abort();
   }, [destination, localRoutes, origin]);
@@ -82,17 +86,26 @@ export function useRouteOptions(input: {
   useEffect(() => {
     if (!selectedRoute) {
       setSelectedLegs([]);
+      setRoutingStatus('idle');
       return;
     }
 
+    // Les segments sont d'abord poses sans geometrie : la carte n'affiche donc
+    // rien de ce trajet tant que le routage n'a pas repondu, et l'interface
+    // annonce un calcul en cours.
     setSelectedLegs(selectedRoute.legs);
+    setRoutingStatus('pending');
+
     const controller = new AbortController();
     enhanceLegsWithLiveRouting(selectedRoute.legs, controller.signal)
-      .then(setSelectedLegs)
-      .catch(() => undefined);
+      .then((legs) => {
+        setSelectedLegs(legs);
+        setRoutingStatus(hasCompleteGeometry(legs) ? 'ready' : 'unavailable');
+      })
+      .catch(() => setRoutingStatus('unavailable'));
 
     return () => controller.abort();
   }, [selectedRoute]);
 
-  return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingApiStatus };
+  return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingStatus };
 }

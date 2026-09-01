@@ -67,7 +67,7 @@ export function MobilityMapApp({
   } = useTripPlanning(user.id, onTripCompleted);
 
   const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
-  const { routes, selectedRoute, selectedLegs, setSelectedRouteId, routingApiStatus } = useRouteOptions({
+  const { routes, selectedRoute, selectedLegs, setSelectedRouteId, routingStatus } = useRouteOptions({
     origin,
     destination,
     profile: user.profile,
@@ -251,7 +251,7 @@ export function MobilityMapApp({
               <div className="pointer-events-auto absolute bottom-0 left-0 z-30 max-w-[calc(100%-0.5rem)]" data-tour="routes">
                 <div className="relative">
                   <div className="flex max-w-[calc(100vw-780px)] items-center gap-2 overflow-hidden rounded-tr-2xl bg-[var(--shell)] p-1.5 shadow-[0_0_20px_-2px_rgba(0,0,0,0.28)]">
-                    <MapStatusBar routingApiStatus={routingApiStatus} geoStatus={geoStatus} />
+                    <MapStatusBar routingStatus={routingStatus} geoStatus={geoStatus} />
                     <DesktopRouteStrip routes={routes} selectedRoute={selectedRoute} onSelect={setSelectedRouteId} />
                   </div>
                   <MergeFillet corner="tr" size={18} className="bottom-0 right-0 translate-x-[calc(100%_-_1px)]" />
@@ -328,7 +328,7 @@ export function MobilityMapApp({
           weeklyGoalGrams={user.profile.carbonGoalGramsPerWeek}
           layers={layers}
           enabledModes={enabledModes}
-          routingApiStatus={routingApiStatus}
+          routingStatus={routingStatus}
           onLayersChange={setLayers}
           onToggleMode={toggleEnabledMode}
           onOpenHub={() => openHub('upcoming')}
@@ -343,7 +343,7 @@ export function MobilityMapApp({
           selectedRoute={selectedRoute}
           savedRouteId={justSavedRouteId}
           layers={layers}
-          routingApiStatus={routingApiStatus}
+          routingStatus={routingStatus}
           enabledModes={enabledModes}
           upcomingCount={activitySummary.upcomingCount}
           coverageWarning={coverageWarning}

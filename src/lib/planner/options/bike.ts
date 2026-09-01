@@ -1,7 +1,7 @@
 // Generateur d'option : bike.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
 import { SPEED_KMH } from '../constants';
-import { haversineDistanceKm, midpoint, nearestStation, stationToPoint } from '../geo';
+import { haversineDistanceKm, nearestStation, stationToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
 import { minutesForDistance } from '../metrics';
 
@@ -21,23 +21,37 @@ export function createBikeOption({ origin, destination, profile, network }: Rout
   const bikeKm = Math.max(haversineDistanceKm(stationToPoint(fromStation), stationToPoint(toStation)) * 1.1, directKm);
   const lastWalkKm = haversineDistanceKm(stationToPoint(toStation), destination);
   const legs: RouteLeg[] = [
-    createLeg('walk-to-bike', 'walk', 'Rejoindre une station velo', origin.label, fromStation.name, firstWalkKm, true, [
-      origin,
-      stationToPoint(fromStation),
-    ]),
+    createLeg({
+      id: 'walk-to-bike',
+      mode: 'walk',
+      title: 'Rejoindre une station velo',
+      from: origin,
+      to: stationToPoint(fromStation),
+      distanceKm: firstWalkKm,
+      accessible: true,
+    }),
     {
-      ...createLeg('bike-core', 'bike', 'Velo partage', fromStation.name, toStation.name, bikeKm, !profile.accessibilityNeed, [
-        stationToPoint(fromStation),
-        midpoint(stationToPoint(fromStation), stationToPoint(toStation), -0.008),
-        stationToPoint(toStation),
-      ]),
+      ...createLeg({
+        id: 'bike-core',
+        mode: 'bike',
+        title: 'Velo partage',
+        from: stationToPoint(fromStation),
+        to: stationToPoint(toStation),
+        distanceKm: bikeKm,
+        accessible: !profile.accessibilityNeed,
+      }),
       durationMinutes: minutesForDistance(bikeKm, SPEED_KMH.bike) + 2,
       detail: `${fromStation.bikes_available} velos disponibles au depart, retour autorise a destination.`,
     },
-    createLeg('walk-from-bike', 'walk', 'Fin de trajet', toStation.name, destination.label, lastWalkKm, true, [
-      stationToPoint(toStation),
-      destination,
-    ]),
+    createLeg({
+      id: 'walk-from-bike',
+      mode: 'walk',
+      title: 'Fin de trajet',
+      from: stationToPoint(toStation),
+      to: destination,
+      distanceKm: lastWalkKm,
+      accessible: true,
+    }),
   ];
 
   return buildOption({

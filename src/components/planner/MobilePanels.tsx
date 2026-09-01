@@ -5,6 +5,7 @@ import { CalendarClock, CalendarPlus, Check, Route } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { GeoPoint, MobilityMode, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
+import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 import { formatMeters, Metric, LayerPill, MODE_ICON, MODE_OPTIONS, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type LayerState, type MobileSheetLevel } from '../app/shared';
 
 export function MobileTripPanel({
@@ -13,7 +14,7 @@ export function MobileTripPanel({
   selectedRoute,
   savedRouteId,
   layers,
-  routingApiStatus,
+  routingStatus,
   enabledModes,
   upcomingCount,
   coverageWarning,
@@ -28,7 +29,7 @@ export function MobileTripPanel({
   selectedRoute: RouteOption | null;
   savedRouteId: string;
   layers: LayerState;
-  routingApiStatus: string;
+  routingStatus: RoutingStatus;
   enabledModes: MobilityMode[];
   upcomingCount: number;
   coverageWarning: string | null;
@@ -160,8 +161,8 @@ export function MobileTripPanel({
               <LayerPill active={layers.incidents} onClick={() => onLayersChange({ ...layers, incidents: !layers.incidents })}>
                 Incidents
               </LayerPill>
-              <LayerPill active={routingApiStatus.includes('OSRM')} onClick={() => undefined}>
-                {routingApiStatus}
+              <LayerPill active={routingStatus === 'ready'} onClick={() => undefined}>
+                {ROUTING_STATUS_LABEL[routingStatus]}
               </LayerPill>
             </div>
             <MobileModeComposer enabledModes={enabledModes} onToggleMode={onToggleMode} />

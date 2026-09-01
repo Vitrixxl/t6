@@ -7,7 +7,7 @@ import type { FeatureCollection } from './geojson';
 import { bindPointPopup, escapeHtml } from './popup';
 import { setGeoJsonSource, setLayerVisibility } from './sources';
 import { bindLongPress, createPickerContent, createPickerMarker, type PickedPoint } from './longPress';
-import { WALK_DASH_ARRAY, legColorExpression, legWidthExpression } from './legStyle';
+import { WALK_DASH_ARRAY, legColor, legWidthExpression } from './legStyle';
 import { syncLegLabels } from './legLabels';
 import { syncEndpointMarkers } from './endpointMarkers';
 import type { SharedStation } from '../../types';
@@ -77,7 +77,9 @@ export function UrbanMap({
     () => ({
       type: 'FeatureCollection',
       features: routes
-        .filter((route) => route.id !== selectedRoute?.id)
+        // Le trajet selectionne est rendu par ses segments (couches `legs`) ;
+        // une option sans geometrie n'est pas dessinee du tout.
+        .filter((route) => route.id !== selectedRoute?.id && route.path.length >= 2)
         .map((route) => ({
         type: 'Feature',
         properties: {
@@ -98,9 +100,11 @@ export function UrbanMap({
   const legData = useMemo<FeatureCollection>(
     () => ({
       type: 'FeatureCollection',
-      features: (selectedLegs ?? []).map((leg) => ({
+      // Un segment sans geometrie ne produit aucune entite : la carte reste
+      // vide pour lui plutot que d'afficher une ligne inventee (B14).
+      features: (selectedLegs ?? []).filter((leg) => leg.path.length >= 2).map((leg) => ({
         type: 'Feature' as const,
-        properties: { mode: leg.mode, label: leg.mapLabel ?? '' },
+        properties: { mode: leg.mode, label: leg.mapLabel ?? '', color: legColor(leg) },
         geometry: {
           type: 'LineString' as const,
           coordinates: leg.path.map((point) => [point.lon, point.lat]),
@@ -306,7 +310,7 @@ export function UrbanMap({
         filter: ['!=', ['get', 'mode'], 'walk'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
-          'line-color': legColorExpression as unknown as string,
+          'line-color': ['get', 'color'],
           'line-width': legWidthExpression as unknown as number,
           'line-opacity': 0.95,
         },
@@ -321,7 +325,7 @@ export function UrbanMap({
         filter: ['==', ['get', 'mode'], 'walk'],
         layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: {
-          'line-color': legColorExpression as unknown as string,
+          'line-color': ['get', 'color'],
           'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 15, 8],
           'line-opacity': 0.95,
           'line-dasharray': WALK_DASH_ARRAY,
@@ -453,10 +457,12 @@ export function UrbanMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !loaded || !selectedRoute || selectedRoute.path.length === 0) {
+    if (!map || !loaded || !selectedRoute) {
       return;
     }
 
+    // Le cadrage ne depend pas du trace : tant que le routage n'a pas repondu,
+    // il se fait sur les extremites, connues des la selection.
     const bounds = new maplibregl.LngLatBounds();
     selectedRoute.path.forEach((point) => bounds.extend([point.lon, point.lat]));
     if (origin) {
@@ -464,6 +470,9 @@ export function UrbanMap({
     }
     if (destination) {
       bounds.extend([destination.lon, destination.lat]);
+    }
+    if (bounds.isEmpty()) {
+      return;
     }
 
     // Cadre le trajet selectionne pour qu'il remplisse la zone visible de la

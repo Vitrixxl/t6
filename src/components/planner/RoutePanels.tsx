@@ -3,6 +3,7 @@
 import { CalendarPlus, Check, Route, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { RouteOption } from '../../types';
+import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 import { getRouteColor } from '../../lib/routeColors';
 import { Metric, RouteChip, MODE_ICON } from '../app/shared';
 
@@ -29,16 +30,22 @@ export function DesktopRouteStrip({
 }
 
 export function MapStatusBar({
-  routingApiStatus,
+  routingStatus,
   geoStatus }: {
-  routingApiStatus: string;
+  routingStatus: RoutingStatus;
   geoStatus: string;
 }) {
   return (
     <div className="inline-flex shrink-0 items-stretch overflow-hidden rounded-xl bg-muted/35">
       <div className="inline-flex h-9 items-center gap-2 px-3">
         <span className="text-[8px] text-muted-foreground">Routage</span>
-        <span className="font-mono text-[10.5px] leading-none text-foreground">{routingApiStatus}</span>
+        <span
+          className={`font-mono text-[10.5px] leading-none ${
+            routingStatus === 'unavailable' ? 'text-destructive' : 'text-foreground'
+          }`}
+        >
+          {ROUTING_STATUS_LABEL[routingStatus]}
+        </span>
       </div>
       <div className="inline-flex h-9 items-center gap-2 border-l border-foreground/10 px-3">
         <span className="text-[8px] text-muted-foreground">GPS</span>
