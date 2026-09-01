@@ -79,10 +79,23 @@ annonce reste le nombre reel.
 pas. Toute fonctionnalite qui suppose le serveur doit avoir un repli, ou etre
 clairement inactive sans lui.
 
-**Nommer les limites plutot que les masquer.** Le moteur d'itineraires est
-heuristique, il n'y a pas de graphe horaire GTFS, et le numero de ligne n'est
-jamais affiche parce qu'il n'est pas garanti. Ces limites sont ecrites dans le
-code et dans le dossier ; ne pas produire d'affichage qui les contredit.
+**Jamais de geometrie approchee.** Un trace faux se lit comme un itineraire
+reel et envoie l'utilisateur ailleurs ; un trace absent se voit. Tant qu'une
+source reelle n'a pas repondu, un segment n'a pas de trace, la carte n'affiche
+rien pour lui et l'interface dit lequel des deux etats s'applique — calcul en
+cours, ou service indisponible. Ce fut un vrai bogue (B14) : des points
+intermediaires decores, invisibles tant que le routage reel les remplaçait,
+sont apparus le jour ou le service tiers a cesse de repondre.
+
+**Nommer les limites plutot que les masquer.** Le moteur d'itineraires reste
+heuristique et il n'y a pas de graphe horaire GTFS : les frequences sont des
+moyennes, pas des horaires. Le covoiturage ne met aucun conducteur en relation,
+c'est un point de comparaison. Ces limites sont ecrites dans le code et dans le
+dossier ; ne pas produire d'affichage qui les contredit.
+
+En revanche le nom de ligne **est** affiche depuis l'integration de la desserte
+publiee : une ligne n'est proposee que si elle dessert reellement les deux
+stations du segment.
 
 **Commentaires : le pourquoi, pas le quoi.** Ils sont en francais, sans
 accents, alignes sur le style existant. Un commentaire qui paraphrase la ligne

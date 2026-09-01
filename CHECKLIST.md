@@ -75,7 +75,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Routage live: OSRM routing.openstreetmap.de (profils foot/bike/driving) avec instructions traduites.
 - [x] GBFS live Velo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
-- [x] GTFS statique reel TCL/SYTRAL (ODbL) integre au build: scripts/fetch_gtfs.py, 600 arrets et 14 lignes (metropole entiere, rayon 16 km).
+- [x] GTFS statique reel TCL/SYTRAL (ODbL) integre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 2435 arrets et 13 lignes structurantes avec leur desserte et leur trace reel (metropole entiere, rayon 16 km).
 - [x] Alertes trafic TCL temps reel (SIRI SX, data.grandlyon.com) via endpoint proxy /api/tcl-alertes: identifiants cote serveur, cache 30 s, fallback simule etiquete.
 - [x] Planificateur: trajets programmes a une date, routines recurrentes (aller-retour, pause/reprise), statuts fait/annule, objectifs hebdomadaires et mensuels avec progression.
 - [x] Recherche geocodee double source (BAN adresses + Photon quartiers/gares/lieux), typee et bornee a la metropole (dept 69).

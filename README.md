@@ -68,14 +68,30 @@ Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/au
 | --- | --- | --- |
 | Géocodage adresses | `api-adresse.data.gouv.fr` (BAN) | live navigateur |
 | Géocodage lieux/quartiers | Photon (`photon.komoot.io`, OSM) | live navigateur |
-| Routage | OSRM `routing.openstreetmap.de` (foot/bike/driving) | live navigateur |
+| Routage | OSRM (foot/bike/driving), auto-hébergeable | relais API `/api/route` (cache SQLite partagé) |
 | Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | live navigateur |
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | live navigateur |
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | intégré au build (`bun run generate:gtfs`) |
+| Desserte et tracés des lignes | WFS SYTRAL `data.grandlyon.com` (ODbL, sans jeton) | intégré au build (`bun run generate:lignes`) |
 | Météo | Open-Meteo | live navigateur |
 | Alertes trafic TCL | SIRI SX `data.grandlyon.com` (compte gratuit) | relais API `/api/tcl-alertes` (cache 30 s partage) |
 
 Chaque flux a un fallback local (`public/data/`) signalé dans l'UI ; sans compte data.grandlyon.com dans `.env`, les alertes TCL retombent sur des incidents simulés étiquetés.
+
+## Calcul d'itinéraires
+
+Le navigateur n'appelle jamais le calculateur directement : il passe par `GET /api/route`, qui met les tracés en cache dans SQLite et les partage entre tous les clients.
+
+Sans configuration, la source est l'instance publique de démonstration d'OpenStreetMap. Elle dépanne, mais elle n'a **aucun engagement de service et limite par adresse IP** — une session de test un peu active suffit à la déclencher (cf. `docs/BUGS.md`, B13).
+
+Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localement :
+
+```bash
+./infra/osrm-prepare.sh                          # extrait Lyon + prétraitement des 3 profils
+podman compose -f infra/osrm-compose.yml up -d   # ou docker compose
+```
+
+Puis renseigner `OSRM_BASE_URL` dans `.env`. Prérequis : `podman` (ou `docker`) et `osmium-tool`. OSRM prépare un jeu de données par profil — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services.
 
 ## Commandes
 
@@ -87,6 +103,7 @@ cp .env.example .env     # secrets (jeton GTFS, compte Grand Lyon) et réglages 
 bun run dev              # API + client ensemble (Ctrl+C coupe les deux)
 bun run seed:demo        # compte de démonstration côté serveur
 bun run generate:gtfs    # régénère le feed GTFS depuis la source officielle TCL
+bun run generate:lignes  # desserte par arrêt et tracés réels des lignes (open data, sans jeton)
 bun run generate:icons   # icônes PWA
 bun run generate:pdf     # dossier projet PDF
 bun run check            # lint + typage (client et serveur) + tests + build production

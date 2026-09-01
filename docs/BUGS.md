@@ -312,11 +312,56 @@ laisses a decouvrir.
   reseau, il n'existe aucun moyen de le respecter depuis le navigateur.
   S'ajoutait un defaut d'architecture : chaque navigateur appelait l'instance
   directement, donc rien n'etait mutualise ni mis en cache.
-- **Correctif** : (en cours) le routage passe par l'API, qui met les reponses
-  en cache et bascule sur une instance de repli. L'URL de base devient
-  configurable, pour permettre l'auto-hebergement.
-- **Ou le voir** : `src/lib/transport/routing/osrm.ts`
-- **Verrouillage** : **ouvert** a la redaction de cette entree.
+- **Correctif** : le calcul passe par `GET /api/route`. Un cache SQLite sert le
+  meme trajet a tous les clients sans le recalculer, et sert une entree perimee
+  plutot qu'une carte vide quand la source ne repond plus. Une indisponibilite
+  reelle devient un 503 explicite, que le client traduit en message. Le
+  protocole OSRM part entierement cote serveur : le client consomme un contrat
+  fini. L'URL du service devient `OSRM_BASE_URL`, ce qui permet de basculer sur
+  une instance auto-hebergee (`infra/osrm-compose.yml`) sans toucher au code.
+- **Ou le voir** : `server/src/services/routing/`, `server/src/routes/routing.ts`
+- **Verrouillage** : **automatise** — `server/src/__tests__/routing.test.ts`.
+  Le calculateur est remplace par un `fetch` sous controle : la suite verifie
+  que la source n'est sollicitee qu'une fois pour un meme trajet, qu'un trace
+  connu est servi quand elle tombe, et qu'une absence totale de trace donne un
+  503 et non une reponse vide.
+- **Reste ouvert** : tant que `OSRM_BASE_URL` n'est pas renseigne, la source par
+  defaut demeure l'instance publique. Le cache repousse la limite, il ne la
+  supprime pas.
+
+## B14 — Un trace invente partait a l'oppose de la destination
+
+- **Criticite** : bloqueur (l'itineraire dessine ne correspondait a aucun
+  chemin possible, C6)
+- **Symptome** : sur une recherche de 400 m entre le 3e et le 7e, deux traits
+  violets partaient vers la Croix-Rousse, a plusieurs kilometres au nord-ouest,
+  pendant que l'entete annonçait « 0,4 km, 1 min ». Les chiffres etaient justes,
+  le dessin non.
+- **Cause racine** : chaque generateur d'option inserait un point intermediaire
+  decale pour « arrondir » le trace. Le covoiturage utilisait le pire ecart,
+  0,018 degre, soit un sommet a 2 km au nord et 1,4 km a l'ouest du milieu du
+  trajet — d'ou le triangle, dont on voyait les deux cotes. Le defaut existait
+  dans les cinq generateurs, de 0,004 a 0,018 degre, et restait invisible tant
+  que le routage reel remplaçait la geometrie. Il n'est apparu que le jour ou
+  le service tiers a cesse de repondre (B13) : un repli jamais exerce en
+  conditions normales.
+- **Correctif** : un segment n'a plus de geometrie tant qu'une source reelle ne
+  lui en donne pas une — le trace publie d'une ligne, ou la reponse du routage.
+  Sans geometrie, la carte n'affiche rien pour ce segment et l'interface
+  distingue deux etats que l'utilisateur ne doit pas confondre : calcul en
+  cours, ou service indisponible. La fonction qui fabriquait ces points
+  intermediaires est supprimee, pas seulement contournee.
+- **Ou le voir** : `src/lib/planner/options/*.ts`,
+  `src/lib/transport/routing/legs.ts`, `src/components/map/UrbanMap.tsx`
+- **Verrouillage** : **automatise** — `planner.test.ts`, « ne fait sortir aucun
+  segment du cadre de ses extremites ». Verifie rouge puis vert : reintroduire
+  le sommet decale fait echouer ce seul test, le retirer le fait passer. Les
+  segments de transport public sont exclus de l'invariant, leur trace publie
+  pouvant legitimement sortir du cadre de ses deux stations quand la ligne
+  courbe.
+- **Consequence de conception** : la regle « jamais de geometrie approchee » est
+  inscrite dans AGENTS.md. Un trace faux se lit comme un itineraire reel et
+  envoie l'utilisateur ailleurs ; un trace absent se voit.
 
 ### O5 — Cibles tactiles calculees en rem sous une racine a 14px
 
