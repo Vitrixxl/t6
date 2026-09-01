@@ -157,26 +157,21 @@ describe('enhanceRoutesWithLiveRouting', () => {
     instructions: [],
   };
 
-  it('recale distance, duree et CO2 sur la geometrie OSRM en conservant l\'intensite carbone mixte', async () => {
+  it('recale distance, duree et CO2 sur la geometrie routee en conservant l\'intensite carbone mixte', async () => {
+    // Le client consomme desormais le contrat de notre API, pas la reponse
+    // brute d'OSRM : le protocole du calculateur est entierement cote serveur.
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
         jsonResponse({
-          code: 'Ok',
-          routes: [
-            {
-              distance: 3000,
-              duration: 900,
-              geometry: {
-                type: 'LineString',
-                coordinates: [
-                  [4.832, 45.7578],
-                  [4.8594, 45.7606],
-                ],
-              },
-              legs: [],
-            },
+          path: [
+            [4.832, 45.7578],
+            [4.8594, 45.7606],
           ],
+          distanceMeters: 3000,
+          durationSeconds: 900,
+          instructions: [],
+          source: 'upstream',
         }),
       ),
     );
@@ -192,7 +187,7 @@ describe('enhanceRoutesWithLiveRouting', () => {
     expect(enhanced.score).toBeLessThanOrEqual(baseOption.score);
   });
 
-  it('conserve l\'option locale inchangee si le routage OSRM echoue (degradation gracieuse)', async () => {
+  it('conserve l\'option locale inchangee si le routage echoue (degradation gracieuse)', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {

@@ -1,6 +1,10 @@
 // Traduction des manoeuvres OSRM en instructions lisibles en francais.
-import type { RouteInstruction } from '../../../types';
-import type { OsrmStep } from './osrm';
+//
+// Cote serveur : c'est l'API qui rend un contrat fini (trace, distance, duree,
+// instructions), et non le navigateur qui reconstitue le sens d'une reponse
+// tierce. Le client n'a donc jamais a connaitre le protocole OSRM.
+import type { RouteInstruction } from '../../../../src/types.ts';
+import type { OsrmStep } from './osrm.ts';
 
 export function buildInstructions(steps: OsrmStep[]): RouteInstruction[] {
   return steps

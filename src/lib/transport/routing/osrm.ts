@@ -1,36 +1,32 @@
-// Routage OSRM : remplace la geometrie approchee du moteur local par le trace
-// reel de la voirie, avec distance, duree et instructions.
+// Trace de voirie, demande a notre propre API.
 //
-// Limite assumee : OSRM ne route pas le transport public. Une option transit
-// utilise donc le profil voirie pour approcher la geometrie entre deux arrets.
+// Le navigateur n'appelle plus le calculateur d'itineraires directement. Le
+// quota d'une instance publique se compte par adresse IP : chaque client
+// consommait le meme quota sans que rien ne soit mutualise, et une session de
+// test un peu active suffisait a couper le service pour tout le monde (B13).
+// L'API interpose un cache partage et rend un contrat fini — trace, distance,
+// duree, instructions — que le client n'a plus qu'a consommer.
 import type { GeoPoint, MobilityMode, RouteInstruction } from '../../../types';
+import { API_BASE } from '../../api/config';
 import { withTimeout } from '../http';
-import { buildInstructions } from './instructions';
 
-export interface OsrmRouteResponse {
-  code: string;
-  routes: Array<{
-    distance: number;
-    duration: number;
-    geometry: {
-      type: 'LineString';
-      coordinates: [number, number][];
-    };
-    legs?: Array<{
-      steps?: OsrmStep[];
-    }>;
-  }>;
+export interface RouteGeometry {
+  path: GeoPoint[];
+  distanceMeters: number;
+  durationSeconds: number;
+  instructions: RouteInstruction[];
 }
 
-export interface OsrmStep {
-  distance: number;
-  duration: number;
-  name: string;
-  maneuver: {
-    type: string;
-    modifier?: string;
-    exit?: number;
-  };
+interface RouteResponse {
+  path: [number, number][];
+  distanceMeters: number;
+  durationSeconds: number;
+  instructions: RouteInstruction[];
+}
+
+/** Format attendu par l'API : `lon,lat`, une paire par parametre. */
+function coordinates(point: Pick<GeoPoint, 'lat' | 'lon'>): string {
+  return `${point.lon},${point.lat}`;
 }
 
 export async function fetchRouteGeometry(
@@ -38,55 +34,34 @@ export async function fetchRouteGeometry(
   origin: GeoPoint,
   destination: GeoPoint,
   signal?: AbortSignal,
-): Promise<{ path: GeoPoint[]; distanceMeters: number; durationSeconds: number; instructions: RouteInstruction[] } | null> {
-  const endpoint = getOsrmEndpoint(mode);
-  const coordinates = `${origin.lon},${origin.lat};${destination.lon},${destination.lat}`;
-  const url = `${endpoint}${coordinates}?overview=full&geometries=geojson&steps=true`;
+): Promise<RouteGeometry | null> {
+  const query = new URLSearchParams({ mode, from: coordinates(origin), to: coordinates(destination) });
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE}/route?${query.toString()}`, {
       signal: withTimeout(signal),
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: { Accept: 'application/json' },
     });
-
     if (!response.ok) {
       return null;
     }
 
-    const payload = (await response.json()) as OsrmRouteResponse;
-    const route = payload.routes[0];
-    if (payload.code !== 'Ok' || !route) {
+    const payload = (await response.json()) as RouteResponse;
+    if (payload.path.length < 2) {
       return null;
     }
 
     return {
-      path: route.geometry.coordinates.map(([lon, lat], index) => ({
+      path: payload.path.map(([lon, lat], index) => ({
         lon,
         lat,
-        label: index === 0 ? origin.label : index === route.geometry.coordinates.length - 1 ? destination.label : 'Trace route',
+        label: index === 0 ? origin.label : index === payload.path.length - 1 ? destination.label : 'Trace route',
       })),
-      distanceMeters: route.distance,
-      durationSeconds: route.duration,
-      instructions: buildInstructions(route.legs?.flatMap((leg) => leg.steps ?? []) ?? []),
+      distanceMeters: payload.distanceMeters,
+      durationSeconds: payload.durationSeconds,
+      instructions: payload.instructions,
     };
   } catch {
     return null;
   }
-}
-
-export function getOsrmEndpoint(mode: MobilityMode): string {
-  if (mode === 'walk') {
-    return 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
-  }
-  if (mode === 'bike' || mode === 'scooter') {
-    return 'https://routing.openstreetmap.de/routed-bike/route/v1/bike/';
-  }
-  return 'https://routing.openstreetmap.de/routed-car/route/v1/driving/';
-}
-
-export function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
 }

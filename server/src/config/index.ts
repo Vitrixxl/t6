@@ -19,6 +19,20 @@ export interface ServerConfig {
   /** Identifiants data.grandlyon.com pour les alertes TCL (jamais exposes au client). */
   grandLyonLogin: string;
   grandLyonPassword: string;
+  /**
+   * Base du service de routage. Par defaut l'instance publique de
+   * demonstration d'OpenStreetMap : elle depanne, mais elle n'a aucun
+   * engagement de service et limite par adresse IP (B13). Pointer cette
+   * variable sur une instance OSRM locale supprime toute dependance tierce a
+   * l'execution — voir le README.
+   */
+  osrmBaseUrl: string;
+  /**
+   * Duree de validite d'un trace en cache. La voirie ne bouge pas d'un jour a
+   * l'autre : une journee evite de redemander mille fois le meme trajet sans
+   * risquer de servir une geometrie obsolete.
+   */
+  routeCacheTtlMs: number;
 }
 
 function positiveInteger(name: string, raw: string | undefined, fallback: number): number {
@@ -42,5 +56,7 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
     trustProxy: env.TRUST_PROXY === 'true',
     grandLyonLogin: env.GRANDLYON_LOGIN ?? '',
     grandLyonPassword: env.GRANDLYON_PASSWORD ?? '',
+    osrmBaseUrl: (env.OSRM_BASE_URL ?? 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
+    routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
   };
 }

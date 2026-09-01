@@ -4,6 +4,7 @@ import type { Database } from '../db/index.ts';
 import { createOperationLog } from './operations.ts';
 import { createPlannedTripRepository } from './planned-trips.ts';
 import { createRecurringTripRepository } from './recurring-trips.ts';
+import { createRouteCacheRepository } from './route-cache.ts';
 import { createSavedRouteRepository } from './saved-routes.ts';
 import { createSessionRepository } from './sessions.ts';
 import { createStateReader } from './state.ts';
@@ -18,6 +19,7 @@ export function createRepositories(db: Database) {
 
   return {
     users: createUserRepository(db),
+    routeCache: createRouteCacheRepository(db),
     sessions: createSessionRepository(db),
     operations: createOperationLog(db),
     tripRecords,

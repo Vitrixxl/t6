@@ -118,3 +118,19 @@ CREATE TABLE IF NOT EXISTS applied_operations (
   PRIMARY KEY (user_id, id)
 );
 CREATE INDEX IF NOT EXISTS idx_applied_operations_date ON applied_operations(applied_at);
+
+-- Traces de voirie deja calcules. Le cache est partage par tous les clients :
+-- une recherche frequente n'atteint la source qu'une fois, ce qui protege le
+-- quota du fournisseur et rend l'application utilisable quand il refuse de
+-- repondre (eco-conception, et B13).
+--
+-- La cle porte les coordonnees arrondies a cinq decimales, soit environ un
+-- metre : deux departs distants d'un metre suivent la meme rue, inutile de
+-- calculer deux fois.
+CREATE TABLE IF NOT EXISTS route_cache (
+  cache_key        TEXT PRIMARY KEY,
+  mode             TEXT NOT NULL,
+  payload_json     TEXT NOT NULL,
+  created_at       INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_route_cache_date ON route_cache(created_at);

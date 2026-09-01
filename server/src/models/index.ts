@@ -6,3 +6,4 @@ export * from './trips.ts';
 export * from './auth.ts';
 export * from './state.ts';
 export * from './sync.ts';
+export * from './routing.ts';
