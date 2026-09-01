@@ -9,6 +9,7 @@ import { setGeoJsonSource, setLayerVisibility } from './sources';
 import { bindLongPress, createPickerContent, createPickerMarker, type PickedPoint } from './longPress';
 import { WALK_DASH_ARRAY, legColorExpression, legWidthExpression } from './legStyle';
 import { syncLegLabels } from './legLabels';
+import { syncEndpointMarkers } from './endpointMarkers';
 import type { SharedStation } from '../../types';
 
 /** Entites GeoJSON communes aux deux couches de mobilite partagee. */
@@ -61,16 +62,23 @@ export function UrbanMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pickerRef = useRef<{ popup: maplibregl.Popup; marker: maplibregl.Marker } | null>(null);
   const legLabelsRef = useRef<maplibregl.Marker[]>([]);
+  const endpointsRef = useRef<maplibregl.Marker[]>([]);
   const mapRef = useRef<MaplibreMap | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   // Centre initial: le depart s'il existe deja, sinon le centre de la metropole.
   const initialCenterRef = useRef<Pick<GeoPoint, 'lat' | 'lon'>>(origin ?? { lat: 45.758, lon: 4.845 });
   const [loaded, setLoaded] = useState(false);
 
+  // Le trajet selectionne est dessine par ses segments (couches `legs`), avec
+  // une geometrie routee mode par mode. L'inclure ici aussi superposerait deux
+  // traces differents du meme trajet : la couche ne porte donc que les
+  // alternatives, en retrait.
   const routeData = useMemo<FeatureCollection>(
     () => ({
       type: 'FeatureCollection',
-      features: routes.map((route) => ({
+      features: routes
+        .filter((route) => route.id !== selectedRoute?.id)
+        .map((route) => ({
         type: 'Feature',
         properties: {
           id: route.id,
@@ -106,24 +114,6 @@ export function UrbanMap({
     () => ({
       type: 'FeatureCollection',
       features: [
-        ...(origin
-          ? [
-              {
-                type: 'Feature' as const,
-                properties: { kind: 'origin', label: origin.label, color: '#111827' },
-                geometry: { type: 'Point' as const, coordinates: [origin.lon, origin.lat] },
-              },
-            ]
-          : []),
-        ...(destination
-          ? [
-              {
-                type: 'Feature' as const,
-                properties: { kind: 'destination', label: destination.label, color: '#ef4444' },
-                geometry: { type: 'Point' as const, coordinates: [destination.lon, destination.lat] },
-              },
-            ]
-          : []),
         ...(navigationPoint
           ? [
               {
@@ -135,7 +125,7 @@ export function UrbanMap({
           : []),
       ],
     }),
-    [destination, navigationPoint, origin],
+    [navigationPoint],
   );
 
   const stopData = useMemo<FeatureCollection>(
@@ -332,8 +322,8 @@ export function UrbanMap({
         layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: {
           'line-color': legColorExpression as unknown as string,
-          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 3.5, 15, 6],
-          'line-opacity': 0.9,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 4.5, 15, 8],
+          'line-opacity': 0.95,
           'line-dasharray': WALK_DASH_ARRAY,
         },
       });
@@ -498,6 +488,16 @@ export function UrbanMap({
     }
     legLabelsRef.current = syncLegLabels(map, legLabelsRef.current, selectedLegs ?? []);
   }, [loaded, selectedLegs]);
+
+  // Les reperes apparaissent des la selection d'un depart ou d'une arrivee,
+  // sans attendre qu'un itineraire soit calcule.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) {
+      return;
+    }
+    endpointsRef.current = syncEndpointMarkers(map, endpointsRef.current, origin, destination);
+  }, [destination, loaded, origin]);
 
   useEffect(() => {
     const map = mapRef.current;

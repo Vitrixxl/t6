@@ -246,6 +246,25 @@ laisses a decouvrir.
   marqueurs par instance de carte). Un test de rendu serait la vraie
   couverture.
 
+## B11 — Le trajet selectionne etait dessine deux fois
+
+- **Criticite** : majeur (carte illisible, trace incoherent)
+- **Symptome** : deux traces bleus distincts pour un seul itineraire, formant
+  une boucle qui ne correspondait a aucun trajet reel.
+- **Cause racine** : introduit avec le rendu par mode. La couche `routes`
+  dessinait toujours l'itineraire selectionne en entier — un seul appel OSRM
+  origine vers destination, avec le profil du dernier mode — pendant que les
+  nouvelles couches `legs` dessinaient le meme trajet decoupe par segment,
+  chacun route avec son propre profil. Les deux geometries different, d'ou la
+  superposition.
+- **Correctif** : la couche `routes` ne porte plus que les alternatives ; le
+  trajet selectionne n'est rendu que par ses segments.
+- **Ou le voir** : `src/components/map/UrbanMap.tsx`, filtre
+  `routes.filter((route) => route.id !== selectedRoute?.id)`
+- **Verrouillage** : **faible** — verification en navigateur : les
+  identifiants rendus par la couche des alternatives ne contiennent plus celui
+  du trajet selectionne.
+
 ### O5 — Cibles tactiles calculees en rem sous une racine a 14px
 
 - **Criticite** : mineur (accessibilite tactile), **corrige au passage**

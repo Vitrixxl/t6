@@ -42,4 +42,8 @@ export const legWidthExpression = ['interpolate', ['linear'], ['zoom'], 11, 5, 1
 // `line-dasharray` n'accepte pas d'expression liee aux donnees dans MapLibre :
 // impossible de pointiller uniquement la marche depuis une seule couche. D'ou
 // deux couches filtrees sur le mode, l'une pointillee, l'autre pleine.
-export const WALK_DASH_ARRAY = [0.4, 1.8];
+//
+// Les valeurs sont des multiples de l'epaisseur du trait : un tiret un peu plus
+// long que large, un vide plus court que le tiret. On lit des tirets nets,
+// comme une bordure `dashed`, et non une file de points.
+export const WALK_DASH_ARRAY = [1.5, 0.9];
