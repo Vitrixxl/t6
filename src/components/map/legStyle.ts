@@ -5,7 +5,7 @@
 // il ne doit pas peser visuellement), les mobilites actives en vert, le
 // covoiturage en violet, le transport public en bleu — la meme couleur que les
 // arrets sur la carte.
-import type { MobilityMode } from '../../types';
+import type { MobilityMode, RouteLeg } from '../../types';
 
 export const LEG_COLOR: Record<MobilityMode, string> = {
   walk: '#475569',
@@ -16,25 +16,14 @@ export const LEG_COLOR: Record<MobilityMode, string> = {
 };
 
 /**
- * Expression MapLibre donnant la couleur d'un segment depuis sa propriete
- * `mode`. Le dernier element est la couleur par defaut, obligatoire dans un
- * `match`.
+ * Couleur d'un segment. Un segment de transport public porte la couleur
+ * officielle de sa ligne : le rose du metro A, le vert du D. C'est la couleur
+ * que le voyageur voit sur les plans et sur les rames, la reprendre evite de
+ * lui demander de traduire notre code couleur en celui du reseau.
  */
-export const legColorExpression = [
-  'match',
-  ['get', 'mode'],
-  'walk',
-  LEG_COLOR.walk,
-  'bike',
-  LEG_COLOR.bike,
-  'scooter',
-  LEG_COLOR.scooter,
-  'carpool',
-  LEG_COLOR.carpool,
-  'transit',
-  LEG_COLOR.transit,
-  LEG_COLOR.transit,
-] as const;
+export function legColor(leg: RouteLeg): string {
+  return leg.mapColor ?? LEG_COLOR[leg.mode];
+}
 
 /** Epaisseur du trait, plus marquee au zoom rue qu'en vue metropole. */
 export const legWidthExpression = ['interpolate', ['linear'], ['zoom'], 11, 5, 15, 9] as const;

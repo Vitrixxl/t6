@@ -7,16 +7,20 @@
 // pas de requete supplementaire, et la typographie de l'application.
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
 import type { GeoPoint, RouteLeg } from '../../types';
+import { legColor } from './legStyle';
 
 /** Milieu du trace, pour poser le libelle la ou le segment est le plus lisible. */
 function midpointOf(path: GeoPoint[]): GeoPoint | null {
   return path.length === 0 ? null : path[Math.floor(path.length / 2)];
 }
 
-function createLabel(text: string): HTMLElement {
+function createLabel(text: string, color: string): HTMLElement {
   const element = document.createElement('span');
   element.className = 'ufm-leg-label';
+  // textContent, jamais innerHTML : le libelle vient du jeu de donnees reseau.
   element.textContent = text;
+  // La pastille reprend la couleur officielle de la ligne, comme le trace.
+  element.style.background = color;
   return element;
 }
 
@@ -29,14 +33,14 @@ export function syncLegLabels(map: MaplibreMap, current: maplibregl.Marker[], le
   current.forEach((marker) => marker.remove());
 
   return legs
-    .filter((leg) => leg.mode === 'transit' && leg.mapLabel)
+    .filter((leg) => leg.mode === 'transit' && leg.mapLabel && leg.path.length >= 2)
     .flatMap((leg) => {
       const point = midpointOf(leg.path);
       if (!point) {
         return [];
       }
       return [
-        new maplibregl.Marker({ element: createLabel(leg.mapLabel as string) })
+        new maplibregl.Marker({ element: createLabel(leg.mapLabel as string, legColor(leg)) })
           .setLngLat([point.lon, point.lat])
           .addTo(map),
       ];

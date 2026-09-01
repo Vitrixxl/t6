@@ -1,6 +1,6 @@
-// Libelles affiches. `routeLabel` ne renvoie qu'un mode generique : sans
-// graphe horaire, le numero de ligne desservant une paire d'arrets n'est jamais
-// garanti, on ne l'affiche donc pas (limite assumee, cf. dossier 7.3).
+// Libelles affiches. `routeLabel` nomme la ligne exactement ("Metro B",
+// "Tram T1") : depuis l'integration de la desserte publiee, une ligne n'est
+// proposee que si elle dessert reellement les deux stations du segment.
 import type { GtfsRoute, MobilityMode } from '../../types';
 
 export const MODE_LABELS: Record<MobilityMode, string> = {
@@ -11,12 +11,13 @@ export const MODE_LABELS: Record<MobilityMode, string> = {
   carpool: 'covoiturage',
 };
 
-// Coefficients du modele de score, centralises et testes (routePlanner.test.ts).
-// Le score part de la fiabilite de l'option, ajoute un bonus par mode prefere et
+const ROUTE_KIND: Record<number, string> = {
+  0: 'Tram',
+  1: 'Metro',
+  7: 'Funiculaire',
+};
 
 export function routeLabel(route: GtfsRoute): string {
-  if (route.route_type === 1) return 'Metro';
-  if (route.route_type === 0) return 'Tram';
-  if (route.route_type === 7) return 'Funiculaire';
-  return 'Transport public';
+  const kind = ROUTE_KIND[route.route_type] ?? 'Ligne';
+  return route.route_short_name ? `${kind} ${route.route_short_name}` : kind;
 }

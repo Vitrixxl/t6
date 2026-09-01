@@ -51,6 +51,12 @@ export interface GtfsStop {
   stop_lat: number;
   stop_lon: number;
   wheelchair_boarding: 0 | 1 | 2;
+  /**
+   * Lignes structurantes desservant l'arret (`['B', 'T1']`), issues du champ
+   * `desserte` du portail open data. Vide pour un arret uniquement bus : le
+   * moteur d'itineraires ne peut alors pas y faire monter le voyageur.
+   */
+  routes: string[];
 }
 
 export interface GtfsRoute {
@@ -60,6 +66,12 @@ export interface GtfsRoute {
   route_type: number;
   route_color: string;
   route_text_color: string;
+  /**
+   * Trace reel de la ligne, en couples `[lon, lat]`, simplifie a 2 m pres. Une
+   * ligne de metro ne suit pas la voirie : sans ce trace, le segment ne peut
+   * etre dessine qu'en approximation routiere, ce qui l'envoie ailleurs.
+   */
+  shape: [number, number][];
 }
 
 export interface GtfsTrip {
@@ -142,14 +154,25 @@ export interface RouteLeg {
   mode: MobilityMode;
   title: string;
   /**
-   * Libelle court ecrit sur le trace de la carte, pour les segments de
-   * transport public. Sans graphe horaire, on ne peut pas garantir quelle
-   * ligne dessert une paire d'arrets : c'est donc le mode (Metro, Tram) qui
-   * est affiche, jamais un numero de ligne (cf. dossier 7.3).
+   * Libelle court ecrit sur le trace de la carte : le nom exact de la ligne
+   * ("Metro B", "Tram T1"). Il n'est pose que si la ligne dessert reellement
+   * les deux arrets du segment, verifie sur la desserte publiee.
    */
   mapLabel?: string;
+  /** Couleur officielle de la ligne, pour tracer le segment a ses couleurs. */
+  mapColor?: string;
   from: string;
   to: string;
+  /** Extremites du segment. Toujours connues, meme sans geometrie. */
+  fromPoint: GeoPoint;
+  toPoint: GeoPoint;
+  /**
+   * Geometrie a dessiner. Elle n'est renseignee que par une source reelle : le
+   * trace publie d'une ligne de transport, ou la reponse du service de
+   * routage. Tant qu'elle est vide, la carte n'affiche rien pour ce segment et
+   * l'interface indique un calcul en cours. On ne dessine jamais une
+   * approximation : un trace faux est pire qu'un trace absent (B14).
+   */
   path: GeoPoint[];
   distanceKm: number;
   durationMinutes: number;

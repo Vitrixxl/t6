@@ -1,5 +1,5 @@
-// Calculs spatiaux : distances, points intermediaires et recherche du point
-// d'acces au reseau le plus proche.
+// Calculs spatiaux : distances et recherche du point d'acces au reseau le plus
+// proche.
 import type { GeoPoint, GtfsStop, SharedStation } from '../../types';
 import { MAX_STATION_ACCESS_KM } from './constants';
 
@@ -15,27 +15,8 @@ export function haversineDistanceKm(a: Pick<GeoPoint, 'lat' | 'lon'>, b: Pick<Ge
   return 2 * radiusKm * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 }
 
-export function midpoint(a: GeoPoint, b: GeoPoint, offset: number): GeoPoint {
-  return {
-    label: 'Point intermediaire',
-    lat: (a.lat + b.lat) / 2 + offset,
-    lon: (a.lon + b.lon) / 2 - offset,
-  };
-}
-
 export function toRadians(value: number): number {
   return (value * Math.PI) / 180;
-}
-
-export function nearestStop(stops: GtfsStop[], point: GeoPoint, requireAccessible: boolean): GtfsStop | null {
-  const candidates = requireAccessible ? stops.filter((stop) => stop.wheelchair_boarding === 1) : stops;
-  if (candidates.length === 0) {
-    // Aucun arret accessible PMR: on n'invente pas une correspondance non conforme.
-    return null;
-  }
-  return candidates
-    .slice()
-    .sort((a, b) => haversineDistanceKm(stopToPoint(a), point) - haversineDistanceKm(stopToPoint(b), point))[0];
 }
 
 // RG3 : seule une station situee dans le rayon de marche (400 m) est exploitable.
@@ -66,7 +47,3 @@ export function stationToPoint(station: SharedStation): GeoPoint {
     lon: station.lon,
   };
 }
-
-// Le MVP ne calcule pas la desserte reelle (pas de stop_times.txt): on ne peut
-// pas garantir QUELLE ligne dessert l'arret. On affiche donc la categorie de
-// mode (metro/tram/bus), jamais un numero de ligne qui serait trompeur.

@@ -17,7 +17,7 @@ import { scoreOption } from './scoring';
 export function planRoutes(request: RouteRequest): RouteOption[] {
   const directKm = Math.max(haversineDistanceKm(request.origin, request.destination), 0.15);
   const candidates = [
-    createTransitOption(request, directKm),
+    createTransitOption(request),
     createBikeTransitOption(request, directKm),
     createBikeOption(request, directKm),
     createScooterOption(request, directKm),
