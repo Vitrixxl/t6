@@ -8,7 +8,7 @@
 // gauche ce qui appartient a l'utilisateur (son profil, ses trajets), a droite
 // ce qui agit sur la carte (se localiser, choisir les calques, regarder autour).
 import { useState } from 'react';
-import { Bookmark, Layers, LocateFixed, Radar, UserRound } from 'lucide-react';
+import { Layers, LocateFixed, Radar, Route, UserRound } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { LayerPill, type LayerState } from '../app/shared';
 import type { GeoPoint, TransportNetwork } from '../../types';
@@ -76,7 +76,7 @@ export function MobileActionRail({
             <UserRound className="size-5" aria-hidden="true" />
           </ActionButton>
           <ActionButton label="Trajets enregistres" badge={savedCount} onClick={onOpenSavedTrips}>
-            <Bookmark className="size-5" aria-hidden="true" />
+            <Route className="size-5" aria-hidden="true" />
           </ActionButton>
         </div>
 
