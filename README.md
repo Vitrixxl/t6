@@ -87,13 +87,15 @@ Sans configuration, la source est l'instance publique de démonstration d'OpenSt
 Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localement :
 
 ```bash
-./infra/osrm-prepare.sh                          # extrait Lyon + prétraitement des 3 profils
+./infra/osrm-prepare.sh                          # télécharge et prétraite les 3 profils (une fois)
 podman compose -f infra/osrm-compose.yml up -d   # ou docker compose
 ```
 
-Puis renseigner `OSRM_BASE_URL` dans `.env`. Seul prérequis : `podman` (ou `docker`). `osmium` est facultatif — s'il est présent, la région est découpée autour de Lyon et le prétraitement est dix fois plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
+Puis `OSRM_BASE_URL=http://127.0.0.1:5000` dans `.env`. **Tant que cette ligne est absente ou vide, l'application utilise l'instance publique** : revenir en arrière ne demande rien d'autre que de la commenter.
 
-OSRM prépare un jeu de données par profil — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services.
+Seul prérequis : `podman` (ou `docker`). `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
+
+OSRM sert un profil par processus — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services, regroupés par une façade derrière un seul port. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une à l'autre ne change qu'une URL.
 
 ## Commandes
 

@@ -35,6 +35,15 @@ export interface ServerConfig {
   routeCacheTtlMs: number;
 }
 
+/**
+ * Une variable absente et une variable vide sont la meme chose : `.env.example`
+ * liste les cles avec une valeur vide, et les copier ne doit pas ecraser la
+ * valeur par defaut par une chaine vide.
+ */
+function text(raw: string | undefined, fallback: string): string {
+  return raw === undefined || raw.trim() === '' ? fallback : raw.trim();
+}
+
 function positiveInteger(name: string, raw: string | undefined, fallback: number): number {
   if (raw === undefined || raw === '') {
     return fallback;
@@ -48,15 +57,15 @@ function positiveInteger(name: string, raw: string | undefined, fallback: number
 
 export function loadConfig(env: Record<string, string | undefined> = Bun.env): ServerConfig {
   return {
-    databasePath: env.DATABASE_PATH ?? 'server/data/urbanflow.db',
+    databasePath: text(env.DATABASE_PATH, 'server/data/urbanflow.db'),
     port: positiveInteger('API_PORT', env.API_PORT, 4000),
-    host: env.API_HOST ?? '127.0.0.1',
+    host: text(env.API_HOST, '127.0.0.1'),
     isProduction: env.NODE_ENV === 'production',
     sessionTtlMs: positiveInteger('SESSION_TTL_MS', env.SESSION_TTL_MS, 7 * 24 * 60 * 60 * 1000),
     trustProxy: env.TRUST_PROXY === 'true',
     grandLyonLogin: env.GRANDLYON_LOGIN ?? '',
     grandLyonPassword: env.GRANDLYON_PASSWORD ?? '',
-    osrmBaseUrl: (env.OSRM_BASE_URL ?? 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
+    osrmBaseUrl: text(env.OSRM_BASE_URL, 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
     routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
   };
 }

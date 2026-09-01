@@ -63,5 +63,6 @@ echo "  $ENGINE compose -f infra/osrm-compose.yml up -d"
 echo
 echo "Puis dans .env :"
 echo "  OSRM_BASE_URL=http://127.0.0.1:5000"
-echo "(un reverse proxy doit exposer /routed-foot, /routed-bike et /routed-car"
-echo " vers les ports 5001, 5002 et 5003)"
+echo
+echo "Tant que cette ligne est absente ou vide, l'application continue"
+echo "d'utiliser l'instance publique : rien a defaire pour revenir en arriere."

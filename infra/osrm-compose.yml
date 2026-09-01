@@ -4,36 +4,39 @@
 # les memes regles sur les memes rues (sens uniques, escaliers, zones
 # pietonnes). Ils ne peuvent donc pas partager un index, d'ou trois services.
 #
-# Les chemins des profils reproduisent ceux de l'instance publique
-# (/routed-foot/, /routed-bike/, /routed-car/) : un reverse proxy devant ces
-# trois ports suffit pour que OSRM_BASE_URL pointe sur une seule racine.
-# En developpement, on peut aussi viser directement un port.
+# La facade les regroupe derriere un seul port, avec les memes chemins que
+# l'instance publique. Une seule variable suffit alors cote application :
+#   OSRM_BASE_URL=http://127.0.0.1:5000
 #
-# Preparation des donnees : voir infra/osrm-prepare.sh
+# Preparation des donnees : ./infra/osrm-prepare.sh
 services:
+  proxy:
+    image: docker.io/library/caddy:2-alpine
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    volumes:
+      - ./osrm-proxy.Caddyfile:/etc/caddy/Caddyfile:ro,z
+    ports:
+      - '127.0.0.1:5000:5000'
+    depends_on: [osrm-foot, osrm-bike, osrm-car]
+    restart: unless-stopped
+
   osrm-foot:
     image: ghcr.io/project-osrm/osrm-backend:latest
     command: osrm-routed --algorithm mld /data/lyon-foot.osrm
     volumes:
-      - ./osrm-data:/data
-    ports:
-      - '5001:5000'
+      - ./osrm-data:/data:z
     restart: unless-stopped
 
   osrm-bike:
     image: ghcr.io/project-osrm/osrm-backend:latest
     command: osrm-routed --algorithm mld /data/lyon-bike.osrm
     volumes:
-      - ./osrm-data:/data
-    ports:
-      - '5002:5000'
+      - ./osrm-data:/data:z
     restart: unless-stopped
 
   osrm-car:
     image: ghcr.io/project-osrm/osrm-backend:latest
     command: osrm-routed --algorithm mld /data/lyon-car.osrm
     volumes:
-      - ./osrm-data:/data
-    ports:
-      - '5003:5000'
+      - ./osrm-data:/data:z
     restart: unless-stopped
