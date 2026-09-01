@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
-import type { GeoPoint, RouteOption, TransportNetwork } from '../../types';
+import type { GeoPoint, RouteLeg, RouteOption, TransportNetwork } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 import type { LayerState } from '../app/shared';
 import type { FeatureCollection } from './geojson';
 import { bindPointPopup, escapeHtml } from './popup';
 import { setGeoJsonSource, setLayerVisibility } from './sources';
 import { bindLongPress, createPickerContent, createPickerMarker, type PickedPoint } from './longPress';
+import { WALK_DASH_ARRAY, legColorExpression, legWidthExpression } from './legStyle';
+import { syncLegLabels } from './legLabels';
 import type { SharedStation } from '../../types';
 
 /** Entites GeoJSON communes aux deux couches de mobilite partagee. */
@@ -34,6 +36,7 @@ export function UrbanMap({
   destination,
   routes,
   selectedRoute,
+  selectedLegs,
   network,
   layers,
   navigationPoint,
@@ -43,6 +46,8 @@ export function UrbanMap({
   destination: GeoPoint | null;
   routes: RouteOption[];
   selectedRoute: RouteOption | null;
+  /** Segments de l'itineraire selectionne, avec leur geometrie reelle. */
+  selectedLegs?: RouteLeg[];
   network: TransportNetwork;
   layers: LayerState;
   /** Position GPS de l'utilisateur ("Ma position"), affichee comme repere. */
@@ -55,6 +60,7 @@ export function UrbanMap({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pickerRef = useRef<{ popup: maplibregl.Popup; marker: maplibregl.Marker } | null>(null);
+  const legLabelsRef = useRef<maplibregl.Marker[]>([]);
   const mapRef = useRef<MaplibreMap | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   // Centre initial: le depart s'il existe deja, sinon le centre de la metropole.
@@ -79,6 +85,21 @@ export function UrbanMap({
       })),
     }),
     [routes, selectedRoute],
+  );
+
+  const legData = useMemo<FeatureCollection>(
+    () => ({
+      type: 'FeatureCollection',
+      features: (selectedLegs ?? []).map((leg) => ({
+        type: 'Feature' as const,
+        properties: { mode: leg.mode, label: leg.mapLabel ?? '' },
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: leg.path.map((point) => [point.lon, point.lat]),
+        },
+      })),
+    }),
+    [selectedLegs],
   );
 
   const pointData = useMemo<FeatureCollection>(
@@ -199,6 +220,13 @@ export function UrbanMap({
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
     map.on('load', () => setLoaded(true));
     mapRef.current = map;
+
+    if (import.meta.env.DEV) {
+      // Poignee de debogage : MapLibre n'expose pas son instance, et sans elle
+      // on ne peut verifier ni les couches ni les sources depuis le navigateur.
+      // Retiree du build de production par la garde DEV.
+      (window as unknown as { __ufmMap?: MaplibreMap }).__ufmMap = map;
+    }
     if (import.meta.env.DEV) {
       // Poignees de debug pour les tests manuels/E2E (dev uniquement).
       // Deux instances co-existent (layouts desktop et mobile).
@@ -219,6 +247,7 @@ export function UrbanMap({
     }
 
     setGeoJsonSource(map, 'routes', routeData);
+    setGeoJsonSource(map, 'legs', legData);
     setGeoJsonSource(map, 'points', pointData);
     setGeoJsonSource(map, 'stops', stopData);
     setGeoJsonSource(map, 'velov', velovData);
@@ -274,6 +303,38 @@ export function UrbanMap({
             ['case', ['==', ['get', 'selected'], true], 11, 5],
           ],
           'line-opacity': ['case', ['==', ['get', 'selected'], true], 0.98, 0.45],
+        },
+      });
+    }
+
+    // Les segments du trajet choisi se dessinent par-dessus les alternatives.
+    if (!map.getLayer('legs-line')) {
+      map.addLayer({
+        id: 'legs-line',
+        type: 'line',
+        source: 'legs',
+        filter: ['!=', ['get', 'mode'], 'walk'],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': legColorExpression as unknown as string,
+          'line-width': legWidthExpression as unknown as number,
+          'line-opacity': 0.95,
+        },
+      });
+    }
+
+    if (!map.getLayer('legs-walk')) {
+      map.addLayer({
+        id: 'legs-walk',
+        type: 'line',
+        source: 'legs',
+        filter: ['==', ['get', 'mode'], 'walk'],
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: {
+          'line-color': legColorExpression as unknown as string,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 3.5, 15, 6],
+          'line-opacity': 0.9,
+          'line-dasharray': WALK_DASH_ARRAY,
         },
       });
     }
@@ -398,7 +459,7 @@ export function UrbanMap({
     setLayerVisibility(map, 'velov-circle', layers.velov);
     setLayerVisibility(map, 'scooters-circle', layers.scooters);
     setLayerVisibility(map, 'incidents-circle', layers.incidents);
-  }, [incidentData, layers, loaded, pointData, routeData, scooterData, stopData, velovData]);
+  }, [incidentData, layers, legData, loaded, pointData, routeData, scooterData, stopData, velovData]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -429,6 +490,14 @@ export function UrbanMap({
       duration: 650,
     });
   }, [destination, loaded, origin, selectedRoute]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) {
+      return;
+    }
+    legLabelsRef.current = syncLegLabels(map, legLabelsRef.current, selectedLegs ?? []);
+  }, [loaded, selectedLegs]);
 
   useEffect(() => {
     const map = mapRef.current;

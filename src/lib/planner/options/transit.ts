@@ -36,6 +36,7 @@ export function createTransitOption({ origin, destination, profile, network }: R
         fromStop.wheelchair_boarding === 1 && toStop.wheelchair_boarding === 1,
         [stopToPoint(fromStop), midpoint(stopToPoint(fromStop), stopToPoint(toStop), 0.012), stopToPoint(toStop)],
       ),
+      mapLabel: routeLabel(route),
       durationMinutes: minutesForDistance(transitKm, SPEED_KMH.transit) + waitMinutes,
       detail: `Attente estimee ${waitMinutes} min, occupation ${trip.occupancy}.`,
     },

@@ -6,13 +6,18 @@
 // des options, et le statut affiche lui dit laquelle des deux sources il
 // regarde.
 import { useEffect, useMemo, useState } from 'react';
-import type { GeoPoint, MobilityMode, MobilityProfile, RouteOption, TransportNetwork } from '../../../types';
+import type { GeoPoint, MobilityMode, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
 import { matchesEnabledModes, planRoutes } from '../../../lib/planner';
-import { enhanceRoutesWithLiveRouting } from '../../../lib/transport';
+import { enhanceLegsWithLiveRouting, enhanceRoutesWithLiveRouting } from '../../../lib/transport';
 
 export interface RouteOptions {
   routes: RouteOption[];
   selectedRoute: RouteOption | null;
+  /**
+   * Segments de l'itineraire selectionne, routes individuellement pour que la
+   * carte puisse colorer chaque mode sur sa geometrie reelle.
+   */
+  selectedLegs: RouteLeg[];
   selectedRouteId: string;
   setSelectedRouteId: (id: string) => void;
   /** Etat du routage live, affiche tel quel dans l'interface. */
@@ -30,6 +35,7 @@ export function useRouteOptions(input: {
   const [liveRoutes, setLiveRoutes] = useState<RouteOption[]>([]);
   const [routingApiStatus, setRoutingApiStatus] = useState('En attente');
   const [selectedRouteId, setSelectedRouteId] = useState('');
+  const [selectedLegs, setSelectedLegs] = useState<RouteLeg[]>([]);
 
   const localRoutes = useMemo(
     () => (origin && destination ? planRoutes({ origin, destination, profile, network }) : []),
@@ -71,5 +77,22 @@ export function useRouteOptions(input: {
     setSelectedRouteId(selectedRoute.id);
   }, [selectedRoute, selectedRouteId]);
 
-  return { routes, selectedRoute, selectedRouteId, setSelectedRouteId, routingApiStatus };
+  // Seul l'itineraire affiche est route segment par segment : trois a quatre
+  // appels au changement de selection, plutot que pour chacune des options.
+  useEffect(() => {
+    if (!selectedRoute) {
+      setSelectedLegs([]);
+      return;
+    }
+
+    setSelectedLegs(selectedRoute.legs);
+    const controller = new AbortController();
+    enhanceLegsWithLiveRouting(selectedRoute.legs, controller.signal)
+      .then(setSelectedLegs)
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, [selectedRoute]);
+
+  return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingApiStatus };
 }

@@ -241,3 +241,21 @@ body {
     bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
   }
 }
+
+/* Libelle du mode pose sur un segment de transport public. Le fond bleu est
+   celui de la couche transport, pour que le lien avec le trait soit immediat. */
+.ufm-leg-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.4rem;
+  background: #2563eb;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}

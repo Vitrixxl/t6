@@ -228,6 +228,24 @@ laisses a decouvrir.
 - **Piste** : reutiliser les schemas TypeBox cote navigateur pour les trois
   formes de flux. Risque deja declare dans le dossier, section 4.3.
 
+## B10 — Couche `symbol` muette faute de source `glyphs`
+
+- **Criticite** : majeur (fonctionnalite invisible, sans erreur)
+- **Symptome** : les libelles de mode poses sur les segments de transport ne
+  s'affichaient pas. Aucune erreur en console, la couche existait bien et son
+  filtre etait correct : `queryRenderedFeatures` rendait simplement zero entite.
+- **Cause racine** : une couche `symbol` avec un `text-field` exige une source
+  `glyphs` dans le style de la carte. Le fond OpenStreetMap utilise ici est un
+  style raster minimal, sans `glyphs`. MapLibre n'echoue pas, il n'affiche rien.
+- **Correctif** : libelles poses en marqueurs HTML plutot qu'en couche symbole.
+  Aucune dependance a un serveur de polices tiers, et la typographie de
+  l'application est reprise telle quelle.
+- **Ou le voir** : `src/components/map/legLabels.ts`
+- **Verrouillage** : **faible** — verification en navigateur
+  (`queryRenderedFeatures` sur les couches de segments, puis comptage des
+  marqueurs par instance de carte). Un test de rendu serait la vraie
+  couverture.
+
 ### O5 — Cibles tactiles calculees en rem sous une racine a 14px
 
 - **Criticite** : mineur (accessibilite tactile), **corrige au passage**

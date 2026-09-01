@@ -60,6 +60,7 @@ export function createBikeTransitOption({ origin, destination, profile, network 
         boardingStop.wheelchair_boarding === 1 && arrivalStop.wheelchair_boarding === 1,
         [stopToPoint(boardingStop), midpoint(stopToPoint(boardingStop), stopToPoint(arrivalStop), 0.01), stopToPoint(arrivalStop)],
       ),
+      mapLabel: routeLabel(route),
       durationMinutes: minutesForDistance(transitKm, SPEED_KMH.transit) + waitMinutes,
       detail: `Correspondance estimee ${waitMinutes} min, occupation ${trip.occupancy}.`,
     },

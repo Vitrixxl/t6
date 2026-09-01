@@ -141,6 +141,13 @@ export interface RouteLeg {
   id: string;
   mode: MobilityMode;
   title: string;
+  /**
+   * Libelle court ecrit sur le trace de la carte, pour les segments de
+   * transport public. Sans graphe horaire, on ne peut pas garantir quelle
+   * ligne dessert une paire d'arrets : c'est donc le mode (Metro, Tram) qui
+   * est affiche, jamais un numero de ligne (cf. dossier 7.3).
+   */
+  mapLabel?: string;
   from: string;
   to: string;
   path: GeoPoint[];

@@ -67,7 +67,7 @@ export function MobilityMapApp({
   } = useTripPlanning(user.id, onTripCompleted);
 
   const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
-  const { routes, selectedRoute, setSelectedRouteId, routingApiStatus } = useRouteOptions({
+  const { routes, selectedRoute, selectedLegs, setSelectedRouteId, routingApiStatus } = useRouteOptions({
     origin,
     destination,
     profile: user.profile,
@@ -218,6 +218,7 @@ export function MobilityMapApp({
               destination={destination}
               routes={routes}
               selectedRoute={selectedRoute}
+              selectedLegs={selectedLegs}
               network={network}
               layers={layers}
               navigationPoint={navigationPoint}
@@ -286,6 +287,7 @@ export function MobilityMapApp({
             destination={destination}
             routes={routes}
             selectedRoute={selectedRoute}
+            selectedLegs={selectedLegs}
             network={network}
             layers={layers}
             navigationPoint={navigationPoint}
