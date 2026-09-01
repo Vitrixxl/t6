@@ -76,7 +76,6 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] GBFS live Velo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
 - [x] GTFS statique reel TCL/SYTRAL (ODbL) integre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 2435 arrets et 13 lignes structurantes avec leur desserte et leur trace reel (metropole entiere, rayon 16 km).
-- [x] Alertes trafic TCL temps reel (SIRI SX, data.grandlyon.com) via endpoint proxy /api/tcl-alertes: identifiants cote serveur, cache 30 s, fallback simule etiquete.
 - [x] Planificateur: trajets programmes a une date, routines recurrentes (aller-retour, pause/reprise), statuts fait/annule, objectifs hebdomadaires et mensuels avec progression.
 - [x] Recherche geocodee double source (BAN adresses + Photon quartiers/gares/lieux), typee et bornee a la metropole (dept 69).
 - [x] Onboarding spotlight 11 etapes (auto premiere visite, relance via bouton « ? »).
@@ -132,7 +131,6 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Repli automatique : sonde `/api/health` au demarrage, mode autonome si l'API est absente (verifie en navigateur, sans serveur).
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17), file d'attente purgee avec le compte.
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
-- [x] Relais des alertes trafic TCL deplace du serveur de developpement Vite vers l'API : identifiants cote serveur, cache 30 s partage entre tous les clients.
 - [x] 35 tests supplementaires (27 d'integration API via `app.handle`, 8 sur la file de synchronisation) : 99 tests verts au total (72 Vitest + 27 bun test).
 - [x] Verification bout en bout en navigateur : inscription depuis l'interface -> ligne SQLite avec empreinte scrypt -> session restauree apres rechargement par cookie httpOnly, zero erreur de page.
 

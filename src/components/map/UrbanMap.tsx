@@ -160,29 +160,6 @@ export function UrbanMap({
     [network],
   );
 
-  const incidentData = useMemo<FeatureCollection>(
-    () => ({
-      type: 'FeatureCollection',
-      features: network.gtfs.incidents.map((incident, index) => {
-        // Les alertes TCL n'ont pas de coordonnees (portee ligne/reseau) : on
-        // les ancre sur des arrets repartis dans tout le reseau (pas d'amas).
-        const stride = Math.max(1, Math.floor(network.gtfs.stops.length / Math.max(network.gtfs.incidents.length, 1)));
-        const anchor = network.gtfs.stops[(index * stride) % network.gtfs.stops.length];
-        return {
-          type: 'Feature',
-          properties: {
-            kind: 'incident',
-            label: incident.title,
-            severity: incident.severity,
-            message: incident.message,
-          },
-          geometry: { type: 'Point', coordinates: [anchor.stop_lon + 0.003, anchor.stop_lat + 0.003] },
-        };
-      }),
-    }),
-    [network],
-  );
-
   useEffect(() => {
     if (!containerRef.current || mapRef.current) {
       return;
@@ -246,7 +223,6 @@ export function UrbanMap({
     setGeoJsonSource(map, 'stops', stopData);
     setGeoJsonSource(map, 'velov', velovData);
     setGeoJsonSource(map, 'scooters', scooterData);
-    setGeoJsonSource(map, 'incidents', incidentData);
 
     if (!map.getLayer('routes-casing')) {
       // Lisere blanc sous le trace : le rend lisible sur tous les fonds de rue.
@@ -429,31 +405,10 @@ export function UrbanMap({
       `);
     }
 
-    if (!map.getLayer('incidents-circle')) {
-      map.addLayer({
-        id: 'incidents-circle',
-        type: 'circle',
-        source: 'incidents',
-        paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 7, 14, 11],
-          'circle-color': '#ef4444',
-          'circle-opacity': 0.92,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 2.5,
-        },
-      });
-      bindPointPopup(map, 'incidents-circle', popupRef, (properties) => `
-        <p class="ufm-popup-kind ufm-popup-kind-alert">Incident ${escapeHtml(properties.severity)}</p>
-        <strong>${escapeHtml(properties.label)}</strong>
-        <p>${escapeHtml(properties.message)}</p>
-      `);
-    }
-
     setLayerVisibility(map, 'stops-circle', layers.transitStops);
     setLayerVisibility(map, 'velov-circle', layers.velov);
     setLayerVisibility(map, 'scooters-circle', layers.scooters);
-    setLayerVisibility(map, 'incidents-circle', layers.incidents);
-  }, [incidentData, layers, legData, loaded, pointData, routeData, scooterData, stopData, velovData]);
+  }, [layers, legData, loaded, pointData, routeData, scooterData, stopData, velovData]);
 
   useEffect(() => {
     const map = mapRef.current;

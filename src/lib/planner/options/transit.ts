@@ -17,7 +17,6 @@ export function createTransitOption({ origin, destination, profile, network }: R
   const alighting = journey.rides[journey.rides.length - 1].alighting;
   const firstWalkKm = haversineDistanceKm(origin, stopToPoint(boarding));
   const lastWalkKm = haversineDistanceKm(stopToPoint(alighting), destination);
-  const trafficWarning = network.gtfs.incidents.find((incident) => incident.affected_modes.includes('transit'));
   const delayed = journey.rides.some((ride) => ride.waitMinutes > 4);
 
   const legs: RouteLeg[] = [
@@ -54,6 +53,6 @@ export function createTransitOption({ origin, destination, profile, network }: R
     modes: ['walk', 'transit'],
     legs,
     reliabilityScore: delayed ? 74 : 88,
-    warnings: trafficWarning ? [trafficWarning.message] : [],
+    warnings: [],
   });
 }

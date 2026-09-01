@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fetchJson, loadTransportNetwork, mapDottVehicles, mapTclAlerts, mergeVelovStations, weatherFromOpenMeteo } from './feeds';
+import { fetchJson, loadTransportNetwork, mapDottVehicles, mergeVelovStations, weatherFromOpenMeteo } from './feeds';
 import type { GtfsFeed, SharedMobilityFeed } from '../../types';
 
 describe('mergeVelovStations', () => {
@@ -110,66 +110,6 @@ describe('weatherFromOpenMeteo', () => {
   });
 });
 
-describe('mapTclAlerts', () => {
-  const NOW = new Date('2026-07-20T10:00:00');
-
-  it('mappe le schema reel du flux tclalertetrafic_2 en incidents types', () => {
-    const incidents = mapTclAlerts(
-      {
-        values: [
-          {
-            n: 1,
-            titre: 'Nuits de Fourviere - 28/05 au 25/07',
-            message: 'Metros prolonges jusqu a 1h00 certains soirs.',
-            type: 'Information',
-            typeseverite: 'OTHER_EFFECT',
-            mode: 'Métro',
-            ligne_com: 'A',
-            debut: '2026-05-28 04:30:00',
-            fin: '2026-07-26 02:30:00',
-          },
-          {
-            n: 2,
-            titre: 'Ligne T1 interrompue',
-            message: 'Circulation interrompue entre Debourg et Montrochet.',
-            type: 'Perturbation',
-            typeseverite: 'NO_SERVICE',
-            ligne_com: 'T1',
-            fin: '2026-07-21 23:00:00',
-          },
-        ],
-      },
-      NOW,
-    );
-
-    expect(incidents).toHaveLength(2);
-    expect(incidents[0]).toMatchObject({
-      id: 'tcl-alerte-1',
-      severity: 'low',
-      title: 'A - Nuits de Fourviere - 28/05 au 25/07',
-      affected_modes: ['transit'],
-    });
-    expect(incidents[1].severity).toBe('high');
-    expect(incidents[1].title).toContain('T1');
-  });
-
-  it('ecarte les alertes expirees et les enregistrements vides', () => {
-    const incidents = mapTclAlerts(
-      {
-        values: [
-          { n: 1, titre: 'Terminee', fin: '2026-07-19 23:00:00' },
-          { n: 2, fin: '2026-07-25 23:00:00' },
-          { n: 3, titre: 'Active', message: 'Toujours en cours.', fin: '2026-07-25 23:00:00' },
-        ],
-      },
-      NOW,
-    );
-
-    expect(incidents).toHaveLength(1);
-    expect(incidents[0].title).toBe('Active');
-  });
-});
-
 describe('mergeVelovStations - perimetre', () => {
   it('retient toutes les stations du perimetre, sans plafond d affichage', () => {
     // Le nombre annonce dans l'interface doit etre le nombre reellement
@@ -219,7 +159,6 @@ const gtfsFixture: GtfsFeed = {
   stops: [],
   routes: [],
   trips: [],
-  incidents: [],
   weather: { condition: 'clear', temperature_celsius: 18, wind_kmh: 5, updated_at: 't' },
 };
 

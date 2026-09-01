@@ -7,7 +7,7 @@ Application PWA React/TypeScript **mobile first** pour le sujet T6 CDSD "Urban F
 Deux briques, une seule origine pour le navigateur :
 
 - **Client** (`src/`) : PWA React/TypeScript. Ecrit d'abord dans son cache local, donc utilisable hors ligne.
-- **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, relais des alertes TCL.
+- **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, calcul d'itinéraires.
 
 Le client sonde `/api/health` au demarrage. API joignable : elle fait autorite, le cache local est hydrate depuis
 le serveur et les mutations partent dans une file d'attente rejouable (patron *outbox*, operations idempotentes).
@@ -33,7 +33,7 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | `db/` | ouverture SQLite ; le schéma vit dans `schema.sql`, versionné à part |
 | `models/` | contrats TypeBox : valident la requête, typent le gestionnaire et génèrent l'OpenAPI |
 | `repositories/` | un dépôt par table — seule couche qui connaisse le SQL |
-| `services/` | règles métier (synchronisation, sessions, cache des alertes) |
+| `services/` | règles métier (synchronisation, sessions, routage et son cache) |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
 
@@ -56,7 +56,7 @@ Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/au
 ## Livrables
 
 - `src/` : application fonctionnelle (auth + profils, planificateur multimodal, trajets programmes et routines, objectifs, suivi carbone).
-- `server/` : API HTTP (authentification, profil, synchronisation, RGPD, relais alertes trafic).
+- `server/` : API HTTP (authentification, profil, synchronisation, RGPD, calcul d'itinéraires).
 - `public/manifest.webmanifest` + `public/sw.js` : PWA installable avec cache offline.
 - `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` : dossier projet (30 pages, généré par script).
 - `output/screens/` : captures automatisées (Playwright) intégrées au dossier.
@@ -74,9 +74,8 @@ Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/au
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | intégré au build (`bun run generate:gtfs`) |
 | Desserte et tracés des lignes | WFS SYTRAL `data.grandlyon.com` (ODbL, sans jeton) | intégré au build (`bun run generate:lignes`) |
 | Météo | Open-Meteo | live navigateur |
-| Alertes trafic TCL | SIRI SX `data.grandlyon.com` (compte gratuit) | relais API `/api/tcl-alertes` (cache 30 s partage) |
 
-Chaque flux a un fallback local (`public/data/`) signalé dans l'UI ; sans compte data.grandlyon.com dans `.env`, les alertes TCL retombent sur des incidents simulés étiquetés.
+Chaque flux a un fallback local (`public/data/`) signalé dans l'UI.
 
 ## Calcul d'itinéraires
 

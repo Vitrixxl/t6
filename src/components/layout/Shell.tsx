@@ -161,22 +161,12 @@ export function LayerPanel({
           color="bg-[#f97316]"
           onClick={() => onLayersChange({ ...layers, scooters: !layers.scooters })}
         />
-        <LayerToggle
-          label="Incidents transport"
-          detail={`${network.gtfs.incidents.length} alertes actives`}
-          active={layers.incidents}
-          color="bg-red-500"
-          onClick={() => onLayersChange({ ...layers, incidents: !layers.incidents })}
-        />
       </div>
       {network.sources?.sharedMobility === 'gbfs-live' ? (
         <div className="mt-4 rounded-lg border border-primary/25 bg-accent px-3 py-2 text-xs text-accent-foreground">
           Donnees live: GBFS Velo'v + Dott ({getFeedFreshness(network.sharedMobility)})
           {network.sources.gtfs === 'tcl-odbl' ? ', GTFS TCL (ODbL)' : ''}
-          {network.sources.weather === 'open-meteo' ? ', meteo Open-Meteo' : ''}
-          {network.sources.incidents === 'tcl-live'
-            ? ', alertes trafic TCL temps reel (SIRI, data.grandlyon.com).'
-            : '. Incidents simules (compte data.grandlyon.com non configure).'}
+          {network.sources.weather === 'open-meteo' ? ', meteo Open-Meteo' : ''}.
         </div>
       ) : (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">

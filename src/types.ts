@@ -89,14 +89,6 @@ export interface GtfsTrip {
   occupancy: Occupancy;
 }
 
-export interface TransportIncident {
-  id: string;
-  severity: 'low' | 'medium' | 'high';
-  title: string;
-  affected_modes: MobilityMode[];
-  message: string;
-}
-
 export interface WeatherSignal {
   condition: 'clear' | 'light_rain' | 'heavy_rain' | 'wind';
   temperature_celsius: number;
@@ -109,7 +101,6 @@ export interface GtfsFeed {
   stops: GtfsStop[];
   routes: GtfsRoute[];
   trips: GtfsTrip[];
-  incidents: TransportIncident[];
   weather: WeatherSignal;
 }
 
@@ -146,7 +137,6 @@ export interface NetworkSources {
   gtfs: 'tcl-odbl' | 'local';
   sharedMobility: 'gbfs-live' | 'local';
   weather: 'open-meteo' | 'local';
-  incidents?: 'tcl-live' | 'local';
 }
 
 export interface TransportNetwork {

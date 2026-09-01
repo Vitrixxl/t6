@@ -43,7 +43,6 @@ const network: TransportNetwork = {
         occupancy: 'low',
       },
     ],
-    incidents: [],
     weather: {
       condition: 'clear',
       temperature_celsius: 20,

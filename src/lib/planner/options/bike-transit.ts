@@ -26,7 +26,6 @@ export function createBikeTransitOption({ origin, destination, profile, network 
   const firstWalkKm = haversineDistanceKm(origin, stationToPoint(fromStation));
   const bikeKm = Math.max(haversineDistanceKm(stationToPoint(fromStation), stopToPoint(boarding)) * 1.2, directKm * 0.22);
   const finalWalkKm = haversineDistanceKm(stopToPoint(alighting), destination);
-  const trafficWarning = network.gtfs.incidents.find((incident) => incident.affected_modes.includes('transit'));
   const rainWarning = network.gtfs.weather.condition.includes('rain');
   const delayed = journey.rides.some((ride) => ride.waitMinutes > 4);
 
@@ -74,9 +73,6 @@ export function createBikeTransitOption({ origin, destination, profile, network 
     modes: ['walk', 'bike', 'transit'],
     legs,
     reliabilityScore: delayed || rainWarning ? 78 : 90,
-    warnings: [
-      ...(trafficWarning ? [trafficWarning.message] : []),
-      ...(rainWarning && profile.avoidRain ? ['Pluie legere detectee sur la portion velo.'] : []),
-    ],
+    warnings: rainWarning && profile.avoidRain ? ['Pluie legere detectee sur la portion velo.'] : [],
   });
 }

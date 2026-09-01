@@ -62,7 +62,7 @@ function App() {
             <CardTitle>Chargement UrbanFlow</CardTitle>
             <CardDescription>
               {sessionChecked
-                ? networkError || 'Synchronisation des flux GTFS, stations partagees et incidents.'
+                ? networkError || 'Synchronisation des flux GTFS et des stations partagees.'
                 : 'Verification de la session en cours.'}
             </CardDescription>
           </CardHeader>

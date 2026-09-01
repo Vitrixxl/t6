@@ -79,7 +79,6 @@ export function MobileActionRail({
 }) {
   const [nearbyOpen, setNearbyOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
-  const incidentCount = network.gtfs.incidents.length;
 
   return (
     <>
@@ -89,7 +88,6 @@ export function MobileActionRail({
         </ActionButton>
         <ActionButton
           label="Autour de moi"
-          badge={incidentCount}
           tone="bg-[var(--lime)] text-[oklch(0.3_0.06_145)]"
           onClick={() => setNearbyOpen(true)}
         >
@@ -148,12 +146,6 @@ export function MobileActionRail({
                 onClick={() => onLayersChange({ ...layers, scooters: !layers.scooters })}
               >
                 Trottinettes
-              </LayerPill>
-              <LayerPill
-                active={layers.incidents}
-                onClick={() => onLayersChange({ ...layers, incidents: !layers.incidents })}
-              >
-                Incidents
               </LayerPill>
             </section>
 

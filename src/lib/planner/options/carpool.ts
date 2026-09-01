@@ -21,11 +21,10 @@ export function carpoolCarbonPerKm(occupants: number): number {
   return EMISSIONS_G_PER_KM.carpool / Math.max(occupants, 1);
 }
 
-export function createCarpoolOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption {
-  const incident = network.gtfs.incidents.find((item) => item.affected_modes.includes('carpool'));
+export function createCarpoolOption({ origin, destination, profile }: RouteRequest, directKm: number): RouteOption {
   // Le calculateur d'itineraires raisonne en circulation fluide. Ce facteur est
-  // l'hypothese de congestion, plus forte quand un incident est signale.
-  const congestionFactor = incident ? 1.18 : 1.08;
+  // l'hypothese de congestion aux heures ouvrees.
+  const congestionFactor = 1.08;
   const occupants = profile.carpoolOccupants ?? DEFAULT_CARPOOL_OCCUPANTS;
   const legs: RouteLeg[] = [
     {
@@ -53,7 +52,7 @@ export function createCarpoolOption({ origin, destination, profile, network }: R
     summary: `Voiture partagee a ${occupants} personne${occupants > 1 ? 's' : ''} : point de comparaison, sans mise en relation.`,
     modes: ['carpool'],
     legs,
-    reliabilityScore: incident ? 68 : 78,
-    warnings: incident ? [incident.message] : [],
+    reliabilityScore: 78,
+    warnings: [],
   });
 }

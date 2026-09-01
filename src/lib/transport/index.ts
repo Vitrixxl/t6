@@ -9,7 +9,6 @@ export {
   getFeedFreshness,
   loadTransportNetwork,
   mapDottVehicles,
-  mapTclAlerts,
   mergeVelovStations,
   weatherFromOpenMeteo,
 } from './feeds';

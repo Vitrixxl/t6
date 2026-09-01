@@ -44,7 +44,6 @@ export type LayerState = {
   transitStops: boolean;
   velov: boolean;
   scooters: boolean;
-  incidents: boolean;
 };
 
 export type MobileSheetLevel = 'collapsed' | 'mid' | 'expanded';
@@ -52,8 +51,7 @@ export type MobileSheetLevel = 'collapsed' | 'mid' | 'expanded';
 export const DEFAULT_LAYERS: LayerState = {
   transitStops: true,
   velov: true,
-  scooters: true,
-  incidents: true };
+  scooters: true };
 
 export const MOBILE_SHEET_ORDER: MobileSheetLevel[] = ['collapsed', 'mid', 'expanded'];
 export const MOBILE_SHEET_HEIGHT: Record<MobileSheetLevel, { shell: string; content: string }> = {

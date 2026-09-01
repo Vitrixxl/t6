@@ -16,9 +16,6 @@ export interface ServerConfig {
    * contourner la limitation de debit.
    */
   trustProxy: boolean;
-  /** Identifiants data.grandlyon.com pour les alertes TCL (jamais exposes au client). */
-  grandLyonLogin: string;
-  grandLyonPassword: string;
   /**
    * Base du service de routage. Par defaut l'instance publique de
    * demonstration d'OpenStreetMap : elle depanne, mais elle n'a aucun
@@ -63,8 +60,6 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
     isProduction: env.NODE_ENV === 'production',
     sessionTtlMs: positiveInteger('SESSION_TTL_MS', env.SESSION_TTL_MS, 7 * 24 * 60 * 60 * 1000),
     trustProxy: env.TRUST_PROXY === 'true',
-    grandLyonLogin: env.GRANDLYON_LOGIN ?? '',
-    grandLyonPassword: env.GRANDLYON_PASSWORD ?? '',
     osrmBaseUrl: text(env.OSRM_BASE_URL, 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
     routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
   };

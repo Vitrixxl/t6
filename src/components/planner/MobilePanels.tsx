@@ -154,9 +154,6 @@ export function MobileTripPanel({
               <LayerPill active={layers.scooters} onClick={() => onLayersChange({ ...layers, scooters: !layers.scooters })}>
                 Trottinettes
               </LayerPill>
-              <LayerPill active={layers.incidents} onClick={() => onLayersChange({ ...layers, incidents: !layers.incidents })}>
-                Incidents
-              </LayerPill>
               <LayerPill active={routingStatus === 'ready'} onClick={() => undefined}>
                 {ROUTING_STATUS_LABEL[routingStatus]}
               </LayerPill>

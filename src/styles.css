@@ -151,7 +151,7 @@ body {
   font-size: 10px !important;
 }
 
-/* Popup de details des points (arrets, stations, incidents). */
+/* Popup de details des points (arrets, stations partagees). */
 .ufm-popup .maplibregl-popup-content {
   border-radius: 0.875rem;
   border: 1px solid var(--border);

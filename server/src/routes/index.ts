@@ -7,7 +7,6 @@ import { healthRoutes } from './health.ts';
 import { meRoutes } from './me.ts';
 import { routingRoutes } from './routing.ts';
 import { syncRoutes } from './sync.ts';
-import { transitRoutes } from './transit.ts';
 
 export function routes(ctx: AppContext, config: ServerConfig) {
   return new Elysia({ name: 'routes' })
@@ -15,6 +14,5 @@ export function routes(ctx: AppContext, config: ServerConfig) {
     .use(authRoutes(ctx, config))
     .use(meRoutes(ctx))
     .use(syncRoutes(ctx))
-    .use(transitRoutes(config))
     .use(routingRoutes(ctx, config));
 }

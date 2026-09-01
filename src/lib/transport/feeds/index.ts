@@ -6,7 +6,6 @@
 import type { GtfsFeed, NetworkSources, SharedMobilityFeed, TransportNetwork } from '../../../types';
 import { fetchJson } from './fetch-json';
 import { fetchLiveSharedMobility } from './gbfs';
-import { fetchTclIncidents } from './tcl-alerts';
 import { OPEN_METEO_URL, weatherFromOpenMeteo, type OpenMeteoCurrent } from './weather';
 
 export async function loadTransportNetwork(fetcher: typeof fetch = fetch): Promise<TransportNetwork> {
@@ -15,15 +14,7 @@ export async function loadTransportNetwork(fetcher: typeof fetch = fetch): Promi
     gtfs: gtfs.agency.agency_id === 'ufm-metropole' ? 'local' : 'tcl-odbl',
     sharedMobility: 'local',
     weather: 'local',
-    incidents: 'local',
   };
-
-  try {
-    gtfs.incidents = await fetchTclIncidents(fetcher);
-    sources.incidents = 'tcl-live';
-  } catch {
-    // Compte Grand Lyon absent ou flux indisponible: incidents simules du feed.
-  }
 
   let sharedMobility: SharedMobilityFeed;
   try {
@@ -60,4 +51,3 @@ export { CITY_CENTER, METRO_RADIUS_KM } from './area';
 export { fetchJson } from './fetch-json';
 export { mapDottVehicles, mergeVelovStations } from './gbfs';
 export { weatherFromOpenMeteo } from './weather';
-export { mapTclAlerts } from './tcl-alerts';

@@ -157,22 +157,6 @@ def build_feed(archive: zipfile.ZipFile) -> dict:
         "stops": stops,
         "routes": routes,
         "trips": trips,
-        "incidents": [
-            {
-                "id": "inc-demo-1",
-                "severity": "medium",
-                "title": "Travaux quai Saint-Antoine (simulation)",
-                "affected_modes": ["bike", "scooter"],
-                "message": "Piste cyclable deviee entre Bellecour et Cordeliers. Flux SIRI operateur sous cle: incident simule.",
-            },
-            {
-                "id": "inc-demo-2",
-                "severity": "high",
-                "title": "Affluence forte pole Part-Dieu (simulation)",
-                "affected_modes": ["transit"],
-                "message": "Prevoir 5 min supplementaires en correspondance. Flux SIRI operateur sous cle: incident simule.",
-            },
-        ],
         "weather": {
             "condition": "clear",
             "temperature_celsius": 21,

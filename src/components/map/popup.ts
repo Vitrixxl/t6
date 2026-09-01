@@ -1,7 +1,7 @@
-// Popup de details au clic sur un point (arret, station, incident).
+// Popup de details au clic sur un point (arret, station partagee).
 //
 // Le contenu est injecte en HTML par MapLibre : toute valeur venant d'un flux
-// externe (nom d'arret, message d'incident) est donc echappee avant insertion.
+// externe (nom d'arret, nom de station) est donc echappee avant insertion.
 // Un flux operateur compromis ne peut pas executer de script dans la page
 // (OWASP A03 - injection).
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
@@ -13,7 +13,7 @@ export function escapeHtml(value: unknown): string {
   ));
 }
 
-// Popup de details au clic sur un point (arret, station, incident).
+// Popup de details au clic sur un point (arret, station partagee).
 export function bindPointPopup(
   map: MaplibreMap,
   layerId: string,

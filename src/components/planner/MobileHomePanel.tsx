@@ -6,7 +6,6 @@
 // quelles conditions je pars, et ce qui est prevu ensuite.
 import { useMemo } from 'react';
 import {
-  AlertTriangle,
   Bike,
   CalendarClock,
   ChevronRight,
@@ -89,7 +88,6 @@ export function MobileHomePanel({
   const nearby = useMemo(() => findNearby(network, point), [network, point]);
 
   const weather = network.gtfs.weather;
-  const incidents = network.gtfs.incidents;
   const savedPercent = weeklyGoalGrams > 0 ? Math.min(Math.round((carbonSummary.totalSavedGrams / weeklyGoalGrams) * 100), 100) : 0;
 
   return (
@@ -148,7 +146,7 @@ export function MobileHomePanel({
         ) : null}
       </section>
 
-      <section aria-label="Conditions" className="grid grid-cols-2 gap-2">
+      <section aria-label="Conditions" className="grid grid-cols-1 gap-2">
         <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 p-2.5">
           {weather.condition === 'wind' ? (
             <Wind className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -160,25 +158,6 @@ export function MobileHomePanel({
               {weather.temperature_celsius}&deg;C &middot; {WEATHER_LABEL[weather.condition]}
             </p>
             <p className="text-[0.7rem] text-muted-foreground">Vent {weather.wind_kmh} km/h</p>
-          </div>
-        </div>
-
-        <div
-          className={`flex items-center gap-2 rounded-xl border p-2.5 ${
-            incidents.length > 0 ? 'border-destructive/30 bg-destructive/5' : 'border-border/70 bg-background/80'
-          }`}
-        >
-          <AlertTriangle
-            className={`size-4 shrink-0 ${incidents.length > 0 ? 'text-destructive' : 'text-muted-foreground'}`}
-            aria-hidden="true"
-          />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-tight">
-              {incidents.length} alerte{incidents.length > 1 ? 's' : ''}
-            </p>
-            <p className="truncate text-[0.7rem] text-muted-foreground">
-              {incidents.length > 0 ? incidents[0].title : 'Reseau nominal'}
-            </p>
           </div>
         </div>
       </section>
@@ -214,18 +193,6 @@ export function MobileHomePanel({
           {carbonSummary.trips} trajet{carbonSummary.trips > 1 ? 's' : ''} enregistre{carbonSummary.trips > 1 ? 's' : ''} &middot; objectif {weeklyGoalGrams} g
         </p>
       </section>
-
-      {incidents.length > 0 ? (
-        <section aria-label="Alertes en cours" className="flex flex-col gap-2">
-          <h2 className="text-[0.7rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">Alertes en cours</h2>
-          {incidents.slice(0, 5).map((incident) => (
-            <div key={incident.id} className="rounded-xl border border-border/70 bg-background/80 p-2.5">
-              <p className="text-sm font-semibold leading-tight">{incident.title}</p>
-              <p className="mt-0.5 text-[0.7rem] leading-4 text-muted-foreground">{incident.message}</p>
-            </div>
-          ))}
-        </section>
-      ) : null}
 
       <section aria-label="Reseau" className="grid grid-cols-3 gap-2">
         <NetworkStat label="Arrets" value={String(network.gtfs.stops.length)} />

@@ -34,7 +34,7 @@ const STEPS: TourStep[] = [
     id: 'map',
     target: 'map',
     title: 'La carte',
-    body: "Les itineraires calcules s'affichent avec une couleur par option, l'option selectionnee en trait epais. En fond : arrets de transport public, stations de velos/trottinettes en temps reel et incidents.",
+    body: "Les itineraires calcules s'affichent avec une couleur par option, l'option selectionnee en trait epais. En fond : arrets de transport public et stations de velos/trottinettes en temps reel.",
   },
   {
     id: 'routes',
@@ -64,7 +64,7 @@ const STEPS: TourStep[] = [
     id: 'layers',
     target: 'layers',
     title: 'Couches temps reel',
-    body: "Active ou masque les arrets GTFS, les velos et trottinettes partages (flux GBFS live) et les incidents reseau. La meteo temps reel influence aussi le score des options velo.",
+    body: "Active ou masque les arrets GTFS et les velos et trottinettes partages (flux GBFS live). La meteo temps reel influence aussi le score des options velo.",
   },
   {
     id: 'carbon',
