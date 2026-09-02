@@ -1,4 +1,9 @@
-// Module suivi carbone : synthese hebdomadaire, objectif et historique effacable.
+// Module suivi carbone : synthese de la semaine en cours, objectif et
+// historique effacable.
+//
+// Les chiffres de l'entete portent sur la semaine, l'historique dessous sur les
+// cinquante derniers trajets : les libelles le disent, sinon le meme ecran
+// affiche deux periodes sans le signaler (B16).
 import { Button } from '../ui/button';
 import type { SessionUser, TripRecord } from '../../types';
 import { summarizeCarbon } from '../../lib/carbon';
@@ -27,11 +32,11 @@ export function CarbonPanel({
           <span className="block h-full bg-primary" style={{ width: `${Math.min(summary.goalUsagePercent, 100)}%` }} />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Metric label="Trajets" value={String(summary.trips)} />
-          <Metric label="CO2 evite" value={`${summary.totalSavedGrams} g`} />
+          <Metric label="Trajets cette semaine" value={String(summary.trips)} />
+          <Metric label="CO2 evite cette semaine" value={`${summary.totalSavedGrams} g`} />
         </div>
         {records.length > 0 ? (
-          <ul className="grid gap-2 text-sm">
+          <ul className="grid gap-2 text-sm" aria-label="Derniers trajets enregistres">
             {records.slice(0, 3).map((record) => (
               <li key={record.id} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
                 <span>{record.routeTitle}</span>

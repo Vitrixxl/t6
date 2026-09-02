@@ -1,6 +1,7 @@
 // Vues de lecture : filtres et agregats calcules a partir des trajets, sans
 // aucun effet de bord ni acces au stockage.
 import type { PlannedTrip, RecurringTrip, TripActivitySummary, TripRecord } from '../../types';
+import { startOfWeek } from '../week';
 
 export function upcomingTrips(trips: PlannedTrip[], now: Date = new Date(), graceHours = 24): PlannedTrip[] {
   const floor = now.getTime() - graceHours * 3_600_000;
@@ -14,12 +15,6 @@ export function completedTrips(trips: PlannedTrip[]): PlannedTrip[] {
   return trips
     .filter((trip) => trip.status === 'done')
     .sort((a, b) => (b.completedAt ?? b.scheduledFor).localeCompare(a.completedAt ?? a.scheduledFor));
-}
-
-/** Lundi 00:00 de la semaine calendaire en cours. */
-export function startOfWeek(now: Date): Date {
-  const mondayOffset = (now.getDay() + 6) % 7;
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayOffset);
 }
 
 export function summarizeTripActivity(
