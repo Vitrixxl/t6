@@ -1,0 +1,16 @@
+# Ce qui n'a rien a faire dans le contexte de build : soit inutile a l'API,
+# soit regenere, soit sensible.
+node_modules
+dist
+output
+tmp
+.git
+.venv
+.env
+server/data
+infra/osrm-data
+docs
+scripts
+public
+src
+!src/types.ts

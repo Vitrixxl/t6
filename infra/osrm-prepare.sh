@@ -58,11 +58,14 @@ for profile in foot bike car; do
 done
 
 echo
-echo "Donnees pretes. Demarrer les services :"
-echo "  $ENGINE compose -f infra/osrm-compose.yml up -d"
+echo "Donnees pretes. Demarrer la pile serveur :"
+echo "  $ENGINE compose -f infra/compose.yml up -d"
 echo
-echo "Puis dans .env :"
+echo "L'API y est incluse et vise le calculateur local : rien a configurer."
+echo "Le client reste lance a part, par bun run dev."
+echo
+echo "Pour utiliser le calculateur local depuis une API lancee hors conteneur,"
+echo "publier le port de la facade et renseigner dans .env :"
 echo "  OSRM_BASE_URL=http://127.0.0.1:5000"
-echo
-echo "Tant que cette ligne est absente ou vide, l'application continue"
-echo "d'utiliser l'instance publique : rien a defaire pour revenir en arriere."
+echo "Tant que cette ligne est absente ou vide, l'application utilise"
+echo "l'instance publique : rien a defaire pour revenir en arriere."
