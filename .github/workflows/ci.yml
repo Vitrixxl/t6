@@ -1,0 +1,96 @@
+name: CI
+
+# Chaine de verification bloquante. Elle execute `bun run check` — exactement la
+# commande utilisee en local, pas une variante qui pourrait diverger — puis les
+# deux controles qui exigent un navigateur et un serveur : l'audit
+# d'accessibilite et le scenario de bout en bout.
+#
+# Les deux derniers ont besoin de l'API : l'authentification et le calcul
+# d'itineraires passent par elle depuis la migration vers Elysia. Ils dependent
+# aussi de services tiers (geocodage BAN, calculateur OSRM), ce qui les rend
+# sensibles a une panne externe — limite connue, consignee en O6. Ils restent
+# bloquants malgre tout : un controle qu'on autorise a echouer ne controle rien.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    name: Verification complete
+    runs-on: ubuntu-latest
+    env:
+      # Base ephemere : le runner est jetable, rien n'a besoin de survivre au job.
+      DATABASE_PATH: /tmp/urbanflow-ci.db
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+
+      - name: Installer Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Installer les dependances
+        run: bun install --frozen-lockfile
+
+      - name: Lint, typage, tests unitaires, tests d'API et build
+        run: bun run check
+
+      - name: Metriques du build (tailles gzip des artefacts)
+        run: bun run metrics:build
+
+      - name: Demarrer l'API et creer le compte de demonstration
+        run: |
+          bun server/src/index.ts &
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4000/api/health > /dev/null && break
+            sleep 1
+          done
+          bun run seed:demo
+
+      # Le chemin du navigateur depend de l'image du runner. Le resoudre plutot
+      # que de le coder en dur evite un echec opaque le jour ou l'image change.
+      - name: Localiser le navigateur
+        run: |
+          for candidate in google-chrome chromium chromium-browser; do
+            path=$(command -v "$candidate" || true)
+            if [ -n "$path" ]; then
+              echo "CHROME_BIN=$path" >> "$GITHUB_ENV"
+              echo "Navigateur retenu : $path"
+              exit 0
+            fi
+          done
+          echo "Aucun navigateur trouve sur le runner." >&2
+          exit 1
+
+      - name: Servir le build de production
+        run: |
+          bunx --bun vite preview --port 4173 --strictPort &
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:4173/ > /dev/null && break
+            sleep 1
+          done
+
+      - name: Audit accessibilite axe-core (WCAG 2.1 A/AA, bloquant)
+        run: bun run audit:a11y
+
+      - name: Scenario E2E planification (5 assertions bloquantes)
+        env:
+          E2E_BASE_URL: http://localhost:4173
+        run: |
+          mkdir -p tmp/screenshots
+          bun run e2e
+
+      - name: Conserver les captures en cas d'echec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-echec
+          path: tmp/screenshots/
+          if-no-files-found: ignore
+
+      - name: Banc de performance (indicatif, non bloquant)
+        continue-on-error: true
+        run: bun run bench:perf
