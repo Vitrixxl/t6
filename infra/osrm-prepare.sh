@@ -5,13 +5,13 @@
 # piaton, velo et voiture n'ont pas les memes regles sur les memes rues (sens
 # uniques, escaliers, zones pietonnes) et ne peuvent donc pas partager un index.
 #
-# Prerequis : podman (ou docker). `osmium` est facultatif : s'il est installe,
+# Prerequis : docker. `osmium` est facultatif : s'il est installe,
 # la region est decoupee autour de Lyon, ce qui divise par dix le temps de
 # pretraitement. Sinon toute la region Rhone-Alpes est traitee — plus long, mais
 # sans dependance supplementaire, et le resultat est identique sur Lyon.
 set -euo pipefail
 
-ENGINE="${CONTAINER_ENGINE:-podman}"
+ENGINE="${CONTAINER_ENGINE:-docker}"
 IMAGE="ghcr.io/project-osrm/osrm-backend:latest"
 DATA_DIR="$(cd "$(dirname "$0")" && pwd)/osrm-data"
 REGION_URL="https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf"
@@ -19,7 +19,7 @@ REGION_URL="https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.p
 BBOX="4.60,45.60,5.05,45.95"
 
 command -v "$ENGINE" >/dev/null || {
-  echo "Erreur : '$ENGINE' introuvable. Installer podman, ou definir CONTAINER_ENGINE=docker." >&2
+  echo "Erreur : '$ENGINE' introuvable. Installer docker, ou definir CONTAINER_ENGINE." >&2
   exit 1
 }
 
@@ -59,7 +59,7 @@ done
 
 echo
 echo "Donnees pretes. Demarrer la pile serveur :"
-echo "  $ENGINE compose -f infra/compose.yml up -d"
+echo "  docker compose -f infra/compose.yml up -d"
 echo
 echo "L'API y est incluse et vise le calculateur local : rien a configurer."
 echo "Le client reste lance a part, par bun run dev."

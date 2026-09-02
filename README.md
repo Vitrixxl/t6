@@ -87,14 +87,14 @@ Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localeme
 
 ```bash
 ./infra/osrm-prepare.sh                      # télécharge et prétraite les 3 profils (une fois)
-podman compose -f infra/compose.yml up -d    # API + calculateur ; ou docker compose
+docker compose -f infra/compose.yml up -d    # API + calculateur
 ```
 
 `infra/compose.yml` lance **l'API et le calculateur ensemble** : l'API y vise la façade interne, il n'y a rien à configurer. Le client reste lancé à part (`bun run dev`) — c'est une PWA, l'emballer n'apporterait rien.
 
 Pour faire pointer une API lancée hors conteneur sur le calculateur local, publier le port de la façade et renseigner `OSRM_BASE_URL=http://127.0.0.1:5000` dans `.env`. **Tant que cette ligne est absente ou vide, l'application utilise l'instance publique** : revenir en arrière ne demande rien d'autre que de la commenter.
 
-Seul prérequis : `podman` (ou `docker`). `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
+Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
 
 OSRM sert un profil par processus — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services, regroupés par une façade derrière un seul port. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une à l'autre ne change qu'une URL.
 
