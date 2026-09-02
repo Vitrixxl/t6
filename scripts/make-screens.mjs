@@ -43,16 +43,20 @@ async function login(page) {
   await page.waitForTimeout(3500);
 }
 
+// La destination est saisie en premier : sur mobile, la barre ne montre qu'un
+// champ tant qu'aucune destination n'est choisie, et le depart n'apparait
+// qu'ensuite. Cet ordre fonctionne aussi sur bureau, ou les deux champs
+// coexistent des le depart.
 async function planRoute(page, originQuery, destQuery, destPattern, prefix) {
-  await page.click(`#${prefix}-origin-search`);
-  await page.fill(`#${prefix}-origin-search`, originQuery);
-  await page.waitForTimeout(2200);
-  await page.getByRole('button', { name: /Place Bellecour 69002/ }).first().click();
-  await page.waitForTimeout(600);
   await page.click(`#${prefix}-destination-search`);
   await page.fill(`#${prefix}-destination-search`, destQuery);
   await page.waitForTimeout(2200);
   await page.getByRole('button', { name: destPattern }).first().click();
+  await page.waitForTimeout(1200);
+  await page.click(`#${prefix}-origin-search`);
+  await page.fill(`#${prefix}-origin-search`, originQuery);
+  await page.waitForTimeout(2200);
+  await page.getByRole('button', { name: /Place Bellecour 69002/ }).first().click();
   await page.waitForTimeout(7000);
 }
 
@@ -115,8 +119,9 @@ const shot = (page, name, options = {}) => page.screenshot({ path: `${OUT}/${nam
   await planRoute(page, 'place bellecour lyon', 'gare part dieu lyon', /Gare/, 'mobile');
   await shot(page, '06-planner-mobile.png');
 
-  // 07. Hub planificateur mobile (objectifs + a venir)
-  await page.getByRole('button', { name: /ouvrir le planificateur/i }).first().click();
+  // 07. Hub planificateur mobile (objectifs + a venir). Sur mobile, la feuille
+  // d'options recouvre la barre d'actions : c'est son entete qui porte l'acces.
+  await page.getByRole('button', { name: /mes trajets/i }).first().click();
   await page.waitForTimeout(1200);
   await shot(page, '07-hub-mobile.png');
   await context.close();

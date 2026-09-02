@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UrbanFlow — carte du code</title>
+<style>
+:root{
+  --bg:#0e1116; --panel:#151a21; --panel2:#1b222b; --line:#28323f;
+  --fg:#dde3ea; --dim:#8fa0b3; --accent:#5fd3a4; --accent2:#79b8ff; --warn:#f0b849;
+  --mono:ui-monospace,"JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1400px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100dvh;overflow:auto;padding:22px 14px;border-right:1px solid var(--line);font-size:13.5px}
+nav b{display:block;color:var(--accent);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 6px}
+nav b:first-child{margin-top:0}
+nav a{display:block;padding:3px 8px;color:var(--dim);border-radius:5px}
+nav a:hover{background:var(--panel2);color:var(--fg);text-decoration:none}
+main{padding:26px 34px 120px;min-width:0}
+h1{font-size:26px;margin:0 0 4px}
+h2{font-size:19px;margin:44px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);color:#fff}
+h3{font-size:15px;margin:24px 0 6px;color:var(--accent)}
+p,li{color:#c6d0dc}
+ul{margin:6px 0 6px;padding-left:20px}
+li{margin:2px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--panel2);padding:1px 5px;border-radius:4px;color:#e6edf3}
+.f{font-family:var(--mono);color:var(--warn);font-size:.88em}
+pre{margin:8px 0 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:auto}
+pre code{background:none;padding:0;font-size:12.6px;line-height:1.5;display:block;padding:12px 14px;color:#d8e0e8}
+.src{font-family:var(--mono);font-size:11.5px;color:var(--warn);background:var(--panel2);border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;padding:5px 12px;margin:14px 0 0}
+.src + pre{margin-top:0;border-radius:0 0 8px 8px}
+table{width:100%;border-collapse:collapse;margin:10px 0 16px;font-size:13.5px}
+th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--accent);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td:first-child{font-family:var(--mono);font-size:12.4px;color:#e6edf3;white-space:nowrap}
+.note{border-left:3px solid var(--accent);background:var(--panel);padding:9px 14px;margin:12px 0;border-radius:0 6px 6px 0}
+.note.w{border-color:var(--warn)}
+.flow{font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;color:#c6d0dc;white-space:pre}
+.tag{display:inline-block;font-size:11px;font-family:var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:1px 9px;color:var(--dim);margin-right:5px}
+.lead{color:var(--dim);font-size:14px}
+.q{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:10px 0}
+.q p{margin:6px 0 0;font-size:13.5px}
+.q strong{color:var(--accent2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+<b>Socle</b>
+<a href="#vue">1 · Vue d'ensemble</a>
+<a href="#run">2 · Lancer / vérifier</a>
+<a href="#fichiers">3 · Fichiers clés</a>
+<b>Back — Elysia</b>
+<a href="#api">4 · Assemblage API</a>
+<a href="#couches">5 · Les 7 couches</a>
+<a href="#routes">6 · Routes</a>
+<a href="#secu">7 · Sécurité / RGPD</a>
+<b>Le cœur</b>
+<a href="#offline">8 · Offline &amp; outbox</a>
+<a href="#routage">9 · Routage &amp; cache</a>
+<b>Front — React</b>
+<a href="#client">10 · Arbre client</a>
+<a href="#hooks">11 · Hooks</a>
+<a href="#planner">12 · Moteur d'itinéraires</a>
+<a href="#carte">13 · Carte MapLibre</a>
+<a href="#apis">14 · APIs externes</a>
+<b>Revue</b>
+<a href="#types">15 · Contrat de types</a>
+<a href="#tests">16 · Tests</a>
+<a href="#jury">17 · Questions jury</a>
+</nav>
+
+<main>
+<h1>UrbanFlow Mobility — carte du code</h1>
+<p class="lead">~14 000 lignes TS/TSX. Bun partout. Deux briques, une origine.</p>
+
+<!-- ============================================ -->
+<h2 id="vue">1 · Vue d'ensemble</h2>
+
+<div class="flow">NAVIGATEUR (PWA React 19 + Vite + Tailwind 4)
+  |
+  |-- localStorage  <-- SEULE source lue par l'UI (caches locaux)
+  |-- outbox        --> file d'operations en attente
+  |
+  |== /api (meme origine, proxy Vite en dev) ==> API Elysia (Bun) --> SQLite (bun:sqlite)
+  |
+  '== appels directs navigateur ==> BAN, Photon, GBFS Velo'v, GBFS Dott, Open-Meteo
+</div>
+
+<p><b>La règle structurante :</b> l'interface ne lit <em>jamais</em> le serveur directement. Elle lit le cache local. Le serveur hydrate ce cache à la connexion, l'outbox le rattrape ensuite.</p>
+
+<table>
+<tr><th>Mode</th><th>Déclencheur</th><th>Comptes</th><th>Données</th></tr>
+<tr><td>serveur</td><td><code>/api/health</code> répond <code>{status:"ok"}</code></td><td>SQLite + argon2id, cookie httpOnly</td><td>serveur, sync via outbox</td></tr>
+<tr><td>autonome</td><td>sonde en échec</td><td>localStorage + PBKDF2</td><td>navigateur seul</td></tr>
+</table>
+
+<div class="note">La sonde vérifie <b>la charge utile</b>, pas le code HTTP : un déploiement statique renvoie l'index HTML en 200 sur <code>/api/health</code>. Test dédié dans <span class="f">src/lib/api/outbox.test.ts:128-141</span>.</div>
+
+<div class="src">src/lib/api/availability.ts:30-43</div>
+<pre><code>export async function probeApi(): Promise&lt;boolean&gt; {
+  try {
+    const response = await fetch(`${API_BASE}/health`, {
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),   // 2500 ms : retarde le 1er ecran
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+    });
+    const payload = response.ok ? await response.json().catch(() =&gt; null) : null;
+    availability = typeof payload === 'object' &amp;&amp; payload !== null
+      &amp;&amp; (payload as { status?: unknown }).status === 'ok';
+  } catch { availability = false; }
+  return availability;
+}</code></pre>
+
+<!-- ============================================ -->
+<h2 id="run">2 · Lancer / vérifier</h2>
+<table>
+<tr><th>Commande</th><th>Effet</th></tr>
+<tr><td>bun run dev</td><td>API + Vite côte à côte, un seul Ctrl+C — <span class="f">scripts/dev.mjs</span></td></tr>
+<tr><td>bun run dev:web</td><td>client seul → démarre en mode autonome</td></tr>
+<tr><td>bun run check</td><td>lint + tsc (client&nbsp;+&nbsp;serveur) + vitest + bun test server + build</td></tr>
+<tr><td>bun test server</td><td>tests d'intégration API (in-memory, sans port)</td></tr>
+<tr><td>bun run e2e</td><td>Playwright : login → GPS → options → planif → « fait »</td></tr>
+<tr><td>bun run seed:demo</td><td>compte de démo serveur — <span class="f">server/src/seed.ts</span></td></tr>
+</table>
+
+<div class="src">vite.config.ts:16-18 — pourquoi il n'y a aucun CORS dans le projet</div>
+<pre><code>proxy: {
+  '/api': { target: apiTarget, changeOrigin: false },
+}
+// Le navigateur ne voit qu'une origine -> cookie de session en 1re partie,
+// zero en-tete CORS a emettre cote API (surface d'attaque en moins).</code></pre>
+
+<!-- ============================================ -->
+<h2 id="fichiers">3 · Les 12 fichiers à connaître</h2>
+<table>
+<tr><th>Fichier</th><th>Pourquoi il compte</th></tr>
+<tr><td>server/src/app.ts</td><td>assemblage API, ordre de montage des plugins</td></tr>
+<tr><td>server/src/plugins/auth.ts</td><td>garde d'auth (<code>resolve</code> → <code>userId</code> typé)</td></tr>
+<tr><td>server/src/routes/auth.ts</td><td>tout l'argumentaire sécurité (113 l.)</td></tr>
+<tr><td>server/src/services/sync.ts</td><td>idempotence côté serveur</td></tr>
+<tr><td>server/src/db/schema.sql</td><td>schéma + commentaires de conception</td></tr>
+<tr><td>server/src/services/routing/</td><td>cache partagé + protocole OSRM</td></tr>
+<tr><td>src/lib/api/outbox.ts</td><td>idempotence côté client</td></tr>
+<tr><td>src/lib/api/sync.ts</td><td>qui fait autorité, et quand</td></tr>
+<tr><td>src/lib/planner/index.ts</td><td>le métier : 6 générateurs + tri</td></tr>
+<tr><td>src/lib/planner/transit.ts</td><td>recherche transport public sur desserte réelle</td></tr>
+<tr><td>src/components/map/UrbanMap.tsx</td><td>toute la carte (572 l.)</td></tr>
+<tr><td>src/types.ts</td><td>contrat partagé client ⟷ API</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="api">4 · Assemblage de l'API</h2>
+<p><code>createApp()</code> est <b>pur</b> : il reçoit sa config et rend une app Elysia sans ouvrir de port → les tests appellent <code>app.handle(new Request(...))</code>, sans réseau.</p>
+
+<div class="src">server/src/app.ts:24-49</div>
+<pre><code>export function createApp(overrides: Partial&lt;ServerConfig&gt; = {}) {
+  const config = { ...loadConfig(), ...overrides };
+  const ctx = context(config);                       // ouvre SQLite UNE fois
+
+  return new Elysia({ prefix: '/api', serve: { maxRequestBodySize: MAX_BODY_BYTES } })
+    .use(ctx)
+    .use(errorHandler())                             // l'ordre compte :
+    .use(securityHeaders(config.isProduction))       // les transverses avant
+    .use(requestLog(config.isProduction))            // les routes
+    .use(rateLimit({ max: 300, windowMs: 60_000, scope: 'global', trustProxy: config.trustProxy }))
+    .use(openapi({ path: '/doc', documentation: { info: { /* ... */ } } }))
+    .use(routes(ctx, config));
+}</code></pre>
+
+<p><span class="tag">à retenir</span> <code>MAX_BODY_BYTES = 512 * 1024</code> — un lot de sync est borné avant même d'être lu (app.ts:22). Doc OpenAPI live sur <code>/api/doc</code>.</p>
+
+<div class="src">server/src/plugins/context.ts:16-28 — la connexion DB n'existe qu'une fois</div>
+<pre><code>export function context(config: ServerConfig) {
+  const db = openDatabase(config.databasePath);
+  const repositories = createRepositories(db);
+
+  return new Elysia({ name: 'context' })       // `name` = deduplication par Elysia
+    .decorate('config', config)
+    .decorate('db', db)
+    .decorate('repositories', repositories)
+    .onStop(() =&gt; { db.close(); })
+    .as('global');
+}</code></pre>
+<div class="note">Le contexte est <b>passé en argument</b> aux autres plugins (<code>authGuard(ctx)</code>), jamais reconstruit — sinon on rouvrirait une seconde connexion SQLite.</div>
+
+<!-- ============================================ -->
+<h2 id="couches">5 · Les 7 couches serveur</h2>
+<table>
+<tr><th>Dossier</th><th>Responsabilité</th><th>Règle</th></tr>
+<tr><td>config/</td><td>env lue et validée une fois</td><td>valeur absurde ⇒ crash au démarrage, pas en requête</td></tr>
+<tr><td>db/</td><td>ouverture SQLite, <code>schema.sql</code> à part</td><td>idempotent (<code>CREATE TABLE IF NOT EXISTS</code>)</td></tr>
+<tr><td>models/</td><td>schémas TypeBox</td><td>valident + typent + génèrent l'OpenAPI (1 source)</td></tr>
+<tr><td>repositories/</td><td>1 dépôt / table</td><td>seule couche qui connaît le SQL</td></tr>
+<tr><td>services/</td><td>règles métier (sync, sessions, routing)</td><td>testable sans HTTP</td></tr>
+<tr><td>plugins/</td><td>contexte, auth, débit, en-têtes, log, erreurs</td><td>transverses</td></tr>
+<tr><td>routes/</td><td>handlers HTTP</td><td><b>zéro</b> règle métier</td></tr>
+</table>
+
+<div class="src">server/src/models/primitives.ts:14-24 — pourquoi l'union est écrite en toutes lettres</div>
+<pre><code>export const mode = t.Union([
+  t.Literal('walk'), t.Literal('bike'), t.Literal('scooter'),
+  t.Literal('transit'), t.Literal('carpool'),
+]);
+// Deriver d'un tableau ferait inferer `never` a TypeBox : la forme litterale
+// est ce qui donne l'union de chaines exacte au handler.</code></pre>
+
+<div class="src">server/src/repositories/route-cache.ts:9-19 — statements préparés une fois</div>
+<pre><code>export function createRouteCacheRepository(db: Database) {
+  const selectStatement = db.query&lt;{ payload_json: string; created_at: number }, [string]&gt;(
+    'SELECT payload_json, created_at FROM route_cache WHERE cache_key = ?');
+  const upsertStatement = db.query(
+    `INSERT INTO route_cache (cache_key, mode, payload_json, created_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(cache_key) DO UPDATE SET payload_json = excluded.payload_json, ...`);
+  ...</code></pre>
+
+<!-- ============================================ -->
+<h2 id="routes">6 · Routes</h2>
+<table>
+<tr><th>Verbe + chemin</th><th>Auth</th><th>Rôle</th><th>Fichier</th></tr>
+<tr><td>GET /api/health</td><td>non</td><td>sonde mode serveur/autonome</td><td>routes/health.ts</td></tr>
+<tr><td>POST /api/auth/register</td><td>non</td><td>compte + session (201)</td><td>routes/auth.ts:27</td></tr>
+<tr><td>POST /api/auth/login</td><td>non</td><td>session + état complet</td><td>routes/auth.ts:55</td></tr>
+<tr><td>POST /api/auth/logout</td><td>non</td><td>révoque le jeton en base</td><td>routes/auth.ts:81</td></tr>
+<tr><td>GET /api/auth/session</td><td>oui</td><td>reprise par cookie au boot</td><td>routes/auth.ts:98</td></tr>
+<tr><td>PUT /api/me/profile</td><td>oui</td><td>profil de mobilité</td><td>routes/me.ts:15</td></tr>
+<tr><td>GET /api/me/export</td><td>oui</td><td>RGPD art. 20 (portabilité)</td><td>routes/me.ts:33</td></tr>
+<tr><td>DELETE /api/me</td><td>oui</td><td>RGPD art. 17 (cascade SQL)</td><td>routes/me.ts:56</td></tr>
+<tr><td>GET /api/state</td><td>oui</td><td>état complet du compte</td><td>routes/sync.ts:17</td></tr>
+<tr><td>POST /api/state/operations</td><td>oui</td><td>rejeu du lot offline</td><td>routes/sync.ts:31</td></tr>
+<tr><td>GET /api/route</td><td>non</td><td>tracé de voirie + cache partagé</td><td>routes/routing.ts:20</td></tr>
+</table>
+
+<div class="src">server/src/plugins/auth.ts:13-29 — la garde</div>
+<pre><code>export function authGuard(ctx: AppContext) {
+  return new Elysia({ name: 'auth-guard' })
+    .use(ctx)
+    .resolve({ as: 'scoped' }, ({ cookie, repositories, status }) =&gt; {
+      const token = cookie[SESSION_COOKIE]?.value;
+      if (!token) return status(401, { error: 'Authentification requise.' });
+
+      const session = repositories.sessions.findValid(hashToken(String(token)), new Date().toISOString());
+      if (!session) { cookie[SESSION_COOKIE]?.remove(); return status(401, { error: 'Session expiree.' }); }
+
+      return { userId: session.user_id };   // toute route qui monte ce plugin
+    });                                     // recoit userId deja type string
+}</code></pre>
+
+<div class="src">server/src/routes/sync.ts:31-46 — la route ne fait que valider + transaction + déléguer</div>
+<pre><code>.post('/operations', ({ userId, body, db, repositories, status }) =&gt; {
+    // Lot atomique : une operation en echec annule tout le lot, donc le client
+    // peut le rejouer entier sans etat intermediaire a deviner.
+    const outcome = db.transaction(() =&gt; applyOperations(repositories, userId, body.operations))();
+    const row = repositories.users.findById(userId);
+    if (!row) return status(401, { error: 'Session expiree.' });
+    return { ...outcome, state: repositories.state.fullState(userId, JSON.parse(row.profile_json)) };
+  },
+  { body: operationBatch, response: { 200: ..., 401: errorResponse, 422: errorResponse } })</code></pre>
+
+<!-- ============================================ -->
+<h2 id="secu">7 · Sécurité &amp; RGPD</h2>
+
+<h3>Mots de passe — argon2id fourni par Bun</h3>
+<div class="src">server/src/security/password.ts:8-16</div>
+<pre><code>const ARGON2_OPTIONS = { algorithm: 'argon2id', memoryCost: 19_456, timeCost: 2 } as const;
+// Parametres OWASP : 19 Mio, t=2, p=1. Memory-hard -> resiste au GPU,
+// contrairement au PBKDF2 du mode autonome.
+export function hashPassword(password: string): Promise&lt;string&gt; {
+  return Bun.password.hash(password.normalize('NFKC'), ARGON2_OPTIONS);
+}</code></pre>
+<p>L'empreinte est auto-décrite (<code>$argon2id$v=19$m=...,t=...,p=...$</code>) : un durcissement futur reste rétro-compatible (<span class="f">schema.sql:8-11</span>).</p>
+
+<h3>Sessions — jeton opaque, jamais un JWT</h3>
+<div class="src">server/src/security/tokens.ts:10-17 + services/sessions.ts:28-35</div>
+<pre><code>export function createSessionToken() { return randomBytes(32).toString('base64url'); } // 256 bits
+export function hashToken(token: string) { return createHash('sha256').update(token).digest('hex'); }
+
+cookie[SESSION_COOKIE]?.set({
+  value: token,
+  httpOnly: true,                  // un XSS ne vole pas la session
+  sameSite: 'lax',                 // pas de CSRF inter-site
+  secure: config.isProduction,     // HTTPS hors dev local
+  path: '/', maxAge: Math.floor(config.sessionTtlMs / 1000),
+});</code></pre>
+<p>Seule l'<b>empreinte SHA-256</b> est en base (<code>sessions.token_hash</code> PK) : une fuite de la base ne permet pas de rejouer une session, et le serveur peut révoquer — ce qu'un JWT autoporteur ne permet pas.</p>
+
+<h3>Énumération de comptes (OWASP A07)</h3>
+<div class="src">server/src/routes/auth.ts:59-69</div>
+<pre><code>const row = users.findByEmail(body.email);
+if (!row) {
+  // Verification a vide : le temps de reponse ne trahit pas l'existence du
+  // compte (attaque temporelle sur l'enumeration).
+  await verifyPassword(body.password, await hashPassword(crypto.randomUUID()));
+  return status(401, { error: INVALID_CREDENTIALS });
+}
+if (!(await verifyPassword(body.password, row.password_hash))) {
+  return status(401, { error: INVALID_CREDENTIALS });   // meme message
+}</code></pre>
+
+<h3>Débit, en-têtes, erreurs</h3>
+<ul>
+<li><b>Rate limit</b> — fenêtre glissante en mémoire, <span class="f">plugins/rate-limit.ts</span>. 300 req/min global, <b>10 req/min</b> sur <code>/auth</code> (auth.ts:26). Limite assumée : compteur local au process → Redis si plusieurs instances.</li>
+<li><code>X-Forwarded-For</code> n'est lu que si <code>TRUST_PROXY=true</code> (rate-limit.ts:29-37) — sinon n'importe qui usurpe son IP.</li>
+<li><b>En-têtes</b> écrits à la main (helmet incompatible Elysia 1.4) : CSP <code>default-src 'none'</code>, nosniff, DENY, no-referrer, CORP, HSTS en prod — <span class="f">plugins/security-headers.ts:11-23</span>.</li>
+<li><b>Erreurs</b> : VALIDATION→422 lisible, tout le reste→500 opaque, journalisé serveur — <span class="f">plugins/errors.ts:16-29</span>.</li>
+</ul>
+
+<h3>RGPD</h3>
+<ul>
+<li>Art. 20 — <code>GET /api/me/export</code>, <code>content-disposition: attachment</code>, JSON ouvert (me.ts:41).</li>
+<li>Art. 17 — <code>DELETE /api/me</code> ; la cascade est <b>déclarée dans le schéma</b> : <code>ON DELETE CASCADE</code> sur chaque table (schema.sql:22,30,44,68,91,116).</li>
+<li>Côté client, effacement local par balayage de toutes les clés portant l'userId — <span class="f">src/lib/auth/index.ts:191-201</span>.</li>
+<li>Minimisation : historique borné à 50 entrées (<span class="f">src/lib/carbon.ts:35</span>), géoloc sur action explicite.</li>
+</ul>
+
+<!-- ============================================ -->
+<h2 id="offline">8 · Offline &amp; synchronisation <span class="tag">le morceau à maîtriser</span></h2>
+
+<div class="flow">action UI
+  |-> ecriture localStorage (immediate, l'UI ne bloque jamais)
+  '-> enqueueOperation(userId, payload)  -> localStorage 'ufm.outbox'
+                                              |
+     window 'online' / visibilitychange / timer 60s
+                                              v
+                              flushOutbox() -- lots de 100 -->  POST /api/state/operations
+                                                                   |
+                                    applied_operations (id deja vu ?) -- oui --> ignored++
+                                                                   '- non --> apply + record</div>
+
+<h3>Côté client — la file</h3>
+<div class="src">src/lib/api/outbox.ts:49-54, 75-98</div>
+<pre><code>export function enqueueOperation(userId: string, payload: OperationPayload): void {
+  writeOutbox([...readOutbox(),
+    { id: crypto.randomUUID(), at: new Date().toISOString(), userId, payload }]);
+}
+
+export async function flushOutbox(userId: string): Promise&lt;FlushResult | null&gt; {
+  if (!isApiOnline()) return null;          // hors ligne : rien n'est tente, rien n'est perdu
+  ...
+  for (;;) {                                 // lots bornes : une longue coupure
+    const queue = readOutbox();              // ne produit pas une requete geante
+    const mine = queue.filter((entry) =&gt; entry.userId === userId);   // jamais la file d'un autre compte
+    if (mine.length === 0) return { applied, ignored, remaining: 0 };
+    ...</code></pre>
+<p><span class="tag">bornes</span> <code>OUTBOX_LIMIT = 500</code>, <code>BATCH_SIZE = 100</code> (outbox.ts:19-20). Serveur : <code>OPERATION_BATCH_LIMIT = 200</code> (models/sync.ts:29).</p>
+
+<p><b>Gestion des échecs</b> (couverte par <span class="f">outbox.test.ts</span>) :</p>
+<ul>
+<li>réseau tombe → file conservée</li>
+<li><b>401</b> session expirée → file conservée, rejouée à la reconnexion</li>
+<li><b>4xx validation</b> → lot écarté, sinon il bloquerait la file <em>indéfiniment</em></li>
+</ul>
+
+<h3>Côté serveur — l'idempotence</h3>
+<div class="src">server/src/services/sync.ts:59-77</div>
+<pre><code>export function applyOperations(repositories, userId, batch: Operation[]): SyncOutcome {
+  for (const operation of batch) {
+    // Une operation deja connue est ignoree, pas rejouee : c'est ce qui rend
+    // la file du client sure apres une reponse perdue.
+    if (repositories.operations.alreadyApplied(userId, operation.id)) { ignored += 1; continue; }
+    apply(repositories, userId, operation);
+    repositories.operations.record(userId, operation.id, operation.kind, now.toISOString());
+    applied += 1;
+  }
+  repositories.operations.purgeOlderThan(now);   // sinon le journal grossit sans fin
+  return { applied, ignored };
+}</code></pre>
+
+<p>9 types d'opérations, union discriminée TypeBox (<span class="f">server/src/models/sync.ts:15-25</span>) miroir du type client (<span class="f">src/lib/api/operations.ts:16-25</span>) :</p>
+<pre><code>profile.update | trip.record | trip.history.clear
+planned.upsert | planned.delete | recurring.upsert | recurring.delete
+saved.upsert   | saved.delete</code></pre>
+
+<div class="note">Une règle métier vit ici et pas côté client : <code>recurring.delete</code> supprime <b>aussi</b> les occurrences engendrées (<span class="f">services/sync.ts:38-44</span>). Le client envoie une intention, le serveur en tire les conséquences → pas d'orphelin.</div>
+
+<h3>Qui fait autorité</h3>
+<div class="src">src/lib/api/sync.ts:36-59</div>
+<pre><code>export async function bootstrapSync(): Promise&lt;SessionUser | null&gt; {
+  if (!(await probeApi())) return null;                 // -> mode autonome
+  try {
+    const { user, state } = await apiRequest('/auth/session');
+    adoptRemoteSession(user);
+    await flushOutbox(user.id);                          // ORDRE CRITIQUE : la file part
+    const refreshed = await apiRequest('/state').catch(() =&gt; state);  // AVANT l'hydratation,
+    applyRemoteState(user.id, refreshed);                // sinon l'etat serveur ecraserait
+    return user;                                         // les actions faites hors ligne
+  } catch (error) { ... }
+}</code></pre>
+<p><b>Compromis assumé</b> (sync.ts:3-7) : serveur fait autorité à la connexion, client entre deux syncs → <em>dernier écrivain gagnant</em> si édition simultanée sur deux appareils.</p>
+
+<!-- ============================================ -->
+<h2 id="routage">9 · Routage &amp; cache partagé</h2>
+<p>Le navigateur <b>n'appelle jamais</b> OSRM. Trois raisons (services/routing/index.ts:3-12) : quota compté par IP (bug B13), cache mutualisé = éco-conception, URL du calculateur = variable de config.</p>
+
+<div class="src">server/src/services/routing/index.ts:40-61</div>
+<pre><code>async route(mode, from, to): Promise&lt;RoutingResult | null&gt; {
+  const key = cacheKey(mode, from, to);        // coords arrondies a 5 decimales ~ 1 m
+  const cached = cache.find(key);
+  if (cached &amp;&amp; cached.ageMs &lt; config.routeCacheTtlMs) return { ...JSON.parse(cached.payload), source: 'cache' };
+
+  const geometry = await fetchUpstreamRoute(config.osrmBaseUrl, mode, from, to);
+  if (!geometry) {
+    // Une entree expiree vaut mieux qu'aucune reponse : la voirie n'a pas
+    // change. Seul cas ou l'on sert une donnee perimee.
+    if (cached) return { ...JSON.parse(cached.payload), source: 'cache' };
+    return null;                                // -> 503 explicite cote route
+  }
+  cache.save(key, mode, JSON.stringify(geometry));
+  cache.purgeOlderThan(config.routeCacheTtlMs);
+  return { ...geometry, source: 'upstream' };
+}</code></pre>
+
+<p>Un profil OSRM par process (piéton / vélo / voiture n'ont pas les mêmes règles sur les mêmes rues) :</p>
+<div class="src">server/src/services/routing/osrm.ts:45-53</div>
+<pre><code>export function profilePath(mode: MobilityMode): string {
+  if (mode === 'walk') return '/routed-foot/route/v1/foot/';
+  if (mode === 'bike' || mode === 'scooter') return '/routed-bike/route/v1/bike/';
+  return '/routed-car/route/v1/driving/';
+}</code></pre>
+<p>Les manœuvres OSRM sont traduites en français <b>côté serveur</b> (<span class="f">routing/instructions.ts</span>) : l'API rend un contrat fini, le client ignore le protocole OSRM. Timeout upstream 8 s, <code>ROUTE_CACHE_TTL_MS</code> 24 h. Auto-hébergement : <code>OSRM_BASE_URL</code> + <span class="f">infra/osrm-compose.yml</span>.</p>
+
+<!-- ============================================ -->
+<h2 id="client">10 · Arbre client</h2>
+<div class="flow">App.tsx  (auth + bootstrap + reseau transport)
+  |  bootstrapSync() -> sonde + reprise session
+  |  loadTransportNetwork() -> GTFS + GBFS + meteo
+  |
+  +-- AuthScreen                       si pas de user
+  '-- MobilityMapApp                   orchestrateur (415 l.)
+        |
+        +- hooks : useGeolocation | useRouteOptions | useTripPlanning | useSavedRoutes
+        |
+        +- desktop  lg:grid [rail 360px | carte | detail 390px]
+        |    ShellSidebar / CommandSearchBar / UrbanMap / DesktopRouteStrip / RouteDetailPanel / CarbonPanel
+        |
+        +- mobile   lg:hidden, carte plein ecran
+        |    MobileSearchShell / MobileActionRail (repos) / MobileTripPanel (itineraire demande)
+        |
+        '- dialogs : ProfileDrawer, TripsHubDialog, PlanTripDialog, TutorialOverlay</div>
+<p><span class="tag">à savoir</span> les deux layouts montent <b>deux instances MapLibre</b> simultanément — connu et documenté (BUGS.md, ouvert O1).</p>
+
+<div class="src">src/App.tsx:57-76 — l'ordre des écrans</div>
+<pre><code>// Tant que la sonde n'a pas repondu, on ignore si une session serveur existe :
+// afficher l'ecran de connexion tout de suite le ferait clignoter chez un
+// utilisateur deja authentifie par cookie.
+if (!sessionChecked || (user &amp;&amp; !network)) return &lt;ecran de chargement /&gt;;
+if (!user || !network) return &lt;AuthScreen onAuthenticated={setUser} /&gt;;
+return &lt;MobilityMapApp ... /&gt;;</code></pre>
+
+<!-- ============================================ -->
+<h2 id="hooks">11 · Les 4 hooks</h2>
+<table>
+<tr><th>Hook</th><th>Rend</th><th>Point de revue</th></tr>
+<tr><td>useGeolocation</td><td>position, status, request()</td><td>1er fix + <code>watchPosition</code>, clearWatch au démontage</td></tr>
+<tr><td>useRouteOptions</td><td>routes, selectedRoute, selectedLegs, routingStatus</td><td>routage du <b>seul</b> itinéraire affiché</td></tr>
+<tr><td>useTripPlanning</td><td>plannedTrips, recurringTrips + transitions</td><td>toutes les conséquences métier décidées ici</td></tr>
+<tr><td>useSavedRoutes</td><td>savedRoutes, saveRoute, delete</td><td>—</td></tr>
+</table>
+
+<div class="src">src/components/app/hooks/useRouteOptions.ts:93-115</div>
+<pre><code>useEffect(() =&gt; {
+  if (!candidate) { setSelectedLegs([]); setRoutingStatus('idle'); return; }
+
+  // Segments d'abord poses SANS geometrie : la carte n'affiche rien de ce
+  // trajet tant que le routage n'a pas repondu, et l'UI annonce un calcul.
+  setSelectedLegs(candidate.legs);
+  setRoutingStatus('pending');
+
+  const controller = new AbortController();
+  enhanceLegsWithLiveRouting(candidate.legs, controller.signal)
+    .then((legs) =&gt; {
+      setSelectedLegs(legs);
+      setRoutingStatus(hasCompleteGeometry(legs) ? 'ready' : 'unavailable');
+    })
+    .catch(() =&gt; setRoutingStatus('unavailable'));
+
+  return () =&gt; controller.abort();     // changement de selection -> requete annulee
+}, [candidate]);</code></pre>
+<p><code>RoutingStatus = 'idle' | 'pending' | 'ready' | 'unavailable'</code> — <b>pending ≠ unavailable</b> : « la carte va se remplir » et « le service ne répond pas » sont deux messages différents pour l'utilisateur.</p>
+
+<div class="src">src/components/app/hooks/useGeolocation.ts:76-81 — la position simulée en dev</div>
+<pre><code>if (import.meta.env.DEV) {                // garde evaluee a la COMPILATION :
+  setCurrentPosition(DEV_POSITION);       // le bloc disparait du build de prod
+  setStatus('GPS simule (developpement)');
+  resolve(DEV_POSITION); return;
+}</code></pre>
+
+<!-- ============================================ -->
+<h2 id="planner">12 · Moteur d'itinéraires</h2>
+<p>Un générateur par mode dans <code>options/</code>. Ajouter un mode = ajouter un fichier.</p>
+
+<div class="src">src/lib/planner/index.ts:17-31</div>
+<pre><code>export function planRoutes(request: RouteRequest): RouteOption[] {
+  const directKm = Math.max(haversineDistanceKm(request.origin, request.destination), 0.15);
+  const candidates = [
+    createTransitOption(request),
+    createBikeTransitOption(request, directKm),
+    createBikeOption(request, directKm),
+    createScooterOption(request, directKm),
+    createCarpoolOption(request, directKm),
+    createWalkOption(request, directKm),
+  ].filter((option): option is RouteOption =&gt; Boolean(option));   // null = mode impossible ici
+
+  return candidates.map((o) =&gt; scoreOption(o, request.profile)).sort((a, b) =&gt; b.score - a.score);
+}</code></pre>
+
+<h3>Score</h3>
+<div class="src">src/lib/planner/scoring.ts:7-37</div>
+<pre><code>export const SCORING_WEIGHTS = {
+  preferenceBonusPerMode: 8, carbonDivisor: 55,
+  timePenaltyPerMinute: 0.85, accessibilityPenalty: 45, warningPenalty: 6,
+} as const;
+
+score = fiabilite + 8*(modes preferes) - carbone/55 - 0.85*minutes
+      - 45*(PMR non satisfait) - 6*avertissements - (marche excedentaire)
+// borne [0,100]. RG5 : au-dela de profile.maxWalkMinutes, un avertissement
+// est AJOUTE a l'option et penalise 1 pt/minute.</code></pre>
+
+<h3>Préselection ≠ classement</h3>
+<div class="src">src/lib/planner/rules.ts:28-44</div>
+<pre><code>// Le score composite reste l'ORDRE D'AFFICHAGE. Mais la question posee en
+// ouvrant une recherche est presque toujours "laquelle est la plus rapide".
+export function preselectRoute(routes, preselection: RoutePreselection = 'fastest') {
+  if (preselection === 'fastest') return fastest(routes);
+  const matching = routes.filter((o) =&gt; o.modes.includes(preselection));
+  return matching.length &gt; 0 ? fastest(matching) : fastest(routes);   // repli
+}</code></pre>
+
+<h3>Transport public : sur la desserte réelle</h3>
+<p>Avant (bug B12) : arrêt le plus proche du départ + arrêt le plus proche de l'arrivée + la ligne la plus fréquente du réseau — rien ne garantissait qu'une ligne desserve ces deux arrêts. Aujourd'hui :</p>
+<div class="src">src/lib/planner/transit.ts:136-164</div>
+<pre><code>for (const departure of departures) {          // 8 candidats max, &lt;= 1.2 km a pied
+  for (const arrival of arrivals) {
+    for (const line of departure.routes) {
+      if (arrival.routes.includes(line)) { consider([buildRide(...)], 0); continue; }   // direct
+      for (const secondLine of arrival.routes)                                          // 1 corresp.
+        for (const hub of interchanges(stations, line, secondLine))
+          consider([first, second], TRANSFER_PENALTY_MINUTES);   // +4 min
+    }
+  }
+}
+// Critere : duree totale = rabattement a pied + attente + a bord + correspondance</code></pre>
+<p>Le tracé du segment est la <b>portion réelle de la polyligne de la ligne</b>, découpée par projection des deux stations (<span class="f">src/lib/planner/shape.ts</span>, snap max 300 m). C'est ce qui dessine le métro sur ses rails et non sur la voirie.</p>
+
+<div class="note w"><b>Limites nommées dans le code</b> (à assumer devant le jury) : pas de graphe horaire GTFS → les fréquences sont des moyennes (<code>waitMinutes = headway/2 + delay</code>, transit.ts:90) ; le covoiturage ne met personne en relation, c'est un point de comparaison.</div>
+
+<h3>Constantes — aucun nombre magique ailleurs</h3>
+<div class="src">src/lib/planner/constants.ts:6-36, 50</div>
+<pre><code>SPEED_KMH        = { walk 4.6, bike 15, scooter 18, transit 28, carpool 23 }
+EMISSIONS_G_PER_KM = { walk 0, bike 4, scooter 15, transit 55, carpool 180, privateCar 180 }
+// Le covoiturage vaut la voiture : MEME vehicule, MEMES emissions. Ce qui change
+// est la part imputee par passager (LegEstimate.carbonGramsPerKm).
+MAX_STATION_ACCESS_KM = 0.4    // RG3 : pas de station a portee -> pas d'option velo</code></pre>
+<p>Économie carbone = <code>distance × 180 g/km (voiture solo) − carbone de l'option</code>, dérivée des segments, jamais saisie deux fois (<span class="f">planner/legs.ts:72-85</span>).</p>
+
+<!-- ============================================ -->
+<h2 id="carte">13 · Carte MapLibre</h2>
+<p>Tout dans <span class="f">src/components/map/</span>. Un seul composant possède l'instance ; les helpers sont des fonctions pures sur <code>map</code>.</p>
+
+<h3>Initialisation — style inline, pas de serveur de style</h3>
+<div class="src">src/components/map/UrbanMap.tsx:191-215</div>
+<pre><code>const map = new maplibregl.Map({
+  container: containerRef.current,
+  center: [initialCenterRef.current.lon, initialCenterRef.current.lat],  // origin ?? centre metropole
+  zoom: 12.2, minZoom: 2, maxZoom: 19, attributionControl: false,
+  style: {
+    version: 8,
+    sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                      tileSize: 256, attribution: 'OpenStreetMap' } },
+    layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+  },
+});
+map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+map.on('load', () =&gt; setLoaded(true));    // tout le reste est garde par `loaded`</code></pre>
+
+<h3>6 sources GeoJSON, dérivées par <code>useMemo</code></h3>
+<table>
+<tr><th>Source</th><th>Contenu</th><th>Couches</th></tr>
+<tr><td>routes</td><td>options <b>non</b> sélectionnées</td><td>routes-casing (liseré blanc) + routes-line</td></tr>
+<tr><td>legs</td><td>segments de l'option choisie</td><td>legs-line + legs-walk (pointillés)</td></tr>
+<tr><td>points</td><td>« Ma position »</td><td>points-accuracy (halo) + points-circle + points-label</td></tr>
+<tr><td>stops</td><td>arrêts GTFS</td><td>stops-circle — bleu #2563eb</td></tr>
+<tr><td>velov</td><td>stations Vélo'v</td><td>velov-circle — vert lime #84cc16</td></tr>
+<tr><td>scooters</td><td>trottinettes Dott</td><td>scooters-circle — orange #f97316, plus petit (flotte dense)</td></tr>
+</table>
+
+<div class="src">src/components/map/sources.ts:6-23 — mise à jour sans recréer la carte</div>
+<pre><code>export function setGeoJsonSource(map, id, data: FeatureCollection) {
+  const source = map.getSource(id) as GeoJSONSource | undefined;
+  if (source) { source.setData(data); return; }     // update
+  map.addSource(id, { type: 'geojson', data });     // create
+}
+export function setLayerVisibility(map, id, visible) {
+  if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+}</code></pre>
+<p>Le gros effet <span class="f">UrbanMap.tsx:237-453</span> suit toujours le même motif : <code>setGeoJsonSource(...)</code> puis <code>if (!map.getLayer(id)) map.addLayer(...)</code> — les couches sont créées une fois, seules les données changent.</p>
+
+<h3>Deux couches pour un seul jeu de segments</h3>
+<div class="src">src/components/map/UrbanMap.tsx:304-333</div>
+<pre><code>map.addLayer({ id: 'legs-line', type: 'line', source: 'legs',
+  filter: ['!=', ['get', 'mode'], 'walk'],
+  paint: { 'line-color': ['get', 'color'], 'line-width': legWidthExpression, 'line-opacity': 0.95 } });
+
+map.addLayer({ id: 'legs-walk', type: 'line', source: 'legs',
+  filter: ['==', ['get', 'mode'], 'walk'],
+  paint: { ..., 'line-dasharray': WALK_DASH_ARRAY } });</code></pre>
+<div class="note"><b>Pourquoi deux couches :</b> <code>line-dasharray</code> n'accepte pas d'expression liée aux données dans MapLibre — impossible de pointiller la seule marche depuis une couche unique (<span class="f">legStyle.ts:31-38</span>).</div>
+
+<h3>Étiquettes de ligne : marqueurs HTML, pas <code>symbol</code></h3>
+<div class="src">src/components/map/legLabels.ts:1-21</div>
+<pre><code>// Une couche `symbol` exigerait une source `glyphs` dans le style : le fond
+// raster OSM n'en a pas, et le texte ne s'affiche alors pas du tout, SANS
+// erreur (bug B10). Plutot qu'un serveur de polices tiers -> marqueurs HTML.
+element.textContent = text;    // jamais innerHTML : le libelle vient du reseau
+element.style.background = color;   // couleur officielle de la ligne</code></pre>
+<p><code>syncLegLabels()</code> retire les anciens marqueurs avant de poser les nouveaux, sinon changer d'itinéraire empilerait les étiquettes.</p>
+
+<h3>Couleurs</h3>
+<div class="src">src/components/map/legStyle.ts:10-26</div>
+<pre><code>LEG_COLOR = { walk #475569, bike #16a34a, scooter #16a34a, carpool #a855f7, transit #2563eb }
+export function legColor(leg) { return leg.mapColor ?? LEG_COLOR[leg.mode]; }
+// Un segment de transport porte la couleur OFFICIELLE de sa ligne (rose du A,
+// vert du D) : celle que le voyageur voit sur les plans.</code></pre>
+
+<h3>Interactions</h3>
+<ul>
+<li><b>Popups</b> — <code>bindPointPopup(map, layerId, popupRef, render)</code> sur stops / velov / scooters, contenu échappé par <code>escapeHtml</code> (<span class="f">map/popup.ts</span>).</li>
+<li><b>Appui long → définir départ/arrivée</b> : 500 ms, annulé au-delà de 10 px de déplacement, et annulé par <code>movestart</code> (un recentrage programmatique n'est pas un appui).</li>
+<li><b>Cadrage</b> <code>fitBounds</code> sur les extrémités <em>et non le tracé</em> — connues dès la sélection, donc le cadrage n'attend pas le routage (UrbanMap.tsx:461-487). Padding asymétrique desktop/mobile pour la feuille d'options.</li>
+<li><b>Recentrage GPS</b> : effet déclaré <em>après</em> le cadrage — à rendu égal, l'effet le plus bas l'emporte.</li>
+</ul>
+
+<div class="src">src/components/map/longPress.ts:39-58</div>
+<pre><code>const start = (event) =&gt; {
+  cancel(); origin = { x: event.point.x, y: event.point.y };
+  const { lat, lng } = event.lngLat;
+  timer = window.setTimeout(() =&gt; onPick({ lat, lon: lng }), LONG_PRESS_MS);   // 500 ms
+};
+const move = (event) =&gt; {
+  if (!origin || timer === null) return;
+  if (Math.hypot(event.point.x - origin.x, event.point.y - origin.y) &gt; MOVE_TOLERANCE_PX) cancel();
+};
+// souris ET tactile : verifiable sur un poste de dev, pas seulement sur telephone</code></pre>
+
+<div class="src">src/components/map/UrbanMap.tsx:498-507 — pourquoi `focus` porte un timestamp</div>
+<pre><code>focus?: { point: GeoPoint; at: number } | null;
+// `at` porte l'instant de la demande : sans lui, redemander sa position deux
+// fois de suite ne produirait AUCUN mouvement, la valeur du point etant inchangee.
+map.flyTo({ center: [focus.point.lon, focus.point.lat], zoom: FOCUS_ZOOM /*16*/, duration: 700 });</code></pre>
+
+<div class="note w"><b>Règle « jamais de géométrie approchée »</b> (bug B14). Un segment sans tracé produit <b>zéro</b> feature : <code>features: (selectedLegs ?? []).filter((leg) =&gt; leg.path.length &gt;= 2)</code> (UrbanMap.tsx:128). Idem <code>mergeLegPaths</code> qui ne relie pas deux segments par une ligne droite (planner/legs.ts:119-134). Un tracé faux se lit comme un itinéraire réel ; un tracé absent se voit.</div>
+
+<!-- ============================================ -->
+<h2 id="apis">14 · APIs externes</h2>
+<table>
+<tr><th>Source</th><th>Où l'appel part</th><th>Fichier</th></tr>
+<tr><td>BAN api-adresse.data.gouv.fr</td><td>navigateur</td><td>transport/geocoding/ban.ts</td></tr>
+<tr><td>Photon (OSM) photon.komoot.io</td><td>navigateur</td><td>transport/geocoding/photon.ts</td></tr>
+<tr><td>OSRM (foot/bike/car)</td><td><b>API</b> via /api/route</td><td>server/services/routing/osrm.ts</td></tr>
+<tr><td>GBFS v3 Vélo'v (cyclocity)</td><td>navigateur</td><td>transport/feeds/gbfs.ts</td></tr>
+<tr><td>GBFS v2.3 Dott Lyon</td><td>navigateur</td><td>transport/feeds/gbfs.ts</td></tr>
+<tr><td>Open-Meteo</td><td>navigateur</td><td>transport/feeds/weather.ts</td></tr>
+<tr><td>GTFS TCL/SYTRAL</td><td>build (Python)</td><td>public/data/gtfs-feed.json</td></tr>
+<tr><td>WFS SYTRAL Grand Lyon</td><td>build (Python)</td><td>dessertes + tracés de lignes</td></tr>
+</table>
+
+<h3>Géocodage : deux sources en parallèle, dégradation propre</h3>
+<div class="src">src/lib/transport/geocoding/index.ts:37-49</div>
+<pre><code>const [banOutcome, photonOutcome] = await Promise.allSettled([
+  searchBan(trimmedQuery, proximity, signal),
+  searchPhoton(trimmedQuery, proximity, signal),
+]);
+// L'erreur n'est propagee que si LES DEUX echouent.
+if (banOutcome.status === 'rejected' &amp;&amp; photonOutcome.status === 'rejected') throw ...;
+return mergePlaceResults(photon, ban);   // lieux nommes d'abord, puis adresses,
+</code></pre>
+<p>Fusion : quartiers/gares/villes en tête (« part dieu » est plus souvent tapé qu'une adresse), dédoublonnage nom + ~150 m, 8 résultats max. Filtrage géographique : BAN par département, Photon par bbox métropole.</p>
+
+<h3>Réseau de transport : chaque source retombe indépendamment</h3>
+<div class="src">src/lib/transport/feeds/index.ts:11-40</div>
+<pre><code>const gtfs = await fetchJson&lt;GtfsFeed&gt;('/data/gtfs-feed.json', fetcher);   // du build
+const sources: NetworkSources = { gtfs: ..., sharedMobility: 'local', weather: 'local' };
+
+try { sharedMobility = await fetchLiveSharedMobility(fetcher); sources.sharedMobility = 'gbfs-live'; }
+catch { sharedMobility = await fetchJson('/data/shared-mobility.json', fetcher); }   // repli local
+
+try { const meteo = await fetchJson(OPEN_METEO_URL, fetcher);
+      gtfs.weather = weatherFromOpenMeteo(meteo.current); sources.weather = 'open-meteo'; }
+catch { /* meteo locale du feed conservee */ }
+
+return { gtfs, sharedMobility, sources };   // `sources` est AFFICHE dans l'UI</code></pre>
+<p><span class="tag">timeout commun</span> 8 s, combiné au signal de l'appelant : <code>AbortSignal.any([signal, timeout])</code> (<span class="f">transport/http.ts:8-11</span>).</p>
+
+<div class="note">Vélo'v (GBFS v3, stations fixes, 2 documents à fusionner) et Dott (GBFS v2.3, véhicules libres) sont normalisés vers un même <code>SharedStation</code> : la carte et le moteur n'ont qu'un modèle à connaître. <b>Aucun plafond d'affichage</b> — bug B9 : l'UI annonçait « 300 trottinettes » parce que c'était la constante de troncature.</div>
+
+<!-- ============================================ -->
+<h2 id="types">15 · Contrat de types</h2>
+<p><span class="f">src/types.ts</span> (339 l.) est importé <b>par le client et par l'API</b> (<code>import type { MobilityProfile } from '../../../src/types.ts'</code>). Un changement casse la compilation des deux côtés — c'est voulu.</p>
+<pre><code>MobilityMode = 'walk' | 'bike' | 'scooter' | 'transit' | 'carpool'
+
+RouteOption { id, title, summary, modes[], legs: RouteLeg[], path: GeoPoint[],
+              distanceKm, durationMinutes, carbonGrams, carbonSavedGrams,
+              accessible, reliabilityScore, warnings[], instructions[], score }
+
+RouteLeg    { id, mode, title, from/to (labels), fromPoint/toPoint (GeoPoint),
+              path: GeoPoint[],       // VIDE tant que le routage n'a pas repondu
+              distanceKm, durationMinutes, carbonGrams, accessible, detail,
+              estimate: LegEstimate,  // travelFactor, overheadMinutes, carbonGramsPerKm
+              mapLabel?, mapColor? }
+
+PlannedTrip | RecurringTrip | TripRecord | SavedRouteRecord | MobilityProfile</code></pre>
+<p>Côté API, les mêmes formes existent en TypeBox (<code>models/</code>) : c'est la validation runtime + la génération OpenAPI. Le type client de la file (<span class="f">src/lib/api/operations.ts</span>) est une copie assumée du schéma serveur, rattrapée par les tests d'intégration.</p>
+
+<h3>Récurrence — idempotence par identifiant déterministe</h3>
+<div class="src">src/lib/trips/recurrence.ts:53-56, 88-90</div>
+<pre><code>const scheduledFor = atTime(day, leg.time);
+if (scheduledFor.getTime() &lt; now.getTime()) continue;   // B18 : ne jamais naitre dans le passe
+
+export function occurrenceId(recurringId, day, direction) {
+  return `rec:${recurringId}:${dayKey(day)}:${direction}`;   // deterministe
+}                                     // -> une occurrence faite/annulee n'est JAMAIS regeneree</code></pre>
+<p>Fenêtre glissante de 7 jours, rematérialisée au montage du hook. Occurrences locales poussées vers le serveur pour que les autres appareils retrouvent la même semaine.</p>
+
+<!-- ============================================ -->
+<h2 id="tests">16 · Tests</h2>
+<table>
+<tr><th>Suite</th><th>Runner</th><th>Couvre</th></tr>
+<tr><td>src/lib/planner/planner.test.ts</td><td>vitest</td><td>score, RG3/RG5, générateurs (381 l.)</td></tr>
+<tr><td>src/lib/planner/transit.test.ts</td><td>vitest</td><td>desserte réelle, correspondances</td></tr>
+<tr><td>src/lib/api/outbox.test.ts</td><td>vitest</td><td>file : offline, 401, 4xx, isolation par compte, sonde</td></tr>
+<tr><td>src/lib/transport/feeds.test.ts</td><td>vitest</td><td>normalisation GBFS v2/v3</td></tr>
+<tr><td>src/lib/trips/trips.test.ts</td><td>vitest</td><td>récurrence, pause, statuts</td></tr>
+<tr><td>server/src/__tests__/auth.test.ts</td><td>bun test</td><td>inscription, énumération, rate limit</td></tr>
+<tr><td>server/src/__tests__/sync.test.ts</td><td>bun test</td><td>idempotence, atomicité du lot</td></tr>
+<tr><td>server/src/__tests__/routing.test.ts</td><td>bun test</td><td>cache, 503, entrée expirée servie</td></tr>
+</table>
+<p>Les tests API tournent <b>en mémoire</b> : <code>createApp({ databasePath: ':memory:' })</code> + <code>app.handle(new Request(...))</code>, aucun port réservé. Vitest exclut <code>server/**</code> (bun:sqlite, Bun.password indisponibles sous Node) — <span class="f">vite.config.ts:46-49</span>.</p>
+<p><span class="f">docs/BUGS.md</span> : 18 bogues corrigés + 6 ouverts, chacun avec symptôme / cause racine / correctif + commit / <b>niveau de verrouillage</b> (automatisé, faible, ouvert). C'est la pièce de la compétence C3.3.</p>
+
+<!-- ============================================ -->
+<h2 id="jury">17 · Questions probables — réponses courtes</h2>
+
+<div class="q"><strong>Pourquoi SQLite ?</strong>
+<p>Schéma relationnel standard ; la bascule PostgreSQL ne toucherait que <code>repositories/</code>. <code>bun:sqlite</code> est natif : zéro dépendance à compiler. Argumentaire écrit dans <span class="f">server/src/db/index.ts:4-7</span>.</p></div>
+
+<div class="q"><strong>Pourquoi pas de JWT ?</strong>
+<p>Jeton opaque 256 bits, seule l'empreinte SHA-256 en base → révocable à la déconnexion et une fuite de base ne rejoue rien. Un JWT autoporteur ne se révoque pas.</p></div>
+
+<div class="q"><strong>Pourquoi aucun CORS ?</strong>
+<p>Même origine : Vite proxifie <code>/api</code> en dev, l'API est servie sous la même origine en prod. Cookie de 1<sup>re</sup> partie, aucun en-tête CORS à émettre.</p></div>
+
+<div class="q"><strong>Comment garantissez-vous qu'un rejeu ne duplique rien ?</strong>
+<p>Chaque opération porte un UUID client ; table <code>applied_operations (user_id, id)</code> en clé primaire ; le lot est appliqué dans une <code>db.transaction</code>. Vu deux fois ⇒ <code>ignored++</code>. Test : <span class="f">server/src/__tests__/sync.test.ts</span>.</p></div>
+
+<div class="q"><strong>Que se passe-t-il si OSRM ne répond pas ?</strong>
+<p>Le service sert l'entrée de cache expirée si elle existe (seul cas de donnée périmée assumé), sinon <code>null</code> ⇒ 503 explicite ⇒ <code>routingStatus = 'unavailable'</code> ⇒ la carte n'affiche <b>rien</b> pour ce segment et l'UI le dit. Jamais de ligne droite inventée (B14).</p></div>
+
+<div class="q"><strong>Le mode autonome n'est-il pas une faille ?</strong>
+<p>Non : PBKDF2-SHA-256 120 000 itérations démontre F1 mais n'est <b>pas présenté</b> comme une frontière de sécurité. Dès que l'API répond, c'est elle qui authentifie et le navigateur ne détient qu'un cookie httpOnly.</p></div>
+
+<div class="q"><strong>Limites connues ?</strong>
+<p>Pas de graphe horaire GTFS (fréquences moyennées) ; covoiturage = comparateur, pas de mise en relation ; rate-limit en mémoire (mono-instance) ; dernier écrivain gagnant en édition concurrente ; deux instances MapLibre montées (O1) ; tuiles OSM publiques (O4). Toutes écrites dans le code et dans <span class="f">docs/BUGS.md</span>.</p></div>
+
+<div class="q"><strong>Où commencer une revue en 15 minutes ?</strong>
+<p><span class="f">server/src/routes/auth.ts</span> (sécurité) → <span class="f">server/src/services/sync.ts</span> + <span class="f">src/lib/api/outbox.ts</span> (le couple offline/idempotence) → <span class="f">src/lib/planner/index.ts</span> (le métier).</p></div>
+
+</main>
+</div>
+</body>
+</html>

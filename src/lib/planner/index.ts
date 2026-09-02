@@ -42,5 +42,5 @@ export {
   type Nearby,
   type NearbyWithin,
 } from './nearby';
-export { applyRoutedLegs } from './legs';
+export { applyRoutedLegs, applyRoutedSelection } from './legs';
 export { midpointOfPath } from './shape';

@@ -240,3 +240,60 @@ de la sonde initiale : « occurrences du jour deja passees : (aucune) », et
 inchanges.
 
 **Niveau de verrouillage** : **automatise**.
+
+---
+
+## B19 — La pastille et la fiche annonçaient deux chiffres pour le meme trajet
+
+**Criticite** : majeur — deux mesures contradictoires du meme itineraire, a
+quelques centimetres l'une de l'autre sur le meme ecran.
+
+### Identifier la source
+
+Trouve en **relisant une capture d'ecran** produite pour la soutenance, pas en
+lisant du code. La pastille de l'option retenue annonçait « Trottinette 11 min
+· 2,3 km » et la fiche de detail, juste en dessous, « 21 min · 3,2 km ».
+
+C'est une methode a part entiere : regarder son propre produit avec les yeux de
+celui qui va le decouvrir. Le defaut etait la depuis l'introduction du routage
+par segment, et aucune relecture de code ne l'avait revele — parce qu'il ne se
+voit que lorsque les deux valeurs sont affichees cote a cote.
+
+**Cause racine** : seul l'itineraire selectionne est route segment par segment,
+choix delibere qui borne le nombre d'appels au calculateur. `selectedRoute`
+recevait donc les mesures reelles, mais la liste qui alimente les pastilles
+continuait de porter les estimations a vol d'oiseau. Les deux composants lisaient
+deux objets differents pour le meme trajet.
+
+Meme famille que B16 : deux vues d'une meme grandeur, alimentees par des sources
+qui ne se parlent pas.
+
+### Corriger
+
+La reconciliation est extraite dans une fonction pure, `applyRoutedSelection`,
+plutot que laissee dans le hook : c'est ce qui la rend testable, et le defaut
+etait precisement dans la couche non testee.
+
+Les options **non selectionnees** gardent leur estimation. Ce n'est pas un
+compromis : elles n'ont pas ete routees, l'estimation est donc la seule mesure
+dont on dispose, et l'annoncer est exact.
+
+**Ou le voir** : `src/lib/planner/legs.ts`,
+`src/components/app/hooks/useRouteOptions.ts`
+
+### Tester et valider le correctif
+
+Trois tests ecrits **avant** le correctif, la fonction ayant d'abord ete posee
+en passe-plat pour obtenir un echec d'assertion plutot qu'une erreur de
+compilation :
+
+1. la liste porte les mesures routees de l'option selectionnee ;
+2. les autres options restent **identiques par reference** — un correctif qui
+   recalculerait tout passerait le premier test et echouerait celui-ci ;
+3. sans itineraire route, la liste est rendue inchangee.
+
+**Validation** : premier test vu **rouge** (`expected 14 to be 28`), **vert**
+apres. Suite complete : 103 tests unitaires, 37 tests d'API. Capture mobile
+regeneree pour verifier que les deux valeurs concordent a l'ecran.
+
+**Niveau de verrouillage** : **automatise**.
