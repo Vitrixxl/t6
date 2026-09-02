@@ -1,9 +1,25 @@
 import type { CarbonSummary, TripRecord } from '../types';
 import { enqueueOperation } from './api/outbox';
+import { startOfWeek } from './week';
 
 const TRIP_HISTORY_PREFIX = 'ufm.tripHistory.';
 
-export function summarizeCarbon(records: TripRecord[], weeklyGoalGrams: number): CarbonSummary {
+/**
+ * Synthese de la semaine en cours.
+ *
+ * L'historique conserve les cinquante derniers trajets, toutes semaines
+ * confondues : les cumuler pour les comparer a un objectif hebdomadaire
+ * revenait a remplir une barre de progression qui ne redescendait jamais le
+ * lundi (B16). La fenetre est donc appliquee ici, a la source, plutot que
+ * laissee a la charge de chaque ecran.
+ */
+export function summarizeCarbon(
+  allRecords: TripRecord[],
+  weeklyGoalGrams: number,
+  now: Date = new Date(),
+): CarbonSummary {
+  const weekFloor = startOfWeek(now).getTime();
+  const records = allRecords.filter((record) => new Date(record.createdAt).getTime() >= weekFloor);
   const totalDistanceKm = round(records.reduce((sum, record) => sum + record.distanceKm, 0), 2);
   const totalCarbonGrams = Math.round(records.reduce((sum, record) => sum + record.carbonGrams, 0));
   const totalSavedGrams = Math.round(records.reduce((sum, record) => sum + record.carbonSavedGrams, 0));

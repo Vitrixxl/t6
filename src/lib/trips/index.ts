@@ -18,7 +18,7 @@ export { RECURRING_HORIZON_DAYS, occurrenceId, syncRecurringOccurrences } from '
 export {
   completedTrips,
   plannedTripToRecord,
-  startOfWeek,
   summarizeTripActivity,
   upcomingTrips,
 } from './summary';
+export { startOfWeek } from '../week';
