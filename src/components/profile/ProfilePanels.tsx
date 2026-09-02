@@ -181,6 +181,30 @@ export function ProfilePanel({
             className="accent-primary"
           />
         </label>
+        <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-route-preselection">
+          Option retenue par defaut
+          <select
+            id="profile-route-preselection"
+            value={profile.routePreselection ?? 'fastest'}
+            onChange={(event) =>
+              setProfile({ ...profile, routePreselection: event.target.value as MobilityProfile['routePreselection'] })
+            }
+            // Hauteur en pixels : la racine du document est a 14 px, une valeur
+            // en rem raterait la cible tactile de 44 px.
+            className="h-[44px] rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground"
+          >
+            <option value="fastest">Le plus rapide</option>
+            {MODE_OPTIONS.map((option) => (
+              <option key={option.mode} value={option.mode}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs font-normal text-muted-foreground">
+            Toutes les options restent proposees : ce reglage ne decide que de celle qui s&apos;ouvre en premier. Si le
+            mode choisi n&apos;existe pas sur un trajet, la plus rapide est retenue.
+          </span>
+        </label>
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-carpool-occupants">
           Personnes a bord en covoiturage
           <Input

@@ -33,7 +33,7 @@ export function planRoutes(request: RouteRequest): RouteOption[] {
 export { haversineDistanceKm } from './geo';
 export { LANDMARKS, DEFAULT_CARPOOL_OCCUPANTS, MIN_CARPOOL_OCCUPANTS, MAX_CARPOOL_OCCUPANTS } from './constants';
 export { SCORING_WEIGHTS } from './scoring';
-export { totalWalkMinutes, visibleLegs } from './rules';
+export { preselectRoute, totalWalkMinutes, visibleLegs } from './rules';
 export {
   findNearby,
   findWithinRadius,

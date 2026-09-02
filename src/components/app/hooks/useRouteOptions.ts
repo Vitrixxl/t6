@@ -8,7 +8,7 @@
 // en train de se remplir, ou si elle ne pourra pas l'etre.
 import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
-import { applyRoutedLegs, planRoutes } from '../../../lib/planner';
+import { applyRoutedLegs, planRoutes, preselectRoute } from '../../../lib/planner';
 import { enhanceLegsWithLiveRouting, hasCompleteGeometry } from '../../../lib/transport';
 
 /**
@@ -59,7 +59,12 @@ export function useRouteOptions(input: {
   // points — ne renvoie deja rien : filtrer en plus revenait a masquer des
   // trajets valables sans jamais dire pourquoi.
   const routes = localRoutes;
-  const candidate = routes.find((routeOption) => routeOption.id === selectedRouteId) ?? routes[0] ?? null;
+  // La selection manuelle vaut pour la recherche en cours ; une nouvelle
+  // recherche repart de la preselection du profil, sans quoi le choix fait sur
+  // un trajet precedent se propagerait a tous les suivants.
+  const candidate =
+    routes.find((routeOption) => routeOption.id === selectedRouteId) ??
+    preselectRoute(routes, profile.routePreselection);
 
   // Les mesures de l'option affichee suivent celles de ses segments une fois
   // routes : l'entete et le detail ne peuvent pas annoncer deux chiffres
@@ -68,6 +73,13 @@ export function useRouteOptions(input: {
     () => (candidate && routingStatus === 'ready' ? applyRoutedLegs(candidate, selectedLegs) : candidate),
     [candidate, routingStatus, selectedLegs],
   );
+
+  // Un changement de trajet efface la selection manuelle. Declare avant
+  // l'effet qui la repositionne, pour que la preselection s'applique au meme
+  // rendu plutot qu'au suivant.
+  useEffect(() => {
+    setSelectedRouteId('');
+  }, [destination, origin]);
 
   useEffect(() => {
     if (!candidate || candidate.id === selectedRouteId) {

@@ -1,6 +1,6 @@
 // Profil de mobilite : les preferences qui pilotent le calcul d'itineraire.
 import { t } from 'elysia';
-import { requiredModes } from './primitives.ts';
+import { mode, requiredModes } from './primitives.ts';
 import type { MobilityProfile } from '../../../src/types.ts';
 
 export const mobilityProfile = t.Object({
@@ -17,6 +17,7 @@ export const mobilityProfile = t.Object({
   // Un vehicule particulier ne transporte pas plus de cinq personnes ; en
   // dessous d'une, il n'y a personne a bord.
   carpoolOccupants: t.Optional(t.Integer({ minimum: 1, maximum: 5 })),
+  routePreselection: t.Optional(t.Union([t.Literal('fastest'), mode])),
 });
 
 /** Profil attribue a la creation d'un compte, avant toute personnalisation. */
@@ -30,4 +31,5 @@ export const DEFAULT_PROFILE: MobilityProfile = {
   weeklyTripsGoal: 5,
   weeklySavedGoalGrams: 2000,
   carpoolOccupants: 2,
+  routePreselection: 'fastest',
 };

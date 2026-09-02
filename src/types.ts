@@ -20,12 +20,25 @@ export interface MobilityProfile {
   weeklyTripsGoal?: number;
   weeklySavedGoalGrams?: number;
   /**
+   * Option preselectionnee au calcul d'un itineraire : la plus rapide, ou
+   * celle qui emprunte un mode donne. Absent sur les anciens profils, la plus
+   * rapide s'applique alors.
+   */
+  routePreselection?: RoutePreselection;
+  /**
    * Nombre de personnes a bord pour une option covoiturage. Un vehicule emet
    * autant quel que soit son remplissage : c'est la part imputee a chaque
    * passager qui change. Absent sur les anciens profils.
    */
   carpoolOccupants?: number;
 }
+
+/**
+ * `'fastest'` ou un mode. Le mode n'est pas un filtre : si aucune option ne
+ * l'emprunte pour ce trajet, la plus rapide reste selectionnee, et toutes les
+ * options restent proposees.
+ */
+export type RoutePreselection = 'fastest' | MobilityMode;
 
 export interface StoredUser {
   id: string;

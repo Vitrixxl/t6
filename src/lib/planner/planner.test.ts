@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from '../auth';
-import { haversineDistanceKm, LANDMARKS, planRoutes, SCORING_WEIGHTS, totalWalkMinutes } from './index';
+import { haversineDistanceKm, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS, totalWalkMinutes } from './index';
 import type { TransportNetwork } from '../../types';
 
 const network: TransportNetwork = {
@@ -344,5 +344,38 @@ describe('haversineDistanceKm', () => {
       haversineDistanceKm(LANDMARKS[1], LANDMARKS[0]),
       10,
     );
+  });
+});
+
+describe('preselectRoute', () => {
+  const routes = planRoutes({
+    origin: LANDMARKS[0],
+    destination: LANDMARKS[1],
+    profile: DEFAULT_PROFILE,
+    network,
+  });
+
+  it('retient la plus rapide par defaut, meme si elle n est pas la mieux classee', () => {
+    const preselected = preselectRoute(routes);
+    const shortest = Math.min(...routes.map((route) => route.durationMinutes));
+    expect(preselected?.durationMinutes).toBe(shortest);
+  });
+
+  it('retient la plus rapide parmi celles qui empruntent le mode choisi', () => {
+    const preselected = preselectRoute(routes, 'transit');
+    expect(preselected?.modes).toContain('transit');
+
+    const transitRoutes = routes.filter((route) => route.modes.includes('transit'));
+    expect(preselected?.durationMinutes).toBe(Math.min(...transitRoutes.map((route) => route.durationMinutes)));
+  });
+
+  it('retombe sur la plus rapide quand le mode choisi n existe pas sur ce trajet', () => {
+    // Aucune station de trottinette a portee dans ce reseau de test.
+    const preselected = preselectRoute(routes, 'scooter');
+    expect(preselected?.durationMinutes).toBe(Math.min(...routes.map((route) => route.durationMinutes)));
+  });
+
+  it('ne renvoie rien quand aucune option n existe', () => {
+    expect(preselectRoute([])).toBeNull();
   });
 });
