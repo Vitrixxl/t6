@@ -363,6 +363,33 @@ laisses a decouvrir.
   inscrite dans AGENTS.md. Un trace faux se lit comme un itineraire reel et
   envoie l'utilisateur ailleurs ; un trace absent se voit.
 
+## B15 — Une validation plus stricte que la source coupait le routage
+
+- **Criticite** : bloqueur (aucun trace affiche sur une partie des itineraires)
+- **Symptome** : « Service de routage indisponible » sur des trajets ordinaires,
+  alors que le calculateur repondait normalement sur d'autres. L'API renvoyait
+  `Expected string to match '^-?\d{1,3}(\.\d{1,7})?,...'`.
+- **Cause racine** : le schema de la route `/api/route` bornait les coordonnees
+  a sept decimales. Le flux GBFS Velo'v publie **52 de ses 465 stations** avec
+  treize decimales (`4.8687553636982`). Tout itineraire dont un segment partait
+  ou arrivait a l'une d'elles etait rejete en 422, que le client traduisait par
+  une indisponibilite du service. La contrainte n'etait pas fausse par exces de
+  prudence : elle decretait une precision que la source ne respecte pas.
+- **Correctif** : la validation borne desormais ce qui est reellement dangereux
+  — la longueur totale de la chaine — et non le nombre de decimales. Le client
+  arrondit par ailleurs a six decimales avant l'appel, soit une dizaine de
+  centimetres : au-dela d'une precision inutile, cela rapproche la requete de la
+  cle de cache du serveur, donc augmente le taux de reutilisation.
+- **Ou le voir** : `server/src/models/routing.ts`,
+  `src/lib/transport/routing/osrm.ts`
+- **Verrouillage** : **automatise** — `server/src/__tests__/routing.test.ts`,
+  « accepte la precision reelle des sources tierces », avec les coordonnees
+  reelles d'une station Velo'v a treize decimales. Verifie rouge puis vert :
+  reintroduire la borne fait echouer ce seul test.
+- **Lecon** : une validation d'entree se derive des donnees observees, pas d'une
+  idee de ce qu'elles devraient etre. Le meme defaut guette les autres schemas
+  ecrits sans confronter le flux reel (cf. O2).
+
 ### O5 — Cibles tactiles calculees en rem sous une racine a 14px
 
 - **Criticite** : mineur (accessibilite tactile), **corrige au passage**

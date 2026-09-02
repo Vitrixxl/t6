@@ -122,6 +122,21 @@ describe('GET /api/route', () => {
     api.close();
   });
 
+  // Verrouille B15 : le flux GBFS publie certaines stations Velo'v avec treize
+  // decimales. Une borne de precision les rejetait, et tout itineraire passant
+  // par l'une d'elles remontait au client comme un service indisponible.
+  it('accepte la precision reelle des sources tierces', async () => {
+    stubUpstream(okResponse);
+    const api = createTestApi();
+
+    const response = await api.call(
+      '/api/route?mode=bike&from=4.8687553636982,45.7524835251712&to=4.85748756866509,45.7548502313005',
+    );
+
+    expect(response.status).toBe(200);
+    api.close();
+  });
+
   it('refuse un mode inconnu', async () => {
     stubUpstream(okResponse);
     const api = createTestApi();

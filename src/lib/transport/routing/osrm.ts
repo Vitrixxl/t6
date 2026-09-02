@@ -24,9 +24,17 @@ interface RouteResponse {
   instructions: RouteInstruction[];
 }
 
-/** Format attendu par l'API : `lon,lat`, une paire par parametre. */
+/**
+ * Format attendu par l'API : `lon,lat`, une paire par parametre.
+ *
+ * Six decimales valent une dizaine de centimetres, bien au-dela de la precision
+ * d'un GPS de telephone ou d'un point d'ancrage de station. Les tronquer evite
+ * d'envoyer les treize decimales de certaines sources, et rapproche la requete
+ * de la cle de cache du serveur : deux appels identiques a un metre pres ne
+ * repartent pas chez le calculateur.
+ */
 function coordinates(point: Pick<GeoPoint, 'lat' | 'lon'>): string {
-  return `${point.lon},${point.lat}`;
+  return `${point.lon.toFixed(6)},${point.lat.toFixed(6)}`;
 }
 
 export async function fetchRouteGeometry(
