@@ -12,6 +12,13 @@ import { syncLegLabels } from './legLabels';
 import { syncEndpointMarkers } from './endpointMarkers';
 import type { SharedStation } from '../../types';
 
+/**
+ * Zoom de recentrage sur un point. Assez proche pour lire les noms de rue,
+ * assez large pour voir les stations et arrets alentour : demander sa position
+ * sert d'abord a savoir ce qu'on a autour de soi.
+ */
+const FOCUS_ZOOM = 16;
+
 /** Entites GeoJSON communes aux deux couches de mobilite partagee. */
 function toStationFeatures(stations: SharedStation[]): FeatureCollection {
   return {
@@ -41,6 +48,7 @@ export function UrbanMap({
   network,
   layers,
   navigationPoint,
+  focus,
   onPickPoint,
 }: {
   origin: GeoPoint | null;
@@ -53,6 +61,12 @@ export function UrbanMap({
   layers: LayerState;
   /** Position GPS de l'utilisateur ("Ma position"), affichee comme repere. */
   navigationPoint?: GeoPoint | null;
+  /**
+   * Point sur lequel recentrer la carte. `at` porte l'instant de la demande :
+   * sans lui, redemander sa position deux fois de suite ne produirait aucun
+   * mouvement, la valeur du point etant inchangee.
+   */
+  focus?: { point: GeoPoint; at: number } | null;
   /**
    * Appele quand l'utilisateur designe un point par appui long et choisit
    * d'en faire son depart ou son arrivee. Absent, l'appui long est inactif.
@@ -452,6 +466,17 @@ export function UrbanMap({
     }
     legLabelsRef.current = syncLegLabels(map, legLabelsRef.current, selectedLegs ?? []);
   }, [loaded, selectedLegs]);
+
+  // Recentrage sur demande explicite. Declare apres le cadrage d'itineraire :
+  // a rendu egal, l'effet le plus bas s'execute en dernier et l'emporte, ce qui
+  // est le bon arbitrage — l'utilisateur vient de demander a voir ou il est.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || !focus) {
+      return;
+    }
+    map.flyTo({ center: [focus.point.lon, focus.point.lat], zoom: FOCUS_ZOOM, duration: 700 });
+  }, [focus, loaded]);
 
   // Les reperes apparaissent des la selection d'un depart ou d'une arrivee,
   // sans attendre qu'un itineraire soit calcule.

@@ -80,6 +80,18 @@ export function MobilityMapApp({
   const upcoming = useMemo(() => upcomingTrips(plannedTrips), [plannedTrips]);
   const navigationPoint = currentPosition ? { ...currentPosition, label: 'Ma position' } : null;
 
+  // Demander sa position sert autant a la definir comme depart qu'a la voir :
+  // sans recentrage, le repere pouvait apparaitre hors du cadre visible.
+  const [mapFocus, setMapFocus] = useState<{ point: GeoPoint; at: number } | null>(null);
+  const locateAndFocus = () =>
+    void requestCurrentPosition().then((point) => {
+      if (!point) {
+        return;
+      }
+      setOrigin(point);
+      setMapFocus({ point, at: Date.now() });
+    });
+
   // Perimetre produit: la recherche est bornee a la metropole, mais la position
   // GPS peut en sortir. On previent honnetement que l'offre y est reduite.
   const outsideMetro = [origin, destination].some(
@@ -219,7 +231,8 @@ export function MobilityMapApp({
               network={network}
               layers={layers}
               navigationPoint={navigationPoint}
-          onPickPoint={pickPointFromMap}
+              focus={mapFocus}
+              onPickPoint={pickPointFromMap}
             />
           </div>
 
@@ -288,7 +301,8 @@ export function MobilityMapApp({
             network={network}
             layers={layers}
             navigationPoint={navigationPoint}
-          onPickPoint={pickPointFromMap}
+            focus={mapFocus}
+            onPickPoint={pickPointFromMap}
           />
         </div>
 
@@ -319,7 +333,7 @@ export function MobilityMapApp({
           onLayersChange={setLayers}
           onOpenProfile={() => setProfileOpen(true)}
           onOpenSavedTrips={() => openHub('saved')}
-          onLocate={() => void requestCurrentPosition().then((point) => point && setOrigin(point))}
+          onLocate={locateAndFocus}
         />
         ) : null}
 
