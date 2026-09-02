@@ -2,6 +2,7 @@
 // proche.
 import type { GeoPoint, GtfsStop, SharedStation } from '../../types';
 import { MAX_STATION_ACCESS_KM } from './constants';
+import { distanceToCenterKm, METRO_RADIUS_KM } from '../transport/feeds/area';
 
 export function haversineDistanceKm(a: Pick<GeoPoint, 'lat' | 'lon'>, b: Pick<GeoPoint, 'lat' | 'lon'>): number {
   const radiusKm = 6371;
@@ -46,4 +47,18 @@ export function stationToPoint(station: SharedStation): GeoPoint {
     lat: station.lat,
     lon: station.lon,
   };
+}
+
+/**
+ * Un vehicule en flotte libre se laisse ou l'on veut — mais seulement dans la
+ * zone de service de l'operateur, sous peine d'immobilisation et de penalite.
+ *
+ * Cette borne n'a pas d'equivalent pour le Velo'v, qui se rend a une station :
+ * la contrainte de fin de trajet y est deja portee par RG3 aux deux extremites.
+ * Les deux modes partages sont bornes, mais pas par la meme regle — copier
+ * celle du velo sur la trottinette aurait exige une trottinette a l'arrivee,
+ * ce qui n'a aucun sens pour une flotte libre (B17).
+ */
+export function withinServiceArea(point: Pick<GeoPoint, 'lat' | 'lon'>): boolean {
+  return distanceToCenterKm(point.lat, point.lon) <= METRO_RADIUS_KM;
 }

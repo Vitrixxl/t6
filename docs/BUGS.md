@@ -92,3 +92,80 @@ trois premiers ne verrouillent que le calcul.
 verte : 94 tests unitaires, 37 tests d'API.
 
 **Niveau de verrouillage** : **automatise**.
+
+---
+
+## B17 — Une trottinette proposee sur 416 kilometres
+
+**Criticite** : majeur — la contrainte C6 exige de « garantir la precision et la
+fiabilite des donnees de geolocalisation et d'itineraires ». Un itineraire
+impossible presente comme une option y contrevient directement.
+
+### Identifier la source
+
+Aucun signalement ne pointait ce defaut : il fallait aller le chercher. J'ai
+soumis le moteur a des **entrees aux limites** et verifie des **invariants**
+plutot que des valeurs attendues — technique proche du property-based testing.
+L'interet est de ne pas avoir a deviner ou est le bogue.
+
+Entrees : origine egale a la destination, destination hors perimetre (Paris),
+antipode, profil PMR, covoiturage a un occupant. Invariants controles sur
+**toutes** les options rendues : distance et duree finies et positives, CO2
+positif, score entre 0 et 100, aucun segment de duree nulle.
+
+Aucun invariant n'a saute. C'est une **comparaison** qui a revele le defaut :
+pour Paris, le moteur rendait une option trottinette mais aucune option velo.
+Deux modes presque identiques, dont un seul survit a une destination absurde —
+cette asymetrie n'a aucune justification metier, et c'est elle qui a designe
+l'oubli.
+
+Mesures depuis Bellecour, une fois le soupçon confirme : Vienne 28 km / 2 h,
+Grenoble 100 km / 6 h, **Paris 416 km / 23 h / 6233 g**. Au meme moment,
+l'application affichait sa propre banniere « hors metropole de Lyon :
+velos/trottinettes indisponibles » au-dessus de la liste qui proposait
+exactement cela.
+
+**Cause racine** : RG3 — un vehicule partage doit etre a distance de marche —
+etait verifiee **aux deux extremites** dans `createBikeOption`, mais
+**seulement a l'origine** dans `createScooterOption`. Rien d'autre ne bornait
+la course.
+
+Le velo n'etait donc pas protege par une intention, mais **par effet de bord** :
+sa seconde verification existe parce qu'un Velo'v se rend a une borne, pas
+parce que quelqu'un avait pense au probleme de la distance.
+
+### Corriger
+
+La correction evidente — copier la verification du velo — aurait produit un
+second bogue. Le Velo'v est un service **a bornes** : exiger une station a
+l'arrivee est legitime. La trottinette est en **flotte libre** : exiger une
+trottinette a l'arrivee n'a aucun sens, il n'y en a peut-etre aucune la-bas
+justement parce que personne n'y est encore alle.
+
+La regle manquante n'est donc pas la meme. Pour une flotte libre, la contrainte
+de fin de trajet est la **zone de service de l'operateur** : au-dela, le
+vehicule est immobilise et l'utilisateur penalise. `withinServiceArea` s'appuie
+sur le perimetre metropolitain deja utilise par la banniere de couverture, ce
+qui les rend d'accord par construction plutot que par coincidence.
+
+**Ou le voir** : `src/lib/planner/geo.ts` (`withinServiceArea`),
+`src/lib/planner/options/scooter.ts`
+
+### Tester et valider le correctif
+
+Trois tests ecrits **avant** le correctif :
+
+1. destination hors zone : aucune option trottinette ;
+2. destination dans la zone : l'option est toujours la — un correctif qui
+   supprimerait le mode passerait le premier test et echouerait celui-ci ;
+3. **les deux modes partages sont bornes**, sans qu'aucun ne survive a l'autre.
+   C'est le test de la cause racine : il verrouille l'asymetrie elle-meme, la ou
+   les deux premiers ne couvrent que la trottinette.
+
+**Validation** : tests 1 et 3 vus **rouges** avant le correctif
+(`expected [ 'scooter', 'carpool', 'walk' ] to not include 'scooter'`),
+**verts** apres. Puis rejeu de la sonde initiale : Vienne, Grenoble et Paris ne
+rendent plus que marche et covoiturage — exactement ce que la banniere annonce —
+tandis que Villeurbanne, a 8 km, conserve sa trottinette.
+
+**Niveau de verrouillage** : **automatise**.

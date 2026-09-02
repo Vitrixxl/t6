@@ -379,3 +379,32 @@ describe('preselectRoute', () => {
     expect(preselectRoute([])).toBeNull();
   });
 });
+
+// Verrouille B17. Un vehicule partage ne peut pas mener n'importe ou : la
+// trottinette etait proposee sur des centaines de kilometres parce que seule
+// la disponibilite au depart etait verifiee.
+describe('portee des modes partages (RG3)', () => {
+  const bellecour = LANDMARKS[0];
+  const horsZone = { label: 'Paris', lat: 48.8566, lon: 2.3522 };
+
+  const optionsPour = (destination: typeof bellecour) =>
+    planRoutes({ origin: bellecour, destination, profile: DEFAULT_PROFILE, network }).map((route) => route.id);
+
+  it('ne propose aucune trottinette vers une destination hors zone de service', () => {
+    expect(optionsPour(horsZone)).not.toContain('scooter');
+  });
+
+  it('conserve la trottinette a l interieur de la zone', () => {
+    expect(optionsPour(LANDMARKS[1])).toContain('scooter');
+  });
+
+  // Le test qui porte sur la cause racine et non sur le symptome : les deux
+  // modes partages sont bornes, meme si la borne n'est pas la meme (le Velo'v
+  // se rend a une station, la trottinette se laisse dans la zone de service).
+  it('borne les deux modes partages, sans laisser l un survivre a l autre', () => {
+    const dehors = optionsPour(horsZone);
+    expect(dehors).not.toContain('bike');
+    expect(dehors).not.toContain('scooter');
+    expect(dehors).not.toContain('bike-transit');
+  });
+});
