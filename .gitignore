@@ -6,6 +6,9 @@ tmp/
 npm-debug.log*
 tsconfig.tsbuildinfo
 # captures intermediaires de sessions de travail (les finales sont dans output/screens/)
+# Le dossier de sortie n'est jamais versionne : captures, metriques et rendus
+# intermediaires sont regeneres par script (AGENTS.md).
+output/
 output/*.png
 # secrets locaux (jeton GTFS) — .env.example est versionne, .env non
 .env
