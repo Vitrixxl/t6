@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from '../auth';
-import { haversineDistanceKm, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS, totalWalkMinutes } from './index';
+import { applyRoutedLegs, applyRoutedSelection, haversineDistanceKm, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS, totalWalkMinutes } from './index';
 import type { TransportNetwork } from '../../types';
 
 const network: TransportNetwork = {
@@ -406,5 +406,44 @@ describe('portee des modes partages (RG3)', () => {
     expect(dehors).not.toContain('bike');
     expect(dehors).not.toContain('scooter');
     expect(dehors).not.toContain('bike-transit');
+  });
+});
+
+// Verrouille B19. Seul l'itineraire selectionne est route segment par segment ;
+// sa liste d'options continuait d'afficher l'estimation a vol d'oiseau, si bien
+// que la pastille et la fiche de detail annonçaient deux chiffres pour le meme
+// trajet — 11 min sur l'une, 21 min sur l'autre.
+describe('applyRoutedSelection', () => {
+  const routes = planRoutes({
+    origin: LANDMARKS[0],
+    destination: LANDMARKS[1],
+    profile: DEFAULT_PROFILE,
+    network,
+  });
+
+  it('affiche dans la liste les mesures routees de l option selectionnee', () => {
+    const option = routes[0];
+    const routedLegs = option.legs.map((leg) => ({ ...leg, distanceKm: leg.distanceKm * 2, durationMinutes: leg.durationMinutes * 2 }));
+    const routed = applyRoutedLegs(option, routedLegs);
+
+    const liste = applyRoutedSelection(routes, routed);
+
+    expect(liste.find((item) => item.id === option.id)?.durationMinutes).toBe(routed.durationMinutes);
+    expect(liste.find((item) => item.id === option.id)?.distanceKm).toBe(routed.distanceKm);
+  });
+
+  it('laisse les autres options a leur estimation, qui est exacte pour elles', () => {
+    const option = routes[0];
+    const routed = applyRoutedLegs(option, option.legs.map((leg) => ({ ...leg, distanceKm: leg.distanceKm * 2 })));
+
+    const liste = applyRoutedSelection(routes, routed);
+
+    for (const autre of routes.filter((item) => item.id !== option.id)) {
+      expect(liste.find((item) => item.id === autre.id)).toBe(autre);
+    }
+  });
+
+  it('rend la liste inchangee tant qu aucun itineraire n est route', () => {
+    expect(applyRoutedSelection(routes, null)).toBe(routes);
   });
 });

@@ -8,7 +8,7 @@
 // en train de se remplir, ou si elle ne pourra pas l'etre.
 import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
-import { applyRoutedLegs, planRoutes, preselectRoute } from '../../../lib/planner';
+import { applyRoutedLegs, applyRoutedSelection, planRoutes, preselectRoute } from '../../../lib/planner';
 import { enhanceLegsWithLiveRouting, hasCompleteGeometry } from '../../../lib/transport';
 
 /**
@@ -58,13 +58,13 @@ export function useRouteOptions(input: {
   // rien produire — pas de station a portee, aucune ligne reliant les deux
   // points — ne renvoie deja rien : filtrer en plus revenait a masquer des
   // trajets valables sans jamais dire pourquoi.
-  const routes = localRoutes;
+  //
   // La selection manuelle vaut pour la recherche en cours ; une nouvelle
   // recherche repart de la preselection du profil, sans quoi le choix fait sur
   // un trajet precedent se propagerait a tous les suivants.
   const candidate =
-    routes.find((routeOption) => routeOption.id === selectedRouteId) ??
-    preselectRoute(routes, profile.routePreselection);
+    localRoutes.find((routeOption) => routeOption.id === selectedRouteId) ??
+    preselectRoute(localRoutes, profile.routePreselection);
 
   // Les mesures de l'option affichee suivent celles de ses segments une fois
   // routes : l'entete et le detail ne peuvent pas annoncer deux chiffres
@@ -73,6 +73,11 @@ export function useRouteOptions(input: {
     () => (candidate && routingStatus === 'ready' ? applyRoutedLegs(candidate, selectedLegs) : candidate),
     [candidate, routingStatus, selectedLegs],
   );
+
+  // La liste reprend l'itineraire route : sans cela, la pastille affichait
+  // l'estimation a vol d'oiseau pendant que la fiche affichait la mesure reelle
+  // du meme trajet (B19).
+  const routes = useMemo(() => applyRoutedSelection(localRoutes, selectedRoute), [localRoutes, selectedRoute]);
 
   // Un changement de trajet efface la selection manuelle. Declare avant
   // l'effet qui la repositionne, pour que la preselection s'applique au meme
