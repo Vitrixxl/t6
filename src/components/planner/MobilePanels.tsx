@@ -1,7 +1,7 @@
 // Module planification - restitution mobile : feuille d'options, composeur de
 // modes et actions de planification.
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
-import { CalendarClock, CalendarPlus, Check, Route, UserRound } from 'lucide-react';
+import { CalendarClock, CalendarPlus, Check, Route, UserRound, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { GeoPoint, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
@@ -21,7 +21,8 @@ export function MobileTripPanel({
   onSaveRoute,
   onPlanRoute,
   onOpenHub,
-  onOpenProfile }: {
+  onOpenProfile,
+  onClose }: {
   destination: GeoPoint | null;
   routes: RouteOption[];
   selectedRoute: RouteOption | null;
@@ -34,6 +35,7 @@ export function MobileTripPanel({
   onPlanRoute: (routeOption: RouteOption) => void;
   onOpenHub: () => void;
   onOpenProfile: () => void;
+  onClose: () => void;
 }) {
   const [sheetLevel, setSheetLevel] = useState<MobileSheetLevel>('mid');
   const dragStartY = useRef<number | null>(null);
@@ -163,6 +165,17 @@ export function MobileTripPanel({
               className="size-[44px] rounded-xl bg-white p-0"
             >
               <UserRound className="size-5" aria-hidden="true" />
+            </Button>
+            {/* Sortir de l'itineraire sans passer par l'effacement des champs :
+                fermer est le geste attendu quand on a fini de regarder. */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              aria-label="Fermer l'itineraire"
+              className="size-[44px] rounded-xl bg-white p-0"
+            >
+              <X className="size-5" aria-hidden="true" />
             </Button>
           </div>
         </div>

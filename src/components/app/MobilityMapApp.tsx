@@ -150,6 +150,16 @@ export function MobilityMapApp({
     }
   };
 
+  // Fermer l'itineraire remet l'ecran a son etat de depart : la feuille
+  // d'options cede la place a la barre d'actions, et la barre de recherche
+  // repasse a son unique champ. Les requetes en vol s'annulent d'elles-memes,
+  // leurs effets dependant du couple depart / arrivee.
+  const closeItinerary = () => {
+    setChosenOrigin(null);
+    setDestination(null);
+    setSelectedRouteId('');
+  };
+
   const loadSavedRoute = (entry: SavedRouteRecord) => {
     setOrigin(entry.origin);
     setDestination(entry.destination);
@@ -366,6 +376,7 @@ export function MobilityMapApp({
           onPlanRoute={planRoute}
           onOpenHub={() => openHub('upcoming')}
           onOpenProfile={() => setProfileOpen(true)}
+          onClose={closeItinerary}
         />
         ) : null}
       </div>
