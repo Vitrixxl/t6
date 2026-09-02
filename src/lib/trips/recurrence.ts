@@ -41,6 +41,19 @@ export function syncRecurringOccurrences(userId: string, now: Date = new Date())
         if (existingIds.has(id)) {
           continue;
         }
+
+        // Une occurrence n'est materialisee que si son heure est encore devant.
+        // Consultee le soir, une routine de semaine creait sinon les passages
+        // de 08:30 et 18:00 du jour meme, que la tolerance de 24 h de
+        // `upcomingTrips` comptait ensuite comme « a venir » (B18).
+        //
+        // La tolerance n'est pas touchee : elle sert a marquer « fait » en fin
+        // de journee un trajet du matin qui, lui, a bien existe. Ce qui n'a
+        // jamais existe n'a pas a naitre dans le passe.
+        const scheduledFor = atTime(day, leg.time);
+        if (scheduledFor.getTime() < now.getTime()) {
+          continue;
+        }
         const isReturn = leg.direction === 'retour';
         generated.push({
           id,
@@ -53,7 +66,7 @@ export function syncRecurringOccurrences(userId: string, now: Date = new Date())
           durationMinutes: template.durationMinutes,
           carbonGrams: template.carbonGrams,
           carbonSavedGrams: template.carbonSavedGrams,
-          scheduledFor: atTime(day, leg.time).toISOString(),
+          scheduledFor: scheduledFor.toISOString(),
           status: 'planned',
           recurringTripId: template.id,
           createdAt: now.toISOString(),

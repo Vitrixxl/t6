@@ -169,3 +169,74 @@ rendent plus que marche et covoiturage — exactement ce que la banniere annonce
 tandis que Villeurbanne, a 8 km, conserve sa trottinette.
 
 **Niveau de verrouillage** : **automatise**.
+
+---
+
+## B18 — Des trajets deja passes comptes comme a venir
+
+**Criticite** : mineur — aucun calcul faux ni action erronee, mais un compteur
+qui ment sur l'ecran principal.
+
+### Identifier la source
+
+Les dates sont un terrain a fort rendement : elles concentrent les cas limites
+que personne ne joue a la main. J'ai donc sonde le moteur de recurrence **sans
+navigateur**, en injectant une horloge — `syncRecurringOccurrences` et
+`summarizeTripActivity` acceptent toutes deux un `now`, ce qui rend chaque
+scenario reproductible a la seconde pres.
+
+Quatre situations passees au crible, en une seule sonde :
+
+| Situation | Resultat |
+| --- | --- |
+| Rejeu de la generation | idempotent, aucun doublon |
+| Fenetre a cheval sur le passage a l'heure d'hiver | 08:00 local des deux cotes, correct |
+| Trajet fait le dimanche, consulte le lundi | bien rattache a la semaine precedente |
+| **Generation a 22 h un mercredi** | **occurrences de 08:00 et 18:00 du jour creees** |
+
+La derniere ligne est le defaut. `upcomingTrips` les renvoyait ensuite comme
+« a venir » : a 22 h, la pastille annonçait **2 trajets a venir**, tous deux
+passes depuis longtemps.
+
+**Cause racine** : deux decisions raisonnables qui se composent mal.
+`syncRecurringOccurrences` parcourt les jours a partir d'aujourd'hui sans jamais
+comparer l'heure de l'occurrence a `now`. Et la tolerance de 24 h de
+`upcomingTrips` — voulue, pour marquer « fait » en fin de journee un trajet du
+matin — **masque** l'erreur au lieu de l'arreter.
+
+Aucune des deux n'est fautive isolement. C'est leur composition qui l'est, ce
+qui explique qu'aucune relecture d'un seul fichier ne l'aurait revelee.
+
+### Corriger
+
+Le correctif porte sur la **generation**, pas sur la tolerance. Une occurrence
+n'est materialisee que si son heure est encore devant : ce qui n'a jamais existe
+n'a pas a naitre dans le passe.
+
+Corriger du cote de `upcomingTrips` aurait ete le reflexe le plus court — c'est
+la que le symptome se voit — et aurait casse un comportement voulu : on ne
+pourrait plus marquer fait, le soir, le trajet du matin. Le symptome et la cause
+n'etaient pas dans le meme fichier.
+
+**Ou le voir** : `src/lib/trips/recurrence.ts`
+
+### Tester et valider le correctif
+
+Trois tests ecrits **avant** le correctif :
+
+1. generation a 22 h : aucune occurrence du jour, et rien de passe dans la liste
+   des trajets a venir ;
+2. generation a 07 h : les deux occurrences du jour sont bien creees — un
+   correctif qui supprimerait purement les occurrences du jour passerait le
+   premier test et echouerait celui-ci ;
+3. **non-regression de la tolerance** : une occurrence **deja existante** et
+   passee reste listee et marquable le soir. C'est le test qui empeche de
+   « corriger » en cassant la grace de 24 h.
+
+**Validation** : premier test vu **rouge** avant le correctif
+(`expected [ … ] to have a length of +0 but got 2`), **vert** apres. Puis rejeu
+de la sonde initiale : « occurrences du jour deja passees : (aucune) », et
+« comptees comme a venir : 0 », l'idempotence et le changement d'heure restant
+inchanges.
+
+**Niveau de verrouillage** : **automatise**.
