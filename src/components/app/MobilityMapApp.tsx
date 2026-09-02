@@ -1,6 +1,6 @@
 // Orchestrateur principal : recherche d'itineraires, comparaison des options et
 // planification des trajets (dates, recurrents, objectifs). Auth geree par App.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, MobilityProfile, RouteOption, SavedRouteRecord, SessionUser, TransportNetwork, TripRecord } from '../../types';
 import { haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
@@ -39,7 +39,10 @@ export function MobilityMapApp({
   onTripHistoryClear: () => void;
   onAccountDelete: () => void;
 }) {
-  const [origin, setOrigin] = useState<GeoPoint | null>(null);
+  // Le depart choisi explicitement. Tant qu'il est vide, c'est la position
+  // courante qui fait office de depart : ouvrir l'application et saisir une
+  // destination doit suffire, sans avoir a designer un depart evident.
+  const [chosenOrigin, setChosenOrigin] = useState<GeoPoint | null>(null);
   const [destination, setDestination] = useState<GeoPoint | null>(null);
   const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [leftRailOpen, setLeftRailOpen] = useState(true);
@@ -65,6 +68,18 @@ export function MobilityMapApp({
   } = useTripPlanning(user.id, onTripCompleted);
 
   const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
+  const origin = chosenOrigin ?? currentPosition;
+  const setOrigin = setChosenOrigin;
+
+  // La position est demandee des l'ouverture. Le navigateur pose lui-meme la
+  // question du consentement : c'est cette invite qui vaut accord, et un refus
+  // laisse simplement la saisie manuelle (C6/C8).
+  useEffect(() => {
+    void requestCurrentPosition();
+    // Une seule fois par montage : redemander en boucle harcelerait
+    // l'utilisateur qui a refuse.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { routes, selectedRoute, selectedLegs, setSelectedRouteId, routingStatus } = useRouteOptions({
     origin,
     destination,

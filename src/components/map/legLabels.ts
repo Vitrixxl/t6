@@ -6,13 +6,9 @@
 // une dependance a un serveur de polices tiers, on pose des marqueurs HTML :
 // pas de requete supplementaire, et la typographie de l'application.
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
-import type { GeoPoint, RouteLeg } from '../../types';
+import type { RouteLeg } from '../../types';
 import { legColor } from './legStyle';
-
-/** Milieu du trace, pour poser le libelle la ou le segment est le plus lisible. */
-function midpointOf(path: GeoPoint[]): GeoPoint | null {
-  return path.length === 0 ? null : path[Math.floor(path.length / 2)];
-}
+import { midpointOfPath } from '../../lib/planner';
 
 function createLabel(text: string, color: string): HTMLElement {
   const element = document.createElement('span');
@@ -35,7 +31,7 @@ export function syncLegLabels(map: MaplibreMap, current: maplibregl.Marker[], le
   return legs
     .filter((leg) => leg.mode === 'transit' && leg.mapLabel && leg.path.length >= 2)
     .flatMap((leg) => {
-      const point = midpointOf(leg.path);
+      const point = midpointOfPath(leg.path);
       if (!point) {
         return [];
       }

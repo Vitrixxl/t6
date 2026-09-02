@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GtfsStop, TransportNetwork } from '../../types';
 import { findTransitJourney } from './transit';
-import { pathLengthKm, sliceShape } from './shape';
+import { midpointOfPath, pathLengthKm, sliceShape } from './shape';
 
 function stop(id: string, name: string, lat: number, lon: number, routes: string[]): GtfsStop {
   return { stop_id: id, stop_name: name, stop_lat: lat, stop_lon: lon, wheelchair_boarding: 1, routes };
@@ -135,5 +135,34 @@ describe('pathLengthKm', () => {
       { label: 'c', lat: 45.75, lon: 4.83 },
     ]);
     expect(detour).toBeCloseTo(2.224, 2);
+  });
+});
+
+describe('midpointOfPath', () => {
+  const at = (lat: number, lon: number) => ({ label: 'p', lat, lon });
+
+  // Verrouille le placement de l'etiquette de ligne. Elle etait posee au point
+  // median de la liste : les sommets d'un trace publie etant denses dans les
+  // courbes et rares sur les lignes droites, elle se retrouvait collee a une
+  // extremite, par-dessus le repere de depart.
+  it('mesure le milieu en longueur, pas en nombre de points', () => {
+    // Neuf points serres sur les premieres dizaines de metres, puis 11 km droits.
+    const dense = Array.from({ length: 9 }, (_, index) => at(45.75 + index * 0.0001, 4.85));
+    const path = [...dense, at(45.85, 4.85)];
+
+    const middle = midpointOfPath(path);
+    const medianIndexPoint = path[Math.floor(path.length / 2)];
+
+    expect(middle?.lat).toBeCloseTo(45.8004, 3);
+    expect(middle?.lat).toBeGreaterThan(medianIndexPoint.lat);
+  });
+
+  it('tombe au centre d un trace regulier', () => {
+    expect(midpointOfPath([at(45.75, 4.85), at(45.76, 4.85), at(45.77, 4.85)])?.lat).toBeCloseTo(45.76, 4);
+  });
+
+  it('rend le point unique d un trace degenere, et rien sur un trace vide', () => {
+    expect(midpointOfPath([at(45.75, 4.85)])?.lat).toBe(45.75);
+    expect(midpointOfPath([])).toBeNull();
   });
 });

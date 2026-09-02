@@ -43,3 +43,4 @@ export {
   type NearbyWithin,
 } from './nearby';
 export { applyRoutedLegs } from './legs';
+export { midpointOfPath } from './shape';

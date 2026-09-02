@@ -19,6 +19,15 @@ import type { SharedStation } from '../../types';
  */
 const FOCUS_ZOOM = 16;
 
+/**
+ * Deux points sont au meme endroit en dessous du metre. Comparer les nombres
+ * a l'identique serait fragile : une meme position peut transiter par un
+ * arrondi et revenir differente au dernier chiffre.
+ */
+function samePlace(a: GeoPoint, b: GeoPoint): boolean {
+  return Math.abs(a.lat - b.lat) < 1e-5 && Math.abs(a.lon - b.lon) < 1e-5;
+}
+
 /** Entites GeoJSON communes aux deux couches de mobilite partagee. */
 function toStationFeatures(stations: SharedStation[]): FeatureCollection {
   return {
@@ -323,16 +332,35 @@ export function UrbanMap({
       });
     }
 
+    if (!map.getLayer('points-accuracy')) {
+      // Halo de precision : il dit ce que le point ne dit pas, a savoir
+      // l'incertitude de la mesure. Sous le point, jamais par-dessus.
+      map.addLayer({
+        id: 'points-accuracy',
+        type: 'circle',
+        source: 'points',
+        filter: ['==', ['get', 'kind'], 'navigation'],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 10, 16, 26],
+          'circle-color': '#2f6cb3',
+          'circle-opacity': 0.16,
+          'circle-stroke-color': '#2f6cb3',
+          'circle-stroke-width': 1,
+          'circle-stroke-opacity': 0.3,
+        },
+      });
+    }
+
     if (!map.getLayer('points-circle')) {
       map.addLayer({
         id: 'points-circle',
         type: 'circle',
         source: 'points',
         paint: {
-          'circle-radius': ['case', ['==', ['get', 'kind'], 'navigation'], 11, ['==', ['get', 'kind'], 'origin'], 9, 8],
+          'circle-radius': ['case', ['==', ['get', 'kind'], 'navigation'], 8, ['==', ['get', 'kind'], 'origin'], 9, 8],
           'circle-color': ['get', 'color'],
           'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': ['case', ['==', ['get', 'kind'], 'navigation'], 4, 3],
+          'circle-stroke-width': ['case', ['==', ['get', 'kind'], 'navigation'], 3.5, 3],
         },
       });
       map.addLayer({
@@ -480,13 +508,18 @@ export function UrbanMap({
 
   // Les reperes apparaissent des la selection d'un depart ou d'une arrivee,
   // sans attendre qu'un itineraire soit calcule.
+  //
+  // Le repere de depart est omis quand il tombe sur la position courante : le
+  // point de position marque deja l'endroit, et empiler une epingle par-dessus
+  // n'ajoute rien qu'un chevauchement d'etiquettes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loaded) {
       return;
     }
-    endpointsRef.current = syncEndpointMarkers(map, endpointsRef.current, origin, destination);
-  }, [destination, loaded, origin]);
+    const originMarker = origin && navigationPoint && samePlace(origin, navigationPoint) ? null : origin;
+    endpointsRef.current = syncEndpointMarkers(map, endpointsRef.current, originMarker, destination);
+  }, [destination, loaded, navigationPoint, origin]);
 
   useEffect(() => {
     const map = mapRef.current;
