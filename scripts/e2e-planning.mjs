@@ -47,6 +47,20 @@ await page.fill('#auth-email', 'demo@urbanflow.local');
 await page.fill('#auth-password', 'UrbanFlow2026!');
 await page.getByRole('button', { name: /ouvrir la carte/i }).click();
 await page.waitForTimeout(4000);
+
+// Le scenario cliquait puis annonçait "login OK" sans rien verifier : une
+// limite de debit atteinte laissait donc l'ecran de connexion en place et les
+// echecs suivants pointaient les mauvais coupables. La carte doit etre la.
+if (!(await page.locator('#mobile-destination-search').count())) {
+  const message = await page.locator('body').innerText();
+  const reason = /Trop de requetes/i.test(message)
+    ? 'limite de debit atteinte sur /api/auth (10 tentatives par minute)'
+    : 'identifiants refuses ou API injoignable';
+  console.log(`ECHEC: connexion impossible - ${reason}`);
+  console.log('Relancer "bun run seed:demo" puis patienter une minute si la limite est en cause.');
+  await page.screenshot({ path: 'tmp/screenshots/plan-fail-login.png' });
+  process.exit(1);
+}
 log('login OK');
 
 // Le tutoriel se lance a la premiere visite : on le passe pour derouler le scenario.
@@ -57,12 +71,15 @@ if (await skipTutorial.count()) {
   log('tutoriel passe');
 }
 
-// 2. Depart = Ma position (GPS)
-await page.click('#mobile-origin-search');
-await page.waitForTimeout(800);
-await page.getByRole('button', { name: /ma position/i }).first().click();
-await page.waitForTimeout(2000);
-log('depart GPS defini');
+// 2. Le depart est la position courante, sans aucune action : la barre ne
+// demande qu'une destination tant qu'aucune n'est choisie.
+const originValue = await page.inputValue('#mobile-destination-search').catch(() => null);
+if (originValue === null) {
+  console.log('ECHEC: champ de recherche unique introuvable');
+  await page.screenshot({ path: 'tmp/screenshots/plan-fail-search.png' });
+  process.exit(1);
+}
+log('barre de recherche en mode destination seule');
 
 // 3. Destination via la recherche BAN (aucune destination preremplie)
 await page.click('#mobile-destination-search');
@@ -77,6 +94,14 @@ if (!(await destButton.count())) {
 await destButton.click();
 await page.waitForTimeout(8000);
 log('destination definie, options calculees');
+
+// La destination choisie, la barre passe a deux champs et le depart doit
+// porter la position courante sans que l'utilisateur l'ait designee.
+const originAfter = await page.inputValue('#mobile-origin-search').catch(() => '');
+if (!originAfter) {
+  failures.push('le depart n\'est pas prerempli avec la position courante');
+}
+log(`depart implicite : "${originAfter}"`);
 
 // 4. Des options d'itineraire sont proposees
 const bodyText = async () => page.locator('body').innerText();

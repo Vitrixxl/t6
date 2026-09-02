@@ -63,21 +63,27 @@ if (await skipTutorial.count()) {
 }
 totalViolations += await runAxe('Ecran principal carte + planification (mobile)');
 
-const plannerButton = page.getByRole('button', { name: /ouvrir le planificateur/i }).first();
-if (await plannerButton.count()) {
-  await plannerButton.click();
+// Un ecran introuvable n'est pas un ecran conforme : l'audit s'arrete plutot
+// que de reduire silencieusement son perimetre. Il l'avait fait sans bruit
+// quand le bouton du planificateur a change de nom, et le total annonce ne
+// portait plus que sur trois ecrans au lieu de quatre.
+async function auditPanel(label, name) {
+  const button = page.getByRole('button', { name }).first();
+  if (!(await button.count())) {
+    console.log(`ECHEC: bouton "${name}" introuvable, ecran "${label}" non audite`);
+    await browser.close();
+    process.exit(1);
+  }
+  await button.click();
   await page.waitForTimeout(1200);
-  totalViolations += await runAxe('Hub planificateur de trajets (mobile)');
+  const violations = await runAxe(label);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(600);
+  return violations;
 }
 
-const profileButton = page.getByRole('button', { name: /ouvrir le profil/i }).first();
-if (await profileButton.count()) {
-  await profileButton.click();
-  await page.waitForTimeout(1200);
-  totalViolations += await runAxe('Panneau profil et preferences (mobile)');
-}
+totalViolations += await auditPanel('Hub planificateur de trajets (mobile)', /trajets enregistres/i);
+totalViolations += await auditPanel('Panneau profil et preferences (mobile)', /ouvrir le profil/i);
 
 await browser.close();
 console.log(`\nTOTAL violations WCAG 2.1 A/AA detectees par axe-core: ${totalViolations}`);
