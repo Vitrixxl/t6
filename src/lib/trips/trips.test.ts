@@ -181,3 +181,47 @@ describe('summarizeTripActivity', () => {
     expect(summary.doneThisMonth).toBe(1);
   });
 });
+
+// Verrouille B18. Une routine consultee le soir materialisait les occurrences
+// du jour deja passees, que la tolerance de 24 h de `upcomingTrips` comptait
+// ensuite comme « a venir ».
+describe('recurrence — occurrences deja passees', () => {
+  const MERCREDI_SOIR = new Date(2026, 6, 15, 22, 0);
+  const MERCREDI_MATIN = new Date(2026, 6, 15, 7, 0);
+  const jourMeme = (trips: PlannedTrip[]) => trips.filter((trip) => trip.scheduledFor.startsWith('2026-07-15'));
+
+  it('ne materialise pas les occurrences du jour dont l heure est passee', () => {
+    saveRecurringTrip(
+      createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 2, 3, 4, 5], departureTime: '08:30', returnTime: '18:00' }, MERCREDI_SOIR),
+    );
+
+    const occurrences = syncRecurringOccurrences(USER_ID, MERCREDI_SOIR);
+
+    expect(jourMeme(occurrences)).toHaveLength(0);
+    expect(upcomingTrips(occurrences, MERCREDI_SOIR)).toHaveLength(
+      occurrences.filter((trip) => !trip.scheduledFor.startsWith('2026-07-15')).length,
+    );
+  });
+
+  it('materialise bien les occurrences du jour encore a venir', () => {
+    saveRecurringTrip(
+      createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 2, 3, 4, 5], departureTime: '08:30', returnTime: '18:00' }, MERCREDI_MATIN),
+    );
+
+    expect(jourMeme(syncRecurringOccurrences(USER_ID, MERCREDI_MATIN))).toHaveLength(2);
+  });
+
+  // Non-regression de la tolerance : elle sert a marquer « fait » un trajet du
+  // matin en fin de journee. Corriger la generation ne doit pas la supprimer.
+  it('laisse visible une occurrence deja existante et passee', () => {
+    const template = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 2, 3, 4, 5], departureTime: '08:30', returnTime: null }, MERCREDI_MATIN);
+    saveRecurringTrip(template);
+    syncRecurringOccurrences(USER_ID, MERCREDI_MATIN);
+
+    const leSoir = syncRecurringOccurrences(USER_ID, MERCREDI_SOIR);
+    const duMatin = jourMeme(leSoir);
+
+    expect(duMatin).toHaveLength(1);
+    expect(upcomingTrips(leSoir, MERCREDI_SOIR).map((trip) => trip.id)).toContain(duMatin[0].id);
+  });
+});
