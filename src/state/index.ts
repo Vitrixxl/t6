@@ -1,0 +1,38 @@
+// Etat global de l'application (jotai). Les composants importent d'ici.
+export {
+  accountStateAtom,
+  activitySummaryAtom,
+  carbonSummaryAtom,
+  closeSessionAtom,
+  deleteAccountAtom,
+  logoutAtom,
+  openSessionAtom,
+  pendingSaves,
+  plannedTripsAtom,
+  profileAtom,
+  recurringTripsAtom,
+  saveErrorAtom,
+  savedRoutesAtom,
+  sessionAtom,
+  tripRecordsAtom,
+  upcomingAtom,
+  updateAccountAtom,
+  userAtom,
+} from './session';
+export {
+  cancelTripAtom,
+  clearTripHistoryAtom,
+  closeHubAtom,
+  deleteSavedRouteAtom,
+  markTripDoneAtom,
+  openHubAtom,
+  planSourceAtom,
+  removeRecurringAtom,
+  removeTripAtom,
+  saveRouteAtom,
+  setProfileAtom,
+  submitPlanAtom,
+  toggleRecurringPausedAtom,
+  tripsHubAtom,
+} from './actions';
+export type { PlanSubmission, TripsHubTab } from './actions';

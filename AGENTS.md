@@ -48,7 +48,7 @@ bun run dev          # serveur + reconstruction du client, un seul Ctrl+C
 bun run build        # construit le client dans dist/
 bun run start        # sert le build de production
 bun run check        # lint + typage + tests + build
-bun test             # tests du client et de l'API
+bun run test         # tests du client et de l'API (src/ et server/)
 bun run e2e          # scenario de planification (Playwright)
 bun run audit:a11y   # axe-core sur quatre ecrans
 ```
@@ -75,7 +75,10 @@ base `:memory:` des tests.
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
 reprise de session, envoi de l'etat), `lib/auth/`, `components/map/`,
-`components/planner/trips/`, `components/app/hooks/`.
+`components/planner/trips/`, `components/app/hooks/`, et `state/` : l'etat
+global en atomes jotai (session, etat du compte, derives, actions). Les
+composants lisent les atomes dont ils ont besoin ; on ne fait pas transiter
+l'etat par des props.
 
 Le contrat de donnees (`src/types.ts`) est importe **par le client et par
 l'API**. Un changement casse la compilation des deux cotes : c'est voulu, ne
@@ -90,7 +93,7 @@ annonce reste le nombre reel.
 
 **Le serveur est la seule source de verite.** Il n'y a ni mode sans serveur
 ni cache local : c'est l'API qui sert le client, l'etat du compte est recu a la
-connexion, tenu en memoire React, et renvoye en entier a chaque action
+connexion, tenu en memoire (atomes jotai), et renvoye en entier a chaque action
 (`PUT /api/state`). Une ecriture refusee par le reseau se dit a l'utilisateur,
 elle ne se masque pas.
 

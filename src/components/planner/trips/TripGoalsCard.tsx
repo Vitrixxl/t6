@@ -1,9 +1,10 @@
 // Objectifs hebdomadaires de l'utilisateur et progression de la semaine.
 import { useEffect, useState } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Check, Target } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
-import type { MobilityProfile, SessionUser, TripActivitySummary } from '../../../types';
+import { activitySummaryAtom, profileAtom, setProfileAtom } from '../../../state';
 
 /** Objectifs par defaut, appliques aux profils anterieurs a cette fonctionnalite. */
 export const DEFAULT_WEEKLY_TRIPS_GOAL = 5;
@@ -60,17 +61,12 @@ function GoalRow({
 }
 
 
-export function TripGoalsCard({
-  user,
-  summary,
-  onProfileSave,
-}: {
-  user: SessionUser;
-  summary: TripActivitySummary;
-  onProfileSave: (profile: MobilityProfile) => void;
-}) {
-  const tripsGoal = user.profile.weeklyTripsGoal ?? DEFAULT_WEEKLY_TRIPS_GOAL;
-  const savedGoal = user.profile.weeklySavedGoalGrams ?? DEFAULT_WEEKLY_SAVED_GOAL_GRAMS;
+export function TripGoalsCard() {
+  const profile = useAtomValue(profileAtom);
+  const summary = useAtomValue(activitySummaryAtom);
+  const saveProfile = useSetAtom(setProfileAtom);
+  const tripsGoal = profile.weeklyTripsGoal ?? DEFAULT_WEEKLY_TRIPS_GOAL;
+  const savedGoal = profile.weeklySavedGoalGrams ?? DEFAULT_WEEKLY_SAVED_GOAL_GRAMS;
   const [editing, setEditing] = useState(false);
   const [draftTripsGoal, setDraftTripsGoal] = useState(tripsGoal);
   const [draftSavedGoal, setDraftSavedGoal] = useState(savedGoal);
@@ -81,8 +77,8 @@ export function TripGoalsCard({
   }, [tripsGoal, savedGoal]);
 
   const commit = () => {
-    onProfileSave({
-      ...user.profile,
+    saveProfile({
+      ...profile,
       weeklyTripsGoal: Math.max(Math.round(draftTripsGoal) || tripsGoal, 1),
       weeklySavedGoalGrams: Math.max(Math.round(draftSavedGoal) || savedGoal, 100),
     });

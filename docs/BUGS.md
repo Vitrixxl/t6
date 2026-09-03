@@ -382,3 +382,56 @@ not deeply equal [ 100, 93, … ]`), **verts** apres. Suite complete : 103 tests
 unitaires, 37 tests d'API.
 
 **Niveau de verrouillage** : **automatise**.
+
+---
+
+## B21 — Le service worker servait l'API depuis son cache, y compris apres la deconnexion
+
+**Criticite** : critique — une session revoquee en base restait « vivante »
+dans le navigateur, et le compte suivant sur le meme appareil pouvait recevoir
+l'etat du precedent.
+
+### Identifier la source
+
+Trouve en verifiant la deconnexion de bout en bout, apres le passage de l'etat
+du compte sur des atomes. Le scenario bureau demandait `/api/state` juste apres
+la deconnexion et recevait **200**, alors que le journal du serveur montrait,
+dans l'ordre, la revocation puis un **401** sur la meme route.
+
+Deux temoins qui se contredisent designent un intermediaire. Rejoue avec
+`curl` sans navigateur : connexion, deconnexion, `/api/state` → 401. Le serveur
+est donc hors de cause ; il reste, entre la page et lui, le service worker.
+`public/sw.js` appliquait « cache d'abord » a **toute** requete GET de meme
+origine en 200, `/api/*` compris. Une fois `/api/state` vue une premiere fois,
+chaque lecture suivante venait du cache, deconnexion ou non. Le meme mecanisme
+pouvait renvoyer `/api/auth/session` en cache au rechargement : la session d'un
+compte precedent ressuscitee sur un appareil partage.
+
+La cause est anterieure a l'etat en memoire : elle existait depuis la mise en
+place du service worker, masquee tant que le cache local du client faisait
+ecran entre l'interface et l'API.
+
+### Corriger
+
+Le service worker laisse passer `/api/*` sans jamais le mettre en cache
+(`public/sw.js`, garde en tete du gestionnaire `fetch`). Les reponses de l'API
+dependent de la session et changent a chaque action : aucune n'est cachable.
+Le socle de l'application et les donnees statiques (GTFS, stations de repli)
+restent en cache pour le hors ligne, c'est leur role. Le nom du cache passe en
+`v3` pour que les installations existantes jettent le leur a l'activation.
+
+### Tester et valider le correctif
+
+Le scenario `bun run e2e` gagne une septieme assertion, ecrite **avant** le
+correctif : apres deconnexion, `/api/state` repond 401 au navigateur et le
+rechargement ramene l'ecran de connexion. Un test unitaire ne suffit pas ici,
+le comportement fautif est celui du navigateur avec son service worker actif ;
+le scenario tourne sur le build de production, ou le service worker est
+enregistre.
+
+**Validation** : vu **rouge** avant le correctif (`apres deconnexion,
+/api/state repond encore 200 au navigateur`), **vert** apres (`7/7 assertions
+passees`), sur un serveur et une base neufs. Le scenario bureau (profil,
+objectifs, rechargement, deconnexion) rejoue aussi vert.
+
+**Niveau de verrouillage** : **automatise** (scenario E2E bloquant en CI).

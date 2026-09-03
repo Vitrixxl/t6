@@ -165,6 +165,33 @@ if (syncStatus !== 200) {
 }
 log('etat synchronise avec le serveur');
 
+// 9. Deconnexion : la session doit etre morte pour le navigateur aussi, pas
+// seulement en base. Le service worker servait /api/state depuis son cache
+// apres la deconnexion, et pouvait ressusciter la session d'un compte
+// precedent au rechargement.
+await page.keyboard.press('Escape');
+await page.waitForTimeout(400);
+await page.getByRole('button', { name: /profil/i }).first().click();
+await page.waitForTimeout(500);
+await page.getByRole('button', { name: /^deconnexion$/i }).click();
+await page.waitForTimeout(300);
+const logoutResponse = page.waitForResponse((response) => response.url().endsWith('/api/auth/logout'), { timeout: 10000 });
+await page.getByRole('button', { name: /^se deconnecter$/i }).click();
+if ((await logoutResponse).status() !== 200) {
+  failures.push('la requete de deconnexion echoue');
+}
+await page.waitForTimeout(300);
+const stateAfterLogout = await page.evaluate(() => fetch('/api/state').then((response) => response.status));
+if (stateAfterLogout !== 401) {
+  failures.push(`apres deconnexion, /api/state repond encore ${stateAfterLogout} au navigateur`);
+}
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForTimeout(1500);
+if (!(await page.locator('#auth-email').count())) {
+  failures.push('apres deconnexion et rechargement, la session reapparait');
+}
+log('deconnexion : session morte pour le navigateur et le serveur');
+
 await browser.close();
 
 // Assertions bloquantes : chaque critere du scenario doit etre satisfait.
@@ -173,7 +200,7 @@ mkdirSync('output/metrics', { recursive: true });
 writeFileSync(
   'output/metrics/e2e.json',
   JSON.stringify(
-    { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 6, failures, passed: failures.length === 0 },
+    { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 7, failures, passed: failures.length === 0 },
     null,
     2,
   ) + '\n',
@@ -184,4 +211,4 @@ if (failures.length > 0) {
   for (const failure of failures) console.log('  - ' + failure);
   process.exit(1);
 }
-console.log('TEST TERMINE - 6/6 assertions passees');
+console.log('TEST TERMINE - 7/7 assertions passees');

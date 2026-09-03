@@ -11,7 +11,7 @@ Deux briques, une seule origine pour le navigateur :
 
 Le serveur est la seule source de verite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
 en base, etat du compte rendu a la connexion et remplace en entier a chaque action (`PUT /api/state`, en transaction,
-borne a quelques centaines de lignes). Pas de cache local : l'etat vit en memoire React le temps de la session, et une
+borne a quelques centaines de lignes). Pas de cache local : l'etat vit en memoire (atomes jotai, `src/state/`) le temps de la session, et une
 ecriture refusee par le reseau est signalee a l'utilisateur. Exigence C10 (connectivite variable) : cache du socle et
 des flux transport par le service worker, etats de chargement explicites, erreurs reseau propres.
 
@@ -40,13 +40,14 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
 | `lib/api/` | couche serveur du client : client HTTP, reprise de session, envoi de l'etat |
+| `state/` | etat global (jotai) : session, etat du compte, atomes derives et actions |
 | `lib/auth/` | authentification : appels API, cache de session, normalisation du profil |
 | `components/map/` | carte MapLibre : composant, popups, sources |
 | `components/planner/trips/` | module trajets : hub, listes, formulaire, objectifs |
 | `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
 
 Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
-`server/src/services/sync.ts` et `src/components/app/hooks/useAccount.ts` (l'etat complet, remplace a chaque action),
+`server/src/services/sync.ts` et `src/state/session.ts` (l'etat complet, remplace a chaque action),
 `src/lib/planner/index.ts` (le métier).
 
 ## Livrables
@@ -110,7 +111,7 @@ bun run generate:icons   # icônes PWA
 bun run generate:pdf     # dossier projet PDF
 bun run start            # sert le build de production
 bun run check            # lint + typage + tests + build production
-bun run e2e              # scénario E2E de planification (Playwright, 6 assertions)
+bun run e2e              # scénario E2E de planification (Playwright, 7 assertions)
 ```
 
 **Toute la chaîne tourne sous Bun, sans exception** : gestionnaire de paquets, exécution du serveur,

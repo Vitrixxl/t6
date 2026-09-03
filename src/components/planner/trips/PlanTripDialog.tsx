@@ -6,28 +6,24 @@ import { Calendar } from '../../ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Input } from '../../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
-import { WEEKDAY_LABELS, type TripSource } from '../../../lib/trips';
+import { useAtom, useSetAtom } from 'jotai';
+import { WEEKDAY_LABELS } from '../../../lib/trips';
+import { planSourceAtom, submitPlanAtom, type PlanSubmission } from '../../../state';
 import { OriginDestination } from './atoms';
 import { FULL_DAY_FORMAT, toTimeInputValue } from './format';
 
-export interface PlanTripSubmit {
-  kind: 'once' | 'recurring';
-  scheduledFor?: Date;
-  label: string;
-  daysOfWeek?: number[];
-  departureTime?: string;
-  returnTime?: string | null;
-}
+export type PlanTripSubmit = PlanSubmission;
 
-export function PlanTripDialog({
-  source,
-  onOpenChange,
-  onSubmit,
-}: {
-  source: TripSource | null;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (plan: PlanTripSubmit) => void;
-}) {
+export function PlanTripDialog() {
+  // Le formulaire s'ouvre des qu'un trajet est mis en planification, et se
+  // ferme en rendant ce trajet a null : l'orchestrateur n'a rien a tenir.
+  const [source, setSource] = useAtom(planSourceAtom);
+  const onSubmit = useSetAtom(submitPlanAtom);
+  const onOpenChange = (open: boolean) => {
+    if (!open) {
+      setSource(null);
+    }
+  };
   const [kind, setKind] = useState<'once' | 'recurring'>('once');
   const [label, setLabel] = useState('');
   const [date, setDate] = useState<Date | undefined>(undefined);

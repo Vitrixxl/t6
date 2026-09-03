@@ -1,28 +1,23 @@
 // Bloc trajets du rail lateral : raccourcis vers le hub et prochaines echeances.
+import { useAtomValue, useSetAtom } from 'jotai';
 import { CalendarClock, Check, ChevronRight } from 'lucide-react';
 import { Button } from '../../ui/button';
-import type { PlannedTrip, TripActivitySummary } from '../../../types';
+import { activitySummaryAtom, markTripDoneAtom, openHubAtom, upcomingAtom } from '../../../state';
 import { Metric } from '../../app/shared';
 import { formatScheduleLabel } from './format';
-import type { TripsHubTab } from './TripsHubDialog';
 
-export function TripsSidebarSection({
-  summary,
-  upcoming,
-  onMarkDone,
-  onOpenHub,
-}: {
-  summary: TripActivitySummary;
-  upcoming: PlannedTrip[];
-  onMarkDone: (trip: PlannedTrip) => void;
-  onOpenHub: (tab?: TripsHubTab) => void;
-}) {
+export function TripsSidebarSection() {
+  const summary = useAtomValue(activitySummaryAtom);
+  const upcoming = useAtomValue(upcomingAtom);
+  const markDone = useSetAtom(markTripDoneAtom);
+  const openHub = useSetAtom(openHubAtom);
+
   return (
     <div className="grid gap-2 px-3 pb-4">
       {/* CTA principal de l'application : le planificateur. */}
       <button
         type="button"
-        onClick={() => onOpenHub('upcoming')}
+        onClick={() => openHub('upcoming')}
         className="group grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl bg-primary p-3 text-left text-primary-foreground shadow-card transition hover:bg-primary/92 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <span className="grid size-11 place-items-center rounded-xl bg-[var(--lime)] text-[var(--lime-foreground)] shadow-soft">
@@ -60,7 +55,7 @@ export function TripsSidebarSection({
                 variant="ghost"
                 size="compactIcon"
                 className="h-7 w-7 shrink-0 text-primary"
-                onClick={() => onMarkDone(trip)}
+                onClick={() => markDone(trip)}
                 aria-label={`Marquer fait : ${trip.label}`}
                 title="Marquer fait"
               >
