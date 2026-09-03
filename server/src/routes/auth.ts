@@ -36,10 +36,10 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
         const row = {
           id: crypto.randomUUID(),
           email: body.email,
-          display_name: body.displayName,
-          password_hash: await hashPassword(body.password),
-          created_at: new Date().toISOString(),
-          profile_json: JSON.stringify(profile),
+          displayName: body.displayName,
+          passwordHash: await hashPassword(body.password),
+          createdAt: new Date().toISOString(),
+          profile,
         };
         users.insert(row);
         openSession(cookie, sessions, config, row.id);
@@ -64,7 +64,7 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
           await verifyPassword(body.password, await hashPassword(crypto.randomUUID()));
           return status(401, { error: INVALID_CREDENTIALS });
         }
-        if (!(await verifyPassword(body.password, row.password_hash))) {
+        if (!(await verifyPassword(body.password, row.passwordHash))) {
           return status(401, { error: INVALID_CREDENTIALS });
         }
 

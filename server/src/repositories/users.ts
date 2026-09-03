@@ -1,36 +1,31 @@
 // Depot des comptes.
-import type { Database } from '../db/index.ts';
+import { eq } from 'drizzle-orm';
+import type { Executor } from '../db/index.ts';
+import { users } from '../db/schema.ts';
 import type { MobilityProfile } from '../../../src/types.ts';
-import type { UserRow } from './mappers.ts';
+import type { NewUserRow, UserRow } from './mappers.ts';
 
-export function createUserRepository(db: Database) {
+export function createUserRepository(db: Executor) {
   return {
     findByEmail(email: string): UserRow | null {
-      return db.query('SELECT * FROM users WHERE email = ?').get(email) as UserRow | null;
+      return db.select().from(users).where(eq(users.email, email)).get() ?? null;
     },
 
     findById(id: string): UserRow | null {
-      return db.query('SELECT * FROM users WHERE id = ?').get(id) as UserRow | null;
+      return db.select().from(users).where(eq(users.id, id)).get() ?? null;
     },
 
-    insert(row: UserRow): void {
-      db.query(
-        `INSERT INTO users (id, email, display_name, password_hash, created_at, profile_json)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      ).run(row.id, row.email, row.display_name, row.password_hash, row.created_at, row.profile_json);
+    insert(row: NewUserRow): void {
+      db.insert(users).values(row).run();
     },
 
     updateProfile(userId: string, profile: MobilityProfile): void {
-      db.query('UPDATE users SET display_name = ?, profile_json = ? WHERE id = ?').run(
-        profile.displayName,
-        JSON.stringify(profile),
-        userId,
-      );
+      db.update(users).set({ displayName: profile.displayName, profile }).where(eq(users.id, userId)).run();
     },
 
     /** Droit a l'effacement (RGPD art. 17) : la cascade emporte toutes les donnees liees. */
     delete(userId: string): void {
-      db.query('DELETE FROM users WHERE id = ?').run(userId);
+      db.delete(users).where(eq(users.id, userId)).run();
     },
   };
 }

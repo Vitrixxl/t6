@@ -1,5 +1,7 @@
 // Inscription, connexion, session : le chemin critique de securite.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { eq } from 'drizzle-orm';
+import { users } from '../db/schema.ts';
 import { PASSWORD, createTestApi, json, type AuthBody, type ErrorBody, type TestApi } from './helpers.ts';
 
 let api: TestApi;
@@ -36,10 +38,8 @@ describe('inscription', () => {
     expect(body).not.toContain(PASSWORD);
     expect(body).not.toContain('argon2');
     // Verification directe en base : l'empreinte porte bien ses parametres.
-    const stored = api.db.query('SELECT password_hash FROM users WHERE email = ?').get('a@lyon.fr') as {
-      password_hash: string;
-    };
-    expect(stored.password_hash).toStartWith('$argon2id$');
+    const stored = api.db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.email, 'a@lyon.fr')).get();
+    expect(stored?.passwordHash).toStartWith('$argon2id$');
   });
 
   it('refuse un mot de passe trop court ou sans chiffre', async () => {

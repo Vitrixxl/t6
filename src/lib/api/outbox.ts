@@ -20,52 +20,52 @@ const OUTBOX_LIMIT = 500;
 const BATCH_SIZE = 100;
 
 interface OutboxEntry {
-  id: string;
-  at: string;
-  /** Proprietaire de l'operation : une file en attente ne doit jamais etre
-   *  rejouee sous la session d'un autre compte. */
-  userId: string;
-  payload: OperationPayload;
+    id: string;
+    at: string;
+    /** Proprietaire de l'operation : une file en attente ne doit jamais etre
+     *  rejouee sous la session d'un autre compte. */
+    userId: string;
+    payload: OperationPayload;
 }
 
 function readOutbox(): OutboxEntry[] {
-  const raw = localStorage.getItem(OUTBOX_KEY);
-  if (!raw) {
-    return [];
-  }
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as OutboxEntry[]) : [];
-  } catch {
-    localStorage.removeItem(OUTBOX_KEY);
-    return [];
-  }
+    const raw = localStorage.getItem(OUTBOX_KEY);
+    if (!raw) {
+        return [];
+    }
+    try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed) ? (parsed as OutboxEntry[]) : [];
+    } catch {
+        localStorage.removeItem(OUTBOX_KEY);
+        return [];
+    }
 }
 
 function writeOutbox(entries: OutboxEntry[]): void {
-  localStorage.setItem(OUTBOX_KEY, JSON.stringify(entries.slice(-OUTBOX_LIMIT)));
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(entries.slice(-OUTBOX_LIMIT)));
 }
 
 export function enqueueOperation(userId: string, payload: OperationPayload): void {
-  writeOutbox([
-    ...readOutbox(),
-    { id: crypto.randomUUID(), at: new Date().toISOString(), userId, payload },
-  ]);
+    writeOutbox([
+        ...readOutbox(),
+        { id: crypto.randomUUID(), at: new Date().toISOString(), userId, payload },
+    ]);
 }
 
 export function pendingOperationCount(userId: string): number {
-  return readOutbox().filter((entry) => entry.userId === userId).length;
+    return readOutbox().filter((entry) => entry.userId === userId).length;
 }
 
 /** Purge la file d'un compte supprime : ses operations n'ont plus d'objet. */
 export function discardOperations(userId: string): void {
-  writeOutbox(readOutbox().filter((entry) => entry.userId !== userId));
+    writeOutbox(readOutbox().filter((entry) => entry.userId !== userId));
 }
 
 export interface FlushResult {
-  applied: number;
-  ignored: number;
-  remaining: number;
+    applied: number;
+    ignored: number;
+    remaining: number;
 }
 
 /**
@@ -73,53 +73,53 @@ export interface FlushResult {
  * pas joignable : les operations restent en attente, sans perte.
  */
 export async function flushOutbox(userId: string): Promise<FlushResult | null> {
-  if (!isApiOnline()) {
-    return null;
-  }
-
-  let applied = 0;
-  let ignored = 0;
-
-  // Tant qu'il reste des operations, on envoie par lots bornes : une file
-  // accumulee pendant une longue coupure ne produit pas une requete geante.
-  for (;;) {
-    const queue = readOutbox();
-    const mine = queue.filter((entry) => entry.userId === userId);
-    if (mine.length === 0) {
-      return { applied, ignored, remaining: 0 };
+    if (!isApiOnline()) {
+        return null;
     }
 
-    const batch = mine.slice(0, BATCH_SIZE);
-    try {
-      const result = await apiRequest<{ applied: number; ignored: number }>('/state/operations', {
-        method: 'POST',
-        body: JSON.stringify({
-          operations: batch.map((entry) => ({ id: entry.id, at: entry.at, ...entry.payload })),
-        }),
-      });
-      applied += result.applied;
-      ignored += result.ignored;
-    } catch (error) {
-      if (error instanceof ApiUnavailableError) {
-        // Coupure reseau : on garde tout, la prochaine tentative reprendra.
-        return { applied, ignored, remaining: readOutbox().filter((e) => e.userId === userId).length };
-      }
-      if (error instanceof ApiError && error.status === 401) {
-        // Session expiree : inutile d'insister, la file attend la reconnexion.
-        return { applied, ignored, remaining: mine.length };
-      }
-      if (error instanceof ApiError && (error.status === 400 || error.status === 422)) {
-        // Lot refuse par la validation serveur. Le rejouer indefiniment
-        // bloquerait toute la file derriere lui : on l'ecarte et on le signale.
+    let applied = 0;
+    let ignored = 0;
+
+    // Tant qu'il reste des operations, on envoie par lots bornes : une file
+    // accumulee pendant une longue coupure ne produit pas une requete geante.
+    for (; ;) {
+        const queue = readOutbox();
+        const mine = queue.filter((entry) => entry.userId === userId);
+        if (mine.length === 0) {
+            return { applied, ignored, remaining: 0 };
+        }
+
+        const batch = mine.slice(0, BATCH_SIZE);
+        try {
+            const result = await apiRequest<{ applied: number; ignored: number }>('/state/operations', {
+                method: 'POST',
+                body: JSON.stringify({
+                    operations: batch.map((entry) => ({ id: entry.id, at: entry.at, ...entry.payload })),
+                }),
+            });
+            applied += result.applied;
+            ignored += result.ignored;
+        } catch (error) {
+            if (error instanceof ApiUnavailableError) {
+                // Coupure reseau : on garde tout, la prochaine tentative reprendra.
+                return { applied, ignored, remaining: readOutbox().filter((e) => e.userId === userId).length };
+            }
+            if (error instanceof ApiError && error.status === 401) {
+                // Session expiree : inutile d'insister, la file attend la reconnexion.
+                return { applied, ignored, remaining: mine.length };
+            }
+            if (error instanceof ApiError && (error.status === 400 || error.status === 422)) {
+                // Lot refuse par la validation serveur. Le rejouer indefiniment
+                // bloquerait toute la file derriere lui : on l'ecarte et on le signale.
+                const sent = new Set(batch.map((entry) => entry.id));
+                writeOutbox(queue.filter((entry) => !sent.has(entry.id)));
+                console.error('Operations de synchronisation refusees par le serveur, ecartees.', error.message);
+                continue;
+            }
+            throw error;
+        }
+
         const sent = new Set(batch.map((entry) => entry.id));
-        writeOutbox(queue.filter((entry) => !sent.has(entry.id)));
-        console.error('Operations de synchronisation refusees par le serveur, ecartees.', error.message);
-        continue;
-      }
-      throw error;
+        writeOutbox(readOutbox().filter((entry) => !sent.has(entry.id)));
     }
-
-    const sent = new Set(batch.map((entry) => entry.id));
-    writeOutbox(readOutbox().filter((entry) => !sent.has(entry.id)));
-  }
 }

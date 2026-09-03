@@ -8,8 +8,8 @@ import { Elysia, t } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
 import { errorResponse, operationBatch, operationOutcome, userState } from '../models/index.ts';
+import { createRepositories } from '../repositories/index.ts';
 import { applyOperations } from '../services/sync.ts';
-import type { MobilityProfile } from '../../../src/types.ts';
 
 export function syncRoutes(ctx: AppContext) {
   return new Elysia({ prefix: '/state', tags: ['Synchronisation'] })
@@ -21,7 +21,7 @@ export function syncRoutes(ctx: AppContext) {
         if (!row) {
           return status(401, { error: 'Session expiree.' });
         }
-        return repositories.state.fullState(userId, JSON.parse(row.profile_json) as MobilityProfile);
+        return repositories.state.fullState(userId, row.profile);
       },
       {
         response: { 200: userState, 401: errorResponse },
@@ -33,7 +33,9 @@ export function syncRoutes(ctx: AppContext) {
       ({ userId, body, db, repositories, status }) => {
         // Le lot est atomique : une operation en echec annule tout le lot, donc
         // le client peut le rejouer entier sans etat intermediaire a deviner.
-        const outcome = db.transaction(() => applyOperations(repositories, userId, body.operations))();
+        // Les depots sont construits sur la transaction : chaque ecriture du
+        // service passe par elle, rien ne s'echappe vers la connexion globale.
+        const outcome = db.transaction((tx) => applyOperations(createRepositories(tx), userId, body.operations));
 
         const row = repositories.users.findById(userId);
         if (!row) {
@@ -41,7 +43,7 @@ export function syncRoutes(ctx: AppContext) {
         }
         return {
           ...outcome,
-          state: repositories.state.fullState(userId, JSON.parse(row.profile_json) as MobilityProfile),
+          state: repositories.state.fullState(userId, row.profile),
         };
       },
       {

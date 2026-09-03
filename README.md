@@ -30,9 +30,9 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | Dossier | Rôle |
 | --- | --- |
 | `config/` | lecture et validation des variables d'environnement |
-| `db/` | ouverture SQLite ; le schéma vit dans `schema.sql`, versionné à part |
+| `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
 | `models/` | contrats TypeBox : valident la requête, typent le gestionnaire et génèrent l'OpenAPI |
-| `repositories/` | un dépôt par table — seule couche qui connaisse le SQL |
+| `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
 | `services/` | règles métier (synchronisation, sessions, routage et son cache) |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
@@ -107,6 +107,7 @@ python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 cp .env.example .env     # secrets (jeton GTFS, compte Grand Lyon) et réglages API, jamais committés
 bun run dev              # serveur + reconstruction du client a chaque modification
 bun run seed:demo        # compte de démonstration côté serveur
+bun run db:generate      # migration SQL à partir de server/src/db/schema.ts (à committer avec le schéma)
 bun run generate:gtfs    # régénère le feed GTFS depuis la source officielle TCL
 bun run generate:lignes  # desserte par arrêt et tracés réels des lignes (open data, sans jeton)
 bun run generate:icons   # icônes PWA
@@ -126,7 +127,8 @@ et aucun en-tête CORS. En développement, `bun run dev` lance le serveur et rec
 modification — il faut rafraîchir la page, il n'y a pas de rechargement à chaud.
 L'API tourne sous Bun, sans étape de compilation et sans dépendance native à compiler : `bun server/src/index.ts`
 suffit. La surface spécifique à Bun se limite à trois fichiers (`db/index.ts`, `security/password.ts`,
-`config/index.ts`) : le portage vers Node se ferait via `@elysiajs/node`, `node:sqlite` et scrypt.
+`config/index.ts`) : le portage vers Node se ferait via `@elysiajs/node`, le driver `drizzle-orm/better-sqlite3`
+(les dépôts ne changent pas) et scrypt.
 
 Le feed `public/data/gtfs-feed.json` est déjà versionné : `GTFS_SOURCE_URL` ne sert qu'à le régénérer.
 Chemin Chromium des scripts configurable via `CHROME_BIN`.
