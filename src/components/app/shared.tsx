@@ -30,8 +30,6 @@ export const MODE_OPTIONS: Array<{ mode: MobilityMode; label: string }> = [
   { mode: 'transit', label: 'Transport public' },
 ];
 
-export const ALL_MOBILITY_MODES = MODE_OPTIONS.map((option) => option.mode);
-
 export const MODE_ICON: Record<MobilityMode, typeof Footprints> = {
   walk: Footprints,
   bike: Bike,
@@ -93,13 +91,6 @@ export function MergeFillet({
         background: `radial-gradient(circle at ${at}, rgb(from var(--shell) r g b / 0) ${size - 1}px, var(--shell) ${size}px)` }}
     />
   );
-}
-
-export function formatMeters(distanceMeters: number): string {
-  if (distanceMeters >= 1000) {
-    return `${(distanceMeters / 1000).toFixed(distanceMeters >= 10_000 ? 0 : 1)} km`;
-  }
-  return `${Math.max(Math.round(distanceMeters / 10) * 10, 10)} m`;
 }
 
 export function RouteChip({ routeOption, selected, onClick }: { routeOption: RouteOption; selected: boolean; onClick: () => void }) {

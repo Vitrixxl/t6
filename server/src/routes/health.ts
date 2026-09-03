@@ -1,7 +1,6 @@
 // Sonde de disponibilite. Volontairement minimale et non authentifiee : c'est
-// elle que le client interroge au demarrage pour decider s'il fonctionne en
-// mode serveur ou en mode autonome, et c'est elle qu'un orchestrateur
-// interrogerait pour decider de router du trafic vers l'instance.
+// elle qu'un orchestrateur ou la CI interroge pour savoir si l'instance est
+// prete a recevoir du trafic.
 import { Elysia, t } from 'elysia';
 
 export function healthRoutes() {

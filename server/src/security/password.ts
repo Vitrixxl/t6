@@ -3,7 +3,7 @@
 
 // argon2id est la premiere recommandation de l'OWASP Password Storage Cheat
 // Sheet : fonction memory-hard, donc resistante au calcul massivement
-// parallele sur GPU, contrairement au PBKDF2 du mode autonome.
+// parallele sur GPU, contrairement a PBKDF2.
 // Parametres OWASP : 19 Mio de memoire, 2 iterations, parallelisme 1.
 const ARGON2_OPTIONS = {
   algorithm: 'argon2id',

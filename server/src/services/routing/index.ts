@@ -61,5 +61,3 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
         },
     };
 }
-
-export type RoutingService = ReturnType<typeof createRoutingService>;
