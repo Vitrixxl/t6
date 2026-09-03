@@ -1,10 +1,10 @@
 // Depot de l'historique des trajets realises (alimente le suivi carbone).
-import { and, desc, eq, notInArray } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { tripRecords } from '../db/schema.ts';
 import type { TripRecord } from '../../../src/types.ts';
 import { TRIP_HISTORY_LIMIT } from './limits.ts';
-import { measures } from './mappers.ts';
+import { chunks, measures } from './mappers.ts';
 
 export function createTripRecordRepository(db: Executor) {
   return {
@@ -25,28 +25,16 @@ export function createTripRecordRepository(db: Executor) {
         }));
     },
 
-    insert(userId: string, record: Omit<TripRecord, 'userId'>): void {
-      // DO NOTHING plutot que DO UPDATE : un trajet realise est un fait
-      // historique, le rejouer ne doit pas le reecrire.
-      db.insert(tripRecords)
-        .values({ ...record, userId })
-        .onConflictDoNothing({ target: [tripRecords.userId, tripRecords.id] })
-        .run();
-
-      // Minimisation : on ne conserve que les plus recents.
-      const kept = db
-        .select({ id: tripRecords.id })
-        .from(tripRecords)
-        .where(eq(tripRecords.userId, userId))
-        .orderBy(desc(tripRecords.createdAt))
-        .limit(TRIP_HISTORY_LIMIT);
-      db.delete(tripRecords)
-        .where(and(eq(tripRecords.userId, userId), notInArray(tripRecords.id, kept)))
-        .run();
-    },
-
-    clear(userId: string): void {
+    /** Remplace l'historique par celui du client. Minimisation : seuls les plus recents sont gardes. */
+    replaceAll(userId: string, records: Omit<TripRecord, 'userId'>[]): void {
       db.delete(tripRecords).where(eq(tripRecords.userId, userId)).run();
+      const rows = [...records]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, TRIP_HISTORY_LIMIT)
+        .map((record) => ({ ...record, userId }));
+      for (const batch of chunks(rows)) {
+        db.insert(tripRecords).values(batch).run();
+      }
     },
   };
 }

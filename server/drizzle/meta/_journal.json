@@ -8,6 +8,13 @@
       "when": 1788449850833,
       "tag": "0000_schema-initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788453926692,
+      "tag": "0001_retrait-journal-operations",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';
-import { enqueueOperation } from './api/outbox';
+import { markDirty } from './api/dirty';
 
 const SAVED_ROUTES_PREFIX = 'ufm.savedRoutes.';
 const SAVED_ROUTES_LIMIT = 50;
@@ -46,15 +46,14 @@ export function loadSavedRoutes(userId: string): SavedRouteRecord[] {
 export function saveSavedRouteRecord(record: SavedRouteRecord): SavedRouteRecord[] {
   const records = [record, ...loadSavedRoutes(record.userId).filter((item) => item.id !== record.id)].slice(0, SAVED_ROUTES_LIMIT);
   localStorage.setItem(storageKey(record.userId), JSON.stringify(records));
-  const { userId, ...payload } = record;
-  enqueueOperation(userId, { kind: 'saved.upsert', record: payload });
+  markDirty(record.userId);
   return records;
 }
 
 export function deleteSavedRouteRecord(userId: string, routeRecordId: string): SavedRouteRecord[] {
   const records = loadSavedRoutes(userId).filter((record) => record.id !== routeRecordId);
   localStorage.setItem(storageKey(userId), JSON.stringify(records));
-  enqueueOperation(userId, { kind: 'saved.delete', recordId: routeRecordId });
+  markDirty(userId);
   return records;
 }
 

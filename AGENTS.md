@@ -74,7 +74,7 @@ base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
-file d'attente hors ligne, synchronisation), `lib/auth/`, `components/map/`,
+marque d'etat a envoyer, synchronisation), `lib/auth/`, `components/map/`,
 `components/planner/trips/`, `components/app/hooks/`.
 
 Le contrat de donnees (`src/types.ts`) est importe **par le client et par

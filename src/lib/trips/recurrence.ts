@@ -6,7 +6,7 @@
 // donc idempotente, et une occurrence deja faite ou annulee n'est jamais
 // regeneree.
 import type { PlannedTrip } from '../../types';
-import { loadPlannedTrips, loadRecurringTrips, persistPlanned, sortPlanned, enqueuePlanned } from './storage';
+import { loadPlannedTrips, loadRecurringTrips, persistPlanned, sortPlanned } from './storage';
 
 // Les occurrences recurrentes sont materialisees sur une fenetre glissante.
 export const RECURRING_HORIZON_DAYS = 7;
@@ -79,9 +79,8 @@ export function syncRecurringOccurrences(userId: string, now: Date = new Date())
   if (generated.length === 0) {
     return sortPlanned(planned);
   }
-  // Les occurrences materialisees localement sont poussees au serveur : les
-  // autres appareils du meme compte retrouvent la meme semaine planifiee.
-  generated.forEach(enqueuePlanned);
+  // Les occurrences materialisees localement partent au serveur avec l'etat :
+  // les autres appareils du meme compte retrouvent la meme semaine planifiee.
   return persistPlanned(userId, sortPlanned([...planned, ...generated]));
 }
 

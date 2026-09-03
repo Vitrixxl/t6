@@ -1,5 +1,5 @@
 import type { CarbonSummary, TripRecord } from '../types';
-import { enqueueOperation } from './api/outbox';
+import { markDirty } from './api/dirty';
 import { startOfWeek } from './week';
 
 const TRIP_HISTORY_PREFIX = 'ufm.tripHistory.';
@@ -51,15 +51,14 @@ export function saveTripRecord(record: TripRecord): TripRecord[] {
   const records = [record, ...loadTripHistory(record.userId)].slice(0, 50);
   localStorage.setItem(storageKey(record.userId), JSON.stringify(records));
   // L'ecriture locale fait foi pour l'affichage immediat ; le serveur est
-  // rattrape par la file de synchronisation, meme si le reseau est absent.
-  const { userId, ...payload } = record;
-  enqueueOperation(userId, { kind: 'trip.record', record: payload });
+  // rattrape par la synchronisation, meme si le reseau est absent.
+  markDirty(record.userId);
   return records;
 }
 
 export function clearTripHistory(userId: string): void {
   localStorage.removeItem(storageKey(userId));
-  enqueueOperation(userId, { kind: 'trip.history.clear' });
+  markDirty(userId);
 }
 
 /** Remplace le cache local par l'etat du serveur (hydratation apres connexion). */

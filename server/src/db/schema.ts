@@ -142,19 +142,6 @@ export const savedRoutes = sqliteTable(
   (t) => [primaryKey({ columns: [t.userId, t.id] })],
 );
 
-// Journal des operations de synchronisation deja appliquees : le client peut
-// rejouer sa file d'attente sans risque de doublon (idempotence). Le journal
-// est purge au-dela de la fenetre de retention, sinon il grossit sans fin.
-export const appliedOperations = sqliteTable(
-  'applied_operations',
-  {
-    ...ownedColumns(),
-    kind: text('kind').notNull(),
-    appliedAt: text('applied_at').notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.userId, t.id] }), index('idx_applied_operations_date').on(t.appliedAt)],
-);
-
 // Traces de voirie deja calcules. Le cache est partage par tous les clients :
 // une recherche frequente n'atteint la source qu'une fois, ce qui protege le
 // quota du fournisseur et rend l'application utilisable quand il refuse de

@@ -1,10 +1,10 @@
 // Depot des itineraires sauvegardes par l'utilisateur.
-import { and, desc, eq, notInArray } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { savedRoutes } from '../db/schema.ts';
 import type { SavedRouteRecord } from '../../../src/types.ts';
 import { SAVED_ROUTES_LIMIT } from './limits.ts';
-import { endpoints, flattenEndpoints, measures } from './mappers.ts';
+import { chunks, endpoints, flattenEndpoints, measures } from './mappers.ts';
 
 export function createSavedRouteRepository(db: Executor) {
   return {
@@ -28,29 +28,16 @@ export function createSavedRouteRepository(db: Executor) {
         }));
     },
 
-    upsert(userId: string, record: Omit<SavedRouteRecord, 'userId'>): void {
-      const { origin, destination, ...rest } = record;
-      db.insert(savedRoutes)
-        .values({ ...rest, ...flattenEndpoints({ origin, destination }), userId })
-        .onConflictDoUpdate({
-          target: [savedRoutes.userId, savedRoutes.id],
-          set: { routeTitle: record.routeTitle, score: record.score, createdAt: record.createdAt },
-        })
-        .run();
-
-      const kept = db
-        .select({ id: savedRoutes.id })
-        .from(savedRoutes)
-        .where(eq(savedRoutes.userId, userId))
-        .orderBy(desc(savedRoutes.createdAt))
-        .limit(SAVED_ROUTES_LIMIT);
-      db.delete(savedRoutes)
-        .where(and(eq(savedRoutes.userId, userId), notInArray(savedRoutes.id, kept)))
-        .run();
-    },
-
-    delete(userId: string, recordId: string): void {
-      db.delete(savedRoutes).where(and(eq(savedRoutes.userId, userId), eq(savedRoutes.id, recordId))).run();
+    /** Remplace les itineraires sauvegardes par ceux du client. Seuls les plus recents sont gardes. */
+    replaceAll(userId: string, records: Omit<SavedRouteRecord, 'userId'>[]): void {
+      db.delete(savedRoutes).where(eq(savedRoutes.userId, userId)).run();
+      const rows = [...records]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, SAVED_ROUTES_LIMIT)
+        .map(({ origin, destination, ...rest }) => ({ ...rest, ...flattenEndpoints({ origin, destination }), userId }));
+      for (const batch of chunks(rows)) {
+        db.insert(savedRoutes).values(batch).run();
+      }
     },
   };
 }

@@ -1,9 +1,9 @@
 // Depot des routines (ex : aller-retour domicile-travail).
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { recurringTrips } from '../db/schema.ts';
 import type { RecurringTrip } from '../../../src/types.ts';
-import { endpoints, flattenEndpoints, measures } from './mappers.ts';
+import { chunks, endpoints, flattenEndpoints, measures } from './mappers.ts';
 
 export function createRecurringTripRepository(db: Executor) {
   return {
@@ -28,25 +28,17 @@ export function createRecurringTripRepository(db: Executor) {
         }));
     },
 
-    upsert(userId: string, trip: Omit<RecurringTrip, 'userId'>): void {
-      const { origin, destination, ...rest } = trip;
-      db.insert(recurringTrips)
-        .values({ ...rest, ...flattenEndpoints({ origin, destination }), userId })
-        .onConflictDoUpdate({
-          target: [recurringTrips.userId, recurringTrips.id],
-          set: {
-            label: trip.label,
-            daysOfWeek: trip.daysOfWeek,
-            departureTime: trip.departureTime,
-            returnTime: trip.returnTime,
-            paused: trip.paused,
-          },
-        })
-        .run();
-    },
-
-    delete(userId: string, tripId: string): void {
-      db.delete(recurringTrips).where(and(eq(recurringTrips.userId, userId), eq(recurringTrips.id, tripId))).run();
+    /** Remplace les routines par celles du client. */
+    replaceAll(userId: string, trips: Omit<RecurringTrip, 'userId'>[]): void {
+      db.delete(recurringTrips).where(eq(recurringTrips.userId, userId)).run();
+      const rows = trips.map(({ origin, destination, ...rest }) => ({
+        ...rest,
+        ...flattenEndpoints({ origin, destination }),
+        userId,
+      }));
+      for (const batch of chunks(rows)) {
+        db.insert(recurringTrips).values(batch).run();
+      }
     },
   };
 }
