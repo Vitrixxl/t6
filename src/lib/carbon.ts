@@ -1,4 +1,5 @@
-import type { CarbonSummary, TripRecord } from '../types';
+import type { CarbonSummary, RecurringTrip, TripRecord } from '../types';
+import { sumRoutines } from './trips/routines';
 import { startOfWeek } from './week';
 
 /** Minimisation : l'historique ne garde que les trajets les plus recents. */
@@ -12,20 +13,28 @@ export const TRIP_HISTORY_LIMIT = 50;
  * revenait a remplir une barre de progression qui ne redescendait jamais le
  * lundi (B16). La fenetre est donc appliquee ici, a la source, plutot que
  * laissee a la charge de chaque ecran.
+ *
+ * Les routines n'ecrivent rien dans l'historique : leurs passages deja echus
+ * de la semaine sont ajoutes ici, comme dans les objectifs, pour que les deux
+ * ecrans annoncent le meme chiffre.
  */
 export function summarizeCarbon(
   allRecords: TripRecord[],
+  recurring: RecurringTrip[],
   weeklyGoalGrams: number,
   now: Date = new Date(),
 ): CarbonSummary {
-  const weekFloor = startOfWeek(now).getTime();
-  const records = allRecords.filter((record) => new Date(record.createdAt).getTime() >= weekFloor);
-  const totalDistanceKm = round(records.reduce((sum, record) => sum + record.distanceKm, 0), 2);
-  const totalCarbonGrams = Math.round(records.reduce((sum, record) => sum + record.carbonGrams, 0));
-  const totalSavedGrams = Math.round(records.reduce((sum, record) => sum + record.carbonSavedGrams, 0));
+  const weekFloor = startOfWeek(now);
+  const records = allRecords.filter((record) => new Date(record.createdAt).getTime() >= weekFloor.getTime());
+  const routines = sumRoutines(recurring, weekFloor, now);
+  const totalDistanceKm = round(records.reduce((sum, record) => sum + record.distanceKm, 0) + routines.distanceKm, 2);
+  const totalCarbonGrams = Math.round(records.reduce((sum, record) => sum + record.carbonGrams, 0) + routines.carbonGrams);
+  const totalSavedGrams = Math.round(
+    records.reduce((sum, record) => sum + record.carbonSavedGrams, 0) + routines.carbonSavedGrams,
+  );
 
   return {
-    trips: records.length,
+    trips: records.length + routines.trips,
     totalDistanceKm,
     totalCarbonGrams,
     totalSavedGrams,

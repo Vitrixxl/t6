@@ -35,7 +35,6 @@ export function createPlannedTrip(
     carbonSavedGrams: source.carbonSavedGrams,
     scheduledFor: scheduledFor.toISOString(),
     status: 'planned',
-    recurringTripId: null,
     createdAt: now.toISOString(),
     completedAt: null,
   };
@@ -61,7 +60,8 @@ export function createRecurringTrip(
     daysOfWeek: [...schedule.daysOfWeek].sort((a, b) => a - b),
     departureTime: schedule.departureTime,
     returnTime: schedule.returnTime,
-    paused: false,
+    // Active des sa creation : ses passages comptent a partir de maintenant.
+    periods: [{ from: now.toISOString(), to: null }],
     createdAt: now.toISOString(),
   };
 }

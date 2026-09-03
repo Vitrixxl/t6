@@ -1,9 +1,8 @@
-// Trajets programmes et routines : creation, operations pures, recurrence et
-// vues de lecture. Le reste de l'application importe d'ici.
+// Trajets programmes et routines : creation, operations pures, comptage des
+// routines et vues de lecture. Le reste de l'application importe d'ici.
 export { WEEKDAY_LABELS, createPlannedTrip, createRecurringTrip, type TripSource } from './factory';
 export {
   PLANNED_LIMIT,
-  pruneForRecurring,
   removePlanned,
   removeRecurring,
   setPlannedStatus,
@@ -12,7 +11,14 @@ export {
   upsertPlanned,
   upsertRecurring,
 } from './operations';
-export { RECURRING_HORIZON_DAYS, materializeOccurrences, occurrenceId } from './recurrence';
+export {
+  countOccurrences,
+  isRoutinePaused,
+  nextOccurrence,
+  occurrencesBetween,
+  sumRoutines,
+  type RoutineTotals,
+} from './routines';
 export {
   completedTrips,
   plannedTripToRecord,

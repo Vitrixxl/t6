@@ -241,6 +241,14 @@ inchanges.
 
 **Niveau de verrouillage** : **automatise**.
 
+**Devenir** : le moteur de recurrence a ete retire depuis. Une routine
+n'engendre plus aucun trajet : ses passages sont comptes a la lecture, entre
+sa creation et maintenant, et seuls ceux dont l'heure est passee comptent
+(`src/lib/trips/routines.ts`). Le defaut ne peut plus se produire, par
+construction ; le test « ne compte pas un passage dont l'heure n'est pas
+encore passee » (`src/lib/trips/trips.test.ts`) verrouille la meme propriete
+sous sa nouvelle forme.
+
 ---
 
 ## B19 — La pastille et la fiche annonçaient deux chiffres pour le meme trajet
