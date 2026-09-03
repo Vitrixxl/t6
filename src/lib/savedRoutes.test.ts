@@ -1,5 +1,5 @@
 import { describe, expect, it } from '../test/harness';
-import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from './savedRoutes';
+import { SAVED_ROUTES_LIMIT, addSavedRoute, createSavedRouteRecord, removeSavedRoute } from './savedRoutes';
 import type { GeoPoint, RouteOption } from '../types';
 
 const origin: GeoPoint = { label: 'Bellecour', lat: 45.7578, lon: 4.832 };
@@ -29,33 +29,30 @@ describe('savedRoutes', () => {
     const second = createSavedRouteRecord('user-1', origin, destination, option);
     expect(first.id).toBe(second.id);
 
-    saveSavedRouteRecord(first);
-    const records = saveSavedRouteRecord(second);
-    expect(records).toHaveLength(1);
+    expect(addSavedRoute(addSavedRoute([], first), second)).toHaveLength(1);
   });
 
   it('distingue les trajets par origine-destination et par option', () => {
-    saveSavedRouteRecord(createSavedRouteRecord('user-1', origin, destination, option));
-    const records = saveSavedRouteRecord(
-      createSavedRouteRecord('user-1', destination, origin, option),
-    );
+    const aller = createSavedRouteRecord('user-1', origin, destination, option);
+    const retour = createSavedRouteRecord('user-1', destination, origin, option);
 
-    expect(records).toHaveLength(2);
+    expect(addSavedRoute(addSavedRoute([], aller), retour)).toHaveLength(2);
   });
 
   it('supprime un trajet sauvegarde par identifiant', () => {
     const record = createSavedRouteRecord('user-1', origin, destination, option);
-    saveSavedRouteRecord(record);
 
-    const remaining = deleteSavedRouteRecord('user-1', record.id);
-    expect(remaining).toEqual([]);
-    expect(loadSavedRoutes('user-1')).toEqual([]);
+    expect(removeSavedRoute(addSavedRoute([], record), record.id)).toEqual([]);
   });
 
-  it('purge une sauvegarde corrompue au lieu de planter', () => {
-    localStorage.setItem('ufm.savedRoutes.user-2', 'pas du json');
+  it('borne la liste aux plus recents', () => {
+    let records = addSavedRoute([], createSavedRouteRecord('user-1', origin, destination, option));
+    for (let index = 0; index < SAVED_ROUTES_LIMIT + 5; index += 1) {
+      const point = { ...destination, label: `Point ${index}` };
+      records = addSavedRoute(records, createSavedRouteRecord('user-1', origin, point, option));
+    }
 
-    expect(loadSavedRoutes('user-2')).toEqual([]);
-    expect(localStorage.getItem('ufm.savedRoutes.user-2')).toBeNull();
+    expect(records).toHaveLength(SAVED_ROUTES_LIMIT);
+    expect(records[0].destination.label).toBe(`Point ${SAVED_ROUTES_LIMIT + 4}`);
   });
 });

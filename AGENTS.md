@@ -74,7 +74,7 @@ base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
-marque d'etat a envoyer, synchronisation), `lib/auth/`, `components/map/`,
+reprise de session, envoi de l'etat), `lib/auth/`, `components/map/`,
 `components/planner/trips/`, `components/app/hooks/`.
 
 Le contrat de donnees (`src/types.ts`) est importe **par le client et par
@@ -88,10 +88,10 @@ pas le contourner en dupliquant les types.
 constante de troncature. Si une liste est bornee pour le rendu, le nombre
 annonce reste le nombre reel.
 
-**Le serveur est la seule source de verite.** Il n'y a pas de mode sans
-serveur : c'est l'API qui sert le client, une API absente est une page absente.
-Le client ecrit d'abord dans son cache local pour ne jamais bloquer l'interface,
-puis synchronise. Une coupure reseau en cours de session se dit a l'utilisateur,
+**Le serveur est la seule source de verite.** Il n'y a ni mode sans serveur
+ni cache local : c'est l'API qui sert le client, l'etat du compte est recu a la
+connexion, tenu en memoire React, et renvoye en entier a chaque action
+(`PUT /api/state`). Une ecriture refusee par le reseau se dit a l'utilisateur,
 elle ne se masque pas.
 
 **Jamais de geometrie approchee.** Un trace faux se lit comme un itineraire

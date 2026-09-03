@@ -1,11 +1,8 @@
-// Itineraires enregistres par l'utilisateur.
-//
-// L'etat local et les mutations vivent ensemble : l'interface n'a pas a savoir
-// que l'enregistrement passe par le cache local puis par la file de
-// synchronisation.
+// Itineraires enregistres par l'utilisateur, sur l'etat du compte.
 import { useState } from 'react';
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../../../types';
-import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from '../../../lib/savedRoutes';
+import { addSavedRoute, createSavedRouteRecord, removeSavedRoute } from '../../../lib/savedRoutes';
+import type { Account } from './useAccount';
 
 /** Duree du retour visuel "enregistre" sur le bouton. */
 const CONFIRMATION_MS = 1800;
@@ -18,20 +15,20 @@ export interface SavedRoutes {
   deleteSavedRoute: (recordId: string) => void;
 }
 
-export function useSavedRoutes(userId: string): SavedRoutes {
-  const [savedRoutes, setSavedRoutes] = useState<SavedRouteRecord[]>(() => loadSavedRoutes(userId));
+export function useSavedRoutes(account: Account): SavedRoutes {
   const [justSavedRouteId, setJustSavedRouteId] = useState('');
 
   return {
-    savedRoutes,
+    savedRoutes: account.state.savedRoutes,
     justSavedRouteId,
     saveRoute(routeOption, origin, destination) {
-      setSavedRoutes(saveSavedRouteRecord(createSavedRouteRecord(userId, origin, destination, routeOption)));
+      const record = createSavedRouteRecord(account.user.id, origin, destination, routeOption);
+      account.update((state) => ({ ...state, savedRoutes: addSavedRoute(state.savedRoutes, record) }));
       setJustSavedRouteId(routeOption.id);
       window.setTimeout(() => setJustSavedRouteId(''), CONFIRMATION_MS);
     },
     deleteSavedRoute(recordId) {
-      setSavedRoutes(deleteSavedRouteRecord(userId, recordId));
+      account.update((state) => ({ ...state, savedRoutes: removeSavedRoute(state.savedRoutes, recordId) }));
     },
   };
 }

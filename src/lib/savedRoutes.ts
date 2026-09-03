@@ -1,8 +1,9 @@
+// Itineraires enregistres : creation et operations pures sur la liste. La
+// persistance est celle de l'etat du compte, envoye en entier au serveur.
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';
-import { markDirty } from './api/dirty';
 
-const SAVED_ROUTES_PREFIX = 'ufm.savedRoutes.';
-const SAVED_ROUTES_LIMIT = 50;
+/** Minimisation : seuls les plus recents sont conserves. */
+export const SAVED_ROUTES_LIMIT = 50;
 
 export function createSavedRouteRecord(
   userId: string,
@@ -28,40 +29,16 @@ export function createSavedRouteRecord(
   };
 }
 
-export function loadSavedRoutes(userId: string): SavedRouteRecord[] {
-  const payload = localStorage.getItem(storageKey(userId));
-  if (!payload) {
-    return [];
-  }
-
-  try {
-    const records = JSON.parse(payload) as SavedRouteRecord[];
-    return Array.isArray(records) ? records.slice(0, SAVED_ROUTES_LIMIT) : [];
-  } catch {
-    localStorage.removeItem(storageKey(userId));
-    return [];
-  }
+/** Ajoute en tete ; le meme trajet enregistre deux fois remplace sa version precedente. */
+export function addSavedRoute(records: SavedRouteRecord[], record: SavedRouteRecord): SavedRouteRecord[] {
+  return [record, ...records.filter((item) => item.id !== record.id)].slice(0, SAVED_ROUTES_LIMIT);
 }
 
-export function saveSavedRouteRecord(record: SavedRouteRecord): SavedRouteRecord[] {
-  const records = [record, ...loadSavedRoutes(record.userId).filter((item) => item.id !== record.id)].slice(0, SAVED_ROUTES_LIMIT);
-  localStorage.setItem(storageKey(record.userId), JSON.stringify(records));
-  markDirty(record.userId);
-  return records;
+export function removeSavedRoute(records: SavedRouteRecord[], recordId: string): SavedRouteRecord[] {
+  return records.filter((record) => record.id !== recordId);
 }
 
-export function deleteSavedRouteRecord(userId: string, routeRecordId: string): SavedRouteRecord[] {
-  const records = loadSavedRoutes(userId).filter((record) => record.id !== routeRecordId);
-  localStorage.setItem(storageKey(userId), JSON.stringify(records));
-  markDirty(userId);
-  return records;
-}
-
-/** Remplace le cache local par l'etat du serveur (hydratation apres connexion). */
-export function replaceSavedRoutes(userId: string, records: SavedRouteRecord[]): void {
-  localStorage.setItem(storageKey(userId), JSON.stringify(records.slice(0, SAVED_ROUTES_LIMIT)));
-}
-
+/** Identifiant deterministe : meme origine, meme destination, meme option. */
 function stableSavedRouteId(origin: GeoPoint, destination: GeoPoint, routeId: string): string {
   return [
     routeId,
@@ -72,8 +49,4 @@ function stableSavedRouteId(origin: GeoPoint, destination: GeoPoint, routeId: st
     destination.lat.toFixed(5),
     destination.lon.toFixed(5),
   ].join(':');
-}
-
-function storageKey(userId: string): string {
-  return `${SAVED_ROUTES_PREFIX}${userId}`;
 }

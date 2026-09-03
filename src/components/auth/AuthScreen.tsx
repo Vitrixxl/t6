@@ -5,10 +5,10 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
-import type { SessionUser} from '../../types';
+import type { Session } from '../../lib/api/account';
 import { loginUser, registerUser } from '../../lib/auth';
 
-export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: SessionUser) => void }) {
+export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,11 +22,11 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: Sessio
     setError('');
 
     try {
-      const authenticatedUser =
+      const session =
         mode === 'register'
           ? await registerUser({ displayName, email, password })
           : await loginUser({ email, password });
-      onAuthenticated(authenticatedUser);
+      onAuthenticated(session);
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : 'Action impossible.');
     } finally {

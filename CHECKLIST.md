@@ -127,11 +127,11 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Validation TypeBox de toutes les entrees, limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
-- [x] Synchronisation : le client ecrit en local puis envoie son etat complet (`PUT /api/state`), remplace en transaction ; idempotent par nature, borne, dernier ecrivain gagnant assume.
-- [x] Une seule origine : l'API sert le client, pas de mode sans serveur ; une coupure reseau en session laisse l'interface utilisable sur le cache local et rejoue au retour du reseau.
-- [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17), file d'attente purgee avec le compte.
+- [x] Etat du compte : charge a la connexion, tenu en memoire, envoye en entier a chaque action (`PUT /api/state`, remplace en transaction, borne par le schema).
+- [x] Une seule origine : l'API sert le client, pas de mode sans serveur  ; une ecriture refusee par le reseau est signalee a l'utilisateur.
+- [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17).
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
-- [x] Tests d'integration API via `app.handle` (base :memory:) et tests de synchronisation client (marque d'etat, envoi, coupures) ; suite complete sous `bun test`.
+- [x] Tests d'integration API via `app.handle` (base :memory:) et tests client sur les operations pures (trajets, routines, carbone, profil) ; suite complete sous `bun test`.
 - [x] Verification bout en bout en navigateur : inscription depuis l'interface -> ligne SQLite avec empreinte scrypt -> session restauree apres rechargement par cookie httpOnly, zero erreur de page.
 
 ## 11. Architecture de fichiers (revue de code)
