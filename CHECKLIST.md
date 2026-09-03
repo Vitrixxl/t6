@@ -128,7 +128,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
 - [x] Synchronisation hors ligne : file d'attente cliente (patron outbox), lot atomique, operations idempotentes (`applied_operations`), rejeu sans doublon.
-- [x] Repli automatique : sonde `/api/health` au demarrage, mode autonome si l'API est absente (verifie en navigateur, sans serveur).
+- [x] Une seule origine : l'API sert le client, pas de mode sans serveur ; une coupure reseau en session laisse l'interface utilisable sur le cache local et rejoue au retour du reseau.
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17), file d'attente purgee avec le compte.
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
 - [x] 35 tests supplementaires (27 d'integration API via `app.handle`, 8 sur la file de synchronisation) : 99 tests verts au total (72 Vitest + 27 bun test).
@@ -140,7 +140,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Module trajets eclate : 955 lignes -> 11 fichiers (hub, quatre listes, formulaire, objectifs, briques, formats).
 - [x] Moteur d'itineraires eclate : 559 lignes -> 13 fichiers, un generateur par mode dans `options/`.
 - [x] Couche transport eclatee : 780 lignes -> 14 fichiers (`geocoding/`, `routing/`, `feeds/`), une source externe par fichier.
-- [x] Module d'authentification eclate : crypto, validation, defauts, stockage local, arbitrage API/autonome.
+- [x] Module d'authentification : appels API, cache de session, normalisation du profil.
 - [x] Carte eclatee (composant, popups avec echappement HTML, sources) et type `LayerState` dedoublonne.
 - [x] Geolocalisation et calcul d'itineraires extraits en hooks testables.
 - [x] Aucun fichier de plus de 450 lignes ; verification apres chaque etape par lint, typage, tests et scenario E2E 5/5.

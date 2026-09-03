@@ -9,17 +9,12 @@ Deux briques, une seule origine pour le navigateur :
 - **Client** (`src/`) : PWA React/TypeScript. Ecrit d'abord dans son cache local, donc utilisable hors ligne.
 - **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, calcul d'itinéraires.
 
-Le client sonde `/api/health` au demarrage. API joignable : elle fait autorite, le cache local est hydrate depuis
-le serveur et les mutations partent dans une file d'attente rejouable (patron *outbox*, operations idempotentes).
-API absente : l'application bascule en **mode autonome** (comptes et historiques dans le navigateur), sans rien
-casser. C'est ce qui permet de tenir l'exigence C10 (connectivite variable) sans sacrifier la persistance serveur.
+Le serveur fait autorite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable en base, donnees
+partagees entre appareils. Le client ecrit d'abord dans son cache local, pour ne jamais bloquer l'interface sur le
+reseau, puis rejoue ses mutations vers le serveur (patron *outbox*, operations idempotentes). C'est ce qui permet de
+tenir l'exigence C10 (connectivite variable) : une coupure en cours de session ne perd rien, elle est rattrapee.
 
-| | Mode serveur | Mode autonome |
-| --- | --- | --- |
-| Comptes | SQLite, mot de passe argon2id (OWASP) | navigateur, PBKDF2-SHA-256 |
-| Session | cookie httpOnly + jeton revocable en base | `sessionStorage` |
-| Donnees | serveur, synchronisees hors ligne | navigateur uniquement |
-| Multi-appareil | oui | non |
+Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
 
 ## Organisation du code
 
@@ -43,8 +38,8 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | --- | --- |
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
-| `lib/api/` | couche serveur du client : sonde, file d'attente hors ligne, synchronisation |
-| `lib/auth/` | authentification : crypto, validation, stockage local, arbitrage API/autonome |
+| `lib/api/` | couche serveur du client : client HTTP, file d'attente hors ligne, synchronisation |
+| `lib/auth/` | authentification : appels API, cache de session, normalisation du profil |
 | `components/map/` | carte MapLibre : composant, popups, sources |
 | `components/planner/trips/` | module trajets : hub, listes, formulaire, objectifs |
 | `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
@@ -144,6 +139,3 @@ l'API n'est consommée qu'en même origine.
 
 RGPD : export complet du compte (`GET /api/me/export`, art. 20) et suppression en cascade (`DELETE /api/me`,
 art. 17), historiques bornés à 50 entrées (minimisation), géolocalisation sur action explicite.
-
-En mode autonome, l'authentification locale PBKDF2-SHA-256 (120 000 itérations) démontre F1 sans être présentée
-comme une frontière de sécurité : c'est le serveur qui joue ce rôle dès qu'il est présent.

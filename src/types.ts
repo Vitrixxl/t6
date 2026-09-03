@@ -34,16 +34,6 @@ export interface MobilityProfile {
  */
 export type RoutePreselection = 'fastest' | MobilityMode;
 
-export interface StoredUser {
-  id: string;
-  email: string;
-  displayName: string;
-  passwordHash: string;
-  passwordSalt: string;
-  createdAt: string;
-  profile: MobilityProfile;
-}
-
 export interface SessionUser {
   id: string;
   email: string;

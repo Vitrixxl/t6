@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from '../../test/harness';
+import { afterEach, describe, expect, it, vi } from '../../test/harness';
 import { discardOperations, enqueueOperation, flushOutbox, pendingOperationCount } from './outbox';
-import { markApiOffline, probeApi } from './availability';
 
 const USER = 'user-1';
 const OTHER_USER = 'user-2';
@@ -23,35 +22,12 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-/** Rend l'API "joignable" pour la sonde, sans reseau reel. */
-async function goOnline(): Promise<void> {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(jsonResponse({ status: 'ok' }));
-  await probeApi();
-}
-
-beforeEach(() => {
-  markApiOffline();
-});
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe("file d'attente de synchronisation", () => {
-  it('empile les operations sans reseau et ne tente rien hors ligne', async () => {
-    enqueueOperation(USER, { kind: 'trip.record', record: { ...RECORD, modes: [...RECORD.modes] } });
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-
-    const result = await flushOutbox(USER);
-
-    expect(result).toBeNull();
-    expect(fetchSpy).not.toHaveBeenCalled();
-    // Rien n'est perdu : l'operation attend le retour du reseau.
-    expect(pendingOperationCount(USER)).toBe(1);
-  });
-
   it('vide la file quand le serveur accepte le lot', async () => {
-    await goOnline();
     enqueueOperation(USER, { kind: 'trip.record', record: { ...RECORD, modes: [...RECORD.modes] } });
     enqueueOperation(USER, { kind: 'trip.history.clear' });
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ applied: 2, ignored: 0 }));
@@ -63,18 +39,17 @@ describe("file d'attente de synchronisation", () => {
   });
 
   it('conserve la file si le reseau tombe pendant l envoi', async () => {
-    await goOnline();
     enqueueOperation(USER, { kind: 'trip.history.clear' });
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
 
     const result = await flushOutbox(USER);
 
+    // Rien n'est perdu : l'operation attend le retour du reseau.
     expect(result).toMatchObject({ applied: 0, remaining: 1 });
     expect(pendingOperationCount(USER)).toBe(1);
   });
 
   it('ecarte un lot refuse par la validation serveur pour ne pas bloquer la file', async () => {
-    await goOnline();
     enqueueOperation(USER, { kind: 'planned.delete', tripId: 'inconnu' });
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Requete invalide.' }, 400));
@@ -86,7 +61,6 @@ describe("file d'attente de synchronisation", () => {
   });
 
   it('garde la file intacte quand la session a expire', async () => {
-    await goOnline();
     enqueueOperation(USER, { kind: 'planned.delete', tripId: 'trip-1' });
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Session expiree.' }, 401));
 
@@ -98,7 +72,6 @@ describe("file d'attente de synchronisation", () => {
   });
 
   it("n'envoie jamais les operations d'un autre compte", async () => {
-    await goOnline();
     enqueueOperation(OTHER_USER, { kind: 'trip.history.clear' });
     enqueueOperation(USER, { kind: 'trip.history.clear' });
     const fetchSpy = vi
@@ -107,12 +80,8 @@ describe("file d'attente de synchronisation", () => {
 
     await flushOutbox(USER);
 
-    // L'appel vise est designe par son chemin et non par son rang : la sonde de
-    // disponibilite passe avant, et compter sur l'ordre rendait le test
-    // dependant d'un detail d'implementation.
-    const call = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/state/operations'));
-    expect(call, "aucun envoi vers /state/operations").toBeDefined();
-    const sent = JSON.parse(String((call?.[1] as RequestInit).body)) as { operations: { kind: string }[] };
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const sent = JSON.parse(String(init.body)) as { operations: { kind: string }[] };
     expect(sent.operations).toHaveLength(1);
     // La file de l'autre compte reste en attente de sa propre session.
     expect(pendingOperationCount(OTHER_USER)).toBe(1);
@@ -126,20 +95,5 @@ describe("file d'attente de synchronisation", () => {
 
     expect(pendingOperationCount(USER)).toBe(0);
     expect(pendingOperationCount(OTHER_USER)).toBe(1);
-  });
-});
-
-describe('sonde de disponibilite', () => {
-  it("refuse de considerer l'API disponible si la reponse n'est pas celle attendue", async () => {
-    // Cas reel d'un deploiement statique : /api/health renvoie l'index HTML
-    // avec un code 200. Un simple response.ok ferait croire a une API presente.
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<!doctype html><title>UrbanFlow</title>', {
-        status: 200,
-        headers: { 'Content-Type': 'text/html' },
-      }),
-    );
-
-    expect(await probeApi()).toBe(false);
   });
 });

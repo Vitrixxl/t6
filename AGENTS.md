@@ -73,8 +73,8 @@ committe avec le schema : elle est appliquee au demarrage, y compris sur la
 base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
-`lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (sonde, file
-d'attente hors ligne, synchronisation), `lib/auth/`, `components/map/`,
+`lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
+file d'attente hors ligne, synchronisation), `lib/auth/`, `components/map/`,
 `components/planner/trips/`, `components/app/hooks/`.
 
 Le contrat de donnees (`src/types.ts`) est importe **par le client et par
@@ -88,10 +88,11 @@ pas le contourner en dupliquant les types.
 constante de troncature. Si une liste est bornee pour le rendu, le nombre
 annonce reste le nombre reel.
 
-**Le mode autonome doit continuer de fonctionner.** L'application sonde
-`/api/health` au demarrage et bascule sur le stockage local si l'API ne repond
-pas. Toute fonctionnalite qui suppose le serveur doit avoir un repli, ou etre
-clairement inactive sans lui.
+**Le serveur est la seule source de verite.** Il n'y a pas de mode sans
+serveur : c'est l'API qui sert le client, une API absente est une page absente.
+Le client ecrit d'abord dans son cache local pour ne jamais bloquer l'interface,
+puis synchronise. Une coupure reseau en cours de session se dit a l'utilisateur,
+elle ne se masque pas.
 
 **Jamais de geometrie approchee.** Un trace faux se lit comme un itineraire
 reel et envoie l'utilisateur ailleurs ; un trace absent se voit. Tant qu'une

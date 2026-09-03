@@ -7,7 +7,6 @@
 //
 // Chaque operation porte un identifiant unique : le serveur ignore celles qu'il
 // a deja appliquees, un rejeu apres une reponse perdue ne cree pas de doublon.
-import { isApiOnline } from './availability';
 import { ApiError, ApiUnavailableError } from './errors';
 import { apiRequest } from './http';
 import type { OperationPayload } from './operations';
@@ -73,10 +72,6 @@ export interface FlushResult {
  * pas joignable : les operations restent en attente, sans perte.
  */
 export async function flushOutbox(userId: string): Promise<FlushResult | null> {
-    if (!isApiOnline()) {
-        return null;
-    }
-
     let applied = 0;
     let ignored = 0;
 

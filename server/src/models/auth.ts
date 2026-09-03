@@ -4,7 +4,7 @@ import { mobilityProfile } from './profile.ts';
 
 const email = t.String({ format: 'email', maxLength: 180 });
 
-// Regles alignees sur le mode autonome du client et sur l'ASVS v4 niveau 1.
+// Regles alignees sur l'ASVS v4 niveau 1 : douze caracteres et un chiffre.
 const password = t.String({
   minLength: 12,
   maxLength: 200,

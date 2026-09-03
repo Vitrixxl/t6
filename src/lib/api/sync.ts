@@ -3,10 +3,9 @@
 // Regle du modele : le serveur fait autorite a la connexion (il hydrate le
 // cache local), le client fait autorite entre deux synchronisations (il ecrit
 // localement puis rejoue sa file). Compromis assume : l'application reste
-// utilisable hors ligne, au prix d'un dernier ecrivain gagnant en cas
-// d'edition simultanee sur deux appareils.
+// utilisable pendant une coupure reseau, au prix d'un dernier ecrivain gagnant
+// en cas d'edition simultanee sur deux appareils.
 import type { SessionUser } from '../../types';
-import { isApiOnline, probeApi } from './availability';
 import { ApiError, ApiUnavailableError } from './errors';
 import { apiRequest } from './http';
 import type { RemoteState } from './operations';
@@ -21,41 +20,37 @@ const RETRY_INTERVAL_MS = 60_000;
 
 /** Enregistre la session rendue par le serveur, et son etat s'il l'a joint. */
 export function adoptRemoteSession(user: SessionUser, state?: RemoteState): void {
-    cacheSessionUser(user);
-    setActiveSessionId(user.id);
-    if (state) {
-        applyRemoteState(user.id, state);
-    }
+  cacheSessionUser(user);
+  setActiveSessionId(user.id);
+  if (state) {
+    applyRemoteState(user.id, state);
+  }
 }
 
 /**
- * Demarrage de l'application : sonde le serveur, restaure la session si le
- * cookie est encore valide, puis rejoue les operations en attente.
- * Renvoie l'utilisateur restaure, ou null si l'on reste en mode autonome.
+ * Demarrage de l'application : restaure la session si le cookie est encore
+ * valide, puis rejoue les operations en attente. Renvoie l'utilisateur
+ * restaure, ou null s'il faut passer par l'ecran de connexion.
  */
 export async function bootstrapSync(): Promise<SessionUser | null> {
-    if (!(await probeApi())) {
-        return null;
+  try {
+    const { user, state } = await apiRequest<{ user: SessionUser; state: RemoteState }>('/auth/session');
+    adoptRemoteSession(user);
+
+    // La file locale est rejouee avant l'hydratation : les actions faites
+    // pendant une coupure ne doivent pas etre effacees par l'etat serveur.
+    await flushOutbox(user.id);
+    const refreshed = await apiRequest<RemoteState>('/state').catch(() => state);
+    applyRemoteState(user.id, refreshed);
+
+    return user;
+  } catch (error) {
+    if (error instanceof ApiUnavailableError || (error instanceof ApiError && error.status === 401)) {
+      // Pas (ou plus) de session serveur : l'ecran de connexion prend le relais.
+      return null;
     }
-
-    try {
-        const { user, state } = await apiRequest<{ user: SessionUser; state: RemoteState }>('/auth/session');
-        adoptRemoteSession(user);
-
-        // La file locale est rejouee avant l'hydratation : les actions faites hors
-        // ligne ne doivent pas etre effacees par l'etat serveur.
-        await flushOutbox(user.id);
-        const refreshed = await apiRequest<RemoteState>('/state').catch(() => state);
-        applyRemoteState(user.id, refreshed);
-
-        return user;
-    } catch (error) {
-        if (error instanceof ApiUnavailableError || (error instanceof ApiError && error.status === 401)) {
-            // Pas (ou plus) de session serveur : l'ecran de connexion prend le relais.
-            return null;
-        }
-        throw error;
-    }
+    throw error;
+  }
 }
 
 /**
@@ -63,26 +58,26 @@ export async function bootstrapSync(): Promise<SessionUser | null> {
  * Renvoie la fonction de detachement a appeler au demontage.
  */
 export function startBackgroundSync(userId: string): () => void {
-    let stopped = false;
+  let stopped = false;
 
-    const attempt = (): void => {
-        if (stopped || !isApiOnline() || pendingOperationCount(userId) === 0) {
-            return;
-        }
-        void flushOutbox(userId).catch(() => undefined);
-    };
+  const attempt = (): void => {
+    if (stopped || pendingOperationCount(userId) === 0) {
+      return;
+    }
+    void flushOutbox(userId).catch(() => undefined);
+  };
 
-    window.addEventListener('online', attempt);
-    // Le retour au premier plan est le moment ou l'utilisateur consulte ses
-    // donnees : c'est la que la synchronisation a le plus de valeur.
-    document.addEventListener('visibilitychange', attempt);
-    const timer = window.setInterval(attempt, RETRY_INTERVAL_MS);
-    attempt();
+  window.addEventListener('online', attempt);
+  // Le retour au premier plan est le moment ou l'utilisateur consulte ses
+  // donnees : c'est la que la synchronisation a le plus de valeur.
+  document.addEventListener('visibilitychange', attempt);
+  const timer = window.setInterval(attempt, RETRY_INTERVAL_MS);
+  attempt();
 
-    return () => {
-        stopped = true;
-        window.removeEventListener('online', attempt);
-        document.removeEventListener('visibilitychange', attempt);
-        window.clearInterval(timer);
-    };
+  return () => {
+    stopped = true;
+    window.removeEventListener('online', attempt);
+    document.removeEventListener('visibilitychange', attempt);
+    window.clearInterval(timer);
+  };
 }
