@@ -26,7 +26,7 @@ export function sanitizeDisplayName(value: string): string {
 }
 
 export function sanitizeModes(modes: MobilityMode[]): MobilityMode[] {
-  const allowed: MobilityMode[] = ['walk', 'bike', 'scooter', 'transit', 'carpool'];
+  const allowed: MobilityMode[] = ['walk', 'bike', 'scooter', 'transit'];
   const sanitized = modes.filter((mode, index) => allowed.includes(mode) && modes.indexOf(mode) === index);
   return sanitized.length > 0 ? sanitized : DEFAULT_PROFILE.preferredModes;
 }

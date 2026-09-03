@@ -139,10 +139,13 @@ describe('searchPlaces', () => {
 });
 
 describe('enhanceLegsWithLiveRouting', () => {
-  const carpoolLeg: RouteLeg = {
-    id: 'carpool-core',
-    mode: 'carpool',
-    title: 'Covoiturage',
+  // Un segment de voirie quelconque : ce qui est teste ici est la reprise des
+  // mesures du routage, pas le mode. Les hypotheses sont volontairement toutes
+  // non neutres, pour qu'une hypothese perdue se voie.
+  const roadLeg: RouteLeg = {
+    id: 'scooter-core',
+    mode: 'scooter',
+    title: 'Trottinette partagee',
     from: origin.label,
     to: destination.label,
     fromPoint: origin,
@@ -150,11 +153,11 @@ describe('enhanceLegsWithLiveRouting', () => {
     path: [],
     distanceKm: 2,
     durationMinutes: 12,
-    carbonGrams: 180,
+    carbonGrams: 30,
     accessible: true,
     detail: 'Test',
-    // 1.2 de congestion, 6 min de prise en charge, 90 g/km (voiture a deux).
-    estimate: { travelFactor: 1.2, overheadMinutes: 6, carbonGramsPerKm: 90 },
+    // 1.2 de congestion, 6 min de temps fixe, 15 g/km.
+    estimate: { travelFactor: 1.2, overheadMinutes: 6, carbonGramsPerKm: 15 },
   };
 
   it('reprend distance, duree et CO2 du reseau routier en gardant les hypotheses du segment', async () => {
@@ -174,12 +177,12 @@ describe('enhanceLegsWithLiveRouting', () => {
       ),
     );
 
-    const [enhanced] = await enhanceLegsWithLiveRouting([carpoolLeg]);
+    const [enhanced] = await enhanceLegsWithLiveRouting([roadLeg]);
 
     expect(enhanced.distanceKm).toBe(3);
-    // 10 min de parcours x 1.2 de congestion + 6 min de prise en charge.
+    // 10 min de parcours x 1.2 de congestion + 6 min de temps fixe.
     expect(enhanced.durationMinutes).toBe(18);
-    expect(enhanced.carbonGrams).toBe(270);
+    expect(enhanced.carbonGrams).toBe(45);
     expect(enhanced.path).toHaveLength(2);
   });
 
@@ -191,7 +194,7 @@ describe('enhanceLegsWithLiveRouting', () => {
       }),
     );
 
-    const [enhanced] = await enhanceLegsWithLiveRouting([{ ...carpoolLeg, path: [origin, destination] }]);
+    const [enhanced] = await enhanceLegsWithLiveRouting([{ ...roadLeg, path: [origin, destination] }]);
 
     expect(enhanced.path).toEqual([]);
   });
@@ -202,7 +205,7 @@ describe('enhanceLegsWithLiveRouting', () => {
 
     const transitPath = [origin, destination];
     const [enhanced] = await enhanceLegsWithLiveRouting([
-      { ...carpoolLeg, id: 'ride', mode: 'transit', path: transitPath },
+      { ...roadLeg, id: 'ride', mode: 'transit', path: transitPath },
     ]);
 
     expect(stub).not.toHaveBeenCalled();

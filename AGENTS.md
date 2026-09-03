@@ -97,8 +97,7 @@ sont apparus le jour ou le service tiers a cesse de repondre.
 
 **Nommer les limites plutot que les masquer.** Le moteur d'itineraires reste
 heuristique et il n'y a pas de graphe horaire GTFS : les frequences sont des
-moyennes, pas des horaires. Le covoiturage ne met aucun conducteur en relation,
-c'est un point de comparaison. Ces limites sont ecrites dans le code et dans le
+moyennes, pas des horaires. Ces limites sont ecrites dans le code et dans le
 dossier ; ne pas produire d'affichage qui les contredit.
 
 En revanche le nom de ligne **est** affiche depuis l'integration de la desserte

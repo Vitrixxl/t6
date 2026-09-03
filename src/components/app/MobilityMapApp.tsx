@@ -113,7 +113,7 @@ export function MobilityMapApp({
     (point) => point && haversineDistanceKm(point, CITY_CENTER) > METRO_RADIUS_KM + 4,
   );
   const coverageWarning = routeRequested && outsideMetro
-    ? 'Hors metropole de Lyon : transport public et velos/trottinettes indisponibles, options limitees a la marche et au covoiturage.'
+    ? 'Hors metropole de Lyon : transport public et velos/trottinettes indisponibles, seule la marche reste proposee.'
     : null;
 
   // Appui long sur la carte : le point est nomme par geocodage inverse avant

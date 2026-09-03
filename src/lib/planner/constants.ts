@@ -8,39 +8,26 @@ export const SPEED_KMH: Record<MobilityMode, number> = {
   bike: 15,
   scooter: 18,
   transit: 28,
-  carpool: 23,
 };
 
 /**
- * Emissions **du vehicule**, en g/km. Le covoiturage vaut la voiture
- * individuelle : c'est le meme vehicule, il emet autant. Ce qui change est la
- * part imputee a chaque passager, calculee par segment a partir du nombre
- * d'occupants (voir `LegEstimate.carbonGramsPerKm`).
+ * Emissions **du vehicule**, en g/km. `privateCar` n'est pas un mode propose :
+ * c'est la reference du calcul de CO2 evite, le meme trajet fait seul en
+ * voiture (voir `summarizeLegs`).
  */
 export const EMISSIONS_G_PER_KM: Record<MobilityMode | 'privateCar', number> = {
   walk: 0,
   bike: 4,
   scooter: 15,
   transit: 55,
-  carpool: 180,
   privateCar: 180,
 };
-
-/**
- * Occupants retenus quand le profil ne dit rien. Deux, soit le conducteur et
- * un passager : l'hypothese la plus basse qui merite encore le nom de
- * covoiturage.
- */
-export const DEFAULT_CARPOOL_OCCUPANTS = 2;
-export const MIN_CARPOOL_OCCUPANTS = 1;
-export const MAX_CARPOOL_OCCUPANTS = 5;
 
 export const MODE_LABELS: Record<MobilityMode, string> = {
   walk: 'marche',
   bike: 'velo',
   scooter: 'trottinette',
   transit: 'transport public',
-  carpool: 'covoiturage',
 };
 
 // Coefficients du modele de score, centralises et testes (routePlanner.test.ts).

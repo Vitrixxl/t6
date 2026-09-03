@@ -140,36 +140,6 @@ describe('planRoutes', () => {
     }
   });
 
-  // Un vehicule emet autant quel que soit son remplissage : seule la part
-  // imputee a chaque passager change. Ce test verrouille le modele, qui a
-  // remplace une constante de 85 g/km supposant une occupation invisible.
-  it('divise le CO2 du covoiturage par le nombre d occupants', () => {
-    const carbonFor = (carpoolOccupants: number) =>
-      planRoutes({
-        origin: LANDMARKS[0],
-        destination: LANDMARKS[1],
-        profile: { ...DEFAULT_PROFILE, carpoolOccupants },
-        network,
-      }).find((route) => route.id === 'carpool')?.carbonGrams ?? 0;
-
-    const alone = carbonFor(1);
-    expect(alone).toBeGreaterThan(0);
-    // Tolerance d'un gramme : les totaux sont arrondis a l'entier.
-    expect(Math.abs(carbonFor(2) - alone / 2)).toBeLessThanOrEqual(1);
-    expect(Math.abs(carbonFor(4) - alone / 4)).toBeLessThanOrEqual(1);
-  });
-
-  it('ne compte aucune economie pour un conducteur seul', () => {
-    const [carpool] = planRoutes({
-      origin: LANDMARKS[0],
-      destination: LANDMARKS[1],
-      profile: { ...DEFAULT_PROFILE, carpoolOccupants: 1 },
-      network,
-    }).filter((route) => route.id === 'carpool');
-
-    expect(carpool.carbonSavedGrams).toBe(0);
-  });
-
   it('penalizes inaccessible options when PMR profile is enabled', () => {
     const routes = planRoutes({
       origin: LANDMARKS[0],

@@ -1,7 +1,7 @@
 // Elements partages par les modules d'interface : carte differee, constantes de
 // modes, etats de calques et de feuille mobile, micro-composants transverses.
 import { type ComponentProps, lazy, Suspense } from 'react';
-import { Bike, Bus, Car, Footprints, Zap } from 'lucide-react';
+import { Bike, Bus, Footprints, Zap } from 'lucide-react';
 import type { MobilityMode, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 
@@ -28,7 +28,6 @@ export const MODE_OPTIONS: Array<{ mode: MobilityMode; label: string }> = [
   { mode: 'bike', label: 'Velo' },
   { mode: 'scooter', label: 'Trottinette' },
   { mode: 'transit', label: 'Transport public' },
-  { mode: 'carpool', label: 'Covoiturage' },
 ];
 
 export const ALL_MOBILITY_MODES = MODE_OPTIONS.map((option) => option.mode);
@@ -37,8 +36,7 @@ export const MODE_ICON: Record<MobilityMode, typeof Footprints> = {
   walk: Footprints,
   bike: Bike,
   scooter: Zap,
-  transit: Bus,
-  carpool: Car };
+  transit: Bus };
 
 export type LayerState = {
   transitStops: boolean;
@@ -119,14 +117,6 @@ export function RouteChip({ routeOption, selected, onClick }: { routeOption: Rou
       <span className="min-w-0">
         <strong className="flex min-w-0 items-center gap-1.5 text-sm">
           <span className="truncate">{routeOption.title}</span>
-          {/* Le covoiturage ne met aucun conducteur en relation. Le dire sur la
-              pastille elle-meme, et pas seulement dans le detail que personne
-              n'ouvre, evite de laisser croire a un service de mise en relation. */}
-          {routeOption.id === 'carpool' ? (
-            <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
-              Estimation
-            </span>
-          ) : null}
         </strong>
         <span className="block truncate text-xs text-muted-foreground">
           {routeOption.distanceKm.toFixed(1)} km - {routeOption.carbonGrams} g CO2

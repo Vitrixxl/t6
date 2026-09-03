@@ -8,7 +8,6 @@ export const MODE_LABELS: Record<MobilityMode, string> = {
   bike: 'velo',
   scooter: 'trottinette',
   transit: 'transport public',
-  carpool: 'covoiturage',
 };
 
 const ROUTE_KIND: Record<number, string> = {
