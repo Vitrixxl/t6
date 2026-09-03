@@ -219,14 +219,8 @@ export function UrbanMap({
     if (IS_DEV) {
       // Poignee de debogage : MapLibre n'expose pas son instance, et sans elle
       // on ne peut verifier ni les couches ni les sources depuis le navigateur.
-      // Retiree du build de production par la garde DEV.
+      // Une seule carte est montee a la fois ; retiree du build de production.
       (window as unknown as { __ufmMap?: MaplibreMap }).__ufmMap = map;
-    }
-    if (IS_DEV) {
-      // Poignees de debug pour les tests manuels/E2E (dev uniquement).
-      // Deux instances co-existent (layouts desktop et mobile).
-      const debugWindow = window as { __ufmMaps?: MaplibreMap[] };
-      debugWindow.__ufmMaps = [...(debugWindow.__ufmMaps ?? []), map];
     }
 
     return () => {
