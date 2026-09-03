@@ -4,7 +4,6 @@
 // ephemere : pas de port, pas de reseau, pas de fichier a nettoyer. La suite
 // reste rejouable en CI et sur n'importe quel poste.
 import { createApp } from '../app.ts';
-import { DEFAULT_PROFILE } from '../models/profile.ts';
 import { resetRateLimits } from '../plugins/rate-limit.ts';
 
 const BASE = 'http://localhost';
@@ -14,8 +13,10 @@ export const PASSWORD = 'UrbanFlow2026!';
 export interface TestApi {
   call: (path: string, options?: CallOptions) => Promise<Response>;
   register: (email?: string) => Promise<string>;
-  /** Envoie l'etat complet du compte, comme le client le fait. */
-  putState: (cookie: string, state: StateInput) => Promise<Response>;
+  /** Remplace une collection en entier, comme le client le fait apres une action. */
+  putCollection: (cookie: string, path: CollectionPath, items: unknown[]) => Promise<Response>;
+  /** Remplace le profil de mobilite. */
+  putProfile: (cookie: string, profile: Record<string, unknown>) => Promise<Response>;
   /** Acces direct a la base, pour verifier ce que l'API a reellement ecrit. */
   db: ReturnType<typeof createApp>['decorator']['db'];
   close: () => void;
@@ -62,8 +63,11 @@ export function createTestApi(): TestApi {
       }
       return sessionCookie(response);
     },
-    putState(cookie, state) {
-      return call('/api/state', { method: 'PUT', cookie, body: state });
+    putCollection(cookie, path, items) {
+      return call(path, { method: 'PUT', cookie, body: items });
+    },
+    putProfile(cookie, profile) {
+      return call('/api/me/profile', { method: 'PUT', cookie, body: profile });
     },
     db: app.decorator.db,
     close() {
@@ -104,26 +108,8 @@ export interface OpenApiSpec {
   paths: Record<string, unknown>;
 }
 
-/** Etat tel que le client l'envoie : sans proprietaire, le serveur le deduit de la session. */
-export interface StateInput {
-  profile: Record<string, unknown>;
-  tripRecords: unknown[];
-  plannedTrips: unknown[];
-  recurringTrips: unknown[];
-  savedRoutes: unknown[];
-}
-
-/** Etat vide, a completer par le test. */
-export function stateWith(overrides: Partial<StateInput> = {}): StateInput {
-  return {
-    profile: { ...DEFAULT_PROFILE },
-    tripRecords: [],
-    plannedTrips: [],
-    recurringTrips: [],
-    savedRoutes: [],
-    ...overrides,
-  };
-}
+/** Une route par collection : chaque PUT remplace la liste en entier. */
+export type CollectionPath = '/api/trips/planned' | '/api/trips/recurring' | '/api/trips/history' | '/api/saved-routes';
 
 /** Lit le corps JSON d'une reponse dans la forme attendue par le test. */
 export function json<T>(response: Response): Promise<T> {

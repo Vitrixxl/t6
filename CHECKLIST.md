@@ -127,7 +127,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Validation TypeBox de toutes les entrees, limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
-- [x] Etat du compte : charge a la connexion, tenu en memoire, envoye en entier a chaque action (`PUT /api/state`, remplace en transaction, borne par le schema).
+- [x] Etat du compte : charge a la connexion (`GET /api/state`), tenu en memoire, renvoye par collection apres chaque action (`PUT /api/trips/*`, `/api/saved-routes`, `/api/me/profile` : chaque liste remplacee seule, en transaction, bornee par le schema).
 - [x] Une seule origine : l'API sert le client, pas de mode sans serveur  ; une ecriture refusee par le reseau est signalee a l'utilisateur.
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17).
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.

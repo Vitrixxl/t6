@@ -1,9 +1,8 @@
-// Routes du compte : portabilite et effacement (RGPD). Le profil de mobilite
-// fait partie de l'etat du compte, il s'ecrit par PUT /api/state.
+// Routes du compte : profil de mobilite, portabilite et effacement (RGPD).
 import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
-import { accountExport, errorResponse, okResponse } from '../models/index.ts';
+import { accountExport, errorResponse, mobilityProfile, okResponse } from '../models/index.ts';
 import { toSessionUser } from '../repositories/index.ts';
 import { hashToken } from '../security/tokens.ts';
 import { SESSION_COOKIE } from '../services/sessions.ts';
@@ -11,6 +10,24 @@ import { SESSION_COOKIE } from '../services/sessions.ts';
 export function meRoutes(ctx: AppContext) {
   return new Elysia({ prefix: '/me', tags: ['Compte'] })
     .use(authGuard(ctx))
+    // Le profil se remplace seul : changer une preference ne reecrit aucun
+    // trajet. Le nom affiche suit le profil, la session le rend a jour.
+    .put(
+      '/profile',
+      ({ userId, body, repositories, status }) => {
+        repositories.users.updateProfile(userId, body);
+        const row = repositories.users.findById(userId);
+        if (!row) {
+          return status(401, { error: 'Session expiree.' });
+        }
+        return row.profile;
+      },
+      {
+        body: mobilityProfile,
+        response: { 200: mobilityProfile, 401: errorResponse, 422: errorResponse },
+        detail: { summary: 'Remplacer le profil de mobilite (idempotent)' },
+      },
+    )
     // Droit a la portabilite (RGPD art. 20) : l'utilisateur recupere en un
     // appel tout ce que le serveur detient sur lui, dans un format ouvert.
     .get(

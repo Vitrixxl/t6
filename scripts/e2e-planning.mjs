@@ -135,9 +135,10 @@ await page.screenshot({ path: 'tmp/screenshots/plan-upcoming.png' });
 
 // 7. Marquer le trajet fait -> stats et historique alimentes
 // L'ecoute du PUT est posee avant le clic : l'envoi suit l'ecriture de pres,
-// l'attendre apres coup risquerait de le manquer.
+// l'attendre apres coup risquerait de le manquer. Marquer fait touche deux
+// collections ; l'historique est celle qui prouve le trajet realise.
 const stateSync = page
-  .waitForResponse((response) => response.url().endsWith('/api/state') && response.request().method() === 'PUT', {
+  .waitForResponse((response) => response.url().endsWith('/api/trips/history') && response.request().method() === 'PUT', {
     timeout: 10000,
   })
   .then((response) => response.status())
@@ -152,18 +153,18 @@ if (!doneCountMatch || Number(doneCountMatch[1]) < 1) {
 await page.screenshot({ path: 'tmp/screenshots/plan-done.png' });
 log('trajet marque fait, stats mises a jour');
 
-// 8. L'etat part au serveur sans attendre la minute de rattrapage : fermer
-// l'onglet juste apres l'action ne doit rien perdre.
+// 8. Les collections touchees partent au serveur des l'action : fermer
+// l'onglet juste apres ne doit rien perdre.
 const syncStatus = await stateSync;
 if (syncStatus !== 200) {
-  failures.push(`l'etat n'est pas envoye au serveur apres le marquage (reponse : ${syncStatus ?? 'aucune'})`);
+  failures.push(`l'historique n'est pas envoye au serveur apres le marquage (reponse : ${syncStatus ?? 'aucune'})`);
 } else {
   const remote = await page.evaluate(() => fetch('/api/state').then((response) => response.json()));
   if (!remote.tripRecords?.length || !remote.plannedTrips?.length) {
     failures.push("l'etat serveur ne contient pas le trajet planifie et realise");
   }
 }
-log('etat synchronise avec le serveur');
+log('collections enregistrees sur le serveur');
 
 // 9. Deconnexion : la session doit etre morte pour le navigateur aussi, pas
 // seulement en base. Le service worker servait /api/state depuis son cache

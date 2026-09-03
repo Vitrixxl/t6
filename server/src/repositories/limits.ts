@@ -1,5 +1,5 @@
-// Bornes de conservation, partagees par les depots et par le contrat de
-// synchronisation.
+// Bornes de conservation, partagees par les depots et par les contrats des
+// collections.
 //
 // Elles servent deux objectifs a la fois : minimisation des donnees
 // (RGPD art. 5.1.c) et taille de requete previsible, donc temps de reponse
