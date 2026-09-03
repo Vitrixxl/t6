@@ -4,6 +4,7 @@
 // ephemere : pas de port, pas de reseau, pas de fichier a nettoyer. La suite
 // reste rejouable en CI et sur n'importe quel poste.
 import { createApp } from '../app.ts';
+import { DEFAULT_PROFILE } from '../models/profile.ts';
 import { resetRateLimits } from '../plugins/rate-limit.ts';
 
 const BASE = 'http://localhost';
@@ -13,6 +14,8 @@ export const PASSWORD = 'UrbanFlow2026!';
 export interface TestApi {
   call: (path: string, options?: CallOptions) => Promise<Response>;
   register: (email?: string) => Promise<string>;
+  /** Envoie l'etat complet du compte, comme le client le fait. */
+  putState: (cookie: string, state: StateInput) => Promise<Response>;
   /** Acces direct a la base, pour verifier ce que l'API a reellement ecrit. */
   db: ReturnType<typeof createApp>['decorator']['db'];
   close: () => void;
@@ -59,6 +62,9 @@ export function createTestApi(): TestApi {
       }
       return sessionCookie(response);
     },
+    putState(cookie, state) {
+      return call('/api/state', { method: 'PUT', cookie, body: state });
+    },
     db: app.decorator.db,
     close() {
       // L'application n'ecoute jamais sur un port dans les tests : on ferme
@@ -88,12 +94,6 @@ export interface AuthBody {
   state: StateBody;
 }
 
-export interface SyncBody {
-  applied: number;
-  ignored: number;
-  state: StateBody;
-}
-
 export interface ExportBody extends StateBody {
   exportedAt: string;
   account: { id: string; email: string; displayName: string; createdAt: string };
@@ -104,6 +104,27 @@ export interface OpenApiSpec {
   paths: Record<string, unknown>;
 }
 
+/** Etat tel que le client l'envoie : sans proprietaire, le serveur le deduit de la session. */
+export interface StateInput {
+  profile: Record<string, unknown>;
+  tripRecords: unknown[];
+  plannedTrips: unknown[];
+  recurringTrips: unknown[];
+  savedRoutes: unknown[];
+}
+
+/** Etat vide, a completer par le test. */
+export function stateWith(overrides: Partial<StateInput> = {}): StateInput {
+  return {
+    profile: { ...DEFAULT_PROFILE },
+    tripRecords: [],
+    plannedTrips: [],
+    recurringTrips: [],
+    savedRoutes: [],
+    ...overrides,
+  };
+}
+
 /** Lit le corps JSON d'une reponse dans la forme attendue par le test. */
 export function json<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
@@ -112,10 +133,6 @@ export function json<T>(response: Response): Promise<T> {
 /** Extrait le cookie de session d'une reponse, pour le rejouer ensuite. */
 export function sessionCookie(response: Response): string {
   return (response.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
-}
-
-export function operation(kind: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
-  return { id: crypto.randomUUID(), at: new Date().toISOString(), kind, ...extra };
 }
 
 export const TRIP_RECORD = {

@@ -69,7 +69,7 @@ jobs:
       - name: Audit accessibilite axe-core (WCAG 2.1 A/AA, bloquant)
         run: bun run audit:a11y
 
-      - name: Scenario E2E planification (5 assertions bloquantes)
+      - name: Scenario E2E planification (6 assertions bloquantes)
         run: |
           mkdir -p tmp/screenshots
           bun run e2e

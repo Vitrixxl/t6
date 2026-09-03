@@ -1,13 +1,13 @@
-// Synchronisation : idempotence, atomicite, cloisonnement des comptes.
+// Synchronisation : remplacement d'etat, idempotence, atomicite, cloisonnement.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import {
   TRIP_RECORD,
   TRIP_SHAPE,
   createTestApi,
   json,
-  operation,
+  stateWith,
+  type AuthBody,
   type StateBody,
-  type SyncBody,
   type TestApi,
 } from './helpers.ts';
 
@@ -21,136 +21,137 @@ afterEach(() => {
   api.close();
 });
 
-describe('file d operations', () => {
-  it('applique un lot puis ignore son rejeu (idempotence)', async () => {
+const ROUTINE = {
+  ...TRIP_SHAPE,
+  id: 'routine-1',
+  label: 'Domicile - travail',
+  daysOfWeek: [1, 2, 3, 4, 5],
+  departureTime: '08:15',
+  returnTime: '18:00',
+  paused: false,
+};
+
+const OCCURRENCE = {
+  ...TRIP_SHAPE,
+  id: 'rec:routine-1:2026-09-02:aller',
+  label: 'Domicile - travail',
+  scheduledFor: '2026-09-02T06:15:00.000Z',
+  status: 'planned',
+  recurringTripId: 'routine-1',
+  completedAt: null,
+};
+
+describe('remplacement d etat', () => {
+  it('remplace l etat et rend le meme resultat au rejeu (idempotence)', async () => {
     const cookie = await api.register('sync@lyon.fr');
-    const batch = { operations: [operation('trip.record', { record: TRIP_RECORD })] };
+    const state = stateWith({ tripRecords: [TRIP_RECORD] });
 
-    const premier = await json<SyncBody>(await api.call('/api/state/operations', { cookie, body: batch }));
-    const rejeu = await json<SyncBody>(await api.call('/api/state/operations', { cookie, body: batch }));
+    const premier = await json<StateBody>(await api.putState(cookie, state));
+    const rejeu = await json<StateBody>(await api.putState(cookie, state));
 
-    expect(premier).toMatchObject({ applied: 1, ignored: 0 });
+    expect(premier.tripRecords).toHaveLength(1);
     // Le rejeu apres une reponse perdue ne cree pas de doublon.
-    expect(rejeu).toMatchObject({ applied: 0, ignored: 1 });
-    expect(rejeu.state.tripRecords).toHaveLength(1);
+    expect(rejeu.tripRecords).toHaveLength(1);
   });
 
-  it('rejette le lot entier si une operation est invalide (atomicite)', async () => {
+  it('retire ce que le client ne porte plus', async () => {
+    const cookie = await api.register('retrait@lyon.fr');
+    await api.putState(cookie, stateWith({ recurringTrips: [ROUTINE], plannedTrips: [OCCURRENCE] }));
+
+    expect((await json<StateBody>(await api.call('/api/state', { cookie }))).plannedTrips).toHaveLength(1);
+
+    // Le client a supprime la routine et ses occurrences : il envoie l'etat sans elles.
+    const apres = await json<StateBody>(await api.putState(cookie, stateWith()));
+
+    expect(apres.recurringTrips).toHaveLength(0);
+    expect(apres.plannedTrips).toHaveLength(0);
+  });
+
+  it('met a jour une occurrence sous le meme identifiant', async () => {
+    const cookie = await api.register('occurrence@lyon.fr');
+    await api.putState(cookie, stateWith({ plannedTrips: [OCCURRENCE] }));
+
+    const apres = await json<StateBody>(
+      await api.putState(
+        cookie,
+        stateWith({ plannedTrips: [{ ...OCCURRENCE, status: 'done', completedAt: '2026-09-02T06:55:00.000Z' }] }),
+      ),
+    );
+
+    expect(apres.plannedTrips).toHaveLength(1);
+    expect(apres.plannedTrips[0].status).toBe('done');
+  });
+
+  it('rejette l etat entier si une ligne est invalide (atomicite)', async () => {
     const cookie = await api.register('atomique@lyon.fr');
 
-    const response = await api.call('/api/state/operations', {
+    const response = await api.putState(
       cookie,
-      body: {
-        operations: [
-          operation('trip.record', { record: TRIP_RECORD }),
-          operation('trip.record', { record: { ...TRIP_RECORD, id: 'trip-2', distanceKm: -12 } }),
-        ],
-      },
-    });
+      stateWith({ tripRecords: [TRIP_RECORD, { ...TRIP_RECORD, id: 'trip-2', distanceKm: -12 }] }),
+    );
 
     expect(response.status).toBe(422);
-    // Rien n'a ete ecrit : le client peut rejouer le lot corrige tel quel.
+    // Rien n'a ete ecrit : le client peut renvoyer l'etat corrige tel quel.
     expect((await json<StateBody>(await api.call('/api/state', { cookie }))).tripRecords).toHaveLength(0);
   });
 
-  it('refuse un lot au-dela de la taille maximale', async () => {
-    const cookie = await api.register('lot@lyon.fr');
-    const operations = Array.from({ length: 201 }, () => operation('trip.history.clear'));
+  it('refuse un etat au-dela des bornes de conservation', async () => {
+    const cookie = await api.register('borne@lyon.fr');
+    const tripRecords = Array.from({ length: 51 }, (_, index) => ({ ...TRIP_RECORD, id: `trip-${index}` }));
 
-    expect((await api.call('/api/state/operations', { cookie, body: { operations } })).status).toBe(422);
+    expect((await api.putState(cookie, stateWith({ tripRecords }))).status).toBe(422);
   });
 
   it('ne laisse jamais un utilisateur voir les donnees d un autre', async () => {
     const alice = await api.register('alice@lyon.fr');
     const bob = await api.register('bob@lyon.fr');
 
-    await api.call('/api/state/operations', {
-      cookie: alice,
-      body: { operations: [operation('trip.record', { record: TRIP_RECORD })] },
-    });
+    await api.putState(alice, stateWith({ tripRecords: [TRIP_RECORD] }));
 
     expect((await json<StateBody>(await api.call('/api/state', { cookie: bob }))).tripRecords).toHaveLength(0);
     expect((await json<StateBody>(await api.call('/api/state', { cookie: alice }))).tripRecords).toHaveLength(1);
   });
 });
 
-describe('routines', () => {
-  it('supprime les occurrences d un trajet recurrent avec la routine', async () => {
-    const cookie = await api.register('routine@lyon.fr');
-    const recurringId = crypto.randomUUID();
-
-    await api.call('/api/state/operations', {
-      cookie,
-      body: {
-        operations: [
-          operation('recurring.upsert', {
-            trip: {
-              ...TRIP_SHAPE,
-              id: recurringId,
-              label: 'Domicile - travail',
-              daysOfWeek: [1, 2, 3, 4, 5],
-              departureTime: '08:15',
-              returnTime: '18:00',
-              paused: false,
-            },
-          }),
-          operation('planned.upsert', {
-            trip: {
-              ...TRIP_SHAPE,
-              id: crypto.randomUUID(),
-              label: 'Domicile - travail',
-              scheduledFor: '2026-09-02T06:15:00.000Z',
-              status: 'planned',
-              recurringTripId: recurringId,
-              completedAt: null,
-            },
-          }),
-        ],
-      },
-    });
-
-    expect((await json<StateBody>(await api.call('/api/state', { cookie }))).plannedTrips).toHaveLength(1);
-
-    const apres = await json<SyncBody>(
-      await api.call('/api/state/operations', {
-        cookie,
-        body: { operations: [operation('recurring.delete', { tripId: recurringId })] },
-      }),
-    );
-
-    expect(apres.state.recurringTrips).toHaveLength(0);
-    // Pas d'occurrence orpheline laissee derriere la routine.
-    expect(apres.state.plannedTrips).toHaveLength(0);
-  });
-
-  it('met a jour une occurrence rejouee sous le meme identifiant', async () => {
-    const cookie = await api.register('occurrence@lyon.fr');
-    const tripId = crypto.randomUUID();
-    const trip = {
-      ...TRIP_SHAPE,
-      id: tripId,
-      label: 'Course du samedi',
-      scheduledFor: '2026-09-05T09:00:00.000Z',
-      status: 'planned' as const,
-      recurringTripId: null,
-      completedAt: null,
+describe('profil de mobilite', () => {
+  it('enregistre le profil avec l etat et le reflete sur la session', async () => {
+    const cookie = await api.register('profil@lyon.fr');
+    const profile = {
+      displayName: 'Camille',
+      preferredModes: ['bike', 'transit'],
+      maxWalkMinutes: 10,
+      accessibilityNeed: true,
+      avoidRain: false,
+      carbonGoalGramsPerWeek: 1800,
+      weeklyTripsGoal: 8,
+      weeklySavedGoalGrams: 3000,
     };
 
-    await api.call('/api/state/operations', { cookie, body: { operations: [operation('planned.upsert', { trip })] } });
-    const apres = await json<SyncBody>(
-      await api.call('/api/state/operations', {
-        cookie,
-        body: {
-          operations: [
-            operation('planned.upsert', {
-              trip: { ...trip, status: 'done', completedAt: '2026-09-05T09:40:00.000Z' },
-            }),
-          ],
+    const response = await api.putState(cookie, stateWith({ profile }));
+
+    expect(response.status).toBe(200);
+    expect((await json<StateBody>(response)).profile.maxWalkMinutes).toBe(10);
+    // Le nom affiche suit le profil : la session le rend a jour.
+    expect((await json<AuthBody>(await api.call('/api/auth/session', { cookie }))).user.displayName).toBe('Camille');
+  });
+
+  it('refuse une valeur hors bornes', async () => {
+    const cookie = await api.register('bornes@lyon.fr');
+
+    const response = await api.putState(
+      cookie,
+      stateWith({
+        profile: {
+          displayName: 'Camille',
+          preferredModes: ['bike'],
+          maxWalkMinutes: 240,
+          accessibilityNeed: false,
+          avoidRain: true,
+          carbonGoalGramsPerWeek: 2500,
         },
       }),
     );
 
-    expect(apres.state.plannedTrips).toHaveLength(1);
-    expect(apres.state.plannedTrips[0].status).toBe('done');
+    expect(response.status).toBe(422);
   });
 });

@@ -1,11 +1,11 @@
 // Depot des trajets programmes (occurrences datees, ponctuelles ou issues
 // d'une routine).
-import { and, asc, eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { plannedTrips } from '../db/schema.ts';
 import type { PlannedTrip } from '../../../src/types.ts';
 import { PLANNED_LIMIT } from './limits.ts';
-import { endpoints, flattenEndpoints, measures } from './mappers.ts';
+import { chunks, endpoints, flattenEndpoints, measures } from './mappers.ts';
 
 export function createPlannedTripRepository(db: Executor) {
   return {
@@ -31,34 +31,16 @@ export function createPlannedTripRepository(db: Executor) {
         }));
     },
 
-    upsert(userId: string, trip: Omit<PlannedTrip, 'userId'>): void {
-      // L'identifiant vient du client (deterministe pour une occurrence de
-      // routine) : l'upsert rend l'operation rejouable sans doublon.
-      const { origin, destination, ...rest } = trip;
-      db.insert(plannedTrips)
-        .values({ ...rest, ...flattenEndpoints({ origin, destination }), userId })
-        .onConflictDoUpdate({
-          target: [plannedTrips.userId, plannedTrips.id],
-          set: {
-            label: trip.label,
-            scheduledFor: trip.scheduledFor,
-            status: trip.status,
-            completedAt: trip.completedAt,
-            ...measures(trip),
-          },
-        })
-        .run();
-    },
-
-    delete(userId: string, tripId: string): void {
-      db.delete(plannedTrips).where(and(eq(plannedTrips.userId, userId), eq(plannedTrips.id, tripId))).run();
-    },
-
-    /** Occurrences engendrees par une routine : elles la suivent a la suppression. */
-    deleteByRecurring(userId: string, recurringTripId: string): void {
-      db.delete(plannedTrips)
-        .where(and(eq(plannedTrips.userId, userId), eq(plannedTrips.recurringTripId, recurringTripId)))
-        .run();
+    /** Remplace les occurrences par celles du client. Au-dela de la borne, les plus anciennes sont ecartees. */
+    replaceAll(userId: string, trips: Omit<PlannedTrip, 'userId'>[]): void {
+      db.delete(plannedTrips).where(eq(plannedTrips.userId, userId)).run();
+      const rows = [...trips]
+        .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))
+        .slice(-PLANNED_LIMIT)
+        .map(({ origin, destination, ...rest }) => ({ ...rest, ...flattenEndpoints({ origin, destination }), userId }));
+      for (const batch of chunks(rows)) {
+        db.insert(plannedTrips).values(batch).run();
+      }
     },
   };
 }

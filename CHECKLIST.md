@@ -119,7 +119,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 ## 10. Backend (ajout post-audit)
 
 - [x] API HTTP dediee (`server/`) : Elysia sur Bun + SQLite via `bun:sqlite`, aucune dependance native, aucune etape de compilation.
-- [x] Schema relationnel migre au demarrage (users, sessions, trip_records, planned_trips, recurring_trips, saved_routes, applied_operations) avec cles etrangeres et suppression en cascade.
+- [x] Schema relationnel migre au demarrage (users, sessions, trip_records, planned_trips, recurring_trips, saved_routes) avec cles etrangeres et suppression en cascade.
 - [x] Inscription / connexion / deconnexion serveur : `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/session`.
 - [x] Mots de passe argon2id 19 Mio / t=2 / p=1 (parametres OWASP, fonction memory-hard) via Bun.password ; comparaison a temps constant.
 - [x] Sessions opaques 256 bits, seule l'empreinte SHA-256 est stockee, revocation en base a la deconnexion, purge des sessions expirees.
@@ -127,11 +127,11 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Validation TypeBox de toutes les entrees, limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
-- [x] Synchronisation hors ligne : file d'attente cliente (patron outbox), lot atomique, operations idempotentes (`applied_operations`), rejeu sans doublon.
+- [x] Synchronisation : le client ecrit en local puis envoie son etat complet (`PUT /api/state`), remplace en transaction ; idempotent par nature, borne, dernier ecrivain gagnant assume.
 - [x] Une seule origine : l'API sert le client, pas de mode sans serveur ; une coupure reseau en session laisse l'interface utilisable sur le cache local et rejoue au retour du reseau.
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17), file d'attente purgee avec le compte.
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
-- [x] 35 tests supplementaires (27 d'integration API via `app.handle`, 8 sur la file de synchronisation) : 99 tests verts au total (72 Vitest + 27 bun test).
+- [x] Tests d'integration API via `app.handle` (base :memory:) et tests de synchronisation client (marque d'etat, envoi, coupures) ; suite complete sous `bun test`.
 - [x] Verification bout en bout en navigateur : inscription depuis l'interface -> ligne SQLite avec empreinte scrypt -> session restauree apres rechargement par cookie httpOnly, zero erreur de page.
 
 ## 11. Architecture de fichiers (revue de code)

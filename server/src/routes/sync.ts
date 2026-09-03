@@ -1,15 +1,14 @@
-// Synchronisation client -> serveur.
+// Synchronisation client <-> serveur.
 //
-// Le client travaille hors ligne sur son cache local et empile ses mutations
-// dans une file d'attente ; il les rejoue ici des que le reseau revient. La
-// route valide, ouvre une transaction et delegue au service : elle ne porte
-// aucune regle metier.
-import { Elysia, t } from 'elysia';
+// Le client travaille sur son cache local et, des que le reseau le permet,
+// envoie son etat complet ; le serveur le remplace. La route valide, ouvre une
+// transaction et delegue au service : elle ne porte aucune regle metier.
+import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
-import { errorResponse, operationBatch, operationOutcome, userState } from '../models/index.ts';
+import { errorResponse, userState, userStateInput } from '../models/index.ts';
 import { createRepositories } from '../repositories/index.ts';
-import { applyOperations } from '../services/sync.ts';
+import { replaceState } from '../services/sync.ts';
 
 export function syncRoutes(ctx: AppContext) {
   return new Elysia({ prefix: '/state', tags: ['Synchronisation'] })
@@ -28,32 +27,24 @@ export function syncRoutes(ctx: AppContext) {
         detail: { summary: 'Lire l etat complet du compte' },
       },
     )
-    .post(
-      '/operations',
+    .put(
+      '/',
       ({ userId, body, db, repositories, status }) => {
-        // Le lot est atomique : une operation en echec annule tout le lot, donc
-        // le client peut le rejouer entier sans etat intermediaire a deviner.
         // Les depots sont construits sur la transaction : chaque ecriture du
-        // service passe par elle, rien ne s'echappe vers la connexion globale.
-        const outcome = db.transaction((tx) => applyOperations(createRepositories(tx), userId, body.operations));
+        // service passe par elle. Une validation qui echoue n'atteint jamais
+        // ce point ; une erreur en cours de remplacement annule tout.
+        db.transaction((tx) => replaceState(createRepositories(tx), userId, body));
 
         const row = repositories.users.findById(userId);
         if (!row) {
           return status(401, { error: 'Session expiree.' });
         }
-        return {
-          ...outcome,
-          state: repositories.state.fullState(userId, row.profile),
-        };
+        return repositories.state.fullState(userId, row.profile);
       },
       {
-        body: operationBatch,
-        response: {
-          200: t.Object({ ...operationOutcome.properties, state: userState }),
-          401: errorResponse,
-          422: errorResponse,
-        },
-        detail: { summary: 'Rejouer un lot d operations faites hors ligne' },
+        body: userStateInput,
+        response: { 200: userState, 401: errorResponse, 422: errorResponse },
+        detail: { summary: 'Remplacer l etat complet du compte (idempotent)' },
       },
     );
 }

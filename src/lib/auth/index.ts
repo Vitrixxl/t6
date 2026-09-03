@@ -5,10 +5,10 @@
 // Il n'y a pas de repli sans serveur : c'est l'API qui sert le client, une
 // API absente est une page absente.
 import type { MobilityProfile, SessionUser } from '../../types';
+import { discardPending, markDirty } from '../api/dirty';
 import { apiRequest } from '../api/http';
-import type { RemoteState } from '../api/operations';
-import { discardOperations, enqueueOperation } from '../api/outbox';
 import { cacheSessionUser, clearActiveSession, getActiveSessionId, readCachedSessionUser } from '../api/session';
+import type { RemoteState } from '../api/state';
 import { adoptRemoteSession } from '../api/sync';
 import { DEFAULT_PROFILE } from './defaults';
 import { clampNumber, sanitizeDisplayName, sanitizeModes } from './validation';
@@ -77,18 +77,17 @@ export function saveMobilityProfile(userId: string, profile: MobilityProfile): S
     weeklySavedGoalGrams: clampNumber(profile.weeklySavedGoalGrams ?? DEFAULT_PROFILE.weeklySavedGoalGrams ?? 2000, 100, 50000),
   };
 
-  enqueueOperation(userId, { kind: 'profile.update', profile: sanitizedProfile });
-
   const session: SessionUser = { ...cached, displayName: sanitizedProfile.displayName, profile: sanitizedProfile };
   cacheSessionUser(session);
+  markDirty(userId);
   return session;
 }
 
 /** Droit a l'effacement (RGPD art. 17) : serveur en cascade, puis tout le local. */
 export function deleteAccount(userId: string): void {
   void apiRequest('/me', { method: 'DELETE' }).catch(() => undefined);
-  // Les operations encore en attente concernent un compte qui n'existe plus.
-  discardOperations(userId);
+  // Un etat encore a envoyer concerne un compte qui n'existe plus.
+  discardPending(userId);
   clearActiveSession();
   // Toutes les cles locales de l'utilisateur sont supprimees par balayage :
   // historique carbone, itineraires sauvegardes, trajets, et toute cle future

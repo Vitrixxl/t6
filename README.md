@@ -11,8 +11,9 @@ Deux briques, une seule origine pour le navigateur :
 
 Le serveur fait autorite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable en base, donnees
 partagees entre appareils. Le client ecrit d'abord dans son cache local, pour ne jamais bloquer l'interface sur le
-reseau, puis rejoue ses mutations vers le serveur (patron *outbox*, operations idempotentes). C'est ce qui permet de
-tenir l'exigence C10 (connectivite variable) : une coupure en cours de session ne perd rien, elle est rattrapee.
+reseau, puis envoie son etat complet au serveur (`PUT /api/state`, idempotent par nature, etat borne a quelques
+centaines de lignes). C'est ce qui permet de tenir l'exigence C10 (connectivite variable) : une coupure en cours de
+session ne perd rien, l'etat part au retour du reseau. Compromis assume : dernier ecrivain gagnant entre deux appareils.
 
 Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
 
@@ -38,14 +39,14 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | --- | --- |
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
-| `lib/api/` | couche serveur du client : client HTTP, file d'attente hors ligne, synchronisation |
+| `lib/api/` | couche serveur du client : client HTTP, marque d'etat a envoyer, synchronisation |
 | `lib/auth/` | authentification : appels API, cache de session, normalisation du profil |
 | `components/map/` | carte MapLibre : composant, popups, sources |
 | `components/planner/trips/` | module trajets : hub, listes, formulaire, objectifs |
 | `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
 
 Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
-`server/src/services/sync.ts` et `src/lib/api/outbox.ts` (le couple hors ligne / idempotence),
+`server/src/services/sync.ts` et `src/lib/api/sync.ts` (l'etat complet, envoye au retour du reseau),
 `src/lib/planner/index.ts` (le métier).
 
 ## Livrables
@@ -109,7 +110,7 @@ bun run generate:icons   # icônes PWA
 bun run generate:pdf     # dossier projet PDF
 bun run start            # sert le build de production
 bun run check            # lint + typage + tests + build production
-bun run e2e              # scénario E2E de planification (Playwright, 5 assertions)
+bun run e2e              # scénario E2E de planification (Playwright, 6 assertions)
 ```
 
 **Toute la chaîne tourne sous Bun, sans exception** : gestionnaire de paquets, exécution du serveur,

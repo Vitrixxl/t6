@@ -134,6 +134,14 @@ if (!hasUpcoming) {
 await page.screenshot({ path: 'tmp/screenshots/plan-upcoming.png' });
 
 // 7. Marquer le trajet fait -> stats et historique alimentes
+// L'ecoute du PUT est posee avant le clic : l'envoi suit l'ecriture de pres,
+// l'attendre apres coup risquerait de le manquer.
+const stateSync = page
+  .waitForResponse((response) => response.url().endsWith('/api/state') && response.request().method() === 'PUT', {
+    timeout: 10000,
+  })
+  .then((response) => response.status())
+  .catch(() => null);
 await page.getByRole('button', { name: /^fait$/i }).first().click();
 await page.waitForTimeout(1200);
 text = await bodyText();
@@ -144,6 +152,19 @@ if (!doneCountMatch || Number(doneCountMatch[1]) < 1) {
 await page.screenshot({ path: 'tmp/screenshots/plan-done.png' });
 log('trajet marque fait, stats mises a jour');
 
+// 8. L'etat part au serveur sans attendre la minute de rattrapage : fermer
+// l'onglet juste apres l'action ne doit rien perdre.
+const syncStatus = await stateSync;
+if (syncStatus !== 200) {
+  failures.push(`l'etat n'est pas envoye au serveur apres le marquage (reponse : ${syncStatus ?? 'aucune'})`);
+} else {
+  const remote = await page.evaluate(() => fetch('/api/state').then((response) => response.json()));
+  if (!remote.tripRecords?.length || !remote.plannedTrips?.length) {
+    failures.push("l'etat serveur ne contient pas le trajet planifie et realise");
+  }
+}
+log('etat synchronise avec le serveur');
+
 await browser.close();
 
 // Assertions bloquantes : chaque critere du scenario doit etre satisfait.
@@ -152,7 +173,7 @@ mkdirSync('output/metrics', { recursive: true });
 writeFileSync(
   'output/metrics/e2e.json',
   JSON.stringify(
-    { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 5, failures, passed: failures.length === 0 },
+    { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 6, failures, passed: failures.length === 0 },
     null,
     2,
   ) + '\n',
@@ -163,4 +184,4 @@ if (failures.length > 0) {
   for (const failure of failures) console.log('  - ' + failure);
   process.exit(1);
 }
-console.log('TEST TERMINE - 5/5 assertions passees');
+console.log('TEST TERMINE - 6/6 assertions passees');
