@@ -4,7 +4,7 @@
 // le plus proche quel qu'il soit (un arret de bus, le plus souvent) et la ligne
 // affichee etait celle au passage le plus frequent du reseau, sans rapport avec
 // le trajet. Les deux premiers cas ci-dessous echouent si cela revient.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '../../test/harness';
 import type { GtfsStop, TransportNetwork } from '../../types';
 import { findTransitJourney } from './transit';
 import { midpointOfPath, pathLengthKm, sliceShape } from './shape';

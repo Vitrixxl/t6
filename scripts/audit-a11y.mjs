@@ -10,7 +10,7 @@ import { chromium } from 'playwright-core';
 
 const require = createRequire(import.meta.url);
 const AXE_SOURCE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
-const BASE_URL = process.env.AUDIT_BASE_URL || 'http://localhost:4173';
+const BASE_URL = process.env.AUDIT_BASE_URL || 'http://localhost:4000';
 const CHROME_BIN = process.env.CHROME_BIN || process.env.CHROMIUM_PATH || '/usr/sbin/chromium';
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 

@@ -18,7 +18,7 @@ const DEST_LABEL = destFeature.properties.label;
 
 const CHROME_BIN =
   process.env.CHROME_BIN || process.env.CHROMIUM_PATH || '/usr/sbin/chromium';
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4000';
 
 const browser = await chromium.launch({
   executablePath: CHROME_BIN,

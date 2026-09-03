@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '../../test/harness';
 import { fetchJson, loadTransportNetwork, mapDottVehicles, mergeVelovStations, weatherFromOpenMeteo } from './feeds';
 import type { GtfsFeed, SharedMobilityFeed } from '../../types';
 
@@ -188,7 +188,7 @@ const localSharedMobility: SharedMobilityFeed = {
 
 describe('fetchJson', () => {
   it('remonte une erreur explicite avec URL et statut si le flux repond en echec', async () => {
-    const fetcher = (async () => ({ ok: false, status: 429 }) as Response) as typeof fetch;
+    const fetcher = (async () => ({ ok: false, status: 429 }) as Response) as unknown as typeof fetch;
 
     await expect(fetchJson('https://flux.test/gbfs.json', fetcher)).rejects.toThrow(
       'Flux indisponible: https://flux.test/gbfs.json (429)',
@@ -207,7 +207,7 @@ describe('loadTransportNetwork', () => {
         return { ok: true, json: async () => localSharedMobility } as Response;
       }
       throw new Error('reseau coupe');
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     const network = await loadTransportNetwork(fetcher);
 
@@ -262,7 +262,7 @@ describe('loadTransportNetwork', () => {
         } as Response;
       }
       throw new Error(`URL inattendue: ${url}`);
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 
     const network = await loadTransportNetwork(fetcher);
 

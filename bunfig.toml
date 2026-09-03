@@ -1,0 +1,4 @@
+[test]
+# Les polyfills de stockage et de cryptographie sont poses avant les tests :
+# ils remplacent ce que l'environnement de navigateur fournirait.
+preload = ["./src/test/setup.ts"]

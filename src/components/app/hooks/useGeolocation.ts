@@ -6,6 +6,7 @@
 // Il ne s'agit pas de guidage : uniquement l'affichage temps reel.
 import { useEffect, useRef, useState } from 'react';
 import type { GeoPoint } from '../../../types';
+import { IS_DEV } from '../../../env';
 
 const FIRST_FIX_OPTIONS: PositionOptions = { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 };
 const WATCH_OPTIONS: PositionOptions = { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 };
@@ -19,7 +20,7 @@ const WATCH_OPTIONS: PositionOptions = { enableHighAccuracy: true, maximumAge: 1
  * Ce point est place a la Guillotiere, dans le perimetre du reseau, pour que
  * les itineraires calcules ressemblent a ceux d'un utilisateur reel.
  *
- * La garde `import.meta.env.DEV` est evaluee a la compilation : le bloc
+ * La garde `IS_DEV` est evaluee a la compilation : le bloc
  * disparait du build de production, ou seule la geolocalisation du navigateur
  * subsiste.
  */
@@ -73,7 +74,7 @@ export function useGeolocation(): Geolocation {
 
   const requestCurrentPosition = (): Promise<GeoPoint | null> =>
     new Promise((resolve) => {
-      if (import.meta.env.DEV) {
+      if (IS_DEV) {
         setCurrentPosition(DEV_POSITION);
         setStatus('GPS simule (developpement)');
         resolve(DEV_POSITION);

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '../test/harness';
 import { createSavedRouteRecord, deleteSavedRouteRecord, loadSavedRoutes, saveSavedRouteRecord } from './savedRoutes';
 import type { GeoPoint, RouteOption } from '../types';
 
