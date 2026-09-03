@@ -29,3 +29,6 @@ server/data/
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+
+# Certificats TLS : une cle privee ne se versionne jamais.
+*.pem

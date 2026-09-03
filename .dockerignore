@@ -1,0 +1,14 @@
+# Ce qui n'a rien a faire dans le contexte de build : soit inutile, soit
+# regenere pendant la construction, soit sensible.
+node_modules
+dist
+output
+tmp
+.git
+.venv
+.env
+*.pem
+server/data
+infra/osrm-data
+docs
+.github
