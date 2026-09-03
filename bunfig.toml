@@ -2,3 +2,15 @@
 # Les polyfills de stockage et de cryptographie sont poses avant les tests :
 # ils remplacent ce que l'environnement de navigateur fournirait.
 preload = ["./src/test/setup.ts"]
+
+# Note sur le rechargement a chaud du client.
+#
+# Bun sait le faire — `Bun.serve` avec des routes HTML et `development.hmr` —
+# et Elysia transmet bien ces routes : verifie, l'API et le regroupement a la
+# volee coexistent. Le blocage est ailleurs : le document reference le manifeste
+# et les icones par chemin absolu, ce qui demande un greffon de resolution, et
+# declarer ce greffon sous `[serve.static]` fait planter Bun 1.4.0.
+#
+# Le developpement reconstruit donc le client a chaque modification, en moins
+# d'une seconde, et la page se rafraichit a la main. A reprendre quand Bun aura
+# corrige, ou si le document cesse de referencer des chemins absolus.

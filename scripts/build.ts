@@ -8,20 +8,7 @@
 import { rm, cp, mkdir, writeFile, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import tailwind from 'bun-plugin-tailwind';
-import type { BunPlugin } from 'bun';
-
-/**
- * Les references absolues designent des fichiers servis a leur chemin exact —
- * polices, manifeste, icones. Les regrouper leur donnerait une empreinte dans
- * le nom, or ces chemins sont ecrits en dur dans la feuille de style et le
- * manifeste. Bun les laisse donc intactes.
- */
-const servedAsIs: BunPlugin = {
-  name: 'served-as-is',
-  setup(build) {
-    build.onResolve({ filter: /^\// }, (args) => ({ path: args.path, external: true }));
-  },
-};
+import servedAsIs from './served-as-is';
 
 const OUT = 'dist';
 const isProduction = process.env.NODE_ENV !== 'development';
