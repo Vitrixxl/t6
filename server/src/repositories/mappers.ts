@@ -1,50 +1,64 @@
 // Traduction ligne SQL <-> objet du domaine. Isolee ici pour que les depots
 // restent lisibles et que la forme des colonnes ne fuite nulle part ailleurs.
-import type { MobilityMode, SessionUser } from '../../../src/types.ts';
+//
+// Les lignes arrivent typees par Drizzle : plus de conversion de type, il ne
+// reste que le passage du plat (origin_lat, origin_lon) a l'imbrique
+// (origin: GeoPoint), que SQLite ne sait pas representer.
+import type { GeoPoint, MobilityMode, SessionUser } from '../../../src/types.ts';
+import type { users } from '../db/schema.ts';
 
-export type Row = Record<string, string | number | null>;
+export type UserRow = typeof users.$inferSelect;
+export type NewUserRow = typeof users.$inferInsert;
 
-export interface UserRow {
-  id: string;
-  email: string;
-  display_name: string;
-  password_hash: string;
-  created_at: string;
-  profile_json: string;
+interface EndpointRow {
+  originLabel: string;
+  originLat: number;
+  originLon: number;
+  destinationLabel: string;
+  destinationLat: number;
+  destinationLon: number;
 }
 
-// Les modes sont stockes en JSON dans une colonne texte : la liste est courte,
-// toujours lue en bloc, et jamais interrogee mode par mode. Une table de
-// jointure serait ici du ceremonial sans benefice.
-export const encodeModes = (modes: MobilityMode[]): string => JSON.stringify(modes);
-
-export function decodeModes(raw: string): MobilityMode[] {
-  const parsed: unknown = JSON.parse(raw);
-  return Array.isArray(parsed) ? (parsed as MobilityMode[]) : [];
+interface MeasureRow {
+  modes: MobilityMode[];
+  distanceKm: number;
+  durationMinutes: number;
+  carbonGrams: number;
+  carbonSavedGrams: number;
 }
 
-export const point = (row: Row, prefix: 'origin' | 'destination') => ({
-  label: String(row[`${prefix}_label`]),
-  lat: Number(row[`${prefix}_lat`]),
-  lon: Number(row[`${prefix}_lon`]),
+interface Endpoints {
+  origin: GeoPoint;
+  destination: GeoPoint;
+}
+
+export const endpoints = (row: EndpointRow): Endpoints => ({
+  origin: { label: row.originLabel, lat: row.originLat, lon: row.originLon },
+  destination: { label: row.destinationLabel, lat: row.destinationLat, lon: row.destinationLon },
 });
 
-export const measures = (row: Row) => ({
-  modes: decodeModes(String(row.modes)),
-  distanceKm: Number(row.distance_km),
-  durationMinutes: Number(row.duration_minutes),
-  carbonGrams: Number(row.carbon_grams),
-  carbonSavedGrams: Number(row.carbon_saved_grams),
+export const flattenEndpoints = (input: Endpoints): EndpointRow => ({
+  originLabel: input.origin.label,
+  originLat: input.origin.lat,
+  originLon: input.origin.lon,
+  destinationLabel: input.destination.label,
+  destinationLat: input.destination.lat,
+  destinationLon: input.destination.lon,
 });
 
-export const nullableText = (value: string | number | null): string | null =>
-  value === null ? null : String(value);
+export const measures = (row: MeasureRow): MeasureRow => ({
+  modes: row.modes,
+  distanceKm: row.distanceKm,
+  durationMinutes: row.durationMinutes,
+  carbonGrams: row.carbonGrams,
+  carbonSavedGrams: row.carbonSavedGrams,
+});
 
 export function toSessionUser(row: UserRow): SessionUser {
   return {
     id: row.id,
     email: row.email,
-    displayName: row.display_name,
-    profile: JSON.parse(row.profile_json) as SessionUser['profile'],
+    displayName: row.displayName,
+    profile: row.profile,
   };
 }

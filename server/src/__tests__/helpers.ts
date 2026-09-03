@@ -63,7 +63,7 @@ export function createTestApi(): TestApi {
     close() {
       // L'application n'ecoute jamais sur un port dans les tests : on ferme
       // directement la base ephemere plutot qu'un serveur inexistant.
-      app.decorator.db.close();
+      app.decorator.db.$client.close();
     },
   };
 }

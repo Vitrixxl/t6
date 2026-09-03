@@ -17,6 +17,8 @@
     "metrics:build": "bun scripts/build-metrics.mjs",
     "screens": "bun scripts/make-screens.mjs",
     "seed:demo": "bun server/src/seed.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
     "generate:gtfs": "python3 scripts/fetch_gtfs.py",
     "generate:lignes": "python3 scripts/fetch_tcl_lines.py",
     "generate:icons": ".venv/bin/python scripts/generate_icons.py",
@@ -28,6 +30,7 @@
     "@fontsource-variable/figtree": "^5.2.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
     "elysia": "^1.4.29",
     "lucide-react": "^1.24.0",
     "maplibre-gl": "^5.24.0",
@@ -49,12 +52,13 @@
     "@types/react-dom": "^19.1.6",
     "axe-core": "^4.12.1",
     "bun-plugin-tailwind": "^0.1.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.30.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^5.2.0",
     "jsdom": "^26.1.0",
     "playwright-core": "^1.61.1",
-    "typescript": "^5.8.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.35.1"
   }
 }

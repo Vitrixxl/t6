@@ -15,16 +15,16 @@ import { applyRoutedLegs } from './legs';
 import { scoreOption } from './scoring';
 
 export function planRoutes(request: RouteRequest): RouteOption[] {
-  const directKm = Math.max(haversineDistanceKm(request.origin, request.destination), 0.15);
-  const candidates = [
-    createTransitOption(request),
-    createBikeTransitOption(request, directKm),
-    createBikeOption(request, directKm),
-    createScooterOption(request, directKm),
-    createWalkOption(request, directKm),
-  ].filter((option): option is RouteOption => Boolean(option));
+    const directKm = Math.max(haversineDistanceKm(request.origin, request.destination), 0.15);
+    const candidates = [
+        createTransitOption(request),
+        createBikeTransitOption(request, directKm),
+        createBikeOption(request, directKm),
+        createScooterOption(request, directKm),
+        createWalkOption(request, directKm),
+    ].filter((option): option is RouteOption => Boolean(option));
 
-  return rankRoutes(candidates, request.profile);
+    return rankRoutes(candidates, request.profile);
 }
 
 /**
@@ -33,7 +33,7 @@ export function planRoutes(request: RouteRequest): RouteOption[] {
  * qui changent quand la voirie remplace le vol d'oiseau.
  */
 export function rankRoutes(routes: RouteOption[], profile: MobilityProfile): RouteOption[] {
-  return routes.map((option) => scoreOption(option, profile)).sort((a, b) => b.score - a.score);
+    return routes.map((option) => scoreOption(option, profile)).sort((a, b) => b.score - a.score);
 }
 
 /**
@@ -45,21 +45,21 @@ export function rankRoutes(routes: RouteOption[], profile: MobilityProfile): Rou
  * changeait les valeurs affichees (B20).
  */
 export async function measureRoutes(
-  routes: RouteOption[],
-  profile: MobilityProfile,
-  measure: (legs: RouteLeg[]) => Promise<RouteLeg[]>,
+    routes: RouteOption[],
+    profile: MobilityProfile,
+    measure: (legs: RouteLeg[]) => Promise<RouteLeg[]>,
 ): Promise<RouteOption[]> {
-  const measured = await Promise.all(
-    routes.map(async (option) => applyRoutedLegs(option, await measure(option.legs))),
-  );
+    const measured = await Promise.all(
+        routes.map(async (option) => applyRoutedLegs(option, await measure(option.legs))),
+    );
 
-  // Une option dont un segment n'a pas de trace n'a pas de mesure : l'afficher
-  // supposerait de retomber sur son estimation, donc de remettre deux methodes
-  // dans la meme liste.
-  return rankRoutes(
-    measured.filter((option) => option.legs.length > 0 && option.legs.every((leg) => leg.path.length >= 2)),
-    profile,
-  );
+    // Une option dont un segment n'a pas de trace n'a pas de mesure : l'afficher
+    // supposerait de retomber sur son estimation, donc de remettre deux methodes
+    // dans la meme liste.
+    return rankRoutes(
+        measured.filter((option) => option.legs.length > 0 && option.legs.every((leg) => leg.path.length >= 2)),
+        profile,
+    );
 }
 
 export { haversineDistanceKm } from './geo';
@@ -67,12 +67,12 @@ export { LANDMARKS } from './constants';
 export { SCORING_WEIGHTS } from './scoring';
 export { preselectRoute, totalWalkMinutes, visibleLegs } from './rules';
 export {
-  findNearby,
-  findWithinRadius,
-  formatDistance,
-  walkMinutes,
-  type Nearby,
-  type NearbyWithin,
+    findNearby,
+    findWithinRadius,
+    formatDistance,
+    walkMinutes,
+    type Nearby,
+    type NearbyWithin,
 } from './nearby';
 export { applyRoutedLegs } from './legs';
 export { midpointOfPath } from './shape';

@@ -9,10 +9,10 @@ import { routingRoutes } from './routing.ts';
 import { syncRoutes } from './sync.ts';
 
 export function routes(ctx: AppContext, config: ServerConfig) {
-  return new Elysia({ name: 'routes' })
-    .use(healthRoutes())
-    .use(authRoutes(ctx, config))
-    .use(meRoutes(ctx))
-    .use(syncRoutes(ctx))
-    .use(routingRoutes(ctx, config));
+    return new Elysia({ name: 'routes' })
+        .use(healthRoutes())
+        .use(authRoutes(ctx, config))
+        .use(meRoutes(ctx))
+        .use(syncRoutes(ctx))
+        .use(routingRoutes(ctx, config));
 }

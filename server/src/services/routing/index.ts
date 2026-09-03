@@ -22,44 +22,44 @@ import { fetchUpstreamRoute, type RouteGeometry } from './osrm.ts';
 const KEY_PRECISION = 5;
 
 export interface RoutingResult extends RouteGeometry {
-  source: 'cache' | 'upstream';
+    source: 'cache' | 'upstream';
 }
 
 function cacheKey(mode: MobilityMode, from: Coordinates, to: Coordinates): string {
-  const round = (value: number) => value.toFixed(KEY_PRECISION);
-  return `${mode}:${round(from.lat)},${round(from.lon)}:${round(to.lat)},${round(to.lon)}`;
+    const round = (value: number) => value.toFixed(KEY_PRECISION);
+    return `${mode}:${round(from.lat)},${round(from.lon)}:${round(to.lat)},${round(to.lon)}`;
 }
 
 export interface Coordinates {
-  lat: number;
-  lon: number;
+    lat: number;
+    lon: number;
 }
 
 export function createRoutingService(config: ServerConfig, cache: RouteCacheRepository) {
-  return {
-    async route(mode: MobilityMode, from: Coordinates, to: Coordinates): Promise<RoutingResult | null> {
-      const key = cacheKey(mode, from, to);
-      const cached = cache.find(key);
-      if (cached && cached.ageMs < config.routeCacheTtlMs) {
-        return { ...(JSON.parse(cached.payload) as RouteGeometry), source: 'cache' };
-      }
+    return {
+        async route(mode: MobilityMode, from: Coordinates, to: Coordinates): Promise<RoutingResult | null> {
+            const key = cacheKey(mode, from, to);
+            const cached = cache.find(key);
+            if (cached && cached.ageMs < config.routeCacheTtlMs) {
+                return { ...(JSON.parse(cached.payload) as RouteGeometry), source: 'cache' };
+            }
 
-      const geometry = await fetchUpstreamRoute(config.osrmBaseUrl, mode, from, to);
-      if (!geometry) {
-        // Le calculateur ne repond pas. Une entree expiree vaut mieux qu'aucune
-        // reponse : la voirie n'a pas change, et l'alternative serait une carte
-        // vide. C'est le seul cas ou l'on sert une donnee perimee.
-        if (cached) {
-          return { ...(JSON.parse(cached.payload) as RouteGeometry), source: 'cache' };
-        }
-        return null;
-      }
+            const geometry = await fetchUpstreamRoute(config.osrmBaseUrl, mode, from, to);
+            if (!geometry) {
+                // Le calculateur ne repond pas. Une entree expiree vaut mieux qu'aucune
+                // reponse : la voirie n'a pas change, et l'alternative serait une carte
+                // vide. C'est le seul cas ou l'on sert une donnee perimee.
+                if (cached) {
+                    return { ...(JSON.parse(cached.payload) as RouteGeometry), source: 'cache' };
+                }
+                return null;
+            }
 
-      cache.save(key, mode, JSON.stringify(geometry));
-      cache.purgeOlderThan(config.routeCacheTtlMs);
-      return { ...geometry, source: 'upstream' };
-    },
-  };
+            cache.save(key, mode, JSON.stringify(geometry));
+            cache.purgeOlderThan(config.routeCacheTtlMs);
+            return { ...geometry, source: 'upstream' };
+        },
+    };
 }
 
 export type RoutingService = ReturnType<typeof createRoutingService>;

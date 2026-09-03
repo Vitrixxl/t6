@@ -1,5 +1,7 @@
 // Compte : profil de mobilite et droits RGPD.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { count } from 'drizzle-orm';
+import { sessions, tripRecords } from '../db/schema.ts';
 import {
   PASSWORD,
   TRIP_RECORD,
@@ -94,7 +96,7 @@ describe('RGPD', () => {
       (await api.call('/api/auth/login', { body: { email: 'efface@lyon.fr', password: PASSWORD } })).status,
     ).toBe(401);
     // Cascade : plus aucune ligne liee ne subsiste en base.
-    expect((api.db.query('SELECT count(*) AS c FROM trip_records').get() as { c: number }).c).toBe(0);
-    expect((api.db.query('SELECT count(*) AS c FROM sessions').get() as { c: number }).c).toBe(0);
+    expect(api.db.select({ c: count() }).from(tripRecords).get()?.c).toBe(0);
+    expect(api.db.select({ c: count() }).from(sessions).get()?.c).toBe(0);
   });
 });

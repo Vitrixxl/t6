@@ -22,7 +22,7 @@ export function context(config: ServerConfig) {
     .decorate('db', db)
     .decorate('repositories', repositories)
     .onStop(() => {
-      db.close();
+      db.$client.close();
     })
     .as('global');
 }

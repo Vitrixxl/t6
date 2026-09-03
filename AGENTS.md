@@ -63,8 +63,14 @@ long mais cohesif reste preferable a trois fichiers qui se renvoient la balle.
 
 **API** (`server/src/`) : `config/` `db/` `models/` `repositories/` `services/`
 `plugins/` `routes/`. Les routes ne portent aucune regle metier, seule la
-couche depot connait le SQL, et les modeles TypeBox valident la requete, typent
-le gestionnaire et generent l'OpenAPI depuis une source unique.
+couche depot interroge la base (Drizzle sur `bun:sqlite`, jamais `sql.raw` sur
+une entree), et les modeles TypeBox valident la requete, typent le gestionnaire
+et generent l'OpenAPI depuis une source unique.
+
+Le schema vit dans `server/src/db/schema.ts`. Toute modification passe par
+`bun run db:generate`, et la migration produite dans `server/drizzle/` se
+committe avec le schema : elle est appliquee au demarrage, y compris sur la
+base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (sonde, file

@@ -42,7 +42,7 @@ export function meRoutes(ctx: AppContext) {
 
         return {
           exportedAt: new Date().toISOString(),
-          account: { id: user.id, email: user.email, displayName: user.displayName, createdAt: row.created_at },
+          account: { id: user.id, email: user.email, displayName: user.displayName, createdAt: row.createdAt },
           ...repositories.state.fullState(userId, user.profile),
         };
       },

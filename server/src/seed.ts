@@ -32,11 +32,11 @@ if (existing) {
 users.insert({
   id: crypto.randomUUID(),
   email: DEMO_EMAIL,
-  display_name: profile.displayName,
-  password_hash: await hashPassword(DEMO_PASSWORD),
-  created_at: new Date().toISOString(),
-  profile_json: JSON.stringify(profile),
+  displayName: profile.displayName,
+  passwordHash: await hashPassword(DEMO_PASSWORD),
+  createdAt: new Date().toISOString(),
+  profile,
 });
 
-db.close();
+db.$client.close();
 console.log(`Compte de demonstration pret : ${DEMO_EMAIL}`);

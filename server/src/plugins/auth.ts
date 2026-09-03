@@ -11,20 +11,20 @@ import { hashToken } from '../security/tokens.ts';
 import { SESSION_COOKIE } from '../services/sessions.ts';
 
 export function authGuard(ctx: AppContext) {
-  return new Elysia({ name: 'auth-guard' })
-    .use(ctx)
-    .resolve({ as: 'scoped' }, ({ cookie, repositories, status }) => {
-      const token = cookie[SESSION_COOKIE]?.value;
-      if (!token) {
-        return status(401, { error: 'Authentification requise.' });
-      }
+    return new Elysia({ name: 'auth-guard' })
+        .use(ctx)
+        .resolve({ as: 'scoped' }, ({ cookie, repositories, status }) => {
+            const token = cookie[SESSION_COOKIE]?.value;
+            if (!token) {
+                return status(401, { error: 'Authentification requise.' });
+            }
 
-      const session = repositories.sessions.findValid(hashToken(String(token)), new Date().toISOString());
-      if (!session) {
-        cookie[SESSION_COOKIE]?.remove();
-        return status(401, { error: 'Session expiree.' });
-      }
+            const session = repositories.sessions.findValid(hashToken(String(token)), new Date().toISOString());
+            if (!session) {
+                cookie[SESSION_COOKIE]?.remove();
+                return status(401, { error: 'Session expiree.' });
+            }
 
-      return { userId: session.user_id };
-    });
+            return { userId: session.user_id };
+        });
 }

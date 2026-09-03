@@ -1,30 +1,30 @@
 // Depot des sessions. Le jeton n'est jamais stocke : seule son empreinte l'est.
-import type { Database } from '../db/index.ts';
+import { and, eq, gt, lte } from 'drizzle-orm';
+import type { Executor } from '../db/index.ts';
+import { sessions } from '../db/schema.ts';
 
-export function createSessionRepository(db: Database) {
+export function createSessionRepository(db: Executor) {
   return {
     create(tokenHash: string, userId: string, createdAt: string, expiresAt: string): void {
-      db.query('INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)').run(
-        tokenHash,
-        userId,
-        createdAt,
-        expiresAt,
-      );
+      db.insert(sessions).values({ tokenHash, userId, createdAt, expiresAt }).run();
     },
 
     findValid(tokenHash: string, now: string): { user_id: string } | null {
-      return db.query('SELECT user_id FROM sessions WHERE token_hash = ? AND expires_at > ?').get(tokenHash, now) as
-        | { user_id: string }
-        | null;
+      const row = db
+        .select({ userId: sessions.userId })
+        .from(sessions)
+        .where(and(eq(sessions.tokenHash, tokenHash), gt(sessions.expiresAt, now)))
+        .get();
+      return row ? { user_id: row.userId } : null;
     },
 
     revoke(tokenHash: string): void {
-      db.query('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash);
+      db.delete(sessions).where(eq(sessions.tokenHash, tokenHash)).run();
     },
 
     /** Purge des sessions expirees : la table ne croit pas indefiniment. */
     purgeExpired(now: string): void {
-      db.query('DELETE FROM sessions WHERE expires_at <= ?').run(now);
+      db.delete(sessions).where(lte(sessions.expiresAt, now)).run();
     },
   };
 }

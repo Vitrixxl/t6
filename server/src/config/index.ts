@@ -3,48 +3,48 @@
 // plutot que de produire une panne obscure en pleine requete.
 
 export interface ServerConfig {
-  /** ':memory:' en test, fichier SQLite sinon. */
-  databasePath: string;
-  port: number;
-  host: string;
-  isProduction: boolean;
-  /** Duree de vie d'une session (cookie + ligne en base). */
-  sessionTtlMs: number;
-  /**
-   * A n'activer que derriere un proxy de confiance qui reecrit
-   * X-Forwarded-For : sinon n'importe quel client peut usurper son adresse et
-   * contourner la limitation de debit.
-   */
-  trustProxy: boolean;
-  /**
-   * Base du service de routage. Par defaut l'instance publique de
-   * demonstration d'OpenStreetMap : elle depanne, mais elle n'a aucun
-   * engagement de service et limite par adresse IP (B13). Pointer cette
-   * variable sur une instance OSRM locale supprime toute dependance tierce a
-   * l'execution — voir le README.
-   */
-  osrmBaseUrl: string;
-  /**
-   * Dossier du client construit, servi par l'API elle-meme. Une seule origine
-   * pour l'application et son API : cookie de premiere partie, aucun CORS.
-   */
-  webRoot: string;
-  /**
-   * Certificat et cle TLS. Renseignes, le serveur ecoute en HTTPS.
-   *
-   * Le chiffrement n'est pas qu'une precaution : le navigateur reserve au
-   * contexte securise la geolocalisation, `crypto.randomUUID` et le service
-   * worker. Sans HTTPS, l'application est inutilisable ailleurs que sur
-   * localhost — depuis un telephone du reseau local, par exemple.
-   */
-  tlsCertPath: string;
-  tlsKeyPath: string;
-  /**
-   * Duree de validite d'un trace en cache. La voirie ne bouge pas d'un jour a
-   * l'autre : une journee evite de redemander mille fois le meme trajet sans
-   * risquer de servir une geometrie obsolete.
-   */
-  routeCacheTtlMs: number;
+    /** ':memory:' en test, fichier SQLite sinon. */
+    databasePath: string;
+    port: number;
+    host: string;
+    isProduction: boolean;
+    /** Duree de vie d'une session (cookie + ligne en base). */
+    sessionTtlMs: number;
+    /**
+     * A n'activer que derriere un proxy de confiance qui reecrit
+     * X-Forwarded-For : sinon n'importe quel client peut usurper son adresse et
+     * contourner la limitation de debit.
+     */
+    trustProxy: boolean;
+    /**
+     * Base du service de routage. Par defaut l'instance publique de
+     * demonstration d'OpenStreetMap : elle depanne, mais elle n'a aucun
+     * engagement de service et limite par adresse IP (B13). Pointer cette
+     * variable sur une instance OSRM locale supprime toute dependance tierce a
+     * l'execution — voir le README.
+     */
+    osrmBaseUrl: string;
+    /**
+     * Dossier du client construit, servi par l'API elle-meme. Une seule origine
+     * pour l'application et son API : cookie de premiere partie, aucun CORS.
+     */
+    webRoot: string;
+    /**
+     * Certificat et cle TLS. Renseignes, le serveur ecoute en HTTPS.
+     *
+     * Le chiffrement n'est pas qu'une precaution : le navigateur reserve au
+     * contexte securise la geolocalisation, `crypto.randomUUID` et le service
+     * worker. Sans HTTPS, l'application est inutilisable ailleurs que sur
+     * localhost — depuis un telephone du reseau local, par exemple.
+     */
+    tlsCertPath: string;
+    tlsKeyPath: string;
+    /**
+     * Duree de validite d'un trace en cache. La voirie ne bouge pas d'un jour a
+     * l'autre : une journee evite de redemander mille fois le meme trajet sans
+     * risquer de servir une geometrie obsolete.
+     */
+    routeCacheTtlMs: number;
 }
 
 /**
@@ -53,32 +53,32 @@ export interface ServerConfig {
  * valeur par defaut par une chaine vide.
  */
 function text(raw: string | undefined, fallback: string): string {
-  return raw === undefined || raw.trim() === '' ? fallback : raw.trim();
+    return raw === undefined || raw.trim() === '' ? fallback : raw.trim();
 }
 
 function positiveInteger(name: string, raw: string | undefined, fallback: number): number {
-  if (raw === undefined || raw === '') {
-    return fallback;
-  }
-  const value = Number(raw);
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new Error(`${name} doit etre un entier positif (recu : ${raw}).`);
-  }
-  return value;
+    if (raw === undefined || raw === '') {
+        return fallback;
+    }
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value <= 0) {
+        throw new Error(`${name} doit etre un entier positif (recu : ${raw}).`);
+    }
+    return value;
 }
 
 export function loadConfig(env: Record<string, string | undefined> = Bun.env): ServerConfig {
-  return {
-    databasePath: text(env.DATABASE_PATH, 'server/data/urbanflow.db'),
-    port: positiveInteger('API_PORT', env.API_PORT, 4000),
-    host: text(env.API_HOST, '127.0.0.1'),
-    isProduction: env.NODE_ENV === 'production',
-    sessionTtlMs: positiveInteger('SESSION_TTL_MS', env.SESSION_TTL_MS, 7 * 24 * 60 * 60 * 1000),
-    trustProxy: env.TRUST_PROXY === 'true',
-    webRoot: text(env.WEB_ROOT, 'dist'),
-    tlsCertPath: text(env.TLS_CERT_PATH, ''),
-    tlsKeyPath: text(env.TLS_KEY_PATH, ''),
-    osrmBaseUrl: text(env.OSRM_BASE_URL, 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
-    routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
-  };
+    return {
+        databasePath: text(env.DATABASE_PATH, 'server/data/urbanflow.db'),
+        port: positiveInteger('API_PORT', env.API_PORT, 4000),
+        host: text(env.API_HOST, '127.0.0.1'),
+        isProduction: env.NODE_ENV === 'production',
+        sessionTtlMs: positiveInteger('SESSION_TTL_MS', env.SESSION_TTL_MS, 7 * 24 * 60 * 60 * 1000),
+        trustProxy: env.TRUST_PROXY === 'true',
+        webRoot: text(env.WEB_ROOT, 'dist'),
+        tlsCertPath: text(env.TLS_CERT_PATH, ''),
+        tlsKeyPath: text(env.TLS_KEY_PATH, ''),
+        osrmBaseUrl: text(env.OSRM_BASE_URL, 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
+        routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
+    };
 }

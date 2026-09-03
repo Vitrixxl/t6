@@ -22,31 +22,31 @@ import { routes } from './routes/index.ts';
 const MAX_BODY_BYTES = 512 * 1024;
 
 export function createApp(overrides: Partial<ServerConfig> = {}) {
-  const config = { ...loadConfig(), ...overrides };
-  const ctx = context(config);
+    const config = { ...loadConfig(), ...overrides };
+    const ctx = context(config);
 
-  return new Elysia({ prefix: '/api', serve: { maxRequestBodySize: MAX_BODY_BYTES } })
-    .use(ctx)
-    .use(errorHandler())
-    .use(securityHeaders(config.isProduction))
-    .use(requestLog(config.isProduction))
-    // Limitation globale ; les routes d'authentification resserrent encore.
-    .use(rateLimit({ max: 300, windowMs: 60_000, scope: 'global', trustProxy: config.trustProxy }))
-    // Documentation OpenAPI generee a partir des schemas des routes : elle ne
-    // peut pas deriver du code puisqu'elle en est extraite.
-    .use(
-      openapi({
-        path: '/doc',
-        documentation: {
-          info: {
-            title: 'API UrbanFlow Mobility',
-            version: '1.0.0',
-            description: "API de la plateforme de mobilite urbaine : comptes, profils, trajets et synchronisation.",
-          },
-        },
-      }),
-    )
-    .use(routes(ctx, config));
+    return new Elysia({ prefix: '/api', serve: { maxRequestBodySize: MAX_BODY_BYTES } })
+        .use(ctx)
+        .use(errorHandler())
+        .use(securityHeaders(config.isProduction))
+        .use(requestLog(config.isProduction))
+        // Limitation globale ; les routes d'authentification resserrent encore.
+        .use(rateLimit({ max: 300, windowMs: 60_000, scope: 'global', trustProxy: config.trustProxy }))
+        // Documentation OpenAPI generee a partir des schemas des routes : elle ne
+        // peut pas deriver du code puisqu'elle en est extraite.
+        .use(
+            openapi({
+                path: '/doc',
+                documentation: {
+                    info: {
+                        title: 'API UrbanFlow Mobility',
+                        version: '1.0.0',
+                        description: "API de la plateforme de mobilite urbaine : comptes, profils, trajets et synchronisation.",
+                    },
+                },
+            }),
+        )
+        .use(routes(ctx, config));
 }
 
 export type App = ReturnType<typeof createApp>;
