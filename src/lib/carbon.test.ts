@@ -1,6 +1,6 @@
 import { describe, expect, it } from '../test/harness';
 import { recordTrip, summarizeCarbon } from './carbon';
-import type { PlannedTrip, TripRecord } from '../types';
+import type { PlannedTrip, RecurringTrip, TripRecord } from '../types';
 import { plannedTripToRecord, summarizeTripActivity } from './trips';
 
 // Les enregistrements sont produits en pratique par plannedTripToRecord
@@ -22,7 +22,7 @@ function makeTripRecord(userId: string, createdAt: Date = new Date()): TripRecor
 describe('carbon tracking', () => {
   it('creates and summarizes trip records', () => {
     const trip = makeTripRecord('user-1', new Date('2026-09-14T08:00:00+02:00'));
-    const summary = summarizeCarbon([trip], 2500);
+    const summary = summarizeCarbon([trip], [], 2500);
 
     expect(trip.userId).toBe('user-1');
     expect(summary.trips).toBe(1);
@@ -34,8 +34,8 @@ describe('carbon tracking', () => {
   it('plafonne la jauge d\'objectif a 999 % et la neutralise si l\'objectif est nul', () => {
     const bigTrip = { ...makeTripRecord('user-3'), carbonGrams: 100000 };
 
-    expect(summarizeCarbon([bigTrip], 2500).goalUsagePercent).toBe(999);
-    expect(summarizeCarbon([bigTrip], 0).goalUsagePercent).toBe(0);
+    expect(summarizeCarbon([bigTrip], [], 2500).goalUsagePercent).toBe(999);
+    expect(summarizeCarbon([bigTrip], [], 0).goalUsagePercent).toBe(0);
   });
 
   it('borne l\'historique aux 50 trajets les plus recents, le dernier en tete', () => {
@@ -67,7 +67,7 @@ describe('summarizeCarbon — fenetre hebdomadaire', () => {
     const cetteSemaine = makeTripRecord('user-1', new Date(2026, 8, 1, 8, 0));
     const semainePassee = makeTripRecord('user-1', new Date(2026, 7, 27, 8, 0));
 
-    const summary = summarizeCarbon([cetteSemaine, semainePassee], 2500, jeudi);
+    const summary = summarizeCarbon([cetteSemaine, semainePassee], [], 2500, jeudi);
 
     expect(summary.trips).toBe(1);
     expect(summary.totalSavedGrams).toBe(880);
@@ -77,13 +77,13 @@ describe('summarizeCarbon — fenetre hebdomadaire', () => {
     const dimanche = makeTripRecord('user-1', new Date(2026, 8, 6, 20, 0));
     const lundiSuivant = new Date(2026, 8, 7, 9, 0);
 
-    expect(summarizeCarbon([dimanche], 2500, new Date(2026, 8, 6, 23, 0)).trips).toBe(1);
-    expect(summarizeCarbon([dimanche], 2500, lundiSuivant).trips).toBe(0);
+    expect(summarizeCarbon([dimanche], [], 2500, new Date(2026, 8, 6, 23, 0)).trips).toBe(1);
+    expect(summarizeCarbon([dimanche], [], 2500, lundiSuivant).trips).toBe(0);
   });
 
   it('compte un trajet fait le lundi a minuit', () => {
     const lundiMinuit = makeTripRecord('user-1', new Date(2026, 8, 7, 0, 0));
-    expect(summarizeCarbon([lundiMinuit], 2500, new Date(2026, 8, 7, 9, 0)).trips).toBe(1);
+    expect(summarizeCarbon([lundiMinuit], [], 2500, new Date(2026, 8, 7, 9, 0)).trips).toBe(1);
   });
 });
 
@@ -101,14 +101,39 @@ describe('coherence entre le suivi carbone et les objectifs', () => {
       makePlannedTrip('done', new Date(2026, 7, 27, 8, 0), 999),
     ];
     const records = trajets.map((trip) => plannedTripToRecord(trip, jeudi));
+    // Routine des jours ouvres, creee le lundi 31 aout a 07:00 : lundi, mardi,
+    // mercredi et jeudi matin sont deja passes, soit 4 passages de 100 g.
+    const routines = [makeRoutine(new Date(2026, 7, 31, 7, 0), 100)];
 
-    const suivi = summarizeCarbon(records, 2500, jeudi);
-    const objectifs = summarizeTripActivity(trajets, [], jeudi);
+    const suivi = summarizeCarbon(records, routines, 2500, jeudi);
+    const objectifs = summarizeTripActivity(trajets, routines, jeudi);
 
     expect(suivi.totalSavedGrams).toBe(objectifs.savedThisWeekGrams);
-    expect(suivi.totalSavedGrams).toBe(650);
+    expect(suivi.totalSavedGrams).toBe(650 + 400);
+    expect(suivi.trips).toBe(objectifs.doneThisWeek);
+    expect(suivi.trips).toBe(2 + 4);
   });
 });
+
+function makeRoutine(createdAt: Date, carbonSavedGrams: number): RecurringTrip {
+  return {
+    id: crypto.randomUUID(),
+    userId: 'user-1',
+    label: 'Domicile-travail',
+    origin: { label: 'A', lat: 45.75, lon: 4.83 },
+    destination: { label: 'B', lat: 45.76, lon: 4.86 },
+    modes: ['bike'],
+    distanceKm: 5,
+    durationMinutes: 20,
+    carbonGrams: 20,
+    carbonSavedGrams,
+    daysOfWeek: [1, 2, 3, 4, 5],
+    departureTime: '08:00',
+    returnTime: null,
+    periods: [{ from: createdAt.toISOString(), to: null }],
+    createdAt: createdAt.toISOString(),
+  };
+}
 
 function makePlannedTrip(status: 'done' | 'planned', completedAt: Date, carbonSavedGrams: number): PlannedTrip {
   return {
@@ -124,7 +149,6 @@ function makePlannedTrip(status: 'done' | 'planned', completedAt: Date, carbonSa
     carbonSavedGrams,
     scheduledFor: completedAt.toISOString(),
     status,
-    recurringTripId: null,
     createdAt: completedAt.toISOString(),
     completedAt: completedAt.toISOString(),
   };

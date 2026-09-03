@@ -1,7 +1,11 @@
 // Vues de lecture : filtres et agregats calcules a partir des trajets, sans
 // aucun effet de bord ni acces au stockage.
+//
+// Les routines n'existent pas sous forme de trajets : leurs passages deja
+// echus sont ajoutes ici, au moment de compter (voir routines.ts).
 import type { PlannedTrip, RecurringTrip, TripActivitySummary, TripRecord } from '../../types';
 import { startOfWeek } from '../week';
+import { BEGINNING_OF_TIME, isRoutinePaused, sumRoutines } from './routines';
 
 export function upcomingTrips(trips: PlannedTrip[], now: Date = new Date(), graceHours = 24): PlannedTrip[] {
   const floor = now.getTime() - graceHours * 3_600_000;
@@ -22,23 +26,31 @@ export function summarizeTripActivity(
   recurring: RecurringTrip[],
   now: Date = new Date(),
 ): TripActivitySummary {
-  const weekFloor = startOfWeek(now).getTime();
-  const monthFloor = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const weekFloor = startOfWeek(now);
+  const monthFloor = new Date(now.getFullYear(), now.getMonth(), 1);
   const done = planned.filter((trip) => trip.status === 'done');
   const doneAt = (trip: PlannedTrip) => new Date(trip.completedAt ?? trip.scheduledFor).getTime();
-  const doneThisWeek = done.filter((trip) => doneAt(trip) >= weekFloor);
-  const doneThisMonth = done.filter((trip) => doneAt(trip) >= monthFloor);
+  const doneThisWeek = done.filter((trip) => doneAt(trip) >= weekFloor.getTime());
+  const doneThisMonth = done.filter((trip) => doneAt(trip) >= monthFloor.getTime());
+
+  const routinesTotal = sumRoutines(recurring, BEGINNING_OF_TIME, now);
+  const routinesThisWeek = sumRoutines(recurring, weekFloor, now);
+  const routinesThisMonth = sumRoutines(recurring, monthFloor, now);
+  const saved = (trips: PlannedTrip[]) => trips.reduce((sum, trip) => sum + trip.carbonSavedGrams, 0);
 
   return {
-    doneTotal: done.length,
-    doneThisWeek: doneThisWeek.length,
-    savedThisWeekGrams: Math.round(doneThisWeek.reduce((sum, trip) => sum + trip.carbonSavedGrams, 0)),
-    doneThisMonth: doneThisMonth.length,
-    savedThisMonthGrams: Math.round(doneThisMonth.reduce((sum, trip) => sum + trip.carbonSavedGrams, 0)),
-    savedTotalGrams: Math.round(done.reduce((sum, trip) => sum + trip.carbonSavedGrams, 0)),
-    distanceThisWeekKm: round(doneThisWeek.reduce((sum, trip) => sum + trip.distanceKm, 0), 1),
+    doneTotal: done.length + routinesTotal.trips,
+    doneThisWeek: doneThisWeek.length + routinesThisWeek.trips,
+    savedThisWeekGrams: Math.round(saved(doneThisWeek) + routinesThisWeek.carbonSavedGrams),
+    doneThisMonth: doneThisMonth.length + routinesThisMonth.trips,
+    savedThisMonthGrams: Math.round(saved(doneThisMonth) + routinesThisMonth.carbonSavedGrams),
+    savedTotalGrams: Math.round(saved(done) + routinesTotal.carbonSavedGrams),
+    distanceThisWeekKm: round(
+      doneThisWeek.reduce((sum, trip) => sum + trip.distanceKm, 0) + routinesThisWeek.distanceKm,
+      1,
+    ),
     upcomingCount: upcomingTrips(planned, now).length,
-    recurringActiveCount: recurring.filter((trip) => !trip.paused).length,
+    recurringActiveCount: recurring.filter((trip) => !isRoutinePaused(trip)).length,
   };
 }
 
@@ -56,8 +68,6 @@ export function plannedTripToRecord(trip: PlannedTrip, now: Date = new Date()): 
     createdAt: (trip.completedAt ?? now.toISOString()),
   };
 }
-
-/** Remplace le cache local par l'etat du serveur (hydratation apres connexion). */
 
 export function round(value: number, decimals: number): number {
   const factor = 10 ** decimals;

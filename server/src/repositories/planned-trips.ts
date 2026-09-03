@@ -1,5 +1,4 @@
-// Depot des trajets programmes (occurrences datees, ponctuelles ou issues
-// d'une routine).
+// Depot des trajets programmes a une date.
 import { asc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { plannedTrips } from '../db/schema.ts';
@@ -25,13 +24,12 @@ export function createPlannedTripRepository(db: Executor) {
           ...measures(row),
           scheduledFor: row.scheduledFor,
           status: row.status,
-          recurringTripId: row.recurringTripId,
           createdAt: row.createdAt,
           completedAt: row.completedAt,
         }));
     },
 
-    /** Remplace les occurrences par celles du client. Au-dela de la borne, les plus anciennes sont ecartees. */
+    /** Remplace les trajets par ceux du client. Au-dela de la borne, les plus anciens sont ecartes. */
     replaceAll(userId: string, trips: Omit<PlannedTrip, 'userId'>[]): void {
       db.delete(plannedTrips).where(eq(plannedTrips.userId, userId)).run();
       const rows = [...trips]

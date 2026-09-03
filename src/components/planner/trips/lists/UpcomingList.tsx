@@ -1,5 +1,5 @@
-// Occurrences a venir : marquer fait, annuler, supprimer.
-import { CalendarClock, Check, Leaf, Repeat, Trash2, X } from 'lucide-react';
+// Trajets dates a venir : marquer fait, annuler, supprimer.
+import { CalendarClock, Check, Leaf, Trash2, X } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { PlannedTrip } from '../../../../types';
 import { EmptyState, ModeIconRow, OriginDestination, TripStatusDot } from '../atoms';
@@ -21,7 +21,7 @@ export function UpcomingList({
       <EmptyState
         icon={<CalendarClock className="size-4" aria-hidden="true" />}
         title="Aucun trajet a venir"
-        hint="Calcule un itineraire puis « Planifier » pour le dater, ou cree un trajet recurrent pour tes deplacements reguliers."
+        hint="Calcule un itineraire puis « Planifier » pour le dater. Les routines, elles, comptent toutes seules : voir l'onglet Recurrents."
       />
     );
   }
@@ -35,12 +35,6 @@ export function UpcomingList({
               <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-primary">
                 <TripStatusDot status={trip.status} />
                 {formatScheduleLabel(trip.scheduledFor)}
-                {trip.recurringTripId ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-accent px-1.5 py-0.5 text-[9px] font-bold normal-case tracking-normal text-accent-foreground">
-                    <Repeat className="size-2.5" aria-hidden="true" />
-                    recurrent
-                  </span>
-                ) : null}
               </p>
               <h3 className="mt-0.5 truncate text-sm font-semibold">{trip.label}</h3>
               <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />

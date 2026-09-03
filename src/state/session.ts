@@ -12,7 +12,7 @@ import { saveAccountState, type AccountState, type Session } from '../lib/api/ac
 import { deleteAccount as deleteAccountRequest, logoutUser } from '../lib/auth';
 import { DEFAULT_PROFILE } from '../lib/auth/defaults';
 import { summarizeCarbon } from '../lib/carbon';
-import { materializeOccurrences, summarizeTripActivity, upcomingTrips } from '../lib/trips';
+import { summarizeTripActivity, upcomingTrips } from '../lib/trips';
 
 const EMPTY_STATE: AccountState = {
   profile: DEFAULT_PROFILE,
@@ -46,17 +46,11 @@ export const updateAccountAtom = atom(null, (get, set, updater: (state: AccountS
     );
 });
 
-/** Ouvre une session : le compte, son etat, et les occurrences des routines a jour. */
+/** Ouvre une session : le compte et son etat, tels que le serveur les rend. */
 export const openSessionAtom = atom(null, (_get, set, session: Session) => {
   set(sessionAtom, session);
   set(accountStateAtom, session.state);
   set(saveErrorAtom, '');
-  // L'utilisateur retrouve sa semaine planifiee sans action de sa part ; si
-  // des occurrences manquent, l'etat complete part au serveur.
-  const planned = materializeOccurrences(session.state.recurringTrips, session.state.plannedTrips, session.user.id);
-  if (planned !== session.state.plannedTrips) {
-    set(updateAccountAtom, (state) => ({ ...state, plannedTrips: planned }));
-  }
 });
 
 export const closeSessionAtom = atom(null, (_get, set) => {
@@ -100,4 +94,8 @@ export const userAtom = atom<SessionUser>((get) => {
 
 export const upcomingAtom = atom((get) => upcomingTrips(get(plannedTripsAtom)));
 export const activitySummaryAtom = atom((get) => summarizeTripActivity(get(plannedTripsAtom), get(recurringTripsAtom)));
-export const carbonSummaryAtom = atom((get) => summarizeCarbon(get(tripRecordsAtom), get(profileAtom).carbonGoalGramsPerWeek));
+// Les routines n'ecrivent rien dans l'historique : leurs passages echus de la
+// semaine sont ajoutes au moment de compter, comme dans les objectifs.
+export const carbonSummaryAtom = atom((get) =>
+  summarizeCarbon(get(tripRecordsAtom), get(recurringTripsAtom), get(profileAtom).carbonGoalGramsPerWeek),
+);

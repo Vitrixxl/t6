@@ -15,6 +15,13 @@
       "when": 1788453926692,
       "tag": "0001_retrait-journal-operations",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788461752580,
+      "tag": "0002_routines-a-la-volee",
+      "breakpoints": true
     }
   ]
 }

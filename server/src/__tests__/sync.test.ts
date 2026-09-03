@@ -28,16 +28,15 @@ const ROUTINE = {
   daysOfWeek: [1, 2, 3, 4, 5],
   departureTime: '08:15',
   returnTime: '18:00',
-  paused: false,
+  periods: [{ from: '2026-08-31T06:00:00.000Z', to: null }],
 };
 
 const OCCURRENCE = {
   ...TRIP_SHAPE,
-  id: 'rec:routine-1:2026-09-02:aller',
+  id: 'trip-1',
   label: 'Domicile - travail',
   scheduledFor: '2026-09-02T06:15:00.000Z',
   status: 'planned',
-  recurringTripId: 'routine-1',
   completedAt: null,
 };
 

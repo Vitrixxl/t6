@@ -78,7 +78,8 @@ const shot = (page, name, options = {}) => page.screenshot({ path: `${OUT}/${nam
   await planRoute(page, 'place bellecour lyon', 'gare part dieu lyon', /Gare/, 'desktop-origin'.replace('-origin', ''));
   await shot(page, '03-planner-desktop.png');
 
-  // 04. Hub planificateur : routine creee + trajet fait -> objectifs alimentes
+  // 04. Hub planificateur : routine creee (ses passages echus comptent d'eux-memes)
+  // et, s'il existe un trajet date, marquage fait -> objectifs alimentes
   await page.getByRole('button', { name: /^planifier$/i }).first().click();
   await page.waitForTimeout(700);
   await page.getByRole('tab', { name: /recurrent/i }).click();

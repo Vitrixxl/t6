@@ -2,9 +2,13 @@
 //
 // Chaque action est une fonction pure sur des listes, appliquee par
 // `updateAccountAtom`, donc suivie d'un envoi. Les consequences d'une action
-// sont decidees ici, pas dans les composants : une pause retire les occurrences
-// a venir, une reprise les rematerialise, un trajet fait alimente l'historique
-// carbone, une planification ouvre l'onglet du hub qui la montre.
+// sont decidees ici, pas dans les composants : une pause clot la periode
+// d'activite d'une routine, un trajet fait alimente l'historique carbone, une
+// planification ouvre l'onglet du hub qui la montre.
+//
+// Une routine n'engendre aucun trajet : ses passages sont comptes a la
+// lecture (lib/trips/routines.ts). Rien a generer a l'ouverture, rien a
+// purger a la pause.
 import { atom } from 'jotai';
 import type { GeoPoint, MobilityProfile, PlannedTrip, RecurringTrip, RouteOption } from '../types';
 import { sanitizeProfile } from '../lib/auth';
@@ -13,9 +17,8 @@ import { addSavedRoute, createSavedRouteRecord, removeSavedRoute } from '../lib/
 import {
   createPlannedTrip,
   createRecurringTrip,
-  materializeOccurrences,
+  isRoutinePaused,
   plannedTripToRecord,
-  pruneForRecurring,
   removePlanned,
   removeRecurring,
   setPlannedStatus,
@@ -60,25 +63,16 @@ export const removeTripAtom = atom(null, (_get, set, trip: PlannedTrip) => {
   set(updateAccountAtom, (state) => ({ ...state, plannedTrips: removePlanned(state.plannedTrips, trip.id) }));
 });
 
-export const toggleRecurringPausedAtom = atom(null, (get, set, trip: RecurringTrip) => {
-  const userId = get(sessionAtom)?.user.id ?? trip.userId;
-  set(updateAccountAtom, (state) => {
-    const recurring = setRecurringPaused(state.recurringTrips, trip.id, !trip.paused);
-    // Reprise : rematerialiser les occurrences de la fenetre.
-    // Pause : les occurrences encore a faire disparaissent du plan.
-    const planned = trip.paused
-      ? materializeOccurrences(recurring, state.plannedTrips, userId)
-      : pruneForRecurring(state.plannedTrips, trip.id);
-    return { ...state, recurringTrips: recurring, plannedTrips: planned };
-  });
+/** Pause : la periode d'activite courante se clot. Reprise : une nouvelle s'ouvre. */
+export const toggleRecurringPausedAtom = atom(null, (_get, set, trip: RecurringTrip) => {
+  set(updateAccountAtom, (state) => ({
+    ...state,
+    recurringTrips: setRecurringPaused(state.recurringTrips, trip.id, !isRoutinePaused(trip)),
+  }));
 });
 
 export const removeRecurringAtom = atom(null, (_get, set, trip: RecurringTrip) => {
-  set(updateAccountAtom, (state) => ({
-    ...state,
-    recurringTrips: removeRecurring(state.recurringTrips, trip.id),
-    plannedTrips: pruneForRecurring(state.plannedTrips, trip.id),
-  }));
+  set(updateAccountAtom, (state) => ({ ...state, recurringTrips: removeRecurring(state.recurringTrips, trip.id) }));
 });
 
 // --- Itineraires enregistres -----------------------------------------------
@@ -153,10 +147,7 @@ export const submitPlanAtom = atom(null, (get, set, plan: PlanSubmission): Trips
       departureTime: plan.departureTime,
       returnTime: plan.returnTime ?? null,
     });
-    set(updateAccountAtom, (state) => {
-      const recurring = upsertRecurring(state.recurringTrips, template);
-      return { ...state, recurringTrips: recurring, plannedTrips: materializeOccurrences(recurring, state.plannedTrips, userId) };
-    });
+    set(updateAccountAtom, (state) => ({ ...state, recurringTrips: upsertRecurring(state.recurringTrips, template) }));
     set(planSourceAtom, null);
     set(openHubAtom, 'recurring');
     return 'recurring';

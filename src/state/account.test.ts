@@ -5,7 +5,7 @@ import { createStore } from 'jotai';
 import { afterEach, beforeEach, describe, expect, it, vi } from '../test/harness';
 import type { Session } from '../lib/api/account';
 import { DEFAULT_PROFILE } from '../lib/auth/defaults';
-import { createRecurringTrip } from '../lib/trips';
+import { createRecurringTrip, isRoutinePaused } from '../lib/trips';
 import type { PlannedTrip, RouteOption } from '../types';
 import {
   accountStateAtom,
@@ -89,7 +89,6 @@ function futureTrip(): PlannedTrip {
     ...SOURCE,
     scheduledFor,
     status: 'planned',
-    recurringTripId: null,
     createdAt: new Date().toISOString(),
     completedAt: null,
   };
@@ -117,15 +116,23 @@ describe('session', () => {
     expect(sentBodies(fetchSpy)).toHaveLength(0);
   });
 
-  it('materialise les occurrences des routines a l ouverture et les envoie', async () => {
-    const routine = createRecurringTrip('user-1', SOURCE, { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], departureTime: '23:59', returnTime: null });
+  it('une routine ne cree aucun trajet a l ouverture : ses passages se comptent a la lecture', async () => {
+    // Creee il y a huit jours, tous les jours a 00:01 : ses passages echus
+    // comptent dans les objectifs sans qu'aucun trajet n'existe.
+    const routine = createRecurringTrip(
+      'user-1',
+      SOURCE,
+      { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], departureTime: '00:01', returnTime: null },
+      new Date(Date.now() - 8 * 86_400_000),
+    );
     store.set(openSessionAtom, session({ recurringTrips: [routine] }));
     await pendingSaves();
 
-    expect(store.get(upcomingAtom).length).toBeGreaterThan(0);
-    const [body] = sentBodies(fetchSpy);
-    expect(body.plannedTrips.length).toBeGreaterThan(0);
-    expect(body.plannedTrips[0]).not.toHaveProperty('userId');
+    expect(store.get(upcomingAtom)).toHaveLength(0);
+    expect(store.get(activitySummaryAtom).recurringActiveCount).toBe(1);
+    expect(store.get(activitySummaryAtom).doneThisWeek).toBeGreaterThan(0);
+    expect(store.get(carbonSummaryAtom).trips).toBe(store.get(activitySummaryAtom).doneThisWeek);
+    expect(sentBodies(fetchSpy)).toHaveLength(0);
   });
 
   it('la deconnexion revoque la session et vide l etat', async () => {
@@ -171,7 +178,7 @@ describe('planification', () => {
     expect(body.plannedTrips[0]).not.toHaveProperty('userId');
   });
 
-  it('une routine cree ses occurrences et ouvre l onglet recurrents', async () => {
+  it('une routine entre dans l etat, active des sa creation, et ouvre l onglet recurrents', async () => {
     const tab = store.set(submitPlanAtom, {
       kind: 'recurring',
       label: 'Boulot',
@@ -183,9 +190,12 @@ describe('planification', () => {
 
     expect(tab).toBe('recurring');
     expect(store.get(accountStateAtom).recurringTrips).toHaveLength(1);
-    expect(store.get(upcomingAtom).length).toBeGreaterThan(0);
+    expect(store.get(accountStateAtom).recurringTrips[0].periods).toHaveLength(1);
+    expect(store.get(upcomingAtom)).toHaveLength(0);
     expect(store.get(activitySummaryAtom).recurringActiveCount).toBe(1);
-    expect(sentBodies(fetchSpy)).toHaveLength(1);
+    const [body] = sentBodies(fetchSpy);
+    expect(body.recurringTrips).toHaveLength(1);
+    expect(body.recurringTrips[0]).not.toHaveProperty('userId');
   });
 
   it('une soumission incomplete ne change rien', async () => {
@@ -229,31 +239,35 @@ describe('trajets', () => {
     expect(sentBodies(fetchSpy)).toHaveLength(2);
   });
 
-  it('mettre une routine en pause retire ses occurrences a venir, la reprendre les recree', async () => {
+  it('mettre une routine en pause clot sa periode, la reprendre en ouvre une nouvelle', async () => {
     const routine = createRecurringTrip('user-1', SOURCE, { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], departureTime: '23:59', returnTime: null });
     store.set(openSessionAtom, session({ recurringTrips: [routine] }));
-    expect(store.get(upcomingAtom).length).toBeGreaterThan(0);
+    expect(store.get(activitySummaryAtom).recurringActiveCount).toBe(1);
 
     store.set(toggleRecurringPausedAtom, routine);
-    expect(store.get(accountStateAtom).recurringTrips[0].paused).toBe(true);
-    expect(store.get(upcomingAtom)).toHaveLength(0);
+    const paused = store.get(accountStateAtom).recurringTrips[0];
+    expect(isRoutinePaused(paused)).toBe(true);
+    expect(store.get(activitySummaryAtom).recurringActiveCount).toBe(0);
 
-    store.set(toggleRecurringPausedAtom, { ...routine, paused: true });
-    expect(store.get(accountStateAtom).recurringTrips[0].paused).toBe(false);
-    expect(store.get(upcomingAtom).length).toBeGreaterThan(0);
+    store.set(toggleRecurringPausedAtom, paused);
+    const resumed = store.get(accountStateAtom).recurringTrips[0];
+    expect(isRoutinePaused(resumed)).toBe(false);
+    expect(resumed.periods).toHaveLength(2);
     await pendingSaves();
+    expect(sentBodies(fetchSpy)).toHaveLength(2);
   });
 
-  it('supprimer une routine emporte ses occurrences a faire', async () => {
+  it('supprimer une routine ne touche pas aux trajets dates', async () => {
     const routine = createRecurringTrip('user-1', SOURCE, { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], departureTime: '23:59', returnTime: null });
-    store.set(openSessionAtom, session({ recurringTrips: [routine] }));
+    const trip = futureTrip();
+    store.set(openSessionAtom, session({ recurringTrips: [routine], plannedTrips: [trip] }));
 
     store.set(removeRecurringAtom, routine);
     await pendingSaves();
 
     const state = store.get(accountStateAtom);
     expect(state.recurringTrips).toHaveLength(0);
-    expect(state.plannedTrips).toHaveLength(0);
+    expect(state.plannedTrips).toHaveLength(1);
     expect(sentBodies(fetchSpy).at(-1)?.recurringTrips).toHaveLength(0);
   });
 });
