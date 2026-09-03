@@ -1,12 +1,13 @@
 import { describe, expect, it } from '../../test/harness';
-import type { PlannedTrip, RecurringTrip } from '../../types';
+import type { PlannedTrip } from '../../types';
 import {
+  countOccurrences,
   createPlannedTrip,
   createRecurringTrip,
-  materializeOccurrences,
-  occurrenceId,
+  isRoutinePaused,
+  nextOccurrence,
+  occurrencesBetween,
   plannedTripToRecord,
-  pruneForRecurring,
   removeRecurring,
   setPlannedStatus,
   setRecurringPaused,
@@ -30,6 +31,8 @@ const SOURCE = {
 
 // Mercredi 15 juillet 2026, 07:00 locale.
 const NOW = new Date(2026, 6, 15, 7, 0);
+// Mardi 21 juillet 2026, 12:00 locale : six jours plus tard.
+const LATER = new Date(2026, 6, 21, 12, 0);
 
 describe('planned trips', () => {
   it('cree un trajet et le passe a fait avec horodatage', () => {
@@ -49,7 +52,7 @@ describe('planned trips', () => {
     expect(record.createdAt).toBe(done[0].completedAt as string);
   });
 
-  it('upcomingTrips ne retourne que les occurrences a faire, triees par date', () => {
+  it('upcomingTrips ne retourne que les trajets a faire, tries par date', () => {
     const past = { ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 10, 8, 0), NOW), id: 'past' };
     const soon = { ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 15, 18, 0), NOW), id: 'soon' };
     const later = { ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 17, 8, 0), NOW), id: 'later' };
@@ -59,75 +62,81 @@ describe('planned trips', () => {
   });
 });
 
-describe('recurring trips', () => {
-  it('genere les occurrences aller-retour des jours actifs sur la fenetre, sans doublon au resync', () => {
-    const template = createRecurringTrip(
-      USER_ID,
-      SOURCE,
-      { daysOfWeek: [1, 3, 5], departureTime: '08:30', returnTime: '18:00' },
-      NOW,
-    );
+// Une routine n'engendre aucun trajet : ses passages sont comptes a la
+// lecture, entre sa creation et maintenant, sur ses periodes d'activite.
+describe('routines — passages comptes a la lecture', () => {
+  const routine = (returnTime: string | null = '18:00') =>
+    createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 3, 5], departureTime: '08:30', returnTime }, NOW);
 
-    const first = materializeOccurrences([template], [], USER_ID, NOW);
-    // Fenetre mer 15 -> mar 21 : mercredi 15, vendredi 17, lundi 20 => 3 jours x 2 sens.
-    expect(first).toHaveLength(6);
-    expect(first.every((trip) => trip.recurringTripId === template.id)).toBe(true);
-    expect(first.filter((trip) => trip.label.endsWith('(retour)'))).toHaveLength(3);
-
-    const retour = first.find((trip) => trip.id === occurrenceId(template.id, new Date(2026, 6, 17), 'retour'));
-    expect(retour).toBeDefined();
-    expect(retour!.origin.label).toBe('Part-Dieu');
-    expect(retour!.destination.label).toBe('Bellecour');
-    expect(new Date(retour!.scheduledFor).getHours()).toBe(18);
-
-    const second = materializeOccurrences([template], first, USER_ID, NOW);
-    expect(second).toHaveLength(6);
-    // Rien a ajouter : la liste est rendue telle quelle, sans copie inutile.
-    expect(second).toBe(first);
+  it('compte les passages aller-retour des jours actifs entre la creation et maintenant', () => {
+    // Creee mercredi 15 a 07:00, lue mardi 21 a midi : mer 15, ven 17, lun 20,
+    // deux sens a chaque fois. Rien le mardi 21, qui n'est pas un jour actif.
+    expect(countOccurrences(routine(), new Date(0), LATER)).toBe(6);
+    expect(countOccurrences(routine(null), new Date(0), LATER)).toBe(3);
   });
 
-  it('ne genere rien quand le trajet recurrent est en pause', () => {
-    const template = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 2, 3, 4, 5], departureTime: '08:30', returnTime: null }, NOW);
-    const paused = setRecurringPaused([template], template.id, true);
-
-    expect(materializeOccurrences(paused, [], USER_ID, NOW)).toHaveLength(0);
-
-    const resumed = setRecurringPaused(paused, template.id, false);
-    expect(materializeOccurrences(resumed, [], USER_ID, NOW).length).toBeGreaterThan(0);
+  it('liste les heures de passage dans l ordre, aller puis retour', () => {
+    const passages = occurrencesBetween(routine(), NOW, new Date(2026, 6, 16));
+    expect(passages.map((at) => at.getHours())).toEqual([8, 18]);
+    expect(passages[0].getMinutes()).toBe(30);
   });
 
-  it("une occurrence annulee n'est pas regeneree", () => {
-    const template = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [NOW.getDay()], departureTime: '08:30', returnTime: null }, NOW);
-
-    const occurrences = materializeOccurrences([template], [], USER_ID, NOW);
-    const todayId = occurrenceId(template.id, NOW, 'aller');
-    expect(occurrences.some((trip) => trip.id === todayId)).toBe(true);
-
-    const cancelled = setPlannedStatus(occurrences, todayId, 'cancelled', NOW);
-    const after = materializeOccurrences([template], cancelled, USER_ID, NOW);
-    expect(after.find((trip) => trip.id === todayId)?.status).toBe('cancelled');
-    expect(after.filter((trip) => trip.id === todayId)).toHaveLength(1);
+  // Descendant de B18 : un passage dont l'heure n'est pas encore venue n'est
+  // pas fait. Consultee a midi, la routine du jour ne compte que le matin.
+  it('ne compte pas un passage dont l heure n est pas encore passee', () => {
+    const midi = new Date(2026, 6, 15, 12, 0);
+    expect(countOccurrences(routine(), new Date(0), midi)).toBe(1);
+    // Et rien avant la creation : la routine creee a 07:00 ne compte pas un
+    // passage de 06:00 le meme jour.
+    const tot = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [3], departureTime: '06:00', returnTime: null }, NOW);
+    expect(countOccurrences(tot, new Date(0), midi)).toBe(0);
   });
 
-  it('supprimer un recurrent retire ses occurrences a faire mais garde les faites', () => {
-    const template = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 2, 3, 4, 5], departureTime: '08:30', returnTime: null }, NOW);
-    const occurrences = materializeOccurrences([template], [], USER_ID, NOW);
-    const doneId = occurrences[0].id;
-    const withDone = setPlannedStatus(occurrences, doneId, 'done', NOW);
+  it('respecte le plancher : seuls les passages depuis le plancher comptent', () => {
+    // Plancher lundi 20 : seuls les deux passages du lundi restent.
+    expect(countOccurrences(routine(), new Date(2026, 6, 20), LATER)).toBe(2);
+  });
 
-    const recurring = removeRecurring([template], template.id);
-    const planned = pruneForRecurring(withDone, template.id);
-    expect(recurring).toHaveLength(0);
-    expect(planned).toHaveLength(1);
-    expect(planned[0].id).toBe(doneId);
-    expect(planned[0].status).toBe('done');
+  it('la pause clot la periode, la reprise en ouvre une nouvelle', () => {
+    const created = routine();
+    expect(isRoutinePaused(created)).toBe(false);
+
+    // Pause jeudi 16 : seuls les passages du mercredi 15 restent comptes.
+    const paused = setRecurringPaused([created], created.id, true, new Date(2026, 6, 16, 9, 0));
+    expect(isRoutinePaused(paused[0])).toBe(true);
+    expect(countOccurrences(paused[0], new Date(0), LATER)).toBe(2);
+    expect(nextOccurrence(paused[0], LATER)).toBeNull();
+
+    // Reprise lundi 20 a 07:00 : le vendredi 17 reste hors compte, le lundi
+    // compte a nouveau.
+    const resumed = setRecurringPaused(paused, created.id, false, new Date(2026, 6, 20, 7, 0));
+    expect(isRoutinePaused(resumed[0])).toBe(false);
+    expect(resumed[0].periods).toHaveLength(2);
+    expect(countOccurrences(resumed[0], new Date(0), LATER)).toBe(4);
+
+    // Demander l'etat deja en place ne change rien.
+    expect(setRecurringPaused(resumed, created.id, false)[0]).toBe(resumed[0]);
+  });
+
+  it('annonce le prochain passage d une routine active', () => {
+    // Mercredi 07:00 : le prochain passage est l'aller de 08:30 du jour.
+    expect(nextOccurrence(routine(), NOW)?.getTime()).toBe(new Date(2026, 6, 15, 8, 30).getTime());
+    // Mardi midi : le prochain jour actif est le mercredi 22, aller a 08:30.
+    expect(nextOccurrence(routine(), LATER)?.getTime()).toBe(new Date(2026, 6, 22, 8, 30).getTime());
+    const sansJour = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [], departureTime: '08:30', returnTime: null }, NOW);
+    expect(nextOccurrence(sansJour, NOW)).toBeNull();
+  });
+
+  it('supprimer une routine retire ses passages des compteurs', () => {
+    const created = routine();
+    expect(summarizeTripActivity([], [created], LATER).doneTotal).toBe(6);
+    expect(summarizeTripActivity([], removeRecurring([created], created.id), LATER).doneTotal).toBe(0);
   });
 });
 
 describe('summarizeTripActivity', () => {
-  it('agrege les trajets faits de la semaine et les compteurs', () => {
-    const template: RecurringTrip = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [NOW.getDay()], departureTime: '08:30', returnTime: null }, NOW);
-    let trips = materializeOccurrences([template], [], USER_ID, NOW);
+  it('agrege les trajets faits et les passages de routine, semaine et mois', () => {
+    const routine = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 3, 5], departureTime: '08:30', returnTime: '18:00' }, NOW);
 
     const oldDone: PlannedTrip = {
       ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 5, 1, 8, 0), NOW),
@@ -136,22 +145,26 @@ describe('summarizeTripActivity', () => {
       completedAt: new Date(2026, 5, 1, 9, 0).toISOString(),
     };
     const recentDone: PlannedTrip = {
-      ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 14, 8, 0), NOW),
+      ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 20, 8, 0), NOW),
       id: 'recent-done',
       status: 'done',
-      completedAt: new Date(2026, 6, 14, 9, 0).toISOString(),
+      completedAt: new Date(2026, 6, 20, 9, 0).toISOString(),
     };
-    trips = upsertPlanned(upsertPlanned(trips, oldDone), recentDone);
+    const ahead = { ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 23, 8, 0), NOW), id: 'ahead' };
+    const trips = upsertPlanned(upsertPlanned(upsertPlanned([], oldDone), recentDone), ahead);
 
-    const summary = summarizeTripActivity(trips, [template], NOW);
-    expect(summary.doneTotal).toBe(2);
-    // Semaine calendaire (lundi 13 juillet) : seul le trajet du 14 compte.
-    expect(summary.doneThisWeek).toBe(1);
-    expect(summary.savedThisWeekGrams).toBe(SOURCE.carbonSavedGrams);
+    const summary = summarizeTripActivity(trips, [routine], LATER);
+    // Depuis toujours : 2 trajets dates faits + 6 passages de routine.
+    expect(summary.doneTotal).toBe(8);
+    expect(summary.savedTotalGrams).toBe(SOURCE.carbonSavedGrams * 8);
+    // Semaine calendaire (lundi 20 juillet) : le trajet du 20 + les 2 passages du lundi.
+    expect(summary.doneThisWeek).toBe(3);
+    expect(summary.savedThisWeekGrams).toBe(SOURCE.carbonSavedGrams * 3);
+    expect(summary.distanceThisWeekKm).toBe(7.2);
     // Mois calendaire (juillet) : le trajet du 1er juin est exclu.
-    expect(summary.doneThisMonth).toBe(1);
-    expect(summary.savedThisMonthGrams).toBe(SOURCE.carbonSavedGrams);
-    expect(summary.savedTotalGrams).toBe(SOURCE.carbonSavedGrams * 2);
+    expect(summary.doneThisMonth).toBe(7);
+    expect(summary.savedThisMonthGrams).toBe(SOURCE.carbonSavedGrams * 7);
+    // A venir : seuls les trajets dates ; une routine n'est pas « a venir ».
     expect(summary.upcomingCount).toBe(1);
     expect(summary.recurringActiveCount).toBe(1);
   });
@@ -169,42 +182,5 @@ describe('summarizeTripActivity', () => {
     const summary = summarizeTripActivity([sundayDone], [], NOW);
     expect(summary.doneThisWeek).toBe(0);
     expect(summary.doneThisMonth).toBe(1);
-  });
-});
-
-// Verrouille B18. Une routine consultee le soir materialisait les occurrences
-// du jour deja passees, que la tolerance de 24 h de `upcomingTrips` comptait
-// ensuite comme « a venir ».
-describe('recurrence — occurrences deja passees', () => {
-  const MERCREDI_SOIR = new Date(2026, 6, 15, 22, 0);
-  const MERCREDI_MATIN = new Date(2026, 6, 15, 7, 0);
-  const jourMeme = (trips: PlannedTrip[]) => trips.filter((trip) => trip.scheduledFor.startsWith('2026-07-15'));
-  const template = (now: Date, returnTime: string | null = '18:00') =>
-    createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 2, 3, 4, 5], departureTime: '08:30', returnTime }, now);
-
-  it('ne materialise pas les occurrences du jour dont l heure est passee', () => {
-    const occurrences = materializeOccurrences([template(MERCREDI_SOIR)], [], USER_ID, MERCREDI_SOIR);
-
-    expect(jourMeme(occurrences)).toHaveLength(0);
-    expect(upcomingTrips(occurrences, MERCREDI_SOIR)).toHaveLength(
-      occurrences.filter((trip) => !trip.scheduledFor.startsWith('2026-07-15')).length,
-    );
-  });
-
-  it('materialise bien les occurrences du jour encore a venir', () => {
-    expect(jourMeme(materializeOccurrences([template(MERCREDI_MATIN)], [], USER_ID, MERCREDI_MATIN))).toHaveLength(2);
-  });
-
-  // Non-regression de la tolerance : elle sert a marquer « fait » un trajet du
-  // matin en fin de journee. Corriger la generation ne doit pas la supprimer.
-  it('laisse visible une occurrence deja existante et passee', () => {
-    const routine = template(MERCREDI_MATIN, null);
-    const duMatinListe = materializeOccurrences([routine], [], USER_ID, MERCREDI_MATIN);
-
-    const leSoir = materializeOccurrences([routine], duMatinListe, USER_ID, MERCREDI_SOIR);
-    const duMatin = jourMeme(leSoir);
-
-    expect(duMatin).toHaveLength(1);
-    expect(upcomingTrips(leSoir, MERCREDI_SOIR).map((trip) => trip.id)).toContain(duMatin[0].id);
   });
 });

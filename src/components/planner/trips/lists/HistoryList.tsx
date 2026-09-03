@@ -10,7 +10,7 @@ export function HistoryList({ trips }: { trips: PlannedTrip[] }) {
       <EmptyState
         icon={<Check className="size-4" aria-hidden="true" />}
         title="Aucun trajet fait pour le moment"
-        hint="Marque un trajet planifie comme « Fait » : il alimente ici ton historique, tes stats et le suivi carbone."
+        hint="Marque un trajet planifie comme « Fait » : il alimente ici ton historique, tes stats et le suivi carbone. Les passages des routines comptent dans les stats sans passer par ici."
       />
     );
   }

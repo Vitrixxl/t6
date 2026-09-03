@@ -87,7 +87,7 @@ export function PlanTripDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display">Planifier ce trajet</DialogTitle>
-          <DialogDescription>Une date precise, ou une routine qui se replanifie toute seule.</DialogDescription>
+          <DialogDescription>Une date precise, ou une routine dont chaque passage compte tout seul.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 px-5">

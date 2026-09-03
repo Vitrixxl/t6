@@ -6,7 +6,7 @@
 // DBA, et prennent un nom camelCase cote TypeScript pour coller au domaine.
 import { sql } from 'drizzle-orm';
 import { check, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { MobilityMode, MobilityProfile, PlannedTripStatus } from '../../../src/types.ts';
+import type { MobilityMode, MobilityProfile, PlannedTripStatus, RoutinePeriod } from '../../../src/types.ts';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -100,7 +100,6 @@ export const plannedTrips = sqliteTable(
     ...measureColumns(),
     scheduledFor: text('scheduled_for').notNull(),
     status: text('status', { enum: PLANNED_TRIP_STATUSES }).notNull(),
-    recurringTripId: text('recurring_trip_id'),
     createdAt: text('created_at').notNull(),
     completedAt: text('completed_at'),
   },
@@ -122,7 +121,10 @@ export const recurringTrips = sqliteTable(
     daysOfWeek: text('days_of_week', { mode: 'json' }).$type<number[]>().notNull(),
     departureTime: text('departure_time').notNull(),
     returnTime: text('return_time'),
-    paused: integer('paused', { mode: 'boolean' }).notNull().default(false),
+    // Periodes d'activite, lues et ecrites en bloc avec la routine : la
+    // derniere est ouverte tant qu'elle n'est pas en pause. Aucune requete ne
+    // porte sur une periode isolee, JSON est le bon grain.
+    periods: text('periods_json', { mode: 'json' }).$type<RoutinePeriod[]>().notNull(),
     createdAt: text('created_at').notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.id] })],

@@ -31,10 +31,14 @@ export const plannedTrip = t.Object({
   ...tripShape,
   scheduledFor: isoDate,
   status: t.Union([t.Literal('planned'), t.Literal('done'), t.Literal('cancelled')]),
-  /** Renseigne quand l'occurrence provient d'une routine. */
-  recurringTripId: t.Nullable(identifier),
   createdAt: isoDate,
   completedAt: t.Nullable(isoDate),
+});
+
+/** Periode d'activite d'une routine ; `to` est null tant qu'elle court. */
+const routinePeriod = t.Object({
+  from: isoDate,
+  to: t.Nullable(isoDate),
 });
 
 export const recurringTrip = t.Object({
@@ -44,7 +48,9 @@ export const recurringTrip = t.Object({
   daysOfWeek: t.Array(t.Integer({ minimum: 0, maximum: 6 }), { maxItems: 7 }),
   departureTime: t.String({ pattern: '^\\d{2}:\\d{2}$' }),
   returnTime: t.Nullable(t.String({ pattern: '^\\d{2}:\\d{2}$' })),
-  paused: t.Boolean(),
+  // Au moins une periode (la creation en ouvre une) ; la borne haute garde
+  // l'etat fini, une pause et une reprise n'ajoutant qu'une entree.
+  periods: t.Array(routinePeriod, { minItems: 1, maxItems: 100 }),
   createdAt: isoDate,
 });
 

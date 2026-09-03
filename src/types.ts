@@ -277,10 +277,18 @@ export interface PlannedTrip {
   /** Date/heure prevue du depart (ISO). */
   scheduledFor: string;
   status: PlannedTripStatus;
-  /** Renseigne quand l'occurrence provient d'un trajet recurrent. */
-  recurringTripId: string | null;
   createdAt: string;
   completedAt: string | null;
+}
+
+/**
+ * Periode pendant laquelle une routine compte ses passages. `to` reste null
+ * tant qu'elle court ; une mise en pause la clot, une reprise en ouvre une
+ * nouvelle.
+ */
+export interface RoutinePeriod {
+  from: string;
+  to: string | null;
 }
 
 export interface RecurringTrip {
@@ -300,7 +308,12 @@ export interface RecurringTrip {
   departureTime: string;
   /** Heure du retour "HH:MM" pour un aller-retour, sinon null. */
   returnTime: string | null;
-  paused: boolean;
+  /**
+   * Une routine n'est jamais materialisee en trajets : ses passages sont
+   * comptes a la lecture, sur ces periodes. La derniere est ouverte tant que
+   * la routine n'est pas en pause.
+   */
+  periods: RoutinePeriod[];
   createdAt: string;
 }
 

@@ -23,7 +23,7 @@ export function createRecurringTripRepository(db: Executor) {
           daysOfWeek: row.daysOfWeek,
           departureTime: row.departureTime,
           returnTime: row.returnTime,
-          paused: row.paused,
+          periods: row.periods,
           createdAt: row.createdAt,
         }));
     },

@@ -51,7 +51,6 @@ export function TripsSidebarSection({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[10px] font-semibold uppercase tracking-[0.05em] text-primary">
                   {formatScheduleLabel(trip.scheduledFor)}
-                  {trip.recurringTripId ? ' · recurrent' : ''}
                 </p>
                 <p className="truncate text-xs font-semibold">{trip.label}</p>
               </div>

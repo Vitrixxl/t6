@@ -93,7 +93,7 @@ export function MobilityMapApp({
   const routeRequested = Boolean(origin && destination);
 
   const tripRecords = account.state.tripRecords;
-  const carbonSummary = summarizeCarbon(tripRecords, user.profile.carbonGoalGramsPerWeek);
+  const carbonSummary = summarizeCarbon(tripRecords, recurringTrips, user.profile.carbonGoalGramsPerWeek);
   const activitySummary = useMemo(() => summarizeTripActivity(plannedTrips, recurringTrips), [plannedTrips, recurringTrips]);
   const upcoming = useMemo(() => upcomingTrips(plannedTrips), [plannedTrips]);
   const navigationPoint = currentPosition ? { ...currentPosition, label: 'Ma position' } : null;

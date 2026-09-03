@@ -2,8 +2,9 @@
 // sur des listes. L'etat du compte est tenu en memoire par l'application et
 // envoye en entier au serveur apres chaque action ; rien n'est stocke ici.
 import type { PlannedTrip, PlannedTripStatus, RecurringTrip } from '../../types';
+import { isRoutinePaused } from './routines';
 
-/** Minimisation : au-dela, les occurrences les plus anciennes sont ecartees. */
+/** Minimisation : au-dela, les trajets les plus anciens sont ecartes. */
 export const PLANNED_LIMIT = 400;
 
 export function sortPlanned(trips: PlannedTrip[]): PlannedTrip[] {
@@ -37,20 +38,32 @@ export function removePlanned(trips: PlannedTrip[], tripId: string): PlannedTrip
   return trips.filter((trip) => trip.id !== tripId);
 }
 
-/**
- * Retire les occurrences encore "a faire" d'une routine (pause ou
- * suppression). Les occurrences faites ou annulees restent dans l'historique.
- */
-export function pruneForRecurring(trips: PlannedTrip[], recurringId: string): PlannedTrip[] {
-  return trips.filter((trip) => !(trip.recurringTripId === recurringId && trip.status === 'planned'));
-}
-
 export function upsertRecurring(trips: RecurringTrip[], trip: RecurringTrip): RecurringTrip[] {
   return [trip, ...trips.filter((item) => item.id !== trip.id)];
 }
 
-export function setRecurringPaused(trips: RecurringTrip[], tripId: string, paused: boolean): RecurringTrip[] {
-  return trips.map((trip) => (trip.id === tripId ? { ...trip, paused } : trip));
+/**
+ * Pause : la periode d'activite courante se clot, les passages suivants ne
+ * comptent plus. Reprise : une nouvelle periode s'ouvre, et les passages
+ * tombes pendant la pause restent hors compte. Sans effet si la routine est
+ * deja dans l'etat demande.
+ */
+export function setRecurringPaused(
+  trips: RecurringTrip[],
+  tripId: string,
+  paused: boolean,
+  now: Date = new Date(),
+): RecurringTrip[] {
+  const at = now.toISOString();
+  return trips.map((trip) => {
+    if (trip.id !== tripId || isRoutinePaused(trip) === paused) {
+      return trip;
+    }
+    const periods = paused
+      ? trip.periods.map((period, index) => (index === trip.periods.length - 1 ? { ...period, to: at } : period))
+      : [...trip.periods, { from: at, to: null }];
+    return { ...trip, periods };
+  });
 }
 
 export function removeRecurring(trips: RecurringTrip[], tripId: string): RecurringTrip[] {
