@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from '../../test/harness';
 import { discardOperations, enqueueOperation, flushOutbox, pendingOperationCount } from './outbox';
 import { markApiOffline, probeApi } from './availability';
 
@@ -107,8 +107,12 @@ describe("file d'attente de synchronisation", () => {
 
     await flushOutbox(USER);
 
-    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    const sent = JSON.parse(String(init.body)) as { operations: { kind: string }[] };
+    // L'appel vise est designe par son chemin et non par son rang : la sonde de
+    // disponibilite passe avant, et compter sur l'ordre rendait le test
+    // dependant d'un detail d'implementation.
+    const call = fetchSpy.mock.calls.find(([url]) => String(url).endsWith('/state/operations'));
+    expect(call, "aucun envoi vers /state/operations").toBeDefined();
+    const sent = JSON.parse(String((call?.[1] as RequestInit).body)) as { operations: { kind: string }[] };
     expect(sent.operations).toHaveLength(1);
     // La file de l'autre compte reste en attente de sa propre session.
     expect(pendingOperationCount(OTHER_USER)).toBe(1);

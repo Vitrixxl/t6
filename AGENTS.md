@@ -34,13 +34,21 @@ verrouille faiblement, et cela se dit.
 
 ## Chaine d'outillage
 
-Toute la chaine JavaScript tourne sous **Bun**. Pas de `npm`, pas de `node`.
+Toute la chaine tourne sous **Bun**, sans exception : execution, regroupement,
+tests, serveur. Pas de `npm`, pas de `node`, pas de bundler tiers. Un outil de
+plus doit se justifier par un besoin que Bun ne couvre pas.
+
+Le serveur porte **l'API et le client** : une seule origine, donc un cookie de
+session de premiere partie et aucun en-tete CORS. Il n'y a pas de serveur de
+developpement separe.
 
 ```bash
 bun install          # bun.lock est le seul lockfile
-bun run dev          # API + client, un seul Ctrl+C
-bun run check        # lint + typage (client et serveur) + tests + build
-bun test server      # tests d'integration de l'API
+bun run dev          # serveur + reconstruction du client, un seul Ctrl+C
+bun run build        # construit le client dans dist/
+bun run start        # sert le build de production
+bun run check        # lint + typage + tests + build
+bun test             # tests du client et de l'API
 bun run e2e          # scenario de planification (Playwright)
 bun run audit:a11y   # axe-core sur quatre ecrans
 ```

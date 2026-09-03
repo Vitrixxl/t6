@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from '../../test/harness';
 import type { PlannedTrip } from '../../types';
 import {
   createPlannedTrip,
@@ -49,7 +49,10 @@ describe('planned trips', () => {
     const record = plannedTripToRecord(done[0]);
     expect(record.routeTitle).toBe(SOURCE.label);
     expect(record.carbonSavedGrams).toBe(SOURCE.carbonSavedGrams);
-    expect(record.createdAt).toBe(done[0].completedAt);
+    // Un trajet marque fait porte forcement sa date d'achevement : l'affirmer
+    // avant la comparaison evite de comparer a `null` sans s'en apercevoir.
+    expect(done[0].completedAt).not.toBeNull();
+    expect(record.createdAt).toBe(done[0].completedAt as string);
   });
 
   it('upcomingTrips ne retourne que les occurrences a faire, triees par date', () => {

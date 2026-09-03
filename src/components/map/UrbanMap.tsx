@@ -11,6 +11,7 @@ import { WALK_DASH_ARRAY, legColor, legWidthExpression } from './legStyle';
 import { syncLegLabels } from './legLabels';
 import { syncEndpointMarkers } from './endpointMarkers';
 import type { SharedStation } from '../../types';
+import { IS_DEV } from '../../env';
 
 /**
  * Zoom de recentrage sur un point. Assez proche pour lire les noms de rue,
@@ -215,13 +216,13 @@ export function UrbanMap({
     map.on('load', () => setLoaded(true));
     mapRef.current = map;
 
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // Poignee de debogage : MapLibre n'expose pas son instance, et sans elle
       // on ne peut verifier ni les couches ni les sources depuis le navigateur.
       // Retiree du build de production par la garde DEV.
       (window as unknown as { __ufmMap?: MaplibreMap }).__ufmMap = map;
     }
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       // Poignees de debug pour les tests manuels/E2E (dev uniquement).
       // Deux instances co-existent (layouts desktop et mobile).
       const debugWindow = window as { __ufmMaps?: MaplibreMap[] };

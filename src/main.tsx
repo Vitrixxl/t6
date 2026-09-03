@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import App from './App';
 import './styles.css';
+import { IS_PROD } from './env';
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
@@ -11,7 +12,7 @@ createRoot(document.getElementById('root') as HTMLElement).render(
 );
 
 if ('serviceWorker' in navigator) {
-  if (import.meta.env.PROD) {
+  if (IS_PROD) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch((error: unknown) => {
         console.error('Service worker registration failed', error);

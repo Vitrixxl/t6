@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from '../../test/harness';
 import { enhanceLegsWithLiveRouting, searchPlaces } from './index';
 import type { RouteLeg } from '../../types';
 

@@ -103,22 +103,25 @@ bun install              # bun.lock est le seul lockfile du projet
 python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 
 cp .env.example .env     # secrets (jeton GTFS, compte Grand Lyon) et réglages API, jamais committés
-bun run dev              # API + client ensemble (Ctrl+C coupe les deux)
+bun run dev              # serveur + reconstruction du client a chaque modification
 bun run seed:demo        # compte de démonstration côté serveur
 bun run generate:gtfs    # régénère le feed GTFS depuis la source officielle TCL
 bun run generate:lignes  # desserte par arrêt et tracés réels des lignes (open data, sans jeton)
 bun run generate:icons   # icônes PWA
 bun run generate:pdf     # dossier projet PDF
-bun run check            # lint + typage (client et serveur) + tests + build production
+bun run start            # sert le build de production
+bun run check            # lint + typage + tests + build production
 bun run e2e              # scénario E2E de planification (Playwright, 5 assertions)
 ```
 
-`bun run dev:web` lance le client seul : sans API, l'application démarre en mode autonome.
+**Toute la chaîne tourne sous Bun, sans exception** : gestionnaire de paquets, exécution du serveur,
+regroupement du client (`Bun.build`), tests du client et de l'API (`bun test`), scripts d'outillage.
+Aucun bundler ni lanceur de tests tiers. Seules l'ingestion GTFS et la génération du dossier restent en
+Python, faute d'équivalent dans l'écosystème JavaScript.
 
-**Toute la chaîne JavaScript tourne sous Bun** : gestionnaire de paquets, exécution de l'API, serveur de
-développement et build Vite (`--bun`), tests client (Vitest) et tests d'API (`bun test`), scripts d'outillage.
-Seules l'ingestion GTFS et la génération du dossier restent en Python, faute d'équivalent dans l'écosystème
-JavaScript.
+Le serveur porte **l'API et le client** : une seule origine, donc un cookie de session de première partie
+et aucun en-tête CORS. En développement, `bun run dev` lance le serveur et reconstruit le client à chaque
+modification — il faut rafraîchir la page, il n'y a pas de rechargement à chaud.
 L'API tourne sous Bun, sans étape de compilation et sans dépendance native à compiler : `bun server/src/index.ts`
 suffit. La surface spécifique à Bun se limite à trois fichiers (`db/index.ts`, `security/password.ts`,
 `config/index.ts`) : le portage vers Node se ferait via `@elysiajs/node`, `node:sqlite` et scrypt.

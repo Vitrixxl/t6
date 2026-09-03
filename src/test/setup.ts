@@ -1,7 +1,8 @@
 import { webcrypto } from 'node:crypto';
-import { beforeEach } from 'vitest';
+import { beforeEach } from 'bun:test';
 
-// jsdom n'implemente pas Web Crypto subtle (PBKDF2): on expose celle de Node.
+// L'environnement de test n'expose pas toujours Web Crypto subtle : on prend
+// celle de Node quand elle manque.
 if (typeof globalThis.crypto === 'undefined' || !globalThis.crypto.subtle) {
   Object.defineProperty(globalThis, 'crypto', {
     value: webcrypto,

@@ -5,7 +5,7 @@
 // navigateur, reseau, date) doit etre publie avec les chiffres.
 import { chromium } from 'playwright-core';
 
-const BASE_URL = process.env.AUDIT_BASE_URL || 'http://localhost:4173';
+const BASE_URL = process.env.AUDIT_BASE_URL || 'http://localhost:4000';
 const CHROME_BIN = process.env.CHROME_BIN || process.env.CHROMIUM_PATH || '/usr/sbin/chromium';
 const RUNS = Number(process.env.PERF_RUNS || 10);
 

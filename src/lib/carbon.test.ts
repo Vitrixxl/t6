@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from '../test/harness';
 import { clearTripHistory, loadTripHistory, saveTripRecord, summarizeCarbon } from './carbon';
 import type { PlannedTrip, TripRecord } from '../types';
 import { plannedTripToRecord, summarizeTripActivity } from './trips';

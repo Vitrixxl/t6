@@ -1,0 +1,73 @@
+# UrbanFlow au complet : l'application, son API et le calculateur d'itineraires.
+#
+# Le meme serveur porte le client et l'API — une seule origine, donc un cookie
+# de session de premiere partie et aucun en-tete CORS.
+#
+# Il ecoute en **HTTPS**, et ce n'est pas une precaution de production : le
+# navigateur reserve au contexte securise la geolocalisation,
+# `crypto.randomUUID` et le service worker. Sans lui l'application ne
+# fonctionne que sur localhost, donc pas depuis un telephone.
+#
+#   docker compose -f infra/compose.yml up -d
+#
+# Le calculateur exige un prealable : ./infra/osrm-prepare.sh, qui telecharge
+# les donnees et construit les trois index. Sans lui, les services osrm-*
+# demarrent puis s'arretent faute de jeu de donnees.
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    environment:
+      # Le calculateur est vise par son nom de service : le reseau du compose
+      # fait la resolution, aucun port OSRM n'a besoin d'etre publie.
+      OSRM_BASE_URL: http://osrm:5000
+      # Adresses supplementaires a inscrire dans le certificat. Renseigner l'IP
+      # de la machine sur le reseau local pour y acceder depuis un telephone :
+      #   TLS_EXTRA_HOSTS=IP:192.168.1.37
+      TLS_EXTRA_HOSTS: ${TLS_EXTRA_HOSTS:-}
+    volumes:
+      - app-data:/data
+      - app-certs:/certs
+    # Publie sur toutes les interfaces : sinon le telephone ne verrait rien.
+    ports:
+      - '4000:4000'
+    depends_on: [osrm]
+    restart: unless-stopped
+
+  # OSRM ne sait servir qu'un profil a la fois : les regles de circulation
+  # different selon le mode sur une meme rue, et elles sont gravees dans l'index
+  # au pretraitement. D'ou trois moteurs, regroupes derriere une facade qui
+  # reproduit les chemins de l'instance publique.
+  osrm:
+    image: docker.io/library/caddy:2-alpine
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    volumes:
+      - ./osrm-proxy.Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on: [osrm-foot, osrm-bike, osrm-car]
+    restart: unless-stopped
+
+  osrm-foot:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    command: osrm-routed --algorithm mld /data/lyon-foot.osrm
+    volumes:
+      - ./osrm-data:/data
+    restart: unless-stopped
+
+  osrm-bike:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    command: osrm-routed --algorithm mld /data/lyon-bike.osrm
+    volumes:
+      - ./osrm-data:/data
+    restart: unless-stopped
+
+  osrm-car:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    command: osrm-routed --algorithm mld /data/lyon-car.osrm
+    volumes:
+      - ./osrm-data:/data
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  app-certs:

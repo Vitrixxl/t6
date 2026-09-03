@@ -15,10 +15,10 @@
     // Types globaux du projet client, declares explicitement : sans cette
     // liste, TypeScript chargerait aussi @types/bun (installe pour l'API) et
     // les globales du serveur fuiraient dans le code du navigateur.
-    "types": ["node", "vite/client"],
+    "types": ["node", "bun"],
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "scripts/build.ts", "scripts/dev.ts"]
 }
