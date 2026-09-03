@@ -1,10 +1,10 @@
 import { describe, expect, it } from '../test/harness';
-import { clearTripHistory, loadTripHistory, saveTripRecord, summarizeCarbon } from './carbon';
+import { recordTrip, summarizeCarbon } from './carbon';
 import type { PlannedTrip, TripRecord } from '../types';
 import { plannedTripToRecord, summarizeTripActivity } from './trips';
 
 // Les enregistrements sont produits en pratique par plannedTripToRecord
-// (plannedTrips.ts) quand un trajet planifie est marque fait.
+// quand un trajet planifie est marque fait.
 function makeTripRecord(userId: string, createdAt: Date = new Date()): TripRecord {
   return {
     id: crypto.randomUUID(),
@@ -31,14 +31,6 @@ describe('carbon tracking', () => {
     expect(summary.goalUsagePercent).toBe(1);
   });
 
-  it('persists trip records per user', () => {
-    const trip = makeTripRecord('user-2');
-    const records = saveTripRecord(trip);
-
-    expect(records).toHaveLength(1);
-    expect(JSON.parse(localStorage.getItem('ufm.tripHistory.user-2') ?? '[]')).toHaveLength(1);
-  });
-
   it('plafonne la jauge d\'objectif a 999 % et la neutralise si l\'objectif est nul', () => {
     const bigTrip = { ...makeTripRecord('user-3'), carbonGrams: 100000 };
 
@@ -46,29 +38,22 @@ describe('carbon tracking', () => {
     expect(summarizeCarbon([bigTrip], 0).goalUsagePercent).toBe(0);
   });
 
-  it('borne l\'historique aux 50 trajets les plus recents', () => {
+  it('borne l\'historique aux 50 trajets les plus recents, le dernier en tete', () => {
+    let records: TripRecord[] = [];
     for (let index = 0; index < 55; index += 1) {
-      saveTripRecord(makeTripRecord('user-4'));
+      records = recordTrip(records, makeTripRecord('user-4'));
     }
+    const latest = makeTripRecord('user-4');
+    records = recordTrip(records, latest);
 
-    expect(loadTripHistory('user-4')).toHaveLength(50);
+    expect(records).toHaveLength(50);
+    expect(records[0].id).toBe(latest.id);
   });
 
-  it('purge un historique corrompu au lieu de planter (robustesse localStorage)', () => {
-    localStorage.setItem('ufm.tripHistory.user-5', '{corrompu');
+  it('ne duplique pas un trajet enregistre deux fois sous le meme identifiant', () => {
+    const trip = makeTripRecord('user-5');
 
-    expect(loadTripHistory('user-5')).toEqual([]);
-    expect(localStorage.getItem('ufm.tripHistory.user-5')).toBeNull();
-  });
-
-  it('clearTripHistory supprime uniquement l\'historique de l\'utilisateur vise', () => {
-    saveTripRecord(makeTripRecord('user-6'));
-    saveTripRecord(makeTripRecord('user-7'));
-
-    clearTripHistory('user-6');
-
-    expect(loadTripHistory('user-6')).toEqual([]);
-    expect(loadTripHistory('user-7')).toHaveLength(1);
+    expect(recordTrip(recordTrip([], trip), trip)).toHaveLength(1);
   });
 });
 

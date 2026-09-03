@@ -1,46 +1,27 @@
 import { useEffect, useState } from 'react';
-import {
-  deleteAccount,
-  getCurrentSession,
-  logoutUser,
-  saveMobilityProfile } from './lib/auth';
-import { clearTripHistory, loadTripHistory, saveTripRecord } from './lib/carbon';
-import { bootstrapSync, startBackgroundSync } from './lib/api/sync';
+import { logoutUser } from './lib/auth';
+import { restoreSession, type Session } from './lib/api/account';
 import { loadTransportNetwork } from './lib/transport';
 import { Card, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-import type { SessionUser, TransportNetwork, TripRecord } from './types';
+import type { TransportNetwork } from './types';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { MobilityMapApp } from './components/app/MobilityMapApp';
 
 function App() {
-  const [user, setUser] = useState<SessionUser | null>(() => getCurrentSession());
+  const [session, setSession] = useState<Session | null>(null);
   const [network, setNetwork] = useState<TransportNetwork | null>(null);
   const [networkError, setNetworkError] = useState('');
-  const [tripRecords, setTripRecords] = useState<TripRecord[]>([]);
-  // Tant que la sonde n'a pas repondu, on ignore si une session serveur existe :
-  // afficher l'ecran de connexion tout de suite le ferait clignoter chez un
-  // utilisateur deja authentifie par cookie.
+  // Tant que la reprise de session n'a pas repondu, on ignore si un cookie
+  // valide existe : afficher l'ecran de connexion tout de suite le ferait
+  // clignoter chez un utilisateur deja authentifie.
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    bootstrapSync()
-      .then((remoteUser) => {
-        if (remoteUser) {
-          setUser(remoteUser);
-        }
-      })
+    restoreSession()
+      .then(setSession)
       .catch(() => undefined)
       .finally(() => setSessionChecked(true));
   }, []);
-
-  // Rejeu en arriere-plan des operations faites hors ligne, tant qu'un
-  // utilisateur est connecte.
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-    return startBackgroundSync(user.id);
-  }, [user]);
 
   useEffect(() => {
     loadTransportNetwork()
@@ -50,11 +31,7 @@ function App() {
       });
   }, []);
 
-  useEffect(() => {
-    setTripRecords(user ? loadTripHistory(user.id) : []);
-  }, [user]);
-
-  if (!sessionChecked || (user && !network)) {
+  if (!sessionChecked || (session && !network)) {
     return (
       <main className="grid min-h-dvh place-items-center bg-background p-4">
         <Card className="w-full max-w-md">
@@ -71,31 +48,21 @@ function App() {
     );
   }
 
-  if (!user || !network) {
-    return <AuthScreen onAuthenticated={setUser} />;
+  if (!session || !network) {
+    return <AuthScreen onAuthenticated={setSession} />;
   }
 
+  // La cle force un nouvel etat en memoire quand un autre compte se connecte.
   return (
     <MobilityMapApp
-      user={user}
+      key={session.user.id}
+      session={session}
       network={network}
-      tripRecords={tripRecords}
       onLogout={() => {
         logoutUser();
-        setUser(null);
+        setSession(null);
       }}
-      onProfileSave={(profile) => setUser(saveMobilityProfile(user.id, profile))}
-      onTripCompleted={(record) => {
-        setTripRecords(saveTripRecord(record));
-      }}
-      onTripHistoryClear={() => {
-        clearTripHistory(user.id);
-        setTripRecords([]);
-      }}
-      onAccountDelete={() => {
-        deleteAccount(user.id);
-        setUser(null);
-      }}
+      onAccountDeleted={() => setSession(null)}
     />
   );
 }

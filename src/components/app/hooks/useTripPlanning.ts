@@ -1,27 +1,29 @@
 // Planification : trajets programmes et routines.
 //
-// Regroupe l'etat et toutes les transitions du domaine (programmer, marquer
-// fait, annuler, mettre en pause, supprimer). Le composant qui l'utilise
-// n'a plus qu'a cabler des poignees a des boutons : les consequences d'une
-// action - notamment le fait qu'une pause retire les occurrences a venir, et
-// qu'une reprise les rematerialise - sont decidees ici.
-import { useState } from 'react';
-import type { PlannedTrip, RecurringTrip, TripRecord } from '../../../types';
+// Regroupe toutes les transitions du domaine (programmer, marquer fait,
+// annuler, mettre en pause, supprimer) sur l'etat du compte. Le composant qui
+// l'utilise n'a plus qu'a cabler des poignees a des boutons : les consequences
+// d'une action - une pause retire les occurrences a venir, une reprise les
+// rematerialise, un trajet fait alimente l'historique carbone - sont decidees
+// ici, et chaque action part au serveur en un seul envoi.
+import { useEffect, useState } from 'react';
+import type { PlannedTrip, RecurringTrip } from '../../../types';
+import { recordTrip } from '../../../lib/carbon';
 import {
   createPlannedTrip,
   createRecurringTrip,
-  deletePlannedTrip,
-  deleteRecurringTrip,
-  loadRecurringTrips,
+  materializeOccurrences,
   plannedTripToRecord,
-  prunePlannedForRecurring,
-  savePlannedTrip,
-  saveRecurringTrip,
-  setPlannedTripStatus,
-  setRecurringTripPaused,
-  syncRecurringOccurrences,
+  pruneForRecurring,
+  removePlanned,
+  removeRecurring,
+  setPlannedStatus,
+  setRecurringPaused,
+  upsertPlanned,
+  upsertRecurring,
   type TripSource,
 } from '../../../lib/trips';
+import type { Account } from './useAccount';
 
 /** Ce que le formulaire de planification renvoie. */
 export interface PlanSubmission {
@@ -49,12 +51,22 @@ export interface TripPlanning {
   removeRecurring: (trip: RecurringTrip) => void;
 }
 
-export function useTripPlanning(userId: string, onTripCompleted: (record: TripRecord) => void): TripPlanning {
-  // Les occurrences des routines sont rematerialisees au montage : l'utilisateur
-  // retrouve sa semaine planifiee sans action de sa part.
-  const [plannedTrips, setPlannedTrips] = useState<PlannedTrip[]>(() => syncRecurringOccurrences(userId));
-  const [recurringTrips, setRecurringTrips] = useState<RecurringTrip[]>(() => loadRecurringTrips(userId));
+export function useTripPlanning(account: Account): TripPlanning {
+  const { update } = account;
+  const userId = account.user.id;
+  const { plannedTrips, recurringTrips } = account.state;
   const [planSource, setPlanSource] = useState<TripSource | null>(null);
+
+  // Les occurrences des routines sont rematerialisees a l'ouverture :
+  // l'utilisateur retrouve sa semaine planifiee sans action de sa part.
+  useEffect(() => {
+    update((state) => {
+      const planned = materializeOccurrences(state.recurringTrips, state.plannedTrips, userId);
+      return planned === state.plannedTrips ? state : { ...state, plannedTrips: planned };
+    });
+    // Une seule fois par montage : la fenetre glissante ne bouge pas en cours de session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     plannedTrips,
@@ -70,22 +82,22 @@ export function useTripPlanning(userId: string, onTripCompleted: (record: TripRe
       const source = { ...planSource, label: plan.label };
 
       if (plan.kind === 'once' && plan.scheduledFor) {
-        setPlannedTrips(savePlannedTrip(createPlannedTrip(userId, source, plan.scheduledFor)));
+        const trip = createPlannedTrip(userId, source, plan.scheduledFor);
+        update((state) => ({ ...state, plannedTrips: upsertPlanned(state.plannedTrips, trip) }));
         setPlanSource(null);
         return 'upcoming';
       }
 
       if (plan.kind === 'recurring' && plan.daysOfWeek && plan.departureTime) {
-        setRecurringTrips(
-          saveRecurringTrip(
-            createRecurringTrip(userId, source, {
-              daysOfWeek: plan.daysOfWeek,
-              departureTime: plan.departureTime,
-              returnTime: plan.returnTime ?? null,
-            }),
-          ),
-        );
-        setPlannedTrips(syncRecurringOccurrences(userId));
+        const template = createRecurringTrip(userId, source, {
+          daysOfWeek: plan.daysOfWeek,
+          departureTime: plan.departureTime,
+          returnTime: plan.returnTime ?? null,
+        });
+        update((state) => {
+          const recurring = upsertRecurring(state.recurringTrips, template);
+          return { ...state, recurringTrips: recurring, plannedTrips: materializeOccurrences(recurring, state.plannedTrips, userId) };
+        });
         setPlanSource(null);
         return 'recurring';
       }
@@ -94,39 +106,45 @@ export function useTripPlanning(userId: string, onTripCompleted: (record: TripRe
     },
 
     markTripDone(trip) {
-      const updated = setPlannedTripStatus(userId, trip.id, 'done');
-      setPlannedTrips(updated);
-      // Un trajet fait alimente l'historique carbone : c'est la seule
-      // transition qui sort du domaine planification.
-      const done = updated.find((item) => item.id === trip.id);
-      if (done) {
-        onTripCompleted(plannedTripToRecord(done));
-      }
+      update((state) => {
+        const planned = setPlannedStatus(state.plannedTrips, trip.id, 'done');
+        // Un trajet fait alimente l'historique carbone : c'est la seule
+        // transition qui sort du domaine planification.
+        const done = planned.find((item) => item.id === trip.id);
+        return {
+          ...state,
+          plannedTrips: planned,
+          tripRecords: done ? recordTrip(state.tripRecords, plannedTripToRecord(done)) : state.tripRecords,
+        };
+      });
     },
 
     cancelTrip(trip) {
-      setPlannedTrips(setPlannedTripStatus(userId, trip.id, 'cancelled'));
+      update((state) => ({ ...state, plannedTrips: setPlannedStatus(state.plannedTrips, trip.id, 'cancelled') }));
     },
 
     removeTrip(trip) {
-      setPlannedTrips(deletePlannedTrip(userId, trip.id));
+      update((state) => ({ ...state, plannedTrips: removePlanned(state.plannedTrips, trip.id) }));
     },
 
     toggleRecurringPaused(trip) {
-      setRecurringTrips(setRecurringTripPaused(userId, trip.id, !trip.paused));
-      if (trip.paused) {
+      update((state) => {
+        const recurring = setRecurringPaused(state.recurringTrips, trip.id, !trip.paused);
         // Reprise : rematerialiser les occurrences de la fenetre.
-        setPlannedTrips(syncRecurringOccurrences(userId));
-      } else {
         // Pause : les occurrences encore a faire disparaissent du plan.
-        setPlannedTrips(prunePlannedForRecurring(userId, trip.id));
-      }
+        const planned = trip.paused
+          ? materializeOccurrences(recurring, state.plannedTrips, userId)
+          : pruneForRecurring(state.plannedTrips, trip.id);
+        return { ...state, recurringTrips: recurring, plannedTrips: planned };
+      });
     },
 
     removeRecurring(trip) {
-      const { recurring, planned } = deleteRecurringTrip(userId, trip.id);
-      setRecurringTrips(recurring);
-      setPlannedTrips(planned);
+      update((state) => ({
+        ...state,
+        recurringTrips: removeRecurring(state.recurringTrips, trip.id),
+        plannedTrips: pruneForRecurring(state.plannedTrips, trip.id),
+      }));
     },
   };
 }

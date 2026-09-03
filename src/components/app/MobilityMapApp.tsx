@@ -1,8 +1,11 @@
 // Orchestrateur principal : recherche d'itineraires, comparaison des options et
 // planification des trajets (dates, recurrents, objectifs). Auth geree par App.
 import { useEffect, useMemo, useState } from 'react';
-import type { GeoPoint, MobilityProfile, RouteOption, SavedRouteRecord, SessionUser, TransportNetwork, TripRecord } from '../../types';
+import type { GeoPoint, RouteOption, SavedRouteRecord, TransportNetwork } from '../../types';
+import type { Session } from '../../lib/api/account';
+import { deleteAccount, sanitizeProfile } from '../../lib/auth';
 import { haversineDistanceKm } from '../../lib/planner';
+import { useAccount } from './hooks/useAccount';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useSavedRoutes } from './hooks/useSavedRoutes';
 import { useTripPlanning } from './hooks/useTripPlanning';
@@ -23,23 +26,20 @@ import { ProfileDrawer } from '../profile/ProfilePanels';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 
 export function MobilityMapApp({
-  user,
+  session,
   network,
-  tripRecords,
   onLogout,
-  onProfileSave,
-  onTripCompleted,
-  onTripHistoryClear,
-  onAccountDelete }: {
-  user: SessionUser;
+  onAccountDeleted }: {
+  session: Session;
   network: TransportNetwork;
-  tripRecords: TripRecord[];
   onLogout: () => void;
-  onProfileSave: (profile: MobilityProfile) => void;
-  onTripCompleted: (record: TripRecord) => void;
-  onTripHistoryClear: () => void;
-  onAccountDelete: () => void;
+  onAccountDeleted: () => void;
 }) {
+  // L'etat du compte vit ici, en memoire, et part au serveur a chaque action.
+  const account = useAccount(session);
+  const { user } = account;
+  const [accountError, setAccountError] = useState('');
+
   // Le depart choisi explicitement. Tant qu'il est vide, c'est la position
   // courante qui fait office de depart : ouvrir l'application et saisir une
   // destination doit suffire, sans avoir a designer un depart evident.
@@ -48,7 +48,7 @@ export function MobilityMapApp({
   const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [leftRailOpen, setLeftRailOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { savedRoutes, justSavedRouteId, saveRoute: persistRoute, deleteSavedRoute } = useSavedRoutes(user.id);
+  const { savedRoutes, justSavedRouteId, saveRoute: persistRoute, deleteSavedRoute } = useSavedRoutes(account);
 
   // Planification : occurrences datees + routines recurrentes.
   const [tripsHub, setTripsHub] = useState<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
@@ -68,7 +68,7 @@ export function MobilityMapApp({
     removeTrip,
     toggleRecurringPaused,
     removeRecurring,
-  } = useTripPlanning(user.id, onTripCompleted);
+  } = useTripPlanning(account);
 
   const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
   const origin = chosenOrigin ?? currentPosition;
@@ -90,13 +90,24 @@ export function MobilityMapApp({
     network,
   });
 
-
   const routeRequested = Boolean(origin && destination);
 
+  const tripRecords = account.state.tripRecords;
   const carbonSummary = summarizeCarbon(tripRecords, user.profile.carbonGoalGramsPerWeek);
   const activitySummary = useMemo(() => summarizeTripActivity(plannedTrips, recurringTrips), [plannedTrips, recurringTrips]);
   const upcoming = useMemo(() => upcomingTrips(plannedTrips), [plannedTrips]);
   const navigationPoint = currentPosition ? { ...currentPosition, label: 'Ma position' } : null;
+
+  // Une ecriture refusee par le serveur se dit, elle ne se masque pas.
+  const saveError = account.saveError || accountError;
+
+  const saveProfile = (profile: Parameters<typeof sanitizeProfile>[0]) => account.setProfile(sanitizeProfile(profile));
+  const clearTripHistory = () => account.update((state) => ({ ...state, tripRecords: [] }));
+  const removeAccount = () => {
+    deleteAccount()
+      .then(onAccountDeleted)
+      .catch((error: unknown) => setAccountError(error instanceof Error ? error.message : 'Suppression impossible.'));
+  };
 
   // Demander sa position sert autant a la definir comme depart qu'a la voir :
   // sans recentrage, le repere pouvait apparaitre hors du cadre visible.
@@ -170,7 +181,6 @@ export function MobilityMapApp({
     setTripsHub((hub) => ({ ...hub, open: false }));
   };
 
-
   // --- Planification ------------------------------------------------------
 
   const openHub = (tab: TripsHubTab = 'upcoming') => setTripsHub({ open: true, tab });
@@ -227,6 +237,12 @@ export function MobilityMapApp({
       openHub(tab);
     }
   };
+
+  const saveErrorBanner = saveError ? (
+    <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs leading-5 text-red-800">
+      Enregistrement refuse par le serveur : {saveError}
+    </p>
+  ) : null;
 
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-[var(--shell)] text-foreground">
@@ -302,6 +318,7 @@ export function MobilityMapApp({
         </section>
 
         <aside className="relative z-20 flex min-h-0 flex-col gap-2 overflow-y-auto bg-[var(--shell)] p-3 pl-0" data-tour="route-detail">
+          {saveErrorBanner}
           {coverageWarning ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">{coverageWarning}</p>
           ) : null}
@@ -314,7 +331,7 @@ export function MobilityMapApp({
             />
           ) : null}
           <div data-tour="carbon">
-            <CarbonPanel user={user} records={tripRecords} onClear={onTripHistoryClear} summary={carbonSummary} />
+            <CarbonPanel user={user} records={tripRecords} onClear={clearTripHistory} summary={carbonSummary} />
           </div>
         </aside>
       </div>
@@ -347,6 +364,7 @@ export function MobilityMapApp({
               onCurrentPositionRequest={requestCurrentPosition}
             />
           </div>
+          {saveErrorBanner ? <div className="pointer-events-auto w-full">{saveErrorBanner}</div> : null}
         </header>
 
         {/* La barre reste en place tant qu'aucun itineraire n'est demande. La
@@ -390,14 +408,14 @@ export function MobilityMapApp({
         user={user}
         open={profileOpen}
         onOpenChange={setProfileOpen}
-        onSave={onProfileSave}
+        onSave={saveProfile}
         onStartTutorial={() => {
           setProfileOpen(false);
           setTutorialSignal((value) => value + 1);
         }}
         onDeleteAccount={() => {
           setProfileOpen(false);
-          onAccountDelete();
+          removeAccount();
         }}
         onLogout={() => {
           setProfileOpen(false);
@@ -413,7 +431,7 @@ export function MobilityMapApp({
         savedRoutes={savedRoutes}
         summary={activitySummary}
         onOpenChange={(open) => setTripsHub((hub) => ({ ...hub, open }))}
-        onProfileSave={onProfileSave}
+        onProfileSave={saveProfile}
         onNewTrip={startNewTrip}
         onMarkDone={markTripDone}
         onCancelTrip={cancelTrip}

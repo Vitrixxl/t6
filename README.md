@@ -6,14 +6,14 @@ Application PWA React/TypeScript **mobile first** pour le sujet T6 CDSD "Urban F
 
 Deux briques, une seule origine pour le navigateur :
 
-- **Client** (`src/`) : PWA React/TypeScript. Ecrit d'abord dans son cache local, donc utilisable hors ligne.
+- **Client** (`src/`) : PWA React/TypeScript. L'etat du compte vit en memoire, charge a la connexion.
 - **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, calcul d'itinéraires.
 
-Le serveur fait autorite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable en base, donnees
-partagees entre appareils. Le client ecrit d'abord dans son cache local, pour ne jamais bloquer l'interface sur le
-reseau, puis envoie son etat complet au serveur (`PUT /api/state`, idempotent par nature, etat borne a quelques
-centaines de lignes). C'est ce qui permet de tenir l'exigence C10 (connectivite variable) : une coupure en cours de
-session ne perd rien, l'etat part au retour du reseau. Compromis assume : dernier ecrivain gagnant entre deux appareils.
+Le serveur est la seule source de verite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
+en base, etat du compte rendu a la connexion et remplace en entier a chaque action (`PUT /api/state`, en transaction,
+borne a quelques centaines de lignes). Pas de cache local : l'etat vit en memoire React le temps de la session, et une
+ecriture refusee par le reseau est signalee a l'utilisateur. Exigence C10 (connectivite variable) : cache du socle et
+des flux transport par le service worker, etats de chargement explicites, erreurs reseau propres.
 
 Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
 
@@ -39,14 +39,14 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | --- | --- |
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
-| `lib/api/` | couche serveur du client : client HTTP, marque d'etat a envoyer, synchronisation |
+| `lib/api/` | couche serveur du client : client HTTP, reprise de session, envoi de l'etat |
 | `lib/auth/` | authentification : appels API, cache de session, normalisation du profil |
 | `components/map/` | carte MapLibre : composant, popups, sources |
 | `components/planner/trips/` | module trajets : hub, listes, formulaire, objectifs |
 | `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
 
 Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
-`server/src/services/sync.ts` et `src/lib/api/sync.ts` (l'etat complet, envoye au retour du reseau),
+`server/src/services/sync.ts` et `src/components/app/hooks/useAccount.ts` (l'etat complet, remplace a chaque action),
 `src/lib/planner/index.ts` (le métier).
 
 ## Livrables

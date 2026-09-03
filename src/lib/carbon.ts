@@ -1,8 +1,8 @@
 import type { CarbonSummary, TripRecord } from '../types';
-import { markDirty } from './api/dirty';
 import { startOfWeek } from './week';
 
-const TRIP_HISTORY_PREFIX = 'ufm.tripHistory.';
+/** Minimisation : l'historique ne garde que les trajets les plus recents. */
+export const TRIP_HISTORY_LIMIT = 50;
 
 /**
  * Synthese de la semaine en cours.
@@ -33,41 +33,9 @@ export function summarizeCarbon(
   };
 }
 
-export function loadTripHistory(userId: string): TripRecord[] {
-  const payload = localStorage.getItem(storageKey(userId));
-  if (!payload) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(payload) as TripRecord[];
-  } catch {
-    localStorage.removeItem(storageKey(userId));
-    return [];
-  }
-}
-
-export function saveTripRecord(record: TripRecord): TripRecord[] {
-  const records = [record, ...loadTripHistory(record.userId)].slice(0, 50);
-  localStorage.setItem(storageKey(record.userId), JSON.stringify(records));
-  // L'ecriture locale fait foi pour l'affichage immediat ; le serveur est
-  // rattrape par la synchronisation, meme si le reseau est absent.
-  markDirty(record.userId);
-  return records;
-}
-
-export function clearTripHistory(userId: string): void {
-  localStorage.removeItem(storageKey(userId));
-  markDirty(userId);
-}
-
-/** Remplace le cache local par l'etat du serveur (hydratation apres connexion). */
-export function replaceTripHistory(userId: string, records: TripRecord[]): void {
-  localStorage.setItem(storageKey(userId), JSON.stringify(records));
-}
-
-function storageKey(userId: string): string {
-  return `${TRIP_HISTORY_PREFIX}${userId}`;
+/** Ajoute un trajet realise en tete de l'historique, borne aux plus recents. */
+export function recordTrip(records: TripRecord[], record: TripRecord): TripRecord[] {
+  return [record, ...records.filter((item) => item.id !== record.id)].slice(0, TRIP_HISTORY_LIMIT);
 }
 
 function round(value: number, decimals: number): number {
