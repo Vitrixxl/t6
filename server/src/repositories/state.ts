@@ -37,5 +37,3 @@ export function createStateReader(sources: StateSources) {
     },
   };
 }
-
-export type StateReader = ReturnType<typeof createStateReader>;

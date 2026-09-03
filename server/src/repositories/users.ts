@@ -29,5 +29,3 @@ export function createUserRepository(db: Executor) {
     },
   };
 }
-
-export type UserRepository = ReturnType<typeof createUserRepository>;
