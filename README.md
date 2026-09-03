@@ -10,8 +10,10 @@ Deux briques, une seule origine pour le navigateur :
 - **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, calcul d'itinéraires.
 
 Le serveur est la seule source de verite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
-en base, etat du compte rendu a la connexion et remplace en entier a chaque action (`PUT /api/state`, en transaction,
-borne a quelques centaines de lignes). Pas de cache local : l'etat vit en memoire (atomes jotai, `src/state/`) le temps de la session, et une
+en base, etat du compte rendu a la connexion (`GET /api/state`) et renvoye par collection apres chaque action :
+`PUT /api/trips/planned`, `/api/trips/recurring`, `/api/trips/history`, `/api/saved-routes`, `/api/me/profile`.
+Chaque liste se remplace seule, en transaction, bornee a quelques dizaines ou centaines de lignes ; une action
+n'envoie que ce qu'elle a touche. Pas de cache local : l'etat vit en memoire (atomes jotai, `src/state/`) le temps de la session, et une
 ecriture refusee par le reseau est signalee a l'utilisateur. Exigence C10 (connectivite variable) : cache du socle et
 des flux transport par le service worker, etats de chargement explicites, erreurs reseau propres.
 
@@ -29,7 +31,7 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
 | `models/` | contrats TypeBox : valident la requête, typent le gestionnaire et génèrent l'OpenAPI |
 | `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
-| `services/` | règles métier (synchronisation, sessions, routage et son cache) |
+| `services/` | règles métier (remplacement des collections, sessions, routage et son cache) |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
 
@@ -39,7 +41,7 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | --- | --- |
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
-| `lib/api/` | couche serveur du client : client HTTP, reprise de session, envoi de l'etat |
+| `lib/api/` | couche serveur du client : client HTTP, reprise de session, envoi de l'etat par partie |
 | `state/` | etat global (jotai) : session, etat du compte, atomes derives et actions |
 | `lib/auth/` | authentification : appels API, cache de session, normalisation du profil |
 | `components/map/` | carte MapLibre : composant, popups, sources |
@@ -47,13 +49,13 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
 
 Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
-`server/src/services/sync.ts` et `src/state/session.ts` (l'etat complet, remplace a chaque action),
+`server/src/services/collections.ts` et `src/state/session.ts` (l'etat par collection, chaque action n'envoie que ce qu'elle a touche),
 `src/lib/planner/index.ts` (le métier).
 
 ## Livrables
 
 - `src/` : application fonctionnelle (auth + profils, planificateur multimodal, trajets programmes et routines, objectifs, suivi carbone).
-- `server/` : API HTTP (authentification, profil, synchronisation, RGPD, calcul d'itinéraires).
+- `server/` : API HTTP (authentification, profil, etat du compte par collection, RGPD, calcul d'itinéraires).
 - `public/manifest.webmanifest` + `public/sw.js` : PWA installable avec cache offline.
 - `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` : dossier projet (30 pages, généré par script).
 - `output/screens/` : captures automatisées (Playwright) intégrées au dossier.

@@ -6,13 +6,13 @@ import { authRoutes } from './auth.ts';
 import { healthRoutes } from './health.ts';
 import { meRoutes } from './me.ts';
 import { routingRoutes } from './routing.ts';
-import { syncRoutes } from './sync.ts';
+import { stateRoutes } from './state.ts';
 
 export function routes(ctx: AppContext, config: ServerConfig) {
     return new Elysia({ name: 'routes' })
         .use(healthRoutes())
         .use(authRoutes(ctx, config))
         .use(meRoutes(ctx))
-        .use(syncRoutes(ctx))
+        .use(stateRoutes(ctx))
         .use(routingRoutes(ctx, config));
 }

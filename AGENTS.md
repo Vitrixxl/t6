@@ -6,6 +6,29 @@ plateforme de mobilite urbaine multimodale. Le code sera **ouvert et discute en
 revue face-a-face** devant un jury, ce qui oriente la plupart des regles
 ci-dessous.
 
+## Exigence de qualite
+
+Le but est un depot propre, qu'un developpeur senior peut lire sans deviner
+qu'un agent y a travaille. Pas un prototype qui marche par accident, pas du
+code produit sans comprendre ce qu'il fait.
+
+- Chaque chose a sa place, et une seule : une regle metier vit dans
+  `services/`, une requete dans `repositories/`, un contrat dans `models/`,
+  une action d'interface dans `state/`. Un morceau de code qui ne sait pas
+  dans quel dossier aller est mal decoupe.
+- Une API se concoit par ressource : des routes qui disent ce qu'elles
+  remplacent, des verbes qui ont leur sens (PUT idempotent), des reponses
+  typees. Un point d'entree fourre-tout qui ecrase tout est un defaut de
+  conception, pas une simplification.
+- TypeScript strict, sans `any`, sans cast pour faire taire le compilateur,
+  sans `eslint-disable` de confort. Un type qui refuse a souvent raison.
+- Pas de code mort, pas de commentaire perime, pas de vocabulaire herite
+  d'une version precedente. Quand la chose change, son nom change.
+- Un changement de conception se propage partout ou il est decrit : code,
+  tests, README, CHECKLIST, OpenAPI, et ce fichier.
+- Avant de proposer, se demander comment un relecteur exigeant verrait le
+  code. Si la reponse est « bricole », ne pas le proposer.
+
 ## Journal des bogues — obligatoire
 
 **Tout bogue corrige donne lieu a une entree dans [`docs/BUGS.md`](docs/BUGS.md).**
@@ -74,7 +97,7 @@ base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
-reprise de session, envoi de l'etat), `lib/auth/`, `components/map/`,
+reprise de session, envoi de l'etat par partie), `lib/auth/`, `components/map/`,
 `components/planner/trips/`, `components/app/hooks/`, et `state/` : l'etat
 global en atomes jotai (session, etat du compte, derives, actions). Les
 composants lisent les atomes dont ils ont besoin ; on ne fait pas transiter
@@ -93,9 +116,12 @@ annonce reste le nombre reel.
 
 **Le serveur est la seule source de verite.** Il n'y a ni mode sans serveur
 ni cache local : c'est l'API qui sert le client, l'etat du compte est recu a la
-connexion, tenu en memoire (atomes jotai), et renvoye en entier a chaque action
-(`PUT /api/state`). Une ecriture refusee par le reseau se dit a l'utilisateur,
-elle ne se masque pas.
+connexion (`GET /api/state`), tenu en memoire (atomes jotai), et chaque action
+renvoie en entier la ou les collections qu'elle a touchees, chacune vers sa
+route (`PUT /api/trips/planned`, `/api/trips/recurring`, `/api/trips/history`,
+`/api/saved-routes`, `/api/me/profile`). Une preference ne reecrit aucun
+trajet. Une ecriture refusee par le reseau se dit a l'utilisateur, elle ne se
+masque pas, et la partie refusee repart avec la prochaine action.
 
 **Jamais de geometrie approchee.** Un trace faux se lit comme un itineraire
 reel et envoie l'utilisateur ailleurs ; un trace absent se voit. Tant qu'une

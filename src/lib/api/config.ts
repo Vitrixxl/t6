@@ -6,6 +6,6 @@
 export const API_BASE = '/api';
 
 /** En mobilite, une requete qui pend est pire qu'une requete qui echoue vite :
- *  l'etat local reste affiche et l'envoi sera retente. Meme delai que les
+ *  l'etat en memoire reste affiche et l'envoi repart avec la prochaine action. Meme delai que les
  *  appels aux flux transport (transport/http.ts). */
 export const REQUEST_TIMEOUT_MS = 8000;

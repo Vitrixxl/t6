@@ -1,16 +1,17 @@
-// Etat complet d'un compte : ce que le serveur renvoie pour hydrater le cache
-// local du client apres une connexion.
+// Etat complet d'un compte : ce que le serveur renvoie a l'ouverture de
+// session pour que le client le tienne en memoire. Il ne s'ecrit jamais en
+// bloc : chaque collection a son propre PUT (models/collections.ts).
 import { t } from 'elysia';
 import { mobilityProfile } from './profile.ts';
-import { ownedPlannedTrip, ownedRecurringTrip, ownedSavedRoute, ownedTripRecord } from './trips.ts';
+import { ownedPlannedTrips, ownedRecurringTrips, ownedSavedRoutes, ownedTripRecords } from './collections.ts';
 import { sessionUser } from './auth.ts';
 
 export const userState = t.Object({
   profile: mobilityProfile,
-  tripRecords: t.Array(ownedTripRecord),
-  plannedTrips: t.Array(ownedPlannedTrip),
-  recurringTrips: t.Array(ownedRecurringTrip),
-  savedRoutes: t.Array(ownedSavedRoute),
+  tripRecords: ownedTripRecords,
+  plannedTrips: ownedPlannedTrips,
+  recurringTrips: ownedRecurringTrips,
+  savedRoutes: ownedSavedRoutes,
 });
 
 /** Reponse commune a l'inscription, la connexion et la reprise de session. */

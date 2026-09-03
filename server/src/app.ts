@@ -17,7 +17,7 @@ import { requestLog } from './plugins/request-log.ts';
 import { securityHeaders } from './plugins/security-headers.ts';
 import { routes } from './routes/index.ts';
 
-/** Un lot de synchronisation est borne : au-dela, la requete est refusee
+/** Chaque collection est bornee : au-dela, la requete est refusee
  *  avant meme d'etre lue en entier. */
 const MAX_BODY_BYTES = 512 * 1024;
 
@@ -41,7 +41,7 @@ export function createApp(overrides: Partial<ServerConfig> = {}) {
                     info: {
                         title: 'API UrbanFlow Mobility',
                         version: '1.0.0',
-                        description: "API de la plateforme de mobilite urbaine : comptes, profils, trajets et synchronisation.",
+                        description: "API de la plateforme de mobilite urbaine : comptes, profils, trajets et itineraires.",
                     },
                 },
             }),

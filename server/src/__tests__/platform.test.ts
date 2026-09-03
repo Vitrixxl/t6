@@ -24,7 +24,9 @@ it('publie une documentation OpenAPI decrivant les routes', async () => {
 
   expect(spec.openapi).toStartWith('3.');
   expect(Object.keys(spec.paths)).toContain('/api/auth/login');
-  expect(Object.keys(spec.paths)).toContain('/api/state/');
+  expect(Object.keys(spec.paths)).toContain('/api/state');
+  expect(Object.keys(spec.paths)).toContain('/api/trips/planned');
+  expect(Object.keys(spec.paths)).toContain('/api/me/profile');
 });
 
 it('pose les en-tetes de securite sur toutes les reponses', async () => {
@@ -44,7 +46,7 @@ it('renvoie une erreur opaque sur une route inconnue', async () => {
 
 it('refuse un corps de requete illisible', async () => {
   const cookie = await api.register('parse@lyon.fr');
-  const response = await api.call('/api/state', { cookie, body: undefined, method: 'PUT' });
+  const response = await api.call('/api/trips/history', { cookie, body: undefined, method: 'PUT' });
 
   // Corps absent : la validation refuse, sans trace technique dans la reponse.
   expect([400, 422]).toContain(response.status);

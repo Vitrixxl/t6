@@ -1,6 +1,6 @@
 // L'etat du compte, teste sans React : un store jotai, des actions, et le
 // serveur remplace par un fetch simule. Chaque test verifie l'etat en memoire
-// ET ce qui est parti au serveur.
+// ET ce qui est parti au serveur : quelle route, avec quel corps.
 import { createStore } from 'jotai';
 import { afterEach, beforeEach, describe, expect, it, vi } from '../test/harness';
 import type { Session } from '../lib/api/account';
@@ -73,11 +73,19 @@ function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-/** Corps envoyes au serveur, dans l'ordre. */
-function sentBodies(spy: ReturnType<typeof vi.spyOn>): Array<Record<string, unknown[]>> {
+/** Envois au serveur, dans l'ordre : la route et le corps. */
+function sentPuts<T = unknown>(spy: ReturnType<typeof vi.spyOn>): Array<{ path: string; body: T }> {
   return (spy.mock.calls as Array<[string, RequestInit]>)
-    .filter(([url]) => url.endsWith('/api/state'))
-    .map(([, init]) => JSON.parse(String(init.body)) as Record<string, unknown[]>);
+    .filter(([, init]) => init.method === 'PUT')
+    .map(([url, init]) => ({ path: url, body: JSON.parse(String(init.body)) as T }));
+}
+
+function sentPaths(spy: ReturnType<typeof vi.spyOn>): string[] {
+  return sentPuts(spy).map((put) => put.path);
+}
+
+function sentTo<T>(spy: ReturnType<typeof vi.spyOn>, path: string): T | undefined {
+  return sentPuts<T>(spy).find((put) => put.path === path)?.body;
 }
 
 /** Un trajet a venir dans l'etat, pret a etre marque fait. */
@@ -113,7 +121,7 @@ describe('session', () => {
     await pendingSaves();
 
     expect(store.get(userAtom).email).toBe('a@b.fr');
-    expect(sentBodies(fetchSpy)).toHaveLength(0);
+    expect(sentPuts(fetchSpy)).toHaveLength(0);
   });
 
   it('une routine ne cree aucun trajet a l ouverture : ses passages se comptent a la lecture', async () => {
@@ -132,7 +140,7 @@ describe('session', () => {
     expect(store.get(activitySummaryAtom).recurringActiveCount).toBe(1);
     expect(store.get(activitySummaryAtom).doneThisWeek).toBeGreaterThan(0);
     expect(store.get(carbonSummaryAtom).trips).toBe(store.get(activitySummaryAtom).doneThisWeek);
-    expect(sentBodies(fetchSpy)).toHaveLength(0);
+    expect(sentPuts(fetchSpy)).toHaveLength(0);
   });
 
   it('la deconnexion revoque la session et vide l etat', async () => {
@@ -173,9 +181,11 @@ describe('planification', () => {
     expect(store.get(upcomingAtom)[0].label).toBe('Reunion');
     expect(store.get(planSourceAtom)).toBeNull();
     expect(store.get(tripsHubAtom)).toEqual({ open: true, tab: 'upcoming' });
-    const [body] = sentBodies(fetchSpy);
-    expect(body.plannedTrips).toHaveLength(1);
-    expect(body.plannedTrips[0]).not.toHaveProperty('userId');
+    // Seule la liste des trajets programmes part : ni profil, ni historique.
+    expect(sentPaths(fetchSpy)).toEqual(['/api/trips/planned']);
+    const sent = sentTo<unknown[]>(fetchSpy, '/api/trips/planned')!;
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).not.toHaveProperty('userId');
   });
 
   it('une routine entre dans l etat, active des sa creation, et ouvre l onglet recurrents', async () => {
@@ -193,9 +203,10 @@ describe('planification', () => {
     expect(store.get(accountStateAtom).recurringTrips[0].periods).toHaveLength(1);
     expect(store.get(upcomingAtom)).toHaveLength(0);
     expect(store.get(activitySummaryAtom).recurringActiveCount).toBe(1);
-    const [body] = sentBodies(fetchSpy);
-    expect(body.recurringTrips).toHaveLength(1);
-    expect(body.recurringTrips[0]).not.toHaveProperty('userId');
+    expect(sentPaths(fetchSpy)).toEqual(['/api/trips/recurring']);
+    const sent = sentTo<unknown[]>(fetchSpy, '/api/trips/recurring')!;
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).not.toHaveProperty('userId');
   });
 
   it('une soumission incomplete ne change rien', async () => {
@@ -203,12 +214,12 @@ describe('planification', () => {
     await pendingSaves();
 
     expect(store.get(upcomingAtom)).toHaveLength(0);
-    expect(sentBodies(fetchSpy)).toHaveLength(0);
+    expect(sentPuts(fetchSpy)).toHaveLength(0);
   });
 });
 
 describe('trajets', () => {
-  it('marquer fait alimente l historique carbone en un seul envoi', async () => {
+  it('marquer fait alimente l historique carbone et n envoie que les deux listes touchees', async () => {
     const trip = futureTrip();
     store.set(openSessionAtom, session({ plannedTrips: [trip] }));
 
@@ -220,12 +231,11 @@ describe('trajets', () => {
     expect(state.tripRecords).toHaveLength(1);
     expect(store.get(carbonSummaryAtom).totalSavedGrams).toBe(SOURCE.carbonSavedGrams);
     expect(store.get(activitySummaryAtom).doneThisWeek).toBe(1);
-    const bodies = sentBodies(fetchSpy);
-    expect(bodies).toHaveLength(1);
-    expect(bodies[0].tripRecords).toHaveLength(1);
+    expect(sentPaths(fetchSpy).sort()).toEqual(['/api/trips/history', '/api/trips/planned']);
+    expect(sentTo<unknown[]>(fetchSpy, '/api/trips/history')).toHaveLength(1);
   });
 
-  it('annuler et supprimer', async () => {
+  it('annuler puis supprimer : une seule liste touchee, un seul envoi avec l etat final', async () => {
     const trip = futureTrip();
     store.set(openSessionAtom, session({ plannedTrips: [trip] }));
 
@@ -236,7 +246,9 @@ describe('trajets', () => {
     store.set(removeTripAtom, trip);
     expect(store.get(accountStateAtom).plannedTrips).toHaveLength(0);
     await pendingSaves();
-    expect(sentBodies(fetchSpy)).toHaveLength(2);
+    // Deux actions avant le premier envoi : le lot les coalesce.
+    expect(sentPaths(fetchSpy)).toEqual(['/api/trips/planned']);
+    expect(sentTo<unknown[]>(fetchSpy, '/api/trips/planned')).toHaveLength(0);
   });
 
   it('mettre une routine en pause clot sa periode, la reprendre en ouvre une nouvelle', async () => {
@@ -254,7 +266,8 @@ describe('trajets', () => {
     expect(isRoutinePaused(resumed)).toBe(false);
     expect(resumed.periods).toHaveLength(2);
     await pendingSaves();
-    expect(sentBodies(fetchSpy)).toHaveLength(2);
+    expect(sentPaths(fetchSpy)).toEqual(['/api/trips/recurring']);
+    expect(sentTo<{ periods: unknown[] }[]>(fetchSpy, '/api/trips/recurring')?.[0].periods).toHaveLength(2);
   });
 
   it('supprimer une routine ne touche pas aux trajets dates', async () => {
@@ -268,7 +281,8 @@ describe('trajets', () => {
     const state = store.get(accountStateAtom);
     expect(state.recurringTrips).toHaveLength(0);
     expect(state.plannedTrips).toHaveLength(1);
-    expect(sentBodies(fetchSpy).at(-1)?.recurringTrips).toHaveLength(0);
+    expect(sentPaths(fetchSpy)).toEqual(['/api/trips/recurring']);
+    expect(sentTo<unknown[]>(fetchSpy, '/api/trips/recurring')).toHaveLength(0);
   });
 });
 
@@ -294,7 +308,8 @@ describe('itineraires enregistres, profil, historique', () => {
 
     expect(store.get(userAtom).displayName).toBe('Nadia');
     expect(store.get(userAtom).profile.maxWalkMinutes).toBe(45);
-    expect((sentBodies(fetchSpy)[0].profile as unknown as { maxWalkMinutes: number }).maxWalkMinutes).toBe(45);
+    expect(sentPaths(fetchSpy)).toEqual(['/api/me/profile']);
+    expect(sentTo<{ maxWalkMinutes: number }>(fetchSpy, '/api/me/profile')?.maxWalkMinutes).toBe(45);
   });
 
   it('effacer l historique', async () => {
@@ -306,7 +321,7 @@ describe('itineraires enregistres, profil, historique', () => {
     store.set(clearTripHistoryAtom);
     await pendingSaves();
     expect(store.get(accountStateAtom).tripRecords).toHaveLength(0);
-    expect(sentBodies(fetchSpy).at(-1)?.tripRecords).toHaveLength(0);
+    expect(sentTo<unknown[]>(fetchSpy, '/api/trips/history')).toHaveLength(0);
   });
 });
 
@@ -336,7 +351,7 @@ describe('envoi au serveur', () => {
     expect(store.get(accountStateAtom).savedRoutes).toHaveLength(1);
   });
 
-  it('des actions en rafale partent dans l ordre, la derniere avec l etat final', async () => {
+  it('des actions en rafale forment un seul lot : chaque partie part une fois, dans son etat final', async () => {
     const trip = futureTrip();
     store.set(openSessionAtom, session({ plannedTrips: [trip] }));
     store.set(markTripDoneAtom, trip);
@@ -344,14 +359,42 @@ describe('envoi au serveur', () => {
     store.set(setProfileAtom, { ...DEFAULT_PROFILE, displayName: 'Final' });
     await pendingSaves();
 
-    const bodies = sentBodies(fetchSpy);
-    const last = bodies.at(-1)!;
-    expect((last.profile as unknown as { displayName: string }).displayName).toBe('Final');
-    expect(last.savedRoutes).toHaveLength(1);
-    expect(last.tripRecords).toHaveLength(1);
-    // Aucun envoi ne porte un etat plus ancien que le precedent.
-    for (let index = 1; index < bodies.length; index += 1) {
-      expect(bodies[index].tripRecords.length).toBeGreaterThanOrEqual(bodies[index - 1].tripRecords.length);
-    }
+    expect(sentPaths(fetchSpy).sort()).toEqual([
+      '/api/me/profile',
+      '/api/saved-routes',
+      '/api/trips/history',
+      '/api/trips/planned',
+    ]);
+    expect(sentTo<{ displayName: string }>(fetchSpy, '/api/me/profile')?.displayName).toBe('Final');
+    expect(sentTo<unknown[]>(fetchSpy, '/api/saved-routes')).toHaveLength(1);
+    expect(sentTo<unknown[]>(fetchSpy, '/api/trips/history')).toHaveLength(1);
+  });
+
+  it('une partie refusee repart avec la prochaine action, meme si celle-ci ne la touche pas', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
+    store.set(clearTripHistoryAtom);
+    await pendingSaves();
+    expect(store.get(saveErrorAtom)).toBe('Requete invalide.');
+
+    store.set(saveRouteAtom, { option: OPTION, origin: SOURCE.origin, destination: SOURCE.destination });
+    await pendingSaves();
+
+    expect(store.get(saveErrorAtom)).toBe('');
+    const paths = sentPaths(fetchSpy);
+    expect(paths[0]).toBe('/api/trips/history');
+    expect(paths.slice(1).sort()).toEqual(['/api/saved-routes', '/api/trips/history']);
+  });
+
+  it('une partie refusee ne survit pas a la session qui l a produite', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
+    store.set(clearTripHistoryAtom);
+    await pendingSaves();
+
+    store.set(logoutAtom);
+    store.set(openSessionAtom, session());
+    store.set(saveRouteAtom, { option: OPTION, origin: SOURCE.origin, destination: SOURCE.destination });
+    await pendingSaves();
+
+    expect(sentPaths(fetchSpy)).toEqual(['/api/trips/history', '/api/saved-routes']);
   });
 });
