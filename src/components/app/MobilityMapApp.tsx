@@ -7,6 +7,7 @@ import { useGeolocation } from './hooks/useGeolocation';
 import { useSavedRoutes } from './hooks/useSavedRoutes';
 import { useTripPlanning } from './hooks/useTripPlanning';
 import { useRouteOptions } from './hooks/useRouteOptions';
+import { useDesktopLayout } from './hooks/useDesktopLayout';
 import { CITY_CENTER, METRO_RADIUS_KM, describePoint } from '../../lib/transport';
 import { summarizeCarbon } from '../../lib/carbon';
 import { summarizeTripActivity, upcomingTrips } from '../../lib/trips';
@@ -52,6 +53,8 @@ export function MobilityMapApp({
   // Planification : occurrences datees + routines recurrentes.
   const [tripsHub, setTripsHub] = useState<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
   const [tutorialSignal, setTutorialSignal] = useState(0);
+  // Une seule disposition est rendue a la fois : une seule carte en memoire.
+  const desktop = useDesktopLayout();
 
   const {
     plannedTrips,
@@ -227,7 +230,8 @@ export function MobilityMapApp({
 
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-[var(--shell)] text-foreground">
-      <div className="hidden h-full w-full lg:grid lg:grid-cols-[var(--left-rail)_minmax(0,1fr)_390px]" style={{ ['--left-rail' as string]: leftRailOpen ? '360px' : '0px' }}>
+      {desktop ? (
+      <div className="grid h-full w-full grid-cols-[var(--left-rail)_minmax(0,1fr)_390px]" style={{ ['--left-rail' as string]: leftRailOpen ? '360px' : '0px' }}>
         <aside className="relative z-20 min-w-0 overflow-hidden bg-[var(--shell)] transition-[width] duration-300">
           <div className="h-full w-[360px]">
             <ShellSidebar
@@ -314,8 +318,8 @@ export function MobilityMapApp({
           </div>
         </aside>
       </div>
-
-      <div className="relative h-full w-full overflow-hidden bg-muted lg:hidden">
+      ) : (
+      <div className="relative h-full w-full overflow-hidden bg-muted">
         <div className="absolute inset-0">
           <UrbanMap
             origin={origin}
@@ -380,6 +384,7 @@ export function MobilityMapApp({
         />
         ) : null}
       </div>
+      )}
 
       <ProfileDrawer
         user={user}
