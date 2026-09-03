@@ -8,11 +8,24 @@ import { gzipSync } from 'node:zlib';
 const ASSETS_DIR = 'dist/assets';
 const OUTPUT = 'output/metrics/build.json';
 
+// Les artefacts sont identifies par leur role et non par leur nom : celui-ci
+// depend du bundler et du point d'entree, et un motif code en dur casse
+// silencieusement des que l'un des deux change.
 const assets = readdirSync(ASSETS_DIR);
-const pick = (pattern) => assets.find((name) => pattern.test(name));
-const entry = pick(/^index-.*\.js$/);
-const maplibre = pick(/^maplibre-.*\.js$/);
-const css = pick(/^index-.*\.css$/);
+const document = readFileSync('dist/index.html', 'utf8');
+const referenced = (extension) => {
+  const match = document.match(new RegExp(`/assets/([\\w.-]+\\${extension})`));
+  return match?.[1];
+};
+
+// Le point d'entree et la feuille de style sont ceux que le document charge.
+const entry = referenced('.js');
+const css = referenced('.css');
+// Le fragment differe est le plus gros des autres : c'est celui dont le poids
+// merite d'etre suivi, quel que soit le module qui l'a fait naitre.
+const maplibre = assets
+  .filter((name) => name.endsWith('.js') && name !== entry)
+  .sort((a, b) => statSync(`${ASSETS_DIR}/${b}`).size - statSync(`${ASSETS_DIR}/${a}`).size)[0];
 if (!entry || !maplibre || !css) {
   console.error('Artefacts introuvables dans dist/assets : lancer `bun run build` d\'abord.');
   process.exit(1);
