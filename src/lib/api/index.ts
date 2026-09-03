@@ -1,6 +1,5 @@
 // Point d'entree de la couche API : le reste de l'application importe d'ici.
 export { API_BASE } from './config';
-export { isApiOnline, markApiOffline, probeApi } from './availability';
 export { ApiError, ApiUnavailableError } from './errors';
 export { apiRequest } from './http';
 export type { OperationPayload, RemoteState } from './operations';

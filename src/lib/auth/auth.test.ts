@@ -1,162 +1,115 @@
-import { describe, expect, it } from '../../test/harness';
-import {
-  DEFAULT_PROFILE,
-  deleteLocalAccount,
-  getCurrentSession,
-  loginUser,
-  logoutUser,
-  registerUser,
-  saveMobilityProfile,
-} from './index';
-import type { StoredUser } from '../../types';
+import { afterEach, describe, expect, it, vi } from '../../test/harness';
+import { DEFAULT_PROFILE, deleteAccount, getCurrentSession, logoutUser, saveMobilityProfile } from './index';
+import { cacheSessionUser, setActiveSessionId } from '../api/session';
+import type { SessionUser } from '../../types';
 
-const VALID_PASSWORD = 'UrbanFlow2026!';
+const USER: SessionUser = { id: 'user-1', email: 'a@b.fr', displayName: 'Test', profile: DEFAULT_PROFILE };
 
-function storedUsers(): StoredUser[] {
-  return JSON.parse(localStorage.getItem('ufm.users') ?? '[]') as StoredUser[];
+/** Simule un compte deja authentifie par le serveur et copie localement. */
+function openSession(user: SessionUser = USER): void {
+  cacheSessionUser(user);
+  setActiveSessionId(user.id);
 }
 
-describe('registerUser', () => {
-  it('rejette un email invalide', async () => {
-    await expect(
-      registerUser({ email: 'pas-un-email', password: VALID_PASSWORD, displayName: 'Test' }),
-    ).rejects.toThrow(/email invalide/i);
-  });
+function okResponse(): Response {
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+}
 
-  it('rejette un mot de passe trop court ou sans chiffre', async () => {
-    await expect(
-      registerUser({ email: 'a@b.fr', password: 'court1', displayName: 'Test' }),
-    ).rejects.toThrow(/12 caracteres/i);
-    await expect(
-      registerUser({ email: 'a@b.fr', password: 'sansaucunchiffreici', displayName: 'Test' }),
-    ).rejects.toThrow(/12 caracteres/i);
-  });
-
-  it('refuse un email deja enregistre', async () => {
-    await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Un' });
-    await expect(
-      registerUser({ email: 'A@B.FR ', password: VALID_PASSWORD, displayName: 'Deux' }),
-    ).rejects.toThrow(/existe deja/i);
-  });
-
-  it('ne stocke jamais le mot de passe en clair (PBKDF2 + sel)', async () => {
-    await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Test' });
-    const payload = localStorage.getItem('ufm.users') ?? '';
-    const user = storedUsers().find((item) => item.email === 'a@b.fr');
-
-    expect(payload).not.toContain(VALID_PASSWORD);
-    expect(user?.passwordHash).toBeTruthy();
-    expect(user?.passwordSalt).toBeTruthy();
-    expect(user?.passwordHash).not.toBe(VALID_PASSWORD);
-  });
-
-  it('produit des empreintes distinctes pour un meme mot de passe (sel aleatoire)', async () => {
-    await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Un' });
-    await registerUser({ email: 'c@d.fr', password: VALID_PASSWORD, displayName: 'Deux' });
-    const [first, second] = ['a@b.fr', 'c@d.fr'].map(
-      (email) => storedUsers().find((item) => item.email === email)?.passwordHash,
-    );
-
-    expect(first).toBeTruthy();
-    expect(first).not.toBe(second);
-  });
-
-  it('neutralise les chevrons du nom affiche (anti-injection)', async () => {
-    const session = await registerUser({
-      email: 'a@b.fr',
-      password: VALID_PASSWORD,
-      displayName: '<script>Nadia</script>',
-    });
-
-    expect(session.displayName).not.toMatch(/[<>]/);
-    expect(session.displayName).toContain('Nadia');
-  });
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
-describe('loginUser', () => {
-  it('accepte les identifiants valides et ouvre une session', async () => {
-    await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Test' });
-    logoutUser();
+describe('getCurrentSession', () => {
+  it('rend null sans session', () => {
+    expect(getCurrentSession()).toBeNull();
+  });
 
-    const session = await loginUser({ email: 'a@b.fr', password: VALID_PASSWORD });
-    expect(session.email).toBe('a@b.fr');
+  it('rend la copie locale du compte de l onglet', () => {
+    openSession();
     expect(getCurrentSession()?.email).toBe('a@b.fr');
   });
 
-  it('repond par un message generique, identique pour mauvais mot de passe et compte inconnu', async () => {
-    await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Test' });
-
-    await expect(loginUser({ email: 'a@b.fr', password: 'MauvaisPass123' })).rejects.toThrow(
-      'Identifiants invalides.',
-    );
-    await expect(loginUser({ email: 'inconnu@b.fr', password: VALID_PASSWORD })).rejects.toThrow(
-      'Identifiants invalides.',
-    );
-  });
-
-  it('logoutUser ferme la session sans supprimer le compte', async () => {
-    await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Test' });
-    logoutUser();
-
+  it('ignore une copie qui n appartient pas a la session courante', () => {
+    cacheSessionUser(USER);
+    setActiveSessionId('autre');
     expect(getCurrentSession()).toBeNull();
-    expect(storedUsers().some((user) => user.email === 'a@b.fr')).toBe(true);
   });
 });
 
 describe('saveMobilityProfile', () => {
-  it('borne la marche maximale (5-45 min) et l\'objectif carbone (250-20000 g)', async () => {
-    const session = await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Test' });
+  it('borne la marche maximale (5-45 min) et l\'objectif carbone (250-20000 g)', () => {
+    openSession();
 
-    const updated = saveMobilityProfile(session.id, {
-      ...session.profile,
-      maxWalkMinutes: 999,
-      carbonGoalGramsPerWeek: 10,
-    });
+    const updated = saveMobilityProfile(USER.id, { ...USER.profile, maxWalkMinutes: 999, carbonGoalGramsPerWeek: 10 });
 
     expect(updated.profile.maxWalkMinutes).toBe(45);
     expect(updated.profile.carbonGoalGramsPerWeek).toBe(250);
+    // La copie locale suit : un rechargement rend le profil corrige.
+    expect(getCurrentSession()?.profile.maxWalkMinutes).toBe(45);
   });
 
-  it('deduplique les modes et retombe sur les modes par defaut si la liste est vide', async () => {
-    const session = await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Test' });
+  it('deduplique les modes et retombe sur les modes par defaut si la liste est vide', () => {
+    openSession();
 
-    const deduped = saveMobilityProfile(session.id, {
-      ...session.profile,
-      preferredModes: ['bike', 'bike', 'walk'],
-    });
+    const deduped = saveMobilityProfile(USER.id, { ...USER.profile, preferredModes: ['bike', 'bike', 'walk'] });
     expect(deduped.profile.preferredModes).toEqual(['bike', 'walk']);
 
-    const emptied = saveMobilityProfile(session.id, { ...session.profile, preferredModes: [] });
+    const emptied = saveMobilityProfile(USER.id, { ...USER.profile, preferredModes: [] });
     expect(emptied.profile.preferredModes).toEqual(DEFAULT_PROFILE.preferredModes);
+  });
+
+  it('neutralise les chevrons du nom affiche (anti-injection)', () => {
+    openSession();
+
+    const updated = saveMobilityProfile(USER.id, { ...USER.profile, displayName: '<script>Nadia</script>' });
+
+    expect(updated.displayName).not.toMatch(/[<>]/);
+    expect(updated.displayName).toContain('Nadia');
+  });
+
+  it('refuse d ecrire sans session', () => {
+    expect(() => saveMobilityProfile(USER.id, USER.profile)).toThrow(/session/i);
   });
 });
 
-describe('deleteLocalAccount', () => {
-  it('supprime compte, session et TOUTES les donnees locales de l\'utilisateur (droit a l\'effacement RGPD)', async () => {
-    const session = await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Test' });
-    localStorage.setItem(`ufm.tripHistory.${session.id}`, '[]');
-    localStorage.setItem(`ufm.savedRoutes.${session.id}`, '[]');
-    localStorage.setItem(`urbanflow:search-history:${session.id}`, '[]');
+describe('logoutUser', () => {
+  it('ferme la session locale et revoque cote serveur', () => {
+    openSession();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
 
-    deleteLocalAccount(session.id);
+    logoutUser();
 
-    expect(storedUsers().some((user) => user.id === session.id)).toBe(false);
     expect(getCurrentSession()).toBeNull();
+    expect(String(fetchSpy.mock.calls[0]?.[0])).toContain('/api/auth/logout');
+  });
+});
+
+describe('deleteAccount', () => {
+  it('supprime session et TOUTES les donnees locales de l\'utilisateur (droit a l\'effacement RGPD)', () => {
+    openSession();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    localStorage.setItem(`ufm.tripHistory.${USER.id}`, '[]');
+    localStorage.setItem(`ufm.savedRoutes.${USER.id}`, '[]');
+    localStorage.setItem(`urbanflow:search-history:${USER.id}`, '[]');
+
+    deleteAccount(USER.id);
+
+    expect(getCurrentSession()).toBeNull();
+    expect(String(fetchSpy.mock.calls[0]?.[0])).toContain('/api/me');
     // Aucune cle residuelle ne doit porter l'identifiant de l'utilisateur.
     const remainingKeys = Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index));
-    expect(remainingKeys.filter((key) => key?.includes(session.id))).toEqual([]);
+    expect(remainingKeys.filter((key) => key?.includes(USER.id))).toEqual([]);
   });
 
-  it('preserve les donnees des autres utilisateurs lors d\'un effacement', async () => {
-    const first = await registerUser({ email: 'a@b.fr', password: VALID_PASSWORD, displayName: 'Un' });
-    const second = await registerUser({ email: 'c@d.fr', password: VALID_PASSWORD, displayName: 'Deux' });
-    localStorage.setItem(`ufm.savedRoutes.${first.id}`, '[]');
-    localStorage.setItem(`ufm.savedRoutes.${second.id}`, '["garde"]');
+  it('preserve les donnees des autres utilisateurs lors d\'un effacement', () => {
+    openSession();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(okResponse());
+    localStorage.setItem(`ufm.savedRoutes.${USER.id}`, '[]');
+    localStorage.setItem('ufm.savedRoutes.user-2', '["garde"]');
 
-    deleteLocalAccount(first.id);
+    deleteAccount(USER.id);
 
-    expect(localStorage.getItem(`ufm.savedRoutes.${first.id}`)).toBeNull();
-    expect(localStorage.getItem(`ufm.savedRoutes.${second.id}`)).toBe('["garde"]');
-    expect(storedUsers().some((user) => user.id === second.id)).toBe(true);
+    expect(localStorage.getItem(`ufm.savedRoutes.${USER.id}`)).toBeNull();
+    expect(localStorage.getItem('ufm.savedRoutes.user-2')).toBe('["garde"]');
   });
 });

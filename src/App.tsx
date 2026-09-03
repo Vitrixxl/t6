@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  deleteLocalAccount,
+  deleteAccount,
   getCurrentSession,
   logoutUser,
   saveMobilityProfile } from './lib/auth';
@@ -93,7 +93,7 @@ function App() {
         setTripRecords([]);
       }}
       onAccountDelete={() => {
-        deleteLocalAccount(user.id);
+        deleteAccount(user.id);
         setUser(null);
       }}
     />
