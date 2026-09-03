@@ -12,7 +12,10 @@ RUN bun install --frozen-lockfile
 COPY tsconfig.json index.html bunfig.toml ./
 COPY src ./src
 COPY public ./public
-COPY scripts/build.ts ./scripts/build.ts
+# Le script de construction et son greffon de resolution : les copier un par
+# un plutot que le dossier entier garde l'image affranchie de l'outillage de
+# test et de generation, qui n'a rien a y faire.
+COPY scripts/build.ts scripts/served-as-is.ts ./scripts/
 RUN bun scripts/build.ts
 
 FROM docker.io/oven/bun:1-alpine

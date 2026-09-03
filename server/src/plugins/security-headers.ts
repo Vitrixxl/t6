@@ -29,7 +29,20 @@ const APP_POLICY = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://tile.openstreetmap.org",
   "font-src 'self'",
-  "connect-src 'self' https://api-adresse.data.gouv.fr https://photon.komoot.io https://api.cyclocity.fr https://gbfs.api.ridedott.com https://api.open-meteo.com",
+  // Le fond de plan figure ici et pas seulement dans `img-src` : MapLibre
+  // recupere ses tuiles par l'API Fetch pour les dessiner dans un canevas, et
+  // c'est `connect-src` qui gouverne fetch. Les autoriser comme images ne
+  // suffisait pas — la carte restait vide, sans autre indice que des erreurs
+  // de reseau.
+  [
+    "connect-src 'self'",
+    'https://tile.openstreetmap.org',
+    'https://api-adresse.data.gouv.fr',
+    'https://photon.komoot.io',
+    'https://api.cyclocity.fr',
+    'https://gbfs.api.ridedott.com',
+    'https://api.open-meteo.com',
+  ].join(' '),
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
