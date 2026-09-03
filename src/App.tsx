@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { logoutUser } from './lib/auth';
-import { restoreSession, type Session } from './lib/api/account';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { restoreSession } from './lib/api/account';
 import { loadTransportNetwork } from './lib/transport';
+import { openSessionAtom, sessionAtom } from './state';
 import { Card, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import type { TransportNetwork } from './types';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { MobilityMapApp } from './components/app/MobilityMapApp';
 
 function App() {
-  const [session, setSession] = useState<Session | null>(null);
+  const session = useAtomValue(sessionAtom);
+  const openSession = useSetAtom(openSessionAtom);
   const [network, setNetwork] = useState<TransportNetwork | null>(null);
   const [networkError, setNetworkError] = useState('');
   // Tant que la reprise de session n'a pas repondu, on ignore si un cookie
@@ -18,10 +20,14 @@ function App() {
 
   useEffect(() => {
     restoreSession()
-      .then(setSession)
+      .then((restored) => {
+        if (restored) {
+          openSession(restored);
+        }
+      })
       .catch(() => undefined)
       .finally(() => setSessionChecked(true));
-  }, []);
+  }, [openSession]);
 
   useEffect(() => {
     loadTransportNetwork()
@@ -49,22 +55,11 @@ function App() {
   }
 
   if (!session || !network) {
-    return <AuthScreen onAuthenticated={setSession} />;
+    return <AuthScreen onAuthenticated={openSession} />;
   }
 
-  // La cle force un nouvel etat en memoire quand un autre compte se connecte.
-  return (
-    <MobilityMapApp
-      key={session.user.id}
-      session={session}
-      network={network}
-      onLogout={() => {
-        logoutUser();
-        setSession(null);
-      }}
-      onAccountDeleted={() => setSession(null)}
-    />
-  );
+  // La cle remet l'interface a zero quand un autre compte se connecte.
+  return <MobilityMapApp key={session.user.id} network={network} />;
 }
 
 export default App;

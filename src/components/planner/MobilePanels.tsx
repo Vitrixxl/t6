@@ -1,7 +1,9 @@
 // Module planification - restitution mobile : feuille d'options, composeur de
 // modes et actions de planification.
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { CalendarClock, CalendarPlus, Check, Route, UserRound, X } from 'lucide-react';
+import { activitySummaryAtom, openHubAtom } from '../../state';
 import { Button } from '../ui/button';
 import type { GeoPoint, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
@@ -15,12 +17,10 @@ export function MobileTripPanel({
   selectedRoute,
   savedRouteId,
   routingStatus,
-  upcomingCount,
   coverageWarning,
   onSelectRoute,
   onSaveRoute,
   onPlanRoute,
-  onOpenHub,
   onOpenProfile,
   onClose }: {
   destination: GeoPoint | null;
@@ -28,15 +28,16 @@ export function MobileTripPanel({
   selectedRoute: RouteOption | null;
   savedRouteId: string;
   routingStatus: RoutingStatus;
-  upcomingCount: number;
   coverageWarning: string | null;
   onSelectRoute: (id: string) => void;
   onSaveRoute: (routeOption: RouteOption) => void;
   onPlanRoute: (routeOption: RouteOption) => void;
-  onOpenHub: () => void;
   onOpenProfile: () => void;
   onClose: () => void;
 }) {
+  const upcomingCount = useAtomValue(activitySummaryAtom).upcomingCount;
+  const openHub = useSetAtom(openHubAtom);
+  const onOpenHub = () => openHub('upcoming');
   const [sheetLevel, setSheetLevel] = useState<MobileSheetLevel>('mid');
   const dragStartY = useRef<number | null>(null);
   const dragMoved = useRef(false);

@@ -1,30 +1,35 @@
 // Module profil : preferences de mobilite, objectifs carbone et compte.
 import { FormEvent, useEffect, useState } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Check, CircleHelp, LogOut, Trash2, UserRound } from 'lucide-react';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { Button } from '../ui/button';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { Input } from '../ui/input';
-import type { MobilityMode, MobilityProfile, SessionUser } from '../../types';
+import type { MobilityMode, MobilityProfile } from '../../types';
+import { deleteAccountAtom, logoutAtom, setProfileAtom, userAtom } from '../../state';
 import { MODE_ICON, MODE_OPTIONS } from '../app/shared';
 
 export function ProfileDrawer({
-  user,
   open,
   onOpenChange,
-  onSave,
-  onStartTutorial,
-  onDeleteAccount,
-  onLogout }: {
-  user: SessionUser;
+  onStartTutorial }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (profile: MobilityProfile) => void;
   onStartTutorial: () => void;
-  onDeleteAccount: () => void;
-  onLogout: () => void;
 }) {
+  const user = useAtomValue(userAtom);
+  const logout = useSetAtom(logoutAtom);
+  const deleteAccount = useSetAtom(deleteAccountAtom);
   const [confirming, setConfirming] = useState<'logout' | 'delete' | null>(null);
+  const onLogout = () => {
+    onOpenChange(false);
+    logout();
+  };
+  const onDeleteAccount = () => {
+    onOpenChange(false);
+    void deleteAccount();
+  };
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -36,7 +41,7 @@ export function ProfileDrawer({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8">
           <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
             <section className="overflow-hidden rounded-xl border border-border bg-background">
-              <ProfilePanel user={user} onSave={onSave} />
+              <ProfilePanel />
             </section>
             <section className="grid content-start gap-3 rounded-xl border border-border bg-background p-4">
               <div className="flex items-center gap-3">
@@ -98,12 +103,9 @@ export function ProfileDrawer({
   );
 }
 
-export function ProfilePanel({
-  user,
-  onSave }: {
-  user: SessionUser;
-  onSave: (profile: MobilityProfile) => void;
-}) {
+export function ProfilePanel() {
+  const user = useAtomValue(userAtom);
+  const onSave = useSetAtom(setProfileAtom);
   const [profile, setProfile] = useState<MobilityProfile>(user.profile);
   const [saved, setSaved] = useState(false);
 

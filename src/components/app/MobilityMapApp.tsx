@@ -1,44 +1,35 @@
 // Orchestrateur principal : recherche d'itineraires, comparaison des options et
-// planification des trajets (dates, recurrents, objectifs). Auth geree par App.
-import { useEffect, useMemo, useState } from 'react';
+// carte. Il ne tient que l'etat de l'ecran (depart, arrivee, calques, panneaux
+// ouverts) : l'etat du compte vit dans les atomes, que chaque module lit.
+import { useEffect, useState } from 'react';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { GeoPoint, RouteOption, SavedRouteRecord, TransportNetwork } from '../../types';
-import type { Session } from '../../lib/api/account';
-import { deleteAccount, sanitizeProfile } from '../../lib/auth';
 import { haversineDistanceKm } from '../../lib/planner';
-import { useAccount } from './hooks/useAccount';
 import { useGeolocation } from './hooks/useGeolocation';
-import { useSavedRoutes } from './hooks/useSavedRoutes';
-import { useTripPlanning } from './hooks/useTripPlanning';
 import { useRouteOptions } from './hooks/useRouteOptions';
 import { useDesktopLayout } from './hooks/useDesktopLayout';
 import { CITY_CENTER, METRO_RADIUS_KM, describePoint } from '../../lib/transport';
-import { summarizeCarbon } from '../../lib/carbon';
-import { summarizeTripActivity, upcomingTrips } from '../../lib/trips';
+import { closeHubAtom, planSourceAtom, profileAtom, saveErrorAtom, saveRouteAtom } from '../../state';
 import { UrbanMap, DEFAULT_LAYERS, MergeFillet, type LayerState } from './shared';
 import { ShellSidebar } from '../layout/Shell';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
 import { DesktopRouteStrip, MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
 import { MobileTripPanel } from '../planner/MobilePanels';
 import { MobileActionRail } from '../planner/MobileQuickPanels';
-import { PlanTripDialog, TripsHubDialog, type PlanTripSubmit, type TripsHubTab } from '../planner/trips';
+import { PlanTripDialog, TripsHubDialog } from '../planner/trips';
 import { CarbonPanel } from '../carbon/CarbonPanel';
 import { ProfileDrawer } from '../profile/ProfilePanels';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 
-export function MobilityMapApp({
-  session,
-  network,
-  onLogout,
-  onAccountDeleted }: {
-  session: Session;
-  network: TransportNetwork;
-  onLogout: () => void;
-  onAccountDeleted: () => void;
-}) {
-  // L'etat du compte vit ici, en memoire, et part au serveur a chaque action.
-  const account = useAccount(session);
-  const { user } = account;
-  const [accountError, setAccountError] = useState('');
+/** Duree du retour visuel "enregistre" sur le bouton. */
+const SAVE_CONFIRMATION_MS = 1800;
+
+export function MobilityMapApp({ network }: { network: TransportNetwork }) {
+  const profile = useAtomValue(profileAtom);
+  const saveError = useAtomValue(saveErrorAtom);
+  const persistRoute = useSetAtom(saveRouteAtom);
+  const startPlanning = useSetAtom(planSourceAtom);
+  const closeHub = useSetAtom(closeHubAtom);
 
   // Le depart choisi explicitement. Tant qu'il est vide, c'est la position
   // courante qui fait office de depart : ouvrir l'application et saisir une
@@ -48,27 +39,10 @@ export function MobilityMapApp({
   const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
   const [leftRailOpen, setLeftRailOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { savedRoutes, justSavedRouteId, saveRoute: persistRoute, deleteSavedRoute } = useSavedRoutes(account);
-
-  // Planification : occurrences datees + routines recurrentes.
-  const [tripsHub, setTripsHub] = useState<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
+  const [justSavedRouteId, setJustSavedRouteId] = useState('');
   const [tutorialSignal, setTutorialSignal] = useState(0);
   // Une seule disposition est rendue a la fois : une seule carte en memoire.
   const desktop = useDesktopLayout();
-
-  const {
-    plannedTrips,
-    recurringTrips,
-    planSource,
-    startPlanning,
-    cancelPlanning,
-    submitPlan: submitTripPlan,
-    markTripDone,
-    cancelTrip,
-    removeTrip,
-    toggleRecurringPaused,
-    removeRecurring,
-  } = useTripPlanning(account);
 
   const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
   const origin = chosenOrigin ?? currentPosition;
@@ -86,28 +60,12 @@ export function MobilityMapApp({
   const { routes, selectedRoute, selectedLegs, setSelectedRouteId, routingStatus } = useRouteOptions({
     origin,
     destination,
-    profile: user.profile,
+    profile,
     network,
   });
 
   const routeRequested = Boolean(origin && destination);
-
-  const tripRecords = account.state.tripRecords;
-  const carbonSummary = summarizeCarbon(tripRecords, user.profile.carbonGoalGramsPerWeek);
-  const activitySummary = useMemo(() => summarizeTripActivity(plannedTrips, recurringTrips), [plannedTrips, recurringTrips]);
-  const upcoming = useMemo(() => upcomingTrips(plannedTrips), [plannedTrips]);
   const navigationPoint = currentPosition ? { ...currentPosition, label: 'Ma position' } : null;
-
-  // Une ecriture refusee par le serveur se dit, elle ne se masque pas.
-  const saveError = account.saveError || accountError;
-
-  const saveProfile = (profile: Parameters<typeof sanitizeProfile>[0]) => account.setProfile(sanitizeProfile(profile));
-  const clearTripHistory = () => account.update((state) => ({ ...state, tripRecords: [] }));
-  const removeAccount = () => {
-    deleteAccount()
-      .then(onAccountDeleted)
-      .catch((error: unknown) => setAccountError(error instanceof Error ? error.message : 'Suppression impossible.'));
-  };
 
   // Demander sa position sert autant a la definir comme depart qu'a la voir :
   // sans recentrage, le repere pouvait apparaitre hors du cadre visible.
@@ -159,9 +117,12 @@ export function MobilityMapApp({
   };
 
   const saveRoute = (routeOption: RouteOption) => {
-    if (origin && destination) {
-      persistRoute(routeOption, origin, destination);
+    if (!origin || !destination) {
+      return;
     }
+    persistRoute({ option: routeOption, origin, destination });
+    setJustSavedRouteId(routeOption.id);
+    window.setTimeout(() => setJustSavedRouteId(''), SAVE_CONFIRMATION_MS);
   };
 
   // Fermer l'itineraire remet l'ecran a son etat de depart : la feuille
@@ -178,17 +139,13 @@ export function MobilityMapApp({
     setOrigin(entry.origin);
     setDestination(entry.destination);
     setSelectedRouteId(entry.routeId);
-    setTripsHub((hub) => ({ ...hub, open: false }));
+    closeHub();
   };
-
-  // --- Planification ------------------------------------------------------
-
-  const openHub = (tab: TripsHubTab = 'upcoming') => setTripsHub({ open: true, tab });
 
   // "Nouveau trajet" depuis le hub : referme le dialog puis met le focus sur la
   // recherche de depart (apres la restitution de focus de Radix).
   const startNewTrip = () => {
-    setTripsHub((hub) => ({ ...hub, open: false }));
+    closeHub();
     window.setTimeout(() => {
       for (const id of ['desktop-origin-search', 'mobile-origin-search']) {
         const input = document.getElementById(id);
@@ -216,28 +173,7 @@ export function MobilityMapApp({
     });
   };
 
-  const planSavedRoute = (entry: SavedRouteRecord) => {
-    startPlanning({
-      label: entry.routeTitle,
-      origin: entry.origin,
-      destination: entry.destination,
-      modes: entry.modes,
-      distanceKm: entry.distanceKm,
-      durationMinutes: entry.durationMinutes,
-      carbonGrams: entry.carbonGrams,
-      carbonSavedGrams: entry.carbonSavedGrams,
-    });
-  };
-
-  // La planification decide de l'onglet a ouvrir ; l'interface se contente de
-  // suivre ce que le domaine a conclu.
-  const submitPlan = (plan: PlanTripSubmit) => {
-    const tab = submitTripPlan(plan);
-    if (tab) {
-      openHub(tab);
-    }
-  };
-
+  // Une ecriture refusee par le serveur se dit, elle ne se masque pas.
   const saveErrorBanner = saveError ? (
     <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs leading-5 text-red-800">
       Enregistrement refuse par le serveur : {saveError}
@@ -254,12 +190,7 @@ export function MobilityMapApp({
               layers={layers}
               onLayersChange={setLayers}
               network={network}
-              user={user}
               onOpenProfile={() => setProfileOpen(true)}
-              activitySummary={activitySummary}
-              upcoming={upcoming}
-              onMarkTripDone={markTripDone}
-              onOpenHub={openHub}
               onStartTutorial={() => setTutorialSignal((value) => value + 1)}
             />
           </div>
@@ -331,7 +262,7 @@ export function MobilityMapApp({
             />
           ) : null}
           <div data-tour="carbon">
-            <CarbonPanel user={user} records={tripRecords} onClear={clearTripHistory} summary={carbonSummary} />
+            <CarbonPanel />
           </div>
         </aside>
       </div>
@@ -375,11 +306,9 @@ export function MobilityMapApp({
           network={network}
           currentPosition={currentPosition}
           origin={origin}
-          savedCount={savedRoutes.length}
           layers={layers}
           onLayersChange={setLayers}
           onOpenProfile={() => setProfileOpen(true)}
-          onOpenSavedTrips={() => openHub('saved')}
           onLocate={locateAndFocus}
         />
         ) : null}
@@ -391,12 +320,10 @@ export function MobilityMapApp({
           selectedRoute={selectedRoute}
           savedRouteId={justSavedRouteId}
           routingStatus={routingStatus}
-          upcomingCount={activitySummary.upcomingCount}
           coverageWarning={coverageWarning}
           onSelectRoute={setSelectedRouteId}
           onSaveRoute={saveRoute}
           onPlanRoute={planRoute}
-          onOpenHub={() => openHub('upcoming')}
           onOpenProfile={() => setProfileOpen(true)}
           onClose={closeItinerary}
         />
@@ -405,44 +332,15 @@ export function MobilityMapApp({
       )}
 
       <ProfileDrawer
-        user={user}
         open={profileOpen}
         onOpenChange={setProfileOpen}
-        onSave={saveProfile}
         onStartTutorial={() => {
           setProfileOpen(false);
           setTutorialSignal((value) => value + 1);
         }}
-        onDeleteAccount={() => {
-          setProfileOpen(false);
-          removeAccount();
-        }}
-        onLogout={() => {
-          setProfileOpen(false);
-          onLogout();
-        }}
       />
-      <TripsHubDialog
-        open={tripsHub.open}
-        initialTab={tripsHub.tab}
-        user={user}
-        plannedTrips={plannedTrips}
-        recurringTrips={recurringTrips}
-        savedRoutes={savedRoutes}
-        summary={activitySummary}
-        onOpenChange={(open) => setTripsHub((hub) => ({ ...hub, open }))}
-        onProfileSave={saveProfile}
-        onNewTrip={startNewTrip}
-        onMarkDone={markTripDone}
-        onCancelTrip={cancelTrip}
-        onDeleteTrip={removeTrip}
-        onToggleRecurringPaused={toggleRecurringPaused}
-        onDeleteRecurring={removeRecurring}
-        onLoadSavedRoute={loadSavedRoute}
-        onPlanSavedRoute={planSavedRoute}
-        onDeleteSavedRoute={deleteSavedRoute}
-      />
-      <PlanTripDialog source={planSource} onOpenChange={(open) => (!open ? cancelPlanning() : undefined)} onSubmit={submitPlan} />
+      <TripsHubDialog onNewTrip={startNewTrip} onLoadSavedRoute={loadSavedRoute} />
+      <PlanTripDialog />
       <TutorialOverlay relaunchSignal={tutorialSignal} />
     </main>
   );

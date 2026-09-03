@@ -1,19 +1,30 @@
 // Hub central des trajets : a venir, routines, historique, enregistres.
 // Le dialogue ne fait qu'aiguiller vers la liste correspondante ; chaque liste
-// vit dans son propre fichier.
+// vit dans son propre fichier. Il lit l'etat du compte et declenche les actions
+// directement : rien ne transite par l'orchestrateur.
 import { useEffect, useMemo, useState } from 'react';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { Search } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
-import type {
-  MobilityProfile,
-  PlannedTrip,
-  RecurringTrip,
-  SavedRouteRecord,
-  SessionUser,
-  TripActivitySummary,
-} from '../../../types';
-import { upcomingTrips, completedTrips } from '../../../lib/trips';
+import type { SavedRouteRecord } from '../../../types';
+import { completedTrips } from '../../../lib/trips';
+import {
+  activitySummaryAtom,
+  cancelTripAtom,
+  deleteSavedRouteAtom,
+  markTripDoneAtom,
+  planSourceAtom,
+  plannedTripsAtom,
+  recurringTripsAtom,
+  removeRecurringAtom,
+  removeTripAtom,
+  savedRoutesAtom,
+  toggleRecurringPausedAtom,
+  tripsHubAtom,
+  upcomingAtom,
+  type TripsHubTab,
+} from '../../../state';
 import { Metric } from '../../app/shared';
 import { TripGoalsCard } from './TripGoalsCard';
 import { HistoryList } from './lists/HistoryList';
@@ -21,7 +32,7 @@ import { RecurringList } from './lists/RecurringList';
 import { SavedList } from './lists/SavedList';
 import { UpcomingList } from './lists/UpcomingList';
 
-export type TripsHubTab = 'upcoming' | 'recurring' | 'history' | 'saved';
+export type { TripsHubTab };
 
 const HUB_TABS: Array<{ id: TripsHubTab; label: string }> = [
   { id: 'upcoming', label: 'A venir' },
@@ -31,53 +42,35 @@ const HUB_TABS: Array<{ id: TripsHubTab; label: string }> = [
 ];
 
 export function TripsHubDialog({
-  open,
-  initialTab = 'upcoming',
-  user,
-  plannedTrips,
-  recurringTrips,
-  savedRoutes,
-  summary,
-  onOpenChange,
-  onProfileSave,
   onNewTrip,
-  onMarkDone,
-  onCancelTrip,
-  onDeleteTrip,
-  onToggleRecurringPaused,
-  onDeleteRecurring,
   onLoadSavedRoute,
-  onPlanSavedRoute,
-  onDeleteSavedRoute,
 }: {
-  open: boolean;
-  initialTab?: TripsHubTab;
-  user: SessionUser;
-  plannedTrips: PlannedTrip[];
-  recurringTrips: RecurringTrip[];
-  savedRoutes: SavedRouteRecord[];
-  summary: TripActivitySummary;
-  onOpenChange: (open: boolean) => void;
-  onProfileSave: (profile: MobilityProfile) => void;
   onNewTrip: () => void;
-  onMarkDone: (trip: PlannedTrip) => void;
-  onCancelTrip: (trip: PlannedTrip) => void;
-  onDeleteTrip: (trip: PlannedTrip) => void;
-  onToggleRecurringPaused: (trip: RecurringTrip) => void;
-  onDeleteRecurring: (trip: RecurringTrip) => void;
+  /** Recharge un itineraire enregistre sur la carte : l'orchestrateur tient le depart et l'arrivee. */
   onLoadSavedRoute: (route: SavedRouteRecord) => void;
-  onPlanSavedRoute: (route: SavedRouteRecord) => void;
-  onDeleteSavedRoute: (id: string) => void;
 }) {
-  const [tab, setTab] = useState<TripsHubTab>(initialTab);
+  const [hub, setHub] = useAtom(tripsHubAtom);
+  const plannedTrips = useAtomValue(plannedTripsAtom);
+  const recurringTrips = useAtomValue(recurringTripsAtom);
+  const savedRoutes = useAtomValue(savedRoutesAtom);
+  const summary = useAtomValue(activitySummaryAtom);
+  const upcoming = useAtomValue(upcomingAtom);
+  const markDone = useSetAtom(markTripDoneAtom);
+  const cancelTrip = useSetAtom(cancelTripAtom);
+  const removeTrip = useSetAtom(removeTripAtom);
+  const togglePaused = useSetAtom(toggleRecurringPausedAtom);
+  const removeRecurring = useSetAtom(removeRecurringAtom);
+  const deleteSavedRoute = useSetAtom(deleteSavedRouteAtom);
+  const setPlanSource = useSetAtom(planSourceAtom);
+
+  const [tab, setTab] = useState<TripsHubTab>(hub.tab);
 
   useEffect(() => {
-    if (open) {
-      setTab(initialTab);
+    if (hub.open) {
+      setTab(hub.tab);
     }
-  }, [open, initialTab]);
+  }, [hub.open, hub.tab]);
 
-  const upcoming = useMemo(() => upcomingTrips(plannedTrips), [plannedTrips]);
   const history = useMemo(() => completedTrips(plannedTrips), [plannedTrips]);
 
   const counts: Record<TripsHubTab, number> = {
@@ -87,8 +80,21 @@ export function TripsHubDialog({
     saved: savedRoutes.length,
   };
 
+  const planSavedRoute = (entry: SavedRouteRecord) => {
+    setPlanSource({
+      label: entry.routeTitle,
+      origin: entry.origin,
+      destination: entry.destination,
+      modes: entry.modes,
+      distanceKm: entry.distanceKm,
+      durationMinutes: entry.durationMinutes,
+      carbonGrams: entry.carbonGrams,
+      carbonSavedGrams: entry.carbonSavedGrams,
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={hub.open} onOpenChange={(open) => setHub({ ...hub, open })}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-display">Planificateur de trajets</DialogTitle>
@@ -103,7 +109,7 @@ export function TripsHubDialog({
             <Metric label="Recurrents actifs" value={String(summary.recurringActiveCount)} compact />
           </div>
 
-          <TripGoalsCard user={user} summary={summary} onProfileSave={onProfileSave} />
+          <TripGoalsCard />
 
           <Button type="button" className="h-11 w-full justify-center rounded-xl" onClick={onNewTrip}>
             <Search className="size-4" aria-hidden="true" />
@@ -131,14 +137,14 @@ export function TripsHubDialog({
           </div>
 
           {tab === 'upcoming' ? (
-            <UpcomingList trips={upcoming} onMarkDone={onMarkDone} onCancelTrip={onCancelTrip} onDeleteTrip={onDeleteTrip} />
+            <UpcomingList trips={upcoming} onMarkDone={markDone} onCancelTrip={cancelTrip} onDeleteTrip={removeTrip} />
           ) : null}
           {tab === 'recurring' ? (
-            <RecurringList trips={recurringTrips} onTogglePaused={onToggleRecurringPaused} onDelete={onDeleteRecurring} />
+            <RecurringList trips={recurringTrips} onTogglePaused={togglePaused} onDelete={removeRecurring} />
           ) : null}
           {tab === 'history' ? <HistoryList trips={history} /> : null}
           {tab === 'saved' ? (
-            <SavedList routes={savedRoutes} onLoad={onLoadSavedRoute} onPlan={onPlanSavedRoute} onDelete={onDeleteSavedRoute} />
+            <SavedList routes={savedRoutes} onLoad={onLoadSavedRoute} onPlan={planSavedRoute} onDelete={deleteSavedRoute} />
           ) : null}
         </div>
       </DialogContent>

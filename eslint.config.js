@@ -8,6 +8,8 @@ export default tseslint.config(
     ignores: [
       'dist',
       'node_modules',
+      // Worktrees git des sessions d'agents : ce sont d'autres branches, pas ce depot.
+      '.claude',
       '.venv',
       'output',
       'tmp',

@@ -4,27 +4,23 @@
 // Les chiffres de l'entete portent sur la semaine, l'historique dessous sur les
 // cinquante derniers trajets : les libelles le disent, sinon le meme ecran
 // affiche deux periodes sans le signaler (B16).
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Button } from '../ui/button';
-import type { SessionUser, TripRecord } from '../../types';
-import { summarizeCarbon } from '../../lib/carbon';
+import { carbonSummaryAtom, clearTripHistoryAtom, profileAtom, tripRecordsAtom } from '../../state';
 import { Metric } from '../app/shared';
 
-export function CarbonPanel({
-  user,
-  records,
-  summary,
-  onClear }: {
-  user: SessionUser;
-  records: TripRecord[];
-  summary: ReturnType<typeof summarizeCarbon>;
-  onClear: () => void;
-}) {
+export function CarbonPanel() {
+  const profile = useAtomValue(profileAtom);
+  const records = useAtomValue(tripRecordsAtom);
+  const summary = useAtomValue(carbonSummaryAtom);
+  const clearHistory = useSetAtom(clearTripHistoryAtom);
+
   return (
     <section className="overflow-hidden rounded-xl border border-border/70 bg-muted/20">
       <div className="border-b border-border/50 px-3 py-3">
         <h2 className="text-[15px] font-semibold tracking-normal">Suivi carbone</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          {summary.goalUsagePercent}% de l'objectif hebdomadaire de {user.profile.carbonGoalGramsPerWeek} g.
+          {summary.goalUsagePercent}% de l'objectif hebdomadaire de {profile.carbonGoalGramsPerWeek} g.
         </p>
       </div>
       <div className="grid gap-3 p-3">
@@ -47,11 +43,10 @@ export function CarbonPanel({
         ) : (
           <p className="text-sm text-muted-foreground">Marque un trajet planifie comme fait pour alimenter le suivi.</p>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={onClear} disabled={records.length === 0}>
+        <Button type="button" variant="outline" size="sm" onClick={() => clearHistory()} disabled={records.length === 0}>
           Effacer l'historique
         </Button>
       </div>
     </section>
   );
 }
-

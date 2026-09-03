@@ -1,9 +1,11 @@
 // Module layout desktop : barre laterale (planificateur, calques).
+import { useAtomValue } from 'jotai';
 import { CalendarClock, CircleHelp, Layers3, Navigation, UserRound } from 'lucide-react';
 import { Button } from '../ui/button';
-import type { PlannedTrip, SessionUser, TransportNetwork, TripActivitySummary } from '../../types';
+import type { TransportNetwork } from '../../types';
+import { userAtom } from '../../state';
 import { LayerToggle, type LayerState } from '../app/shared';
-import { TripsSidebarSection, type TripsHubTab } from '../planner/trips';
+import { TripsSidebarSection } from '../planner/trips';
 import { getFeedFreshness } from '../../lib/transport';
 
 function SidebarSectionHeader({
@@ -37,24 +39,16 @@ export function ShellSidebar({
   layers,
   onLayersChange,
   network,
-  user,
   onOpenProfile,
-  activitySummary,
-  upcoming,
-  onMarkTripDone,
-  onOpenHub,
   onStartTutorial }: {
   layers: LayerState;
   onLayersChange: (layers: LayerState) => void;
   network: TransportNetwork;
-  user: SessionUser;
   onOpenProfile: () => void;
-  activitySummary: TripActivitySummary;
-  upcoming: PlannedTrip[];
-  onMarkTripDone: (trip: PlannedTrip) => void;
-  onOpenHub: (tab?: TripsHubTab) => void;
   onStartTutorial: () => void;
 }) {
+  const user = useAtomValue(userAtom);
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center gap-2.5 px-4 pb-1 pt-3">
@@ -75,7 +69,7 @@ export function ShellSidebar({
             title="Mes trajets"
             subtitle="A venir, recurrents et objectifs"
           />
-          <TripsSidebarSection summary={activitySummary} upcoming={upcoming} onMarkDone={onMarkTripDone} onOpenHub={onOpenHub} />
+          <TripsSidebarSection />
         </section>
         <section aria-labelledby="sidebar-layers-title" data-tour="layers">
           <SidebarSectionHeader
