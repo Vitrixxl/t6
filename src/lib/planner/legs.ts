@@ -111,22 +111,6 @@ export function applyRoutedLegs(option: RouteOption, legs: RouteLeg[]): RouteOpt
   return { ...option, legs, ...summarizeLegs(legs) };
 }
 
-/**
- * Reporte l'itineraire route dans la liste des options.
- *
- * Seul l'itineraire selectionne est route segment par segment — c'est ce qui
- * borne le nombre d'appels au calculateur. Mais la liste continuait d'afficher
- * son estimation a vol d'oiseau, si bien que la pastille et la fiche de detail
- * annonçaient deux chiffres pour le meme trajet (B19). Les options non
- * selectionnees gardent leur estimation, ce qui est exact : elles n'ont pas ete
- * routees.
- */
-export function applyRoutedSelection(routes: RouteOption[], selected: RouteOption | null): RouteOption[] {
-  if (!selected) {
-    return routes;
-  }
-  return routes.map((option) => (option.id === selected.id ? selected : option));
-}
 
 /**
  * Trace complet d'une option. Un segment dont la geometrie n'est pas encore
