@@ -32,3 +32,6 @@ yarn.lock
 
 # Certificats TLS : une cle privee ne se versionne jamais.
 *.pem
+
+# Worktrees git crees par les sessions d agents : d autres branches, jamais ce depot.
+.claude/worktrees/
