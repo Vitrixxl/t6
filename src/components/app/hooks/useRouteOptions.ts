@@ -1,15 +1,18 @@
-// Calcul des itineraires : options locales, puis geometrie reelle par le
-// service de routage.
+// Calcul des itineraires : le moteur local propose les options, le service de
+// routage les mesure.
 //
-// Le moteur local produit toujours la liste des options et leurs estimations,
-// meme hors ligne. En revanche il ne produit **aucun trace** pour ce qui
-// emprunte la voirie : la geometrie vient du routage, ou elle n'existe pas.
-// D'ou le statut ci-dessous, que l'interface affiche pour dire si la carte est
-// en train de se remplir, ou si elle ne pourra pas l'etre.
+// **Aucune estimation n'atteint l'interface.** Le calcul local sert uniquement
+// a savoir quelles options existent ; ses chiffres restent dans le hook. Toutes
+// les options sont mesurees, puis affichees ensemble.
+//
+// C'est le prix d'une liste comparable. Ne mesurer que l'option selectionnee
+// coutait trois appels au lieu d'une quinzaine, mais melangeait deux methodes
+// dans le meme tableau : changer de selection changeait les chiffres (B20). Le
+// surcout est absorbe par le cache partage de l'API.
 import { useEffect, useMemo, useState } from 'react';
 import type { GeoPoint, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
-import { applyRoutedLegs, applyRoutedSelection, planRoutes, preselectRoute } from '../../../lib/planner';
-import { enhanceLegsWithLiveRouting, hasCompleteGeometry } from '../../../lib/transport';
+import { measureRoutes, planRoutes, preselectRoute } from '../../../lib/planner';
+import { enhanceLegsWithLiveRouting } from '../../../lib/transport';
 
 /**
  * Etat du trace. `pending` et `unavailable` sont deux choses differentes pour
@@ -47,77 +50,63 @@ export function useRouteOptions(input: {
   const { origin, destination, profile, network } = input;
   const [routingStatus, setRoutingStatus] = useState<RoutingStatus>('idle');
   const [selectedRouteId, setSelectedRouteId] = useState('');
-  const [selectedLegs, setSelectedLegs] = useState<RouteLeg[]>([]);
+
+  const [routes, setRoutes] = useState<RouteOption[]>([]);
 
   const localRoutes = useMemo(
     () => (origin && destination ? planRoutes({ origin, destination, profile, network }) : []),
     [destination, network, origin, profile],
   );
 
-  // Toutes les options calculables sont proposees. Un generateur qui ne peut
-  // rien produire — pas de station a portee, aucune ligne reliant les deux
-  // points — ne renvoie deja rien : filtrer en plus revenait a masquer des
-  // trajets valables sans jamais dire pourquoi.
-  //
+  useEffect(() => {
+    if (localRoutes.length === 0) {
+      setRoutes([]);
+      setRoutingStatus('idle');
+      return;
+    }
+
+    // La liste se vide pendant la mesure : afficher les estimations en attendant
+    // reviendrait a montrer des chiffres qui vont changer sous les yeux.
+    setRoutes([]);
+    setRoutingStatus('pending');
+
+    const controller = new AbortController();
+    measureRoutes(localRoutes, profile, (legs) => enhanceLegsWithLiveRouting(legs, controller.signal))
+      .then((measured) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setRoutes(measured);
+        setRoutingStatus(measured.length > 0 ? 'ready' : 'unavailable');
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setRoutingStatus('unavailable');
+        }
+      });
+
+    return () => controller.abort();
+  }, [localRoutes, profile]);
+
   // La selection manuelle vaut pour la recherche en cours ; une nouvelle
   // recherche repart de la preselection du profil, sans quoi le choix fait sur
   // un trajet precedent se propagerait a tous les suivants.
-  const candidate =
-    localRoutes.find((routeOption) => routeOption.id === selectedRouteId) ??
-    preselectRoute(localRoutes, profile.routePreselection);
+  const selectedRoute =
+    routes.find((routeOption) => routeOption.id === selectedRouteId) ??
+    preselectRoute(routes, profile.routePreselection);
 
-  // Les mesures de l'option affichee suivent celles de ses segments une fois
-  // routes : l'entete et le detail ne peuvent pas annoncer deux chiffres
-  // differents pour le meme trajet.
-  const selectedRoute = useMemo(
-    () => (candidate && routingStatus === 'ready' ? applyRoutedLegs(candidate, selectedLegs) : candidate),
-    [candidate, routingStatus, selectedLegs],
-  );
+  const selectedLegs = selectedRoute?.legs ?? [];
 
-  // La liste reprend l'itineraire route : sans cela, la pastille affichait
-  // l'estimation a vol d'oiseau pendant que la fiche affichait la mesure reelle
-  // du meme trajet (B19).
-  const routes = useMemo(() => applyRoutedSelection(localRoutes, selectedRoute), [localRoutes, selectedRoute]);
-
-  // Un changement de trajet efface la selection manuelle. Declare avant
-  // l'effet qui la repositionne, pour que la preselection s'applique au meme
-  // rendu plutot qu'au suivant.
   useEffect(() => {
     setSelectedRouteId('');
   }, [destination, origin]);
 
   useEffect(() => {
-    if (!candidate || candidate.id === selectedRouteId) {
+    if (!selectedRoute || selectedRoute.id === selectedRouteId) {
       return;
     }
-    setSelectedRouteId(candidate.id);
-  }, [candidate, selectedRouteId]);
-
-  // Seul l'itineraire affiche est route segment par segment : trois a quatre
-  // appels au changement de selection, plutot que pour chacune des options.
-  useEffect(() => {
-    if (!candidate) {
-      setSelectedLegs([]);
-      setRoutingStatus('idle');
-      return;
-    }
-
-    // Les segments sont d'abord poses sans geometrie : la carte n'affiche donc
-    // rien de ce trajet tant que le routage n'a pas repondu, et l'interface
-    // annonce un calcul en cours.
-    setSelectedLegs(candidate.legs);
-    setRoutingStatus('pending');
-
-    const controller = new AbortController();
-    enhanceLegsWithLiveRouting(candidate.legs, controller.signal)
-      .then((legs) => {
-        setSelectedLegs(legs);
-        setRoutingStatus(hasCompleteGeometry(legs) ? 'ready' : 'unavailable');
-      })
-      .catch(() => setRoutingStatus('unavailable'));
-
-    return () => controller.abort();
-  }, [candidate]);
+    setSelectedRouteId(selectedRoute.id);
+  }, [selectedRoute, selectedRouteId]);
 
   return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingStatus };
 }

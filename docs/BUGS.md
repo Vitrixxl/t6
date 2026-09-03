@@ -297,3 +297,88 @@ apres. Suite complete : 103 tests unitaires, 37 tests d'API. Capture mobile
 regeneree pour verifier que les deux valeurs concordent a l'ecran.
 
 **Niveau de verrouillage** : **automatise**.
+
+---
+
+## B20 — Les chiffres d'une option changeaient selon qu'elle etait selectionnee
+
+**Criticite** : majeur — la liste d'options existe pour comparer, et ses lignes
+n'etaient pas comparables entre elles.
+
+### Identifier la source
+
+Signale par l'utilisateur, captures a l'appui : le meme trajet, deux relevés.
+
+| Option | Velo selectionne | Trottinette selectionnee |
+| --- | --- | --- |
+| Velo | **32 min, 5,0 km** | 26 min, 4,5 km |
+| Trottinette | 17 min, 4,0 km | **24 min, 4,8 km** |
+
+Chaque option changeait de valeurs en devenant selectionnee, et y revenait en
+cessant de l'etre.
+
+**Cause racine** : pour borner le nombre d'appels au calculateur, un seul
+itineraire etait mesure segment par segment — celui affiche. Les autres
+restaient sur l'estimation a vol d'oiseau du moteur local. La liste melangeait
+donc **deux methodes de mesure**, et comparer 24 minutes mesurees a 31 minutes
+estimees n'a aucun sens.
+
+**Ce bogue est ne d'un correctif.** B19 avait corrige la contradiction entre la
+pastille et la fiche de detail en faisant remonter la valeur mesuree dans la
+liste. La contradiction a disparu de l'ecran de detail pour reapparaitre, sous
+une autre forme, dans la comparaison. Une correction qui deplace un defaut au
+lieu de le supprimer est une correction incomplete : la vraie question n'etait
+pas « quelle valeur afficher ou », mais « pourquoi deux valeurs coexistent ».
+
+### Corriger
+
+Toutes les options sont mesurees, plus seulement celle qu'on regarde. Le calcul
+local ne sert qu'a savoir **quelles** options existent ; ses chiffres ne
+sortent plus du hook.
+
+Trois consequences assumees :
+
+- le cout passe de trois appels a une quinzaine par recherche. Il est absorbe
+  par le cache partage introduit en B13 : les memes trajets ne repartent pas
+  chez le calculateur, et une instance auto-hebergee rend la question sans
+  objet ;
+- une option dont un segment n'a pas pu etre mesure est **ecartee**. La garder
+  supposerait de retomber sur son estimation, donc de remettre deux methodes
+  dans la meme liste ;
+- le classement est refait apres mesure. Le score depend de la duree et du
+  carbone : le figer sur l'estimation aurait contredit les chiffres affiches.
+
+L'orchestration est extraite dans `measureRoutes`, fonction pure prenant le
+routeur en parametre — c'est ce qui la rend testable, la version precedente
+vivant dans un hook React hors de portee des tests.
+
+`applyRoutedSelection`, le correctif de B19, disparait : la structure rend
+desormais la contradiction impossible, la pastille et la fiche lisant le meme
+objet. Un garde-fou qui ne garde plus rien est du bruit.
+
+**Ou le voir** : `src/lib/planner/index.ts` (`measureRoutes`, `rankRoutes`),
+`src/components/app/hooks/useRouteOptions.ts`
+
+### Tester et valider le correctif
+
+Trois tests ecrits **avant** le correctif, la fonction ayant d'abord ete posee
+en passe-plat pour obtenir des echecs d'assertion plutot qu'une erreur d'import :
+
+1. **toutes** les options ressortent mesurees, aucune ne reste a l'estimation ;
+2. une option dont un segment n'a pas de trace est ecartee — un correctif qui la
+   garderait avec son estimation passerait le premier test et echouerait
+   celui-ci ;
+3. le classement est recalcule sur les mesures : les scores different de ceux de
+   l'estimation, et restent ordonnes.
+
+Le routeur de test est un doublon qui double les distances et pose un trace.
+La premiere version ne posait pas de trace, et le test echouait pour une raison
+etrangere au correctif : un doublon doit se comporter comme la chose qu'il
+remplace, sinon il teste autre chose.
+
+**Validation** : les trois vus **rouges** (`expected 2.67 to be close to 5.34`,
+`expected [ … ] to have a length of +0 but got 6`, `expected [ 100, 93, … ] to
+not deeply equal [ 100, 93, … ]`), **verts** apres. Suite complete : 103 tests
+unitaires, 37 tests d'API.
+
+**Niveau de verrouillage** : **automatise**.

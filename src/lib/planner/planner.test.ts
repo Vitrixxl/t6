@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PROFILE } from '../auth';
-import { applyRoutedLegs, applyRoutedSelection, haversineDistanceKm, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS, totalWalkMinutes } from './index';
+import { haversineDistanceKm, measureRoutes, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS, totalWalkMinutes } from './index';
 import type { TransportNetwork } from '../../types';
 
 const network: TransportNetwork = {
@@ -413,7 +413,11 @@ describe('portee des modes partages (RG3)', () => {
 // sa liste d'options continuait d'afficher l'estimation a vol d'oiseau, si bien
 // que la pastille et la fiche de detail annonçaient deux chiffres pour le meme
 // trajet — 11 min sur l'une, 21 min sur l'autre.
-describe('applyRoutedSelection', () => {
+// Verrouille B20. Seule l'option selectionnee etait mesuree par le service de
+// routage ; les autres restaient sur l'estimation a vol d'oiseau. Changer de
+// selection changeait donc les chiffres affiches, et comparer une duree mesuree
+// a une duree estimee n'avait aucun sens.
+describe('measureRoutes', () => {
   const routes = planRoutes({
     origin: LANDMARKS[0],
     destination: LANDMARKS[1],
@@ -421,29 +425,45 @@ describe('applyRoutedSelection', () => {
     network,
   });
 
-  it('affiche dans la liste les mesures routees de l option selectionnee', () => {
-    const option = routes[0];
-    const routedLegs = option.legs.map((leg) => ({ ...leg, distanceKm: leg.distanceKm * 2, durationMinutes: leg.durationMinutes * 2 }));
-    const routed = applyRoutedLegs(option, routedLegs);
+  /**
+   * Routeur de test : double chaque distance, comme le ferait la voirie reelle,
+   * et pose un trace — un vrai routeur en rend toujours un.
+   */
+  const doubler = async (legs: typeof routes[number]['legs']) =>
+    legs.map((leg) => ({
+      ...leg,
+      distanceKm: leg.distanceKm * 2,
+      durationMinutes: leg.durationMinutes * 2,
+      path: [leg.fromPoint, leg.toPoint],
+    }));
 
-    const liste = applyRoutedSelection(routes, routed);
+  it('mesure toutes les options, sans en laisser aucune a l estimation', async () => {
+    const measured = await measureRoutes(routes, DEFAULT_PROFILE, doubler);
 
-    expect(liste.find((item) => item.id === option.id)?.durationMinutes).toBe(routed.durationMinutes);
-    expect(liste.find((item) => item.id === option.id)?.distanceKm).toBe(routed.distanceKm);
-  });
-
-  it('laisse les autres options a leur estimation, qui est exacte pour elles', () => {
-    const option = routes[0];
-    const routed = applyRoutedLegs(option, option.legs.map((leg) => ({ ...leg, distanceKm: leg.distanceKm * 2 })));
-
-    const liste = applyRoutedSelection(routes, routed);
-
-    for (const autre of routes.filter((item) => item.id !== option.id)) {
-      expect(liste.find((item) => item.id === autre.id)).toBe(autre);
+    expect(measured).toHaveLength(routes.length);
+    for (const option of measured) {
+      const avant = routes.find((item) => item.id === option.id);
+      expect(option.distanceKm).toBeCloseTo((avant?.distanceKm ?? 0) * 2, 1);
     }
   });
 
-  it('rend la liste inchangee tant qu aucun itineraire n est route', () => {
-    expect(applyRoutedSelection(routes, null)).toBe(routes);
+  it('ecarte une option dont un segment n a pas pu etre mesure', async () => {
+    // Un segment sans geometrie : l'option n'a pas de mesure, elle ne peut pas
+    // etre comparee aux autres et n'a donc rien a faire dans la liste.
+    const boiteux = async (legs: typeof routes[number]['legs']) =>
+      legs.map((leg, index) => ({ ...leg, path: index === 0 ? [] : [leg.fromPoint, leg.toPoint] }));
+
+    const measured = await measureRoutes(routes, DEFAULT_PROFILE, boiteux);
+
+    expect(measured).toHaveLength(0);
+  });
+
+  it('reclasse sur les mesures reelles et non sur l estimation', async () => {
+    const measured = await measureRoutes(routes, DEFAULT_PROFILE, doubler);
+    const scores = measured.map((option) => option.score);
+
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+    // Les durees ont double : les scores ne peuvent pas etre restes identiques.
+    expect(scores).not.toEqual(routes.map((option) => option.score));
   });
 });
