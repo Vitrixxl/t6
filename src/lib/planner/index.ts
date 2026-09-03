@@ -8,7 +8,6 @@ import type { MobilityProfile, RouteLeg, RouteOption, RouteRequest } from '../..
 import { haversineDistanceKm } from './geo';
 import { createBikeOption } from './options/bike';
 import { createBikeTransitOption } from './options/bike-transit';
-import { createCarpoolOption } from './options/carpool';
 import { createScooterOption } from './options/scooter';
 import { createTransitOption } from './options/transit';
 import { createWalkOption } from './options/walk';
@@ -22,7 +21,6 @@ export function planRoutes(request: RouteRequest): RouteOption[] {
     createBikeTransitOption(request, directKm),
     createBikeOption(request, directKm),
     createScooterOption(request, directKm),
-    createCarpoolOption(request, directKm),
     createWalkOption(request, directKm),
   ].filter((option): option is RouteOption => Boolean(option));
 
@@ -65,7 +63,7 @@ export async function measureRoutes(
 }
 
 export { haversineDistanceKm } from './geo';
-export { LANDMARKS, DEFAULT_CARPOOL_OCCUPANTS, MIN_CARPOOL_OCCUPANTS, MAX_CARPOOL_OCCUPANTS } from './constants';
+export { LANDMARKS } from './constants';
 export { SCORING_WEIGHTS } from './scoring';
 export { preselectRoute, totalWalkMinutes, visibleLegs } from './rules';
 export {

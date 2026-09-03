@@ -7,7 +7,6 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, Dr
 import { Input } from '../ui/input';
 import type { MobilityMode, MobilityProfile, SessionUser } from '../../types';
 import { MODE_ICON, MODE_OPTIONS } from '../app/shared';
-import { DEFAULT_CARPOOL_OCCUPANTS, MAX_CARPOOL_OCCUPANTS, MIN_CARPOOL_OCCUPANTS } from '../../lib/planner';
 
 export function ProfileDrawer({
   user,
@@ -203,22 +202,6 @@ export function ProfilePanel({
           <span className="text-xs font-normal text-muted-foreground">
             Toutes les options restent proposees : ce reglage ne decide que de celle qui s&apos;ouvre en premier. Si le
             mode choisi n&apos;existe pas sur un trajet, la plus rapide est retenue.
-          </span>
-        </label>
-        <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-carpool-occupants">
-          Personnes a bord en covoiturage
-          <Input
-            id="profile-carpool-occupants"
-            type="number"
-            min={MIN_CARPOOL_OCCUPANTS}
-            max={MAX_CARPOOL_OCCUPANTS}
-            step={1}
-            value={profile.carpoolOccupants ?? DEFAULT_CARPOOL_OCCUPANTS}
-            onChange={(event) => setProfile({ ...profile, carpoolOccupants: Number(event.target.value) })}
-          />
-          <span className="text-xs font-normal text-muted-foreground">
-            Une voiture emet autant quel que soit son remplissage : ce nombre determine la part de CO2 imputee a chaque
-            passager.
           </span>
         </label>
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-carbon-goal">

@@ -1,4 +1,4 @@
-export type MobilityMode = 'walk' | 'bike' | 'scooter' | 'transit' | 'carpool';
+export type MobilityMode = 'walk' | 'bike' | 'scooter' | 'transit';
 
 export type Occupancy = 'low' | 'medium' | 'high';
 
@@ -25,12 +25,6 @@ export interface MobilityProfile {
    * rapide s'applique alors.
    */
   routePreselection?: RoutePreselection;
-  /**
-   * Nombre de personnes a bord pour une option covoiturage. Un vehicule emet
-   * autant quel que soit son remplissage : c'est la part imputee a chaque
-   * passager qui change. Absent sur les anciens profils.
-   */
-  carpoolOccupants?: number;
 }
 
 /**
@@ -205,11 +199,7 @@ export interface LegEstimate {
   travelFactor: number;
   /** Temps fixe hors parcours : deverrouiller un velo, attendre une rame, etre pris en charge. */
   overheadMinutes: number;
-  /**
-   * Facteur d'emission retenu pour ce segment, en g/km et **par personne**.
-   * Pour le covoiturage il vaut l'emission du vehicule divisee par le nombre
-   * d'occupants.
-   */
+  /** Facteur d'emission retenu pour ce segment, en g/km et **par personne**. */
   carbonGramsPerKm: number;
 }
 

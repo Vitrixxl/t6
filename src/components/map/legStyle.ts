@@ -3,15 +3,13 @@
 // Chaque mode a son traitement, pour qu'on lise l'enchainement d'un coup d'oeil
 // sans consulter la legende : la marche en pointilles (c'est le mode d'appoint,
 // il ne doit pas peser visuellement), les mobilites actives en vert, le
-// covoiturage en violet, le transport public en bleu — la meme couleur que les
-// arrets sur la carte.
+// transport public en bleu — la meme couleur que les arrets sur la carte.
 import type { MobilityMode, RouteLeg } from '../../types';
 
 export const LEG_COLOR: Record<MobilityMode, string> = {
   walk: '#475569',
   bike: '#16a34a',
   scooter: '#16a34a',
-  carpool: '#a855f7',
   transit: '#2563eb',
 };
 

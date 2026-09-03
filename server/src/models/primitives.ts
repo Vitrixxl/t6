@@ -16,10 +16,9 @@ export const mode = t.Union([
   t.Literal('bike'),
   t.Literal('scooter'),
   t.Literal('transit'),
-  t.Literal('carpool'),
 ]);
 
-const MODE_COUNT = 5;
+const MODE_COUNT = 4;
 
 export const modes = t.Array(mode, { maxItems: MODE_COUNT });
 export const requiredModes = t.Array(mode, { minItems: 1, maxItems: MODE_COUNT });
