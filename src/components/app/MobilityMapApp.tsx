@@ -238,7 +238,7 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
             />
             <TripsHubDialog onNewTrip={startNewTrip} onLoadSavedRoute={loadSavedRoute} />
             <PlanTripDialog />
-            <TutorialOverlay relaunchSignal={tutorialSignal} />
+            <TutorialOverlay desktop={desktop} relaunchSignal={tutorialSignal} />
         </main>
     );
 }

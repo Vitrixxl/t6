@@ -112,6 +112,7 @@ function MobileTripHeader({
                     variant="outline"
                     onClick={() => openHub('upcoming')}
                     aria-label="Mes trajets"
+                    data-tour="mobile-trips"
                     className="relative size-[44px] rounded-xl bg-white p-0"
                 >
                     <CalendarClock className="size-5" aria-hidden="true" />
@@ -121,7 +122,14 @@ function MobileTripHeader({
                         </span>
                     ) : null}
                 </Button>
-                <Button type="button" variant="outline" onClick={onOpenProfile} aria-label="Ouvrir le profil" className="size-[44px] rounded-xl bg-white p-0">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onOpenProfile}
+                    aria-label="Ouvrir le profil"
+                    data-tour="mobile-profile"
+                    className="size-[44px] rounded-xl bg-white p-0"
+                >
                     <UserRound className="size-5" aria-hidden="true" />
                 </Button>
                 <Button type="button" variant="outline" onClick={onClose} aria-label="Fermer l'itineraire" className="size-[44px] rounded-xl bg-white p-0">

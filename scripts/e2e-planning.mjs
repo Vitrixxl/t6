@@ -39,6 +39,63 @@ page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
 const log = (...args) => console.log('•', ...args);
 const failures = [];
 
+const MOBILE_TUTORIAL_STEPS = [
+    { title: 'Bienvenue sur UrbanFlow' },
+    { title: 'Recherche depart / arrivee', target: 'mobile-search' },
+    { title: 'La carte', target: 'mobile-map' },
+    { title: 'Ta position', target: 'mobile-location' },
+    { title: 'Autour de moi', target: 'mobile-nearby' },
+    { title: 'Couches temps reel', target: 'mobile-layers' },
+    { title: 'Trajets et objectifs', target: 'mobile-trips' },
+    { title: 'Profil et preferences', target: 'mobile-profile' },
+    { title: "C'est tout !" },
+];
+
+function overlapArea(a, b) {
+    const width = Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+    const height = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+    return width * height;
+}
+
+async function testMobileTutorial() {
+    const dialog = page.getByRole('dialog', { name: 'Tutoriel UrbanFlow' });
+    await dialog.waitFor({ state: 'visible', timeout: 5000 });
+
+    for (const [index, expected] of MOBILE_TUTORIAL_STEPS.entries()) {
+        const title = await dialog.getByRole('heading', { level: 2 }).textContent();
+        if (title !== expected.title) {
+            failures.push(`tutoriel mobile : etape ${index + 1}, "${expected.title}" attendu, "${title ?? 'aucun titre'}" obtenu`);
+            return false;
+        }
+
+        if (expected.target) {
+            const target = page.locator(`[data-tour="${expected.target}"]:visible`).first();
+            if (!(await target.count())) {
+                failures.push(`tutoriel mobile : la cible ${expected.target} n'est pas visible`);
+                return false;
+            }
+            const targetBox = await target.boundingBox();
+            const cardBox = await dialog.getByTestId('tutorial-card').boundingBox();
+            if (!targetBox) {
+                failures.push(`tutoriel mobile : la cible ${expected.target} n'est pas visible`);
+                return false;
+            }
+            if (expected.target !== 'mobile-map' && cardBox && overlapArea(targetBox, cardBox) > 0) {
+                failures.push(`tutoriel mobile : l'explication masque la cible ${expected.target}`);
+                return false;
+            }
+            if (expected.target === 'mobile-map' || expected.target === 'mobile-trips') {
+                await page.screenshot({ path: `tmp/screenshots/tutorial-${expected.target}.png` });
+            }
+        }
+
+        const last = index === MOBILE_TUTORIAL_STEPS.length - 1;
+        await dialog.getByRole('button', { name: last ? 'Terminer' : 'Suivant' }).click();
+        await page.waitForTimeout(350);
+    }
+    return true;
+}
+
 await page.goto(BASE_URL, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 
@@ -63,12 +120,17 @@ if (!(await page.locator('#mobile-destination-search').count())) {
 }
 log('login OK');
 
-// Le tutoriel se lance a la premiere visite : on le passe pour derouler le scenario.
-const skipTutorial = page.getByRole('button', { name: /passer le tutoriel/i });
-if (await skipTutorial.count()) {
-    await skipTutorial.first().click();
-    await page.waitForTimeout(600);
-    log('tutoriel passe');
+// Le tutoriel de premiere visite doit montrer les fonctions reellement
+// disponibles sur mobile, sans poser sa carte d'explication sur leur bouton.
+if (await testMobileTutorial()) {
+    log('tutoriel mobile complet et lisible');
+} else {
+    console.log(`ECHEC: ${failures.at(-1)}`);
+    await page.screenshot({ path: 'tmp/screenshots/tutorial-mobile-fail.png' });
+    const skipTutorial = page.getByRole('button', { name: /passer le tutoriel/i });
+    if (await skipTutorial.count()) {
+        await skipTutorial.first().evaluate((button) => button.click());
+    }
 }
 
 // 2. Le depart est la position courante, sans aucune action : la barre ne
@@ -209,7 +271,7 @@ mkdirSync('output/metrics', { recursive: true });
 writeFileSync(
     'output/metrics/e2e.json',
     JSON.stringify(
-        { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 7, failures, passed: failures.length === 0 },
+        { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 8, failures, passed: failures.length === 0 },
         null,
         2,
     ) + '\n',
@@ -220,4 +282,4 @@ if (failures.length > 0) {
     for (const failure of failures) console.log('  - ' + failure);
     process.exit(1);
 }
-console.log('TEST TERMINE - 7/7 assertions passees');
+console.log('TEST TERMINE - 8/8 assertions passees');

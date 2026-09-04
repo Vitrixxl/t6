@@ -185,13 +185,13 @@ export function MobileMobilityLayout(props: MobileMobilityLayoutProps) {
     const { map } = props;
 
     return (
-        <div className="relative h-full w-full overflow-hidden bg-muted">
+        <div className="relative h-full w-full overflow-hidden bg-muted" data-tour="mobile-map">
             <div className="absolute inset-0">
                 <TripMap state={map} />
             </div>
 
             <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-col items-start gap-2 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
-                <div className="pointer-events-auto relative z-[70] w-full" data-tour="search">
+                <div className="pointer-events-auto relative z-[70] w-full" data-tour="mobile-search">
                     <MobileSearchShell
                         origin={map.origin}
                         destination={map.destination}

@@ -20,11 +20,13 @@ import { MobileHomePanel } from './MobileHomePanel';
 function ActionButton({
     label,
     badge,
+    tourTarget,
     onClick,
     children,
 }: {
     label: string;
     badge?: number;
+    tourTarget: string;
     onClick: () => void;
     children: React.ReactNode;
 }) {
@@ -33,6 +35,7 @@ function ActionButton({
             type="button"
             onClick={onClick}
             aria-label={label}
+            data-tour={tourTarget}
             // Taille en pixels, pas en rem : la racine du document est a 14 px, une
             // valeur en rem donnerait 42 px et raterait la cible tactile de 44 px.
             className="pointer-events-auto relative grid size-[52px] place-items-center rounded-2xl border border-white/80 bg-white/95 text-foreground shadow-float backdrop-blur-xl transition-transform active:scale-[0.94]"
@@ -74,22 +77,22 @@ export function MobileActionRail({
         <>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-end justify-between px-3 pb-[calc(env(safe-area-inset-bottom)+0.85rem)]">
                 <div className="flex items-end gap-2">
-                    <ActionButton label="Ouvrir le profil" onClick={onOpenProfile}>
+                    <ActionButton label="Ouvrir le profil" tourTarget="mobile-profile" onClick={onOpenProfile}>
                         <UserRound className="size-5" aria-hidden="true" />
                     </ActionButton>
-                    <ActionButton label="Trajets enregistres" badge={savedCount} onClick={onOpenSavedTrips}>
+                    <ActionButton label="Trajets enregistres" badge={savedCount} tourTarget="mobile-trips" onClick={onOpenSavedTrips}>
                         <Route className="size-5" aria-hidden="true" />
                     </ActionButton>
                 </div>
 
                 <div className="flex items-end gap-2">
-                    <ActionButton label="Ma position" onClick={onLocate}>
+                    <ActionButton label="Ma position" tourTarget="mobile-location" onClick={onLocate}>
                         <LocateFixed className="size-5" aria-hidden="true" />
                     </ActionButton>
-                    <ActionButton label="Couches de la carte" onClick={() => setLayersOpen(true)}>
+                    <ActionButton label="Couches de la carte" tourTarget="mobile-layers" onClick={() => setLayersOpen(true)}>
                         <Layers className="size-5" aria-hidden="true" />
                     </ActionButton>
-                    <ActionButton label="Autour de moi" onClick={() => setNearbyOpen(true)}>
+                    <ActionButton label="Autour de moi" tourTarget="mobile-nearby" onClick={() => setNearbyOpen(true)}>
                         <Radar className="size-5" aria-hidden="true" />
                     </ActionButton>
                 </div>
