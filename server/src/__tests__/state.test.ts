@@ -2,6 +2,7 @@
 // cloisonnement entre ressources et entre comptes.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { DEFAULT_PROFILE } from '../../../src/contracts/index.ts';
+import { users } from '../db/schema.ts';
 import { PLANNED_TRIP, TRIP_SHAPE, createTestApi, json, type AuthBody, type StateBody, type TestApi } from './helpers.ts';
 
 let api: TestApi;
@@ -189,13 +190,23 @@ describe('ressources du compte', () => {
 });
 
 describe('profil de mobilité', () => {
+    it('relit un ancien profil sans exposer sa limite de marche retirée', async () => {
+        const cookie = await api.register('ancien-profil@lyon.fr');
+        api.db.update(users).set({ profile: { ...DEFAULT_PROFILE, ...{ maxWalkMinutes: 15 } } }).run();
+
+        const profile = await json(await api.call('/api/me/profile', { cookie }));
+        expect(profile).toEqual(DEFAULT_PROFILE);
+        const session = await json<AuthBody>(await api.call('/api/auth/session', { cookie }));
+        expect(session.user.profile).toEqual(DEFAULT_PROFILE);
+        expect((await readState(cookie)).profile).toEqual(DEFAULT_PROFILE);
+    });
+
     it('remplace le profil sans toucher aux trajets', async () => {
         const cookie = await api.register('profil@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
         const profile = {
             displayName: 'Camille',
             preferredModes: ['bike', 'transit'],
-            maxWalkMinutes: 10,
             accessibilityNeed: true,
             avoidRain: false,
             carbonGoalGramsPerWeek: 1800,
@@ -214,7 +225,7 @@ describe('profil de mobilité', () => {
 
     it('refuse une valeur hors bornes, avec le message du contrat', async () => {
         const cookie = await api.register('bornes@lyon.fr');
-        const response = await api.putProfile(cookie, { ...DEFAULT_PROFILE, maxWalkMinutes: 240 });
+        const response = await api.putProfile(cookie, { ...DEFAULT_PROFILE, carbonGoalGramsPerWeek: 240 });
 
         expect(response.status).toBe(422);
         expect((await json<{ error: string }>(response)).error).not.toBe('Requête invalide.');

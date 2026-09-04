@@ -8,6 +8,7 @@
 //
 // La liste n'est jamais repliée : c'est l'information principale d'une option
 // d'itinéraire, la demander d'un geste supplémentaire revient à la cacher.
+import { formatDuration } from '../../lib/duration';
 import type { RouteLeg, RouteOption } from '../../types';
 import { formatDistance, visibleLegs } from '../../lib/planner';
 import { legColor } from '../map/legStyle';
@@ -51,8 +52,8 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
               GTFS. Afficher "0 m" ferait passer une absence de donnée pour
               une mesure ; sa durée estimée suffit. */}
                     <span className="shrink-0 font-mono text-[0.68rem] text-muted-foreground">
-                        {leg.transfer ? `${leg.durationMinutes} min` : (
-                            <>{formatDistance(leg.distanceKm)} &middot; {leg.durationMinutes} min</>
+                        {leg.transfer ? `${formatDuration(leg.durationMinutes)}` : (
+                            <>{formatDistance(leg.distanceKm)} &middot; {formatDuration(leg.durationMinutes)}</>
                         )}
                     </span>
                 </div>

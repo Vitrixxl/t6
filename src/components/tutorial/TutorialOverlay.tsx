@@ -74,7 +74,7 @@ const DESKTOP_STEPS: TourStep[] = [
         id: 'profile',
         target: 'profile',
         title: 'Profil et préférences',
-        body: "Modes préférés, marche maximale, priorité PMR, budget carbone : tout influence directement le calcul et le score des itinéraires.",
+        body: "Modes préférés, priorité PMR, budget carbone : tout influence directement le calcul et le score des itinéraires.",
     },
     {
         id: 'done',
@@ -129,7 +129,7 @@ const MOBILE_STEPS: TourStep[] = [
         id: 'profile',
         target: 'mobile-profile',
         title: 'Profil et préférences',
-        body: "Règle tes modes préférés, ta marche maximale, la priorité PMR et tes objectifs carbone. Ces préférences influencent directement les options proposées.",
+        body: "Règle tes modes préférés, la priorité PMR et tes objectifs carbone. Ces préférences influencent directement les options proposées.",
     },
     {
         id: 'done',

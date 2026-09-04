@@ -178,6 +178,15 @@ les types ni les bornes.
 
 ## Règles de fond
 
+**Toutes les options calculables sont proposées, sur mobile comme sur bureau.**
+Ne jamais tronquer leur liste. Les préférences servent au classement et à la
+présélection, pas à masquer des options. Il n’y a plus de plafond de marche
+dans le profil ni de pénalité associée. Les contraintes de disponibilité,
+de desserte et de mesure réelle restent celles du moteur. Les durées sont
+formatées par `src/lib/duration.ts` : `63 min` se lit `1h03`.
+Le panneau mobile propose trois tailles explicites (Carte, Aperçu, Détails),
+avec des commandes accessibles même lorsque son contenu défile.
+
 **Ne jamais afficher un plafond comme une mesure.** Ce fut un vrai bogue
 (B9) : l'interface annonçait « 300 trottinettes » parce que c'était la
 constante de troncature. Si une liste est bornée pour le rendu, le nombre

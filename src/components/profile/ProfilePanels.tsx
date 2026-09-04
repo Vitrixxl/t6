@@ -130,7 +130,6 @@ export function ProfilePanel() {
     });
     const { errors } = form.formState;
     const preferredModes = form.watch('preferredModes');
-    const maxWalkMinutes = form.watch('maxWalkMinutes');
     const [saved, setSaved] = useState(false);
 
     const toggleMode = (mode: MobilityMode) => {
@@ -184,10 +183,6 @@ export function ProfilePanel() {
                     </div>
                     <FieldError message={errors.preferredModes?.message} />
                 </fieldset>
-                <label className="grid gap-1.5 text-sm font-medium">
-                    Marche max: {maxWalkMinutes} min
-                    <input type="range" min="5" max="45" step="5" className="accent-primary" {...form.register('maxWalkMinutes', { valueAsNumber: true })} />
-                </label>
                 <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-route-preselection">
                     Option retenue par défaut
                     <select

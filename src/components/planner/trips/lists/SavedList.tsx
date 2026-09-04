@@ -1,4 +1,5 @@
 // Itinéraires enregistrés : reprogrammer ou supprimer.
+import { formatDuration } from '../../../../lib/duration';
 import { CalendarPlus, Route, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { SavedRouteRecord } from '../../../../types';
@@ -35,7 +36,7 @@ export function SavedList({
                             <OriginDestination origin={route.origin.label} destination={route.destination.label} />
                         </div>
                         <span className="font-mono text-[11px] text-muted-foreground">
-                            {route.durationMinutes} min · {route.distanceKm.toFixed(1)} km · {route.carbonGrams} gCO₂e
+                            {formatDuration(route.durationMinutes)} · {route.distanceKm.toFixed(1)} km · {route.carbonGrams} gCO₂e
                         </span>
                     </div>
                     <div className="flex items-center gap-1.5">

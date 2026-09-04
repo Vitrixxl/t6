@@ -97,7 +97,7 @@ export interface ErrorBody {
 }
 
 export interface StateBody {
-    profile: { maxWalkMinutes: number; displayName: string };
+    profile: { displayName: string };
     tripRecords: { id: string }[];
     plannedTrips: { id: string; status: string }[];
     recurringTrips: { id: string }[];

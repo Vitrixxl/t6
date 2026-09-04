@@ -25,7 +25,6 @@ export const mobilityProfile = z.object({
         // Les chevrons n'ont rien à faire dans un nom : refuses plutôt que retirés en silence.
         .regex(/^[^<>]*$/, 'Le nom ne peut pas contenir de chevrons.'),
     preferredModes: requiredModes,
-    maxWalkMinutes: z.int().min(5).max(45),
     accessibilityNeed: z.boolean(),
     avoidRain: z.boolean(),
     carbonGoalGramsPerWeek: z.number().min(250, '250 g au moins.').max(20_000, '20 000 g au plus.'),
@@ -42,7 +41,6 @@ export type MobilityProfile = z.infer<typeof mobilityProfile>;
 export const DEFAULT_PROFILE: MobilityProfile = {
     displayName: 'Citoyen UrbanFlow',
     preferredModes: ['transit', 'bike', 'walk'],
-    maxWalkMinutes: 15,
     accessibilityNeed: false,
     avoidRain: true,
     carbonGoalGramsPerWeek: 2500,

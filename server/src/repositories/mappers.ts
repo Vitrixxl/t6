@@ -6,9 +6,16 @@
 // (origin: GeoPoint), que SQLite ne sait pas representer.
 import type { GeoPoint, MobilityMode, SessionUser } from '../../../src/types.ts';
 import type { users } from '../db/schema.ts';
+import { mobilityProfile } from '../../../src/contracts';
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUserRow = typeof users.$inferInsert;
+
+export function toUserRow(row: UserRow | undefined): UserRow | null {
+    // Les profils JSON historiques peuvent encore porter des réglages retirés.
+    // Le contrat courant les élimine avant toute réponse ou export de compte.
+    return row ? { ...row, profile: mobilityProfile.parse(row.profile) } : null;
+}
 
 interface EndpointRow {
     originLabel: string;

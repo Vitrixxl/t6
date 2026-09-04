@@ -291,7 +291,7 @@ describe('commandes granulaires', () => {
     });
 
     it('envoie le profil seul et efface l’historique par DELETE explicite', async () => {
-        const profile = { ...DEFAULT_PROFILE, displayName: 'Nadia', maxWalkMinutes: 45 };
+        const profile = { ...DEFAULT_PROFILE, displayName: 'Nadia' };
         await write(saveProfileOptions(client), profile);
         await write(clearTripHistoryOptions(client), undefined);
 

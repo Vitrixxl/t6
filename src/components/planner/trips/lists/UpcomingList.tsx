@@ -1,4 +1,5 @@
 // Trajets dates à venir : marquer fait, annuler, supprimer.
+import { formatDuration } from '../../../../lib/duration';
 import { CalendarClock, Check, Leaf, Trash2, X } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { PlannedTrip } from '../../../../types';
@@ -42,7 +43,7 @@ export function UpcomingList({
                         </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0 sm:flex-col sm:items-end sm:text-right">
                             <span className="font-mono text-[11px] text-muted-foreground">
-                                {trip.durationMinutes} min · {trip.distanceKm.toFixed(1)} km
+                                {formatDuration(trip.durationMinutes)} · {trip.distanceKm.toFixed(1)} km
                             </span>
                             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
                                 <Leaf className="size-3" aria-hidden="true" />

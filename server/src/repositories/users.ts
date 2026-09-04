@@ -4,15 +4,16 @@ import type { Executor } from '../db/index.ts';
 import { users } from '../db/schema.ts';
 import type { MobilityProfile } from '../../../src/types.ts';
 import type { NewUserRow, UserRow } from './mappers.ts';
+import { toUserRow } from './mappers.ts';
 
 export function createUserRepository(db: Executor) {
     return {
         findByEmail(email: string): UserRow | null {
-            return db.select().from(users).where(eq(users.email, email)).get() ?? null;
+            return toUserRow(db.select().from(users).where(eq(users.email, email)).get());
         },
 
         findById(id: string): UserRow | null {
-            return db.select().from(users).where(eq(users.id, id)).get() ?? null;
+            return toUserRow(db.select().from(users).where(eq(users.id, id)).get());
         },
 
         insert(row: NewUserRow): void {

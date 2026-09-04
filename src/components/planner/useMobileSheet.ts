@@ -1,7 +1,19 @@
 // Interaction de la feuille mobile : le panneau de trajets ne connaît que sa
 // taille courante et branche ces gestionnaires sur sa poignée.
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { MOBILE_SHEET_HEIGHT, shiftMobileSheetLevel, type MobileSheetLevel } from '../app/shared';
+
+export type MobileSheetLevel = 'collapsed' | 'mid' | 'expanded';
+const LEVELS: MobileSheetLevel[] = ['collapsed', 'mid', 'expanded'];
+const HEIGHT: Record<MobileSheetLevel, string> = {
+    collapsed: 'h-[30dvh]',
+    mid: 'h-[54dvh]',
+    expanded: 'h-[82dvh]',
+};
+
+function shiftLevel(current: MobileSheetLevel, direction: -1 | 1): MobileSheetLevel {
+    const index = Math.min(Math.max(LEVELS.indexOf(current) + direction, 0), LEVELS.length - 1);
+    return LEVELS[index];
+}
 
 export function useMobileSheet() {
     const [level, setLevel] = useState<MobileSheetLevel>('mid');
@@ -9,7 +21,7 @@ export function useMobileSheet() {
     const dragMoved = useRef(false);
 
     const move = (direction: -1 | 1) => {
-        setLevel((current) => shiftMobileSheetLevel(current, direction));
+        setLevel((current) => shiftLevel(current, direction));
     };
 
     const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
@@ -39,9 +51,6 @@ export function useMobileSheet() {
             move(deltaY < 0 ? 1 : -1);
             return;
         }
-        if (!dragMoved.current) {
-            move(level === 'expanded' ? -1 : 1);
-        }
     };
 
     const onPointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
@@ -58,14 +67,21 @@ export function useMobileSheet() {
             move(event.key === 'ArrowUp' ? 1 : -1);
             return;
         }
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
+    };
+
+    // Le clic natif couvre aussi clavier et lecteur d’écran. Après un glissement,
+    // son clic synthétique ne doit pas changer de taille une seconde fois.
+    const onClick = () => {
+        if (!dragMoved.current) {
             move(level === 'expanded' ? -1 : 1);
         }
+        dragMoved.current = false;
     };
 
     return {
-        sizing: MOBILE_SHEET_HEIGHT[level],
-        handle: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onKeyDown },
+        level,
+        setLevel,
+        height: HEIGHT[level],
+        handle: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onKeyDown, onClick },
     };
 }

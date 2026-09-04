@@ -1,5 +1,6 @@
 // Module planification - restitution desktop : bandeau d'options, détail de
 // trajet et barre de statut des sources.
+import { formatDuration } from '../../lib/duration';
 import { CalendarPlus, Check, Route, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { RouteOption } from '../../types';
@@ -91,7 +92,7 @@ export function RouteDetailPanel({
             </div>
             <div className="grid gap-3 p-3">
                 <div className="grid grid-cols-2 gap-2">
-                    <Metric label="Durée" value={`${routeOption.durationMinutes} min`} />
+                    <Metric label="Durée" value={`${formatDuration(routeOption.durationMinutes)}`} />
                     <Metric label="Distance" value={`${routeOption.distanceKm.toFixed(1)} km`} />
                     <Metric label="Empreinte" value={formatCarbonFootprint(routeOption.carbonGrams)} />
                     <Metric label="Vs voiture" value={formatCarbonComparison(routeOption.carbonSavedGrams)} />

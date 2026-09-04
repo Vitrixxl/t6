@@ -24,6 +24,20 @@ Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API abse
 
 ## Planificateur et annulations
 
+Toutes les options calculables sont proposées sur mobile et sur bureau, jusqu’aux
+six familles du moteur (marche, vélo, trottinette, transport public et les deux
+rabattements vers le transport public). La liste mobile n’est jamais tronquée.
+Les préférences influencent le classement et la présélection ; aucun plafond de
+marche n’est configurable ni appliqué. Les anciens profils restent lisibles et
+leur champ retiré n’est plus exposé par l’API ni son OpenAPI, générée depuis le
+contrat partagé. La disponibilité des engins, la desserte et les mesures réelles
+déterminent toujours les options calculables.
+
+Les durées longues se lisent en heures et minutes (`63 min` → `1h03`), dans les
+options, les étapes et les trajets. Sur mobile, **Carte**, **Aperçu** et **Détails**
+règlent directement la hauteur du panneau ; ces commandes restent visibles
+pendant le défilement. La poignée accepte aussi le glissement et le clavier.
+
 Le hub comporte quatre onglets : **Une fois**, **Récurrents**, **Historique** et
 **Enregistrés**. Les trajets ponctuels futurs se marquent « Fait » ; les ponctuels
 passés restent accessibles dans l’historique pour confirmation ou annulation.

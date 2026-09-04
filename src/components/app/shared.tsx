@@ -1,5 +1,6 @@
 // Éléments partagés par les modules d'interface : carte différée, constantes de
-// modes, états de calques et de feuille mobile, micro-composants transverses.
+// modes, états de calques et micro-composants transverses.
+import { formatDuration } from '../../lib/duration';
 import { type ComponentProps, lazy, Suspense } from 'react';
 import { Bike, Bus, Footprints, Zap } from 'lucide-react';
 import type { MobilityMode, RouteOption } from '../../types';
@@ -43,35 +44,11 @@ export type LayerState = {
     scooters: boolean;
 };
 
-export type MobileSheetLevel = 'collapsed' | 'mid' | 'expanded';
-
 export const DEFAULT_LAYERS: LayerState = {
     transitStops: true,
     velov: true,
     scooters: true
 };
-
-export const MOBILE_SHEET_ORDER: MobileSheetLevel[] = ['collapsed', 'mid', 'expanded'];
-export const MOBILE_SHEET_HEIGHT: Record<MobileSheetLevel, { shell: string; content: string }> = {
-    collapsed: {
-        shell: 'max-h-[30dvh]',
-        content: 'max-h-[calc(30dvh-0.5rem)]'
-    },
-    mid: {
-        shell: 'max-h-[54dvh]',
-        content: 'max-h-[calc(54dvh-0.5rem)]'
-    },
-    expanded: {
-        shell: 'max-h-[82dvh]',
-        content: 'max-h-[calc(82dvh-0.5rem)]'
-    }
-};
-
-export function shiftMobileSheetLevel(current: MobileSheetLevel, direction: -1 | 1) {
-    const currentIndex = MOBILE_SHEET_ORDER.indexOf(current);
-    const nextIndex = Math.min(Math.max(currentIndex + direction, 0), MOBILE_SHEET_ORDER.length - 1);
-    return MOBILE_SHEET_ORDER[nextIndex];
-}
 
 export function MergeFillet({
     corner,
@@ -109,8 +86,8 @@ export function RouteChip({ routeOption, selected, onClick }: { routeOption: Rou
                 }`}
             onClick={onClick}
         >
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl text-sm font-bold text-white" style={{ background: getRouteColor(routeOption) }}>
-                {routeOption.durationMinutes}
+            <span className="grid h-9 min-w-14 shrink-0 place-items-center rounded-xl px-1.5 text-xs font-bold text-white" style={{ background: getRouteColor(routeOption) }}>
+                {formatDuration(routeOption.durationMinutes)}
             </span>
             <span className="min-w-0">
                 <strong className="flex min-w-0 items-center gap-1.5 text-sm">

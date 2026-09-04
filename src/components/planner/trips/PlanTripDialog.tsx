@@ -1,4 +1,5 @@
 // Formulaire de planification : trajet date ponctuel ou routine récurrente.
+import { formatDuration } from '../../../lib/duration';
 import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -65,7 +66,7 @@ export function PlanTripDialog() {
                             <h3 className="truncate text-sm font-semibold">{source.label}</h3>
                             <OriginDestination origin={source.origin.label} destination={source.destination.label} />
                             <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">
-                                {source.durationMinutes} min · {source.distanceKm.toFixed(1)} km · {formatCarbonComparison(source.carbonSavedGrams)}
+                                {formatDuration(source.durationMinutes)} · {source.distanceKm.toFixed(1)} km · {formatCarbonComparison(source.carbonSavedGrams)}
                             </p>
                         </div>
 

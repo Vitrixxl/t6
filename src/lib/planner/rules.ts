@@ -1,10 +1,6 @@
 // Règles de gestion appliquées aux options produites.
 import type { RouteLeg, RouteOption, RoutePreselection } from '../../types';
 
-export function totalWalkMinutes(option: RouteOption): number {
-    return option.legs.filter((leg) => leg.mode === 'walk').reduce((sum, leg) => sum + leg.durationMinutes, 0);
-}
-
 /**
  * Segments à montrer à l'utilisateur. Un raccord piéton de quelques mètres
  * entre deux points confondus — la station de descente et l'adresse d'arrivée,

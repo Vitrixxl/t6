@@ -33,8 +33,11 @@ describe('profil de mobilité', () => {
         expect(mobilityProfile.safeParse(DEFAULT_PROFILE).success).toBe(true);
     });
 
-    it('borne la marche maximale (5-45 min) et l’objectif carbone (250-20000 g)', () => {
-        expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, maxWalkMinutes: 999 }).success).toBe(false);
+    it('retire la limite de marche des anciens profils', () => {
+        expect(mobilityProfile.parse({ ...DEFAULT_PROFILE, maxWalkMinutes: 15 })).toEqual(DEFAULT_PROFILE);
+    });
+
+    it('borne l’objectif carbone (250-20000 g)', () => {
         expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, carbonGoalGramsPerWeek: 10 }).success).toBe(false);
     });
 

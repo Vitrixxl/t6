@@ -57,6 +57,59 @@ function overlapArea(a, b) {
     return width * height;
 }
 
+async function testMobileSheet() {
+    const sheet = page.locator('[data-tour="routes"]:visible');
+    const controls = page.getByRole('group', { name: 'Taille du panneau trajets' });
+    const sizes = [
+        { name: 'Réduire le panneau : carte', level: 'collapsed', ratio: 0.30 },
+        { name: 'Taille moyenne du panneau : aperçu', level: 'mid', ratio: 0.54 },
+        { name: 'Agrandir le panneau : détails', level: 'expanded', ratio: 0.82 },
+    ];
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const size of sizes) {
+            const button = controls.getByRole('button', { name: size.name });
+            await button.click();
+            await page.waitForTimeout(350);
+            const box = await sheet.boundingBox();
+            if (await sheet.getAttribute('data-sheet-level') !== size.level || !box || Math.abs(box.height - 844 * size.ratio) > 2) {
+                failures.push(`panneau ${width}px : taille ${size.level} incorrecte`);
+            }
+            const buttonBox = await button.boundingBox();
+            if (!buttonBox || buttonBox.height < 44 || buttonBox.width < 44) {
+                failures.push(`panneau ${width}px : cible tactile trop petite`);
+            }
+        }
+        const content = sheet.locator('[id]').first();
+        await content.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+        await controls.getByRole('button', { name: sizes[0].name }).click();
+        await controls.getByRole('button', { name: sizes[2].name }).click();
+        await content.evaluate((element) => { element.scrollTop = 0; });
+        await page.waitForTimeout(350);
+        await page.screenshot({ path: `tmp/screenshots/routes-expanded-${width}.png` });
+    }
+    const handle = page.getByTestId('mobile-trip-sheet-handle');
+    await handle.focus();
+    await page.keyboard.press('ArrowDown');
+    if (await sheet.getAttribute('data-sheet-level') !== 'mid') failures.push('panneau : réduction au clavier impossible');
+    await page.keyboard.press('Enter');
+    if (await sheet.getAttribute('data-sheet-level') !== 'expanded') failures.push('panneau : agrandissement au clavier impossible');
+    await page.waitForTimeout(350);
+    const grip = await handle.boundingBox();
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 + 80, { steps: 8 });
+    await page.mouse.up();
+    if (await sheet.getAttribute('data-sheet-level') !== 'mid') failures.push('panneau : glissement vers le bas incorrect');
+    await controls.getByRole('button', { name: sizes[2].name }).click();
+    const choices = page.getByRole('group', { name: 'Options d’itinéraire', exact: true }).getByRole('button');
+    for (const choice of await choices.all()) {
+        await choice.click();
+        if (await choice.getAttribute('aria-pressed') !== 'true') failures.push('option mobile impossible à sélectionner');
+    }
+    log('panneau mobile : trois tailles, défilement, clavier, glissement et sélection vérifiés à 320 et 390 px');
+}
+
 async function testMobileTutorial() {
     const dialog = page.getByRole('dialog', { name: 'Tutoriel UrbanFlow' });
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
@@ -173,10 +226,11 @@ log(`départ implicite : "${originAfter}"`);
 // 4. Des options d'itinéraire sont proposées
 const bodyText = async () => page.locator('body').innerText();
 let text = await bodyText();
-if (!/min - [\d.,]+ km/i.test(text)) {
+if (!/(?:min|h\d{2}) - [\d.,]+ km/i.test(text)) {
     failures.push("aucune option d'itinéraire affichée après la recherche");
 }
 await page.screenshot({ path: 'tmp/screenshots/plan-options.png' });
+await testMobileSheet();
 
 // 5. Planifier l'option sélectionnée (dialog une fois, date par défaut)
 await page.getByRole('button', { name: /^planifier$/i }).first().click();
@@ -271,7 +325,7 @@ mkdirSync('output/metrics', { recursive: true });
 writeFileSync(
     'output/metrics/e2e.json',
     JSON.stringify(
-        { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 8, failures, passed: failures.length === 0 },
+        { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 9, failures, passed: failures.length === 0 },
         null,
         2,
     ) + '\n',
@@ -282,4 +336,4 @@ if (failures.length > 0) {
     for (const failure of failures) console.log('  - ' + failure);
     process.exit(1);
 }
-console.log('TEST TERMINE - 8/8 assertions passées');
+console.log('TEST TERMINE - 9/9 assertions passées');

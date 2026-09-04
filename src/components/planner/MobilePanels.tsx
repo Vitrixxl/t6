@@ -1,6 +1,7 @@
-// Module planification - restitution mobile : feuille d'options, composeur de
-// modes et actions de planification.
+// Options, étapes et actions de planification du panneau mobile.
+import { formatDuration } from '../../lib/duration';
 import { useSetAtom } from 'jotai';
+import { useId } from 'react';
 import { CalendarClock, CalendarPlus, Check, Route, UserRound, X } from 'lucide-react';
 import { useActivitySummary } from '../../queries';
 import { openHubAtom } from '../../state';
@@ -12,6 +13,7 @@ import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteO
 import { Metric, MODE_ICON } from '../app/shared';
 import { RouteSteps } from './RouteSteps';
 import { useMobileSheet } from './useMobileSheet';
+import { MobileSheetControls } from './MobileSheetControls';
 
 export function MobileTripPanel({
     destination,
@@ -38,24 +40,16 @@ export function MobileTripPanel({
         onClose: () => void;
     }) {
     const sheet = useMobileSheet();
+    const contentId = useId();
 
     return (
         <section
-            className={`absolute inset-x-0 bottom-0 z-30 overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl transition-[max-height] duration-300 ease-in-out ${sheet.sizing.shell}`}
+            className={`absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl transition-[height] duration-300 ease-in-out motion-reduce:transition-none ${sheet.height}`}
             data-tour="routes"
+            data-sheet-level={sheet.level}
         >
-            <div className="flex h-7 items-center justify-center">
-                <button
-                    type="button"
-                    className="flex h-7 w-24 touch-none cursor-grab items-center justify-center rounded-full active:cursor-grabbing"
-                    aria-label="Monter ou baisser le panneau trajets"
-                    data-testid="mobile-trip-sheet-handle"
-                    {...sheet.handle}
-                >
-                    <span className="h-1.5 w-12 rounded-full bg-muted-foreground/25" aria-hidden="true" />
-                </button>
-            </div>
-            <div className={`${sheet.sizing.content} overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
+            <MobileSheetControls sheet={sheet} contentId={contentId} />
+            <div id={contentId} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 <MobileTripHeader
                     destination={destination}
                     routingStatus={routingStatus}
@@ -140,7 +134,7 @@ function MobileTripHeader({
     );
 }
 
-function MobileRouteChoices({
+export function MobileRouteChoices({
     routes,
     selectedRoute,
     onSelectRoute,
@@ -160,8 +154,8 @@ function MobileRouteChoices({
     }
 
     return (
-        <div className="grid grid-cols-2 gap-2 px-4 pb-3">
-            {routes.slice(0, 4).map((routeOption) => (
+        <div role="group" aria-label="Options d’itinéraire" className="grid grid-cols-2 gap-2 px-4 pb-3">
+            {routes.map((routeOption) => (
                 <MobileRouteTab
                     key={routeOption.id}
                     routeOption={routeOption}
@@ -222,17 +216,18 @@ export function MobileRouteTab({
     return (
         <button
             type="button"
-            className={`grid h-14 min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 rounded-xl border px-2.5 text-left transition ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border/70 bg-background text-foreground'
+            className={`grid min-h-14 min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border/70 bg-background text-foreground'
                 }`}
             onClick={onSelect}
+            aria-pressed={selected}
         >
             <span className="grid size-8 shrink-0 place-items-center rounded-lg text-white" style={{ background: getRouteColor(routeOption) }}>
                 <Icon className="size-4" aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
-                <strong className="block truncate text-xs">{routeOption.title}</strong>
+                <strong className="block text-xs">{routeOption.title}</strong>
                 <span className="block truncate font-mono text-[10px] text-muted-foreground">
-                    {routeOption.durationMinutes} min - {routeOption.distanceKm.toFixed(1)} km
+                    {formatDuration(routeOption.durationMinutes)} - {routeOption.distanceKm.toFixed(1)} km
                 </span>
             </span>
         </button>
@@ -251,8 +246,8 @@ export function MobileSelectedRouteCard({ routeOption }: { routeOption: RouteOpt
                     {routeOption.score}
                 </span>
             </div>
-            <div className="mt-3 grid grid-cols-4 gap-1.5">
-                <Metric label="min" value={String(routeOption.durationMinutes)} compact />
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+                <Metric label="Durée" value={formatDuration(routeOption.durationMinutes)} compact />
                 <Metric label="km" value={routeOption.distanceKm.toFixed(1)} compact />
                 <Metric label="CO₂e" value={`${routeOption.carbonGrams}g`} compact />
                 <Metric label="vs voiture" value={formatCarbonComparisonCompact(routeOption.carbonSavedGrams)} compact />

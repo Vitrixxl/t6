@@ -1,6 +1,6 @@
 import { describe, expect, it } from '../../test/harness';
 import { DEFAULT_PROFILE } from '../../contracts';
-import { haversineDistanceKm, measureRoutes, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS, totalWalkMinutes } from './index';
+import { haversineDistanceKm, measureRoutes, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS } from './index';
 import type { TransportNetwork } from '../../types';
 
 const network: TransportNetwork = {
@@ -211,17 +211,17 @@ describe('planRoutes', () => {
         expect(bikePreferred!.score).toBeGreaterThanOrEqual(bikeNeutral!.score + SCORING_WEIGHTS.preferenceBonusPerMode - 1);
     });
 
-    it("RG5 : penalise et signale une option qui dépasse la marche maximale du profil", () => {
+    it('conserve la marche longue sans avertissement ni pénalité de plafond', () => {
         const routes = planRoutes({
             origin: LANDMARKS[0],
-            destination: LANDMARKS[1],
-            profile: { ...DEFAULT_PROFILE, maxWalkMinutes: 1 },
+            destination: { lat: 45.72, lon: 4.88, label: 'Arrivée éloignée' },
+            profile: DEFAULT_PROFILE,
             network,
         });
-
-        const overWalking = routes.find((route) => totalWalkMinutes(route) > 1);
-        expect(overWalking).toBeDefined();
-        expect(overWalking!.warnings.some((warning) => /marche/i.test(warning))).toBe(true);
+        const walking = routes.find((route) => route.id === 'walk');
+        expect(walking).toBeDefined();
+        expect(walking!.durationMinutes).toBeGreaterThan(60);
+        expect(walking!.warnings).toEqual([]);
     });
 
     it('RG3 : aucune option vélo/trottinette si aucune station n\'est à portée de marche', () => {
@@ -303,7 +303,7 @@ describe('planRoutes', () => {
         const routes = planRoutes({
             origin: LANDMARKS[0],
             destination: LANDMARKS[4], // Bellecour -> Vaise: option longue, pénalités fortes
-            profile: { ...DEFAULT_PROFILE, maxWalkMinutes: 5, accessibilityNeed: true },
+            profile: { ...DEFAULT_PROFILE, accessibilityNeed: true },
             network,
         });
 
