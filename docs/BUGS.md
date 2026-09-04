@@ -913,3 +913,32 @@ vérifie désormais explicitement sa valeur `geojson`.
 **Niveau de verrouillage** : **faible** pour la qualité rédactionnelle globale
 (relecture et recette visuelle). Les assertions E2E et le contrat de l’appel
 OSRM sont automatisés, mais ils ne constituent pas un correcteur orthographique.
+
+---
+
+## B31 — La CI appelait un script Bun inexistant après la passe rédactionnelle
+
+**Symptôme** : la [CI du 4 septembre](https://github.com/Vitrixxl/t6/actions/runs/33926099505)
+s'arrêtait avec `Script not found "seed:démo"`, après les 178 tests et le build,
+avant les contrôles navigateur.
+
+**Cause racine** : la correction des accents avait touché un identifiant
+exécutable dans le YAML, hors du périmètre vérifié par `bun run check`.
+Le script déclaré dans `package.json` s'appelle `seed:demo`.
+
+**Correctif** : restaurer `bun run seed:demo` dans le workflow et le conseil
+de dépannage E2E. Préciser dans `AGENTS.md` que les corrections rédactionnelles
+ne modifient jamais les commandes, chemins, clés ni paramètres techniques.
+
+**Commit** : [`709e1c9`](https://github.com/Vitrixxl/t6/commit/709e1c9).
+
+**Où le voir** : `.github/workflows/ci.yml`, `scripts/e2e-planning.mjs`, `package.json`.
+
+**Test du correctif** : exécution réussie de `bun run seed:demo` sur une base
+temporaire ; vérification que chacun des sept scripts appelés par le workflow
+existe dans `package.json`. Comparaison des blocs `run` du YAML avec la version
+antérieure à la passe : ils sont identiques. La CI complète est relancée au push.
+
+**Niveau de verrouillage** : **faible** en local (contrôle ponctuel, sans nouveau
+test permanent). L'exécution du script reste bloquante dans la CI ; les tests
+unitaires seuls ne vérifient pas les commandes du workflow.
