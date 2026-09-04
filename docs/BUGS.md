@@ -1353,3 +1353,60 @@ et complétion persistée. Captures relues avec les six options et le détail lo
 
 **Niveau de verrouillage** : **automatisé** pour les limites du panneau,
 le défilement et les sélections ; **faible** pour l’appréciation visuelle.
+
+## B43 — Les options rapides apparaissaient après des trajets plus lents
+
+**Symptôme observé** : dans les choix d’itinéraires, une combinaison de 24 minutes
+pouvait précéder la trottinette de 12 minutes. L’utilisateur demandait un ordre
+allant de la plus rapide à la plus lente.
+
+**Cause racine** : `rankRoutes` classait les options par score décroissant.
+Le bonus des préférences et la fiabilité pouvaient donc placer une option lente
+avant une option rapide, même après la mesure des durées réelles.
+
+**Correctif** : tri par `durationMinutes` croissant après mesure de toutes les
+options. Mobile et bureau reçoivent la même liste. Le score reste informatif ;
+la présélection d’un mode préféré reste indépendante de l’ordre d’affichage.
+
+**Commit** : [66aa391 — tri par durée et moteurs locaux](https://github.com/Vitrixxl/t6/commit/66aa391).
+
+**Où le montrer** : `src/lib/planner/index.ts`, `rankRoutes` et `measureRoutes` ;
+`src/lib/planner/planner.test.ts` ; `scripts/e2e-planning.mjs`.
+
+**Test du correctif** : le test inverse les durées estimées lors de la mesure
+et impose un score faible à l’option devenue la plus rapide : elle arrive
+quand même en tête. L’E2E vérifie les durées croissantes dans les deux
+présentations, puis planifie et termine un trajet (9/9). Le trajet vers Cuvier
+présente six options triées dans Chromium, sur mobile et bureau.
+
+**Niveau de verrouillage** : **automatisé** pour le tri après mesure et l’ordre
+rendu ; **faible** pour l’appréciation visuelle des captures.
+
+## B44 — Une configuration absente envoyait encore le routage vers le service public
+
+**Symptôme observé** : malgré le branchement local de B41, supprimer les variables
+OSRM faisait encore utiliser les adresses publiques, susceptibles de reproduire
+les refus de quota et la disparition d’options.
+
+**Cause racine** : les valeurs par défaut de `loadConfig` désignaient le service
+public et le module OSRM conservait une file globale pour espacer ses appels.
+
+**Correctif** : valeurs par défaut `http://osrm-foot:5000`,
+`http://osrm-bike:5000` et `http://osrm-car:5000`. Suppression des adresses
+publiques, de la file et des constantes de quota. Les adresses des moteurs
+restent configurables pour une exécution hors Docker. Aucune panne ne provoque
+un appel à un autre hébergeur : seul le cache réel est réutilisé, sinon 503.
+
+**Commit** : [66aa391 — tri par durée et moteurs locaux](https://github.com/Vitrixxl/t6/commit/66aa391).
+
+**Où le montrer** : `server/src/config/index.ts`,
+`server/src/services/routing/osrm.ts`, `.env.example` ; tests
+`server/src/__tests__/config.test.ts` et `routing.test.ts`.
+
+**Test du correctif** : valeurs absentes et vides, adresses locales personnalisées,
+profils par défaut et panne sans deuxième appel ni changement d’hôte. Le
+conteneur de validation fonctionne sur les trois moteurs locaux sans aucune
+variable OSRM ; E2E complet réussi. `bun run check` : 205 tests / 24 fichiers.
+
+**Niveau de verrouillage** : **automatisé** pour les défauts locaux et l’absence
+de bascule en cas de panne ; **faible** pour le déploiement Docker vérifié.

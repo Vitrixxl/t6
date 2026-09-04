@@ -182,4 +182,4 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] B37–B39 : cadrage borné à la taille du canvas avec rotation E2E ; certificat local reconnu comme certificat serveur par Chromium ; image Docker contenant les contrats et règles partagées, démarrée après migration d’une copie de la base.
 - [x] B41–B42 : moteurs OSRM locaux, profil vélo `bicycle.lua`, accès piétons en étoile ; six options vérifiées vers Cuvier. Panneau mobile de hauteur automatique sous la recherche, sans commandes de taille ; E2E planification 9/9 et scénario hors ligne réussis.
 
-- [x] B43 : options triées par durée réelle croissante sur mobile et bureau, même si les mesures inversent les estimations. OSRM exclusivement local, adresses par défaut et panne sans bascule vérifiées.
+- [x] B43–B44 : options triées par durée réelle croissante sur mobile et bureau, même si les mesures inversent les estimations. OSRM exclusivement local, adresses par défaut et panne sans bascule vérifiées.
