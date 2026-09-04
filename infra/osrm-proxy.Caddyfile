@@ -1,4 +1,4 @@
-# Facade des deux profils OSRM sur un seul port.
+# Facade des trois profils OSRM sur un seul port.
 #
 # Le service porte le nom `osrm` dans le compose : l'API n'a donc qu'une seule
 # adresse a connaitre, `http://osrm:5000`, quelle que soit le mode demande.
@@ -14,5 +14,8 @@
 	handle_path /routed-bike/* {
 		reverse_proxy osrm-bike:5000
 	}
-	respond "OSRM local : /routed-foot, /routed-bike" 404
+	handle_path /routed-car/* {
+		reverse_proxy osrm-car:5000
+	}
+	respond "OSRM local : /routed-foot, /routed-bike, /routed-car" 404
 }

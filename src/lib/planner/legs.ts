@@ -2,7 +2,8 @@
 // segments : distance, duree, carbone et accessibilite sont derives des
 // segments, jamais saisis en double.
 import type { GeoPoint, LegEstimate, MobilityMode, RouteInstruction, RouteLeg, RouteOption } from '../../types';
-import { EMISSIONS_G_PER_KM, SPEED_KMH } from './constants';
+import { SPEED_KMH } from './constants';
+import { ROAD_EMISSION_FACTORS } from './emissions';
 import { MODE_LABELS } from './labels';
 import { minutesForDistance, round } from './metrics';
 
@@ -10,9 +11,8 @@ import { minutesForDistance, round } from './metrics';
  * Description d'un segment. Les extremites sont des points, pas des libelles :
  * le routage a besoin des coordonnees, et l'interface tire le libelle du point.
  */
-export interface LegInput {
+interface CommonLegInput {
   id: string;
-  mode: MobilityMode;
   title: string;
   from: GeoPoint;
   to: GeoPoint;
@@ -24,8 +24,25 @@ export interface LegInput {
    * vide jusqu'a la reponse du service de routage.
    */
   path?: GeoPoint[];
-  /** Hypotheses de calcul. Par defaut : ni congestion, ni attente, facteur du mode. */
-  estimate?: Partial<LegEstimate>;
+}
+
+export type LegInput = CommonLegInput & (
+  | {
+      mode: Exclude<MobilityMode, 'transit'>;
+      estimate?: Partial<LegEstimate>;
+    }
+  | {
+      mode: 'transit';
+      /** Une ligne de transport porte toujours le facteur de son route_type GTFS. */
+      estimate: Partial<LegEstimate> & Pick<LegEstimate, 'carbonGramsPerKm'>;
+    }
+);
+
+function carbonFactor(input: LegInput): number {
+  if (input.mode === 'transit') {
+    return input.estimate.carbonGramsPerKm;
+  }
+  return input.estimate?.carbonGramsPerKm ?? ROAD_EMISSION_FACTORS[input.mode].gramsCo2ePerPassengerKm;
 }
 
 /** Duree d'un segment : parcours ajuste de la congestion, plus le temps fixe. */
@@ -41,7 +58,7 @@ export function createLeg(input: LegInput): RouteLeg {
   const estimate: LegEstimate = {
     travelFactor: input.estimate?.travelFactor ?? 1,
     overheadMinutes: input.estimate?.overheadMinutes ?? 0,
-    carbonGramsPerKm: input.estimate?.carbonGramsPerKm ?? EMISSIONS_G_PER_KM[input.mode],
+    carbonGramsPerKm: carbonFactor(input),
   };
 
   return {
@@ -68,7 +85,6 @@ export interface LegSummary {
   distanceKm: number;
   durationMinutes: number;
   carbonGrams: number;
-  carbonSavedGrams: number;
   accessible: boolean;
 }
 
@@ -81,8 +97,6 @@ export function summarizeLegs(legs: RouteLeg[]): LegSummary {
     distanceKm,
     durationMinutes: Math.ceil(legs.reduce((sum, leg) => sum + leg.durationMinutes, 0)),
     carbonGrams,
-    // Reference : la meme distance parcourue seul en voiture.
-    carbonSavedGrams: Math.max(Math.round(distanceKm * EMISSIONS_G_PER_KM.privateCar - carbonGrams), 0),
     accessible: legs.every((leg) => leg.accessible),
   };
 }
@@ -99,6 +113,10 @@ export function buildOption(input: {
   return {
     ...input,
     ...summarizeLegs(input.legs),
+    // La reference voiture depend des extremites de la recherche, pas de la
+    // distance de l'option. Elle ne sera appliquee qu'apres la mesure OSRM.
+    carbonSavedGrams: null,
+    carbonReference: null,
     instructions: buildFallbackInstructions(input.legs),
     score: 0,
   };

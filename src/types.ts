@@ -180,6 +180,15 @@ export interface LegEstimate {
   carbonGramsPerKm: number;
 }
 
+/** Scenario voiture invisible, commun a toutes les options d'une recherche. */
+export interface CarbonReference {
+  /** Distance du profil OSRM driving entre les extremites de la recherche. */
+  distanceKm: number;
+  /** Empreinte de cette distance avec le facteur versionne. */
+  carbonGrams: number;
+  factorVersion: string;
+}
+
 export interface RouteOption {
   id: string;
   title: string;
@@ -190,7 +199,9 @@ export interface RouteOption {
   distanceKm: number;
   durationMinutes: number;
   carbonGrams: number;
-  carbonSavedGrams: number;
+  /** Null quand le profil voiture n'a fourni aucune mesure. */
+  carbonSavedGrams: number | null;
+  carbonReference: CarbonReference | null;
   reliabilityScore: number;
   score: number;
   accessible: boolean;

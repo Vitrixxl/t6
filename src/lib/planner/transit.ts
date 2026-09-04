@@ -12,6 +12,7 @@
 // correspondance a une station commune aux deux lignes.
 import type { GeoPoint, GtfsRoute, GtfsStop, RouteLeg, TransportNetwork } from '../../types';
 import { SPEED_KMH } from './constants';
+import { transitEmissionFactor } from './emissions';
 import { haversineDistanceKm, stopToPoint } from './geo';
 import { routeLabel } from './labels';
 import { createLeg } from './legs';
@@ -240,7 +241,10 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
         path: ride.path,
         // L'attente a quai n'est pas du temps de parcours : elle ne doit pas
         // suivre la distance. La correspondance est un segment separe.
-        estimate: { overheadMinutes: ride.waitMinutes },
+        estimate: {
+          overheadMinutes: ride.waitMinutes,
+          carbonGramsPerKm: transitEmissionFactor(ride.route.route_type).gramsCo2ePerPassengerKm,
+        },
       }),
       mapLabel: label,
       mapColor: `#${ride.route.route_color}`,

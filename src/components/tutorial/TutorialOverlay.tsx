@@ -40,7 +40,7 @@ const STEPS: TourStep[] = [
     id: 'routes',
     target: 'routes',
     title: "Comparer les options",
-    body: "Chaque option affiche sa duree, sa distance et son CO2. Le score combine fiabilite, temps, empreinte carbone et tes preferences de modes. Clique une option pour voir son detail.",
+    body: "Chaque option affiche sa duree, sa distance et son empreinte en gCO₂e. La comparaison utilise le meme trajet voiture invisible pour toutes les options. Clique une option pour voir son detail.",
   },
   {
     id: 'route-detail',
@@ -58,7 +58,7 @@ const STEPS: TourStep[] = [
     id: 'goals',
     target: 'trips',
     title: 'Objectifs et progression',
-    body: "Dans le planificateur, fixe tes objectifs hebdomadaires (trajets faits, CO2 evite) et suis ta progression. Chaque trajet marque « Fait » alimente tes statistiques.",
+    body: "Dans le planificateur, fixe tes objectifs hebdomadaires et mensuels de CO₂e evite puis suis leur progression. Chaque trajet marque « Fait » alimente tes statistiques.",
   },
   {
     id: 'layers',
@@ -70,7 +70,7 @@ const STEPS: TourStep[] = [
     id: 'carbon',
     target: 'carbon',
     title: 'Suivi carbone',
-    body: "Ton budget carbone hebdomadaire et le CO2 evite par rapport a la voiture individuelle, alimentes par les trajets faits. L'objectif se regle dans ton profil.",
+    body: "Ton budget carbone hebdomadaire et le CO₂e evite par rapport a une reference voiture mesuree, alimentes par les trajets faits. Les objectifs se reglent dans ton profil.",
   },
   {
     id: 'profile',

@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import type { RouteOption } from '../../types';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 import { getRouteColor } from '../../lib/routeColors';
+import { formatCarbonComparison, formatCarbonFootprint } from '../../lib/carbon-comparison';
 import { Metric, RouteChip, MODE_ICON } from '../app/shared';
 
 export function DesktopRouteStrip({
@@ -93,8 +94,8 @@ export function RouteDetailPanel({
         <div className="grid grid-cols-2 gap-2">
           <Metric label="Duree" value={`${routeOption.durationMinutes} min`} />
           <Metric label="Distance" value={`${routeOption.distanceKm.toFixed(1)} km`} />
-          <Metric label="CO2" value={`${routeOption.carbonGrams} g`} />
-          <Metric label="CO2 evite" value={`${routeOption.carbonSavedGrams} g`} />
+          <Metric label="Empreinte" value={formatCarbonFootprint(routeOption.carbonGrams)} />
+          <Metric label="Vs voiture" value={formatCarbonComparison(routeOption.carbonSavedGrams)} />
         </div>
         <ol className="grid gap-2">
           {visibleLegs.map((leg) => {

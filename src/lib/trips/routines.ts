@@ -74,7 +74,9 @@ export function sumRoutines(routines: RecurringTrip[], floor: Date, now: Date): 
     totals.trips += count;
     totals.distanceKm += count * routine.distanceKm;
     totals.carbonGrams += count * routine.carbonGrams;
-    totals.carbonSavedGrams += count * routine.carbonSavedGrams;
+    // Une comparaison absente ne vaut pas zero dans le trajet. Elle est
+    // simplement exclue de l'agregat des seules economies mesurees.
+    totals.carbonSavedGrams += count * (routine.carbonSavedGrams ?? 0);
   }
   return totals;
 }

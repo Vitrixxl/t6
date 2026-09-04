@@ -314,7 +314,7 @@ describe('planRoutes', () => {
     }
   });
 
-  it('ventile le CO2 par segment: le velo est plus sobre que le transport public sur la meme origine-destination', () => {
+  it('ventile le CO2 par segment et applique le facteur du route_type GTFS', () => {
     const routes = planRoutes({
       origin: LANDMARKS[0],
       destination: LANDMARKS[1],
@@ -322,15 +322,18 @@ describe('planRoutes', () => {
       network,
     });
 
-    const bike = routes.find((route) => route.id === 'bike');
     const transit = routes.find((route) => route.id === 'transit');
 
-    expect(bike).toBeDefined();
     expect(transit).toBeDefined();
-    expect(bike!.carbonGrams).toBeLessThan(transit!.carbonGrams);
-    // Le CO2 evite est toujours positif ou nul face a la reference voiture individuelle.
+    const transitLeg = transit!.legs.find((leg) => leg.mode === 'transit');
+    // Le reseau de test est un tramway (route_type 0), soit 3,8 gCO2e/km.
+    expect(transitLeg?.estimate.carbonGramsPerKm).toBe(3.8);
+    // Le moteur pur ne connait que l'empreinte de l'option. La reference
+    // voiture sera appliquee apres les mesures OSRM, jamais depuis cette
+    // distance estimee.
     for (const route of routes) {
-      expect(route.carbonSavedGrams).toBeGreaterThanOrEqual(0);
+      expect(route.carbonSavedGrams).toBeNull();
+      expect(route.carbonReference).toBeNull();
       expect(route.carbonGrams).toBe(route.legs.reduce((sum, leg) => sum + leg.carbonGrams, 0));
     }
   });

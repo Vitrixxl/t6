@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { geoPoint } from './primitives';
 
 /** Modes qui empruntent la voirie et peuvent donc etre mesures par OSRM. */
-export const ROUTABLE_MODES = ['walk', 'bike', 'scooter'] as const;
+// `car` est exclusivement un profil de mesure pour la reference carbone : il
+// n'appartient pas a MobilityMode et ne peut donc jamais devenir une option.
+export const ROUTABLE_MODES = ['walk', 'bike', 'scooter', 'car'] as const;
 export const routableMode = z.enum(ROUTABLE_MODES);
 export type RoutableMode = z.infer<typeof routableMode>;
 

@@ -4,7 +4,7 @@
 // migrations SQL (server/drizzle/) et Drizzle en derive le type des lignes.
 // Les colonnes gardent leur nom snake_case en base pour rester lisibles a un
 // DBA, et prennent un nom camelCase cote TypeScript pour coller au domaine.
-import { sql } from 'drizzle-orm';
+import { desc, sql } from 'drizzle-orm';
 import { check, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { PLANNED_TRIP_STATUSES } from '../../../src/contracts/trips.ts';
 import type { MobilityMode, MobilityProfile, RoutinePeriod } from '../../../src/types.ts';
@@ -60,7 +60,8 @@ function measureColumns() {
     distanceKm: real('distance_km').notNull(),
     durationMinutes: real('duration_minutes').notNull(),
     carbonGrams: real('carbon_grams').notNull(),
-    carbonSavedGrams: real('carbon_saved_grams').notNull(),
+    // Nullable quand OSRM a mesure l'option mais pas la reference voiture.
+    carbonSavedGrams: real('carbon_saved_grams'),
   };
 }
 
@@ -86,7 +87,7 @@ export const tripRecords = sqliteTable(
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.id] }),
-    index('idx_trip_records_user_date').on(t.userId, sql`${t.createdAt} DESC`),
+    index('idx_trip_records_user_date').on(t.userId, desc(t.createdAt)),
   ],
 );
 

@@ -91,9 +91,12 @@ export interface RouteMeasure {
  * OSRM (`/routed-<profil>/route/v1/<profil>/`), celle qu'utilisent aussi bien
  * l'instance publique que les images officielles auto-hebergees.
  */
-function profile(mode: RoutableMode): 'foot' | 'bike' {
+function profile(mode: RoutableMode): 'foot' | 'bike' | 'driving' {
   if (mode === 'walk') {
     return 'foot';
+  }
+  if (mode === 'car') {
+    return 'driving';
   }
   return 'bike';
 }
@@ -101,7 +104,8 @@ function profile(mode: RoutableMode): 'foot' | 'bike' {
 /** Chemin uniforme de l'instance publique et de la facade auto-hebergee. */
 export function servicePath(mode: RoutableMode, service: 'route' | 'table'): string {
   const name = profile(mode);
-  return `/routed-${name}/${service}/v1/${name}/`;
+  const serviceProfile = mode === 'car' ? 'car' : name;
+  return `/routed-${serviceProfile}/${service}/v1/${name}/`;
 }
 
 export async function fetchUpstreamRoute(

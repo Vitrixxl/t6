@@ -13,7 +13,7 @@ export interface TripSource {
   distanceKm: number;
   durationMinutes: number;
   carbonGrams: number;
-  carbonSavedGrams: number;
+  carbonSavedGrams: number | null;
 }
 
 export function createPlannedTrip(

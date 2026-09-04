@@ -4,11 +4,13 @@ import { describe, expect, it } from 'bun:test';
 import {
   DEFAULT_PROFILE,
   credentials,
+  mobilityMode,
   mobilityProfile,
   plannedTripInput,
   plannedTripsInput,
   recurringTrip,
   registration,
+  routableMode,
 } from './index';
 
 const TRIP = {
@@ -75,11 +77,22 @@ describe('authentification', () => {
 });
 
 describe('trajets', () => {
+  it("garde la voiture hors des modes proposes tout en l'acceptant pour le routage", () => {
+    expect(mobilityMode.safeParse('car').success).toBe(false);
+    expect(routableMode.safeParse('car').success).toBe(true);
+  });
+
   it('un trajet envoye ne porte pas de proprietaire : la propriete est retiree', () => {
     const parsed = plannedTripInput.parse({ ...TRIP, userId: 'intrus' });
 
     expect(parsed).not.toHaveProperty('userId');
     expect(parsed.status).toBe('planned');
+  });
+
+  it('conserve une comparaison voiture absente au lieu de la transformer en zero', () => {
+    const parsed = plannedTripInput.parse({ ...TRIP, carbonSavedGrams: null });
+
+    expect(parsed.carbonSavedGrams).toBeNull();
   });
 
   it('refuse une date qui n est pas ISO et un statut inconnu', () => {

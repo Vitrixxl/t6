@@ -87,5 +87,6 @@ export {
     type NearbyWithin,
 } from './nearby';
 export { applyRoutedLegs } from './legs';
+export { applyCarbonReference, createCarbonReference } from './emissions';
 export { midpointOfPath } from './shape';
 export { prepareRoutedAccessPlan, type RouteAccessPlan, type RouteMatrixMeasurer } from './access';

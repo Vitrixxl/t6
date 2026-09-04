@@ -8,6 +8,7 @@ import { openHubAtom } from '../../state';
 import { Button } from '../ui/button';
 import type { GeoPoint, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
+import { formatCarbonComparisonCompact } from '../../lib/carbon-comparison';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 import { Metric, MODE_ICON, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type MobileSheetLevel } from '../app/shared';
 import { RouteSteps } from './RouteSteps';
@@ -277,8 +278,8 @@ export function MobileSelectedRouteCard({ routeOption }: { routeOption: RouteOpt
       <div className="mt-3 grid grid-cols-4 gap-1.5">
         <Metric label="min" value={String(routeOption.durationMinutes)} compact />
         <Metric label="km" value={routeOption.distanceKm.toFixed(1)} compact />
-        <Metric label="CO2" value={`${routeOption.carbonGrams}g`} compact />
-        <Metric label="gain" value={`${routeOption.carbonSavedGrams}g`} compact />
+        <Metric label="CO₂e" value={`${routeOption.carbonGrams}g`} compact />
+        <Metric label="vs voiture" value={formatCarbonComparisonCompact(routeOption.carbonSavedGrams)} compact />
       </div>
       <div className="mt-3 rounded-lg border border-border/70 bg-background/75 p-2.5">
         <RouteSteps routeOption={routeOption} />

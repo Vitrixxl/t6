@@ -37,7 +37,7 @@ export function TripsSidebarSection() {
 
       <div className="grid grid-cols-2 gap-2">
         <Metric label="Fait / semaine" value={String(summary.doneThisWeek)} compact />
-        <Metric label="CO2 evite" value={`${summary.savedThisWeekGrams} g`} compact />
+        <Metric label="CO₂e évité" value={`${summary.savedThisWeekGrams} gCO₂e`} compact />
       </div>
 
       {upcoming.length > 0 ? (
