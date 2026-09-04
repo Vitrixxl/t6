@@ -18,95 +18,95 @@ import type { MobilityProfile } from '../../../src/types.ts';
 const INVALID_CREDENTIALS = 'Identifiants invalides.';
 
 export function authRoutes(ctx: AppContext, config: ServerConfig) {
-  return new Elysia({ prefix: '/auth', tags: ['Authentification'] })
-    .use(ctx)
-    // Limite resserree sur l'authentification : freine le bourrage
-    // d'identifiants et la creation de comptes en masse.
-    .use(rateLimit({ max: 10, windowMs: 60_000, scope: 'auth', trustProxy: config.trustProxy }))
-    .post(
-      '/register',
-      async ({ body, cookie, repositories, status }) => {
-        const { users, sessions, state } = repositories;
-        if (users.findByEmail(body.email)) {
-          return status(409, { error: 'Un compte existe deja avec cet email.' });
-        }
+    return new Elysia({ prefix: '/auth', tags: ['Authentification'] })
+        .use(ctx)
+        // Limite resserree sur l'authentification : freine le bourrage
+        // d'identifiants et la creation de comptes en masse.
+        .use(rateLimit({ max: 10, windowMs: 60_000, scope: 'auth', trustProxy: config.trustProxy }))
+        .post(
+            '/register',
+            async ({ body, cookie, repositories, status }) => {
+                const { users, sessions, state } = repositories;
+                if (users.findByEmail(body.email)) {
+                    return status(409, { error: 'Un compte existe deja avec cet email.' });
+                }
 
-        const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: body.displayName };
-        const row = {
-          id: crypto.randomUUID(),
-          email: body.email,
-          displayName: body.displayName,
-          passwordHash: await hashPassword(body.password),
-          createdAt: new Date().toISOString(),
-          profile,
-        };
-        users.insert(row);
-        openSession(cookie, sessions, config, row.id);
+                const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: body.displayName };
+                const row = {
+                    id: crypto.randomUUID(),
+                    email: body.email,
+                    displayName: body.displayName,
+                    passwordHash: await hashPassword(body.password),
+                    createdAt: new Date().toISOString(),
+                    profile,
+                };
+                users.insert(row);
+                openSession(cookie, sessions, config, row.id);
 
-        return status(201, { user: toSessionUser(row), state: state.fullState(row.id, profile) });
-      },
-      {
-        body: registration,
-        response: { 201: session, 409: errorResponse, 429: errorResponse },
-        detail: { summary: 'Creer un compte et ouvrir une session' },
-      },
-    )
-    .post(
-      '/login',
-      async ({ body, cookie, repositories, status }) => {
-        const { users, sessions, state } = repositories;
-        const row = users.findByEmail(body.email);
+                return status(201, { user: toSessionUser(row), state: state.fullState(row.id, profile) });
+            },
+            {
+                body: registration,
+                response: { 201: session, 409: errorResponse, 429: errorResponse },
+                detail: { summary: 'Creer un compte et ouvrir une session' },
+            },
+        )
+        .post(
+            '/login',
+            async ({ body, cookie, repositories, status }) => {
+                const { users, sessions, state } = repositories;
+                const row = users.findByEmail(body.email);
 
-        if (!row) {
-          // Verification a vide : le temps de reponse ne trahit pas
-          // l'existence du compte (attaque temporelle sur l'enumeration).
-          await verifyPassword(body.password, await hashPassword(crypto.randomUUID()));
-          return status(401, { error: INVALID_CREDENTIALS });
-        }
-        if (!(await verifyPassword(body.password, row.passwordHash))) {
-          return status(401, { error: INVALID_CREDENTIALS });
-        }
+                if (!row) {
+                    // Verification a vide : le temps de reponse ne trahit pas
+                    // l'existence du compte (attaque temporelle sur l'enumeration).
+                    await verifyPassword(body.password, await hashPassword(crypto.randomUUID()));
+                    return status(401, { error: INVALID_CREDENTIALS });
+                }
+                if (!(await verifyPassword(body.password, row.passwordHash))) {
+                    return status(401, { error: INVALID_CREDENTIALS });
+                }
 
-        openSession(cookie, sessions, config, row.id);
-        const user = toSessionUser(row);
-        return { user, state: state.fullState(row.id, user.profile) };
-      },
-      {
-        body: credentials,
-        response: { 200: session, 401: errorResponse, 429: errorResponse },
-        detail: { summary: 'Ouvrir une session' },
-      },
-    )
-    .post(
-      '/logout',
-      ({ cookie, repositories }) => {
-        const token = cookie[SESSION_COOKIE]?.value;
-        if (token) {
-          // Revocation en base : le jeton est inutilisable meme s'il a fuite.
-          repositories.sessions.revoke(hashToken(String(token)));
-        }
-        cookie[SESSION_COOKIE]?.remove();
-        return { ok: true };
-      },
-      {
-        response: okResponse,
-        detail: { summary: 'Fermer la session et la revoquer cote serveur' },
-      },
-    )
-    .use(authGuard(ctx))
-    .get(
-      '/session',
-      ({ userId, repositories, status }) => {
-        const row = repositories.users.findById(userId);
-        if (!row) {
-          return status(401, { error: 'Session expiree.' });
-        }
-        const user = toSessionUser(row);
-        return { user, state: repositories.state.fullState(user.id, user.profile) };
-      },
-      {
-        response: { 200: session, 401: errorResponse },
-        detail: { summary: 'Reprendre la session portee par le cookie' },
-      },
-    );
+                openSession(cookie, sessions, config, row.id);
+                const user = toSessionUser(row);
+                return { user, state: state.fullState(row.id, user.profile) };
+            },
+            {
+                body: credentials,
+                response: { 200: session, 401: errorResponse, 429: errorResponse },
+                detail: { summary: 'Ouvrir une session' },
+            },
+        )
+        .post(
+            '/logout',
+            ({ cookie, repositories }) => {
+                const token = cookie[SESSION_COOKIE]?.value;
+                if (token) {
+                    // Revocation en base : le jeton est inutilisable meme s'il a fuite.
+                    repositories.sessions.revoke(hashToken(String(token)));
+                }
+                cookie[SESSION_COOKIE]?.remove();
+                return { ok: true };
+            },
+            {
+                response: okResponse,
+                detail: { summary: 'Fermer la session et la revoquer cote serveur' },
+            },
+        )
+        .use(authGuard(ctx))
+        .get(
+            '/session',
+            ({ userId, repositories, status }) => {
+                const row = repositories.users.findById(userId);
+                if (!row) {
+                    return status(401, { error: 'Session expiree.' });
+                }
+                const user = toSessionUser(row);
+                return { user, state: repositories.state.fullState(user.id, user.profile) };
+            },
+            {
+                response: { 200: session, 401: errorResponse },
+                detail: { summary: 'Reprendre la session portee par le cookie' },
+            },
+        );
 }

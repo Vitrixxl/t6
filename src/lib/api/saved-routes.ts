@@ -2,9 +2,9 @@ import type { SavedRouteRecord } from '../../contracts';
 import { api, resourceBody, treatyRequest } from './client';
 
 export function saveSavedRoute(record: SavedRouteRecord): Promise<SavedRouteRecord> {
-  return treatyRequest(api['saved-routes']({ id: record.id }).put(resourceBody(record)));
+    return treatyRequest(api['saved-routes']({ id: record.id }).put(resourceBody(record)));
 }
 
 export async function deleteSavedRoute(id: string): Promise<void> {
-  await treatyRequest(api['saved-routes']({ id }).delete());
+    await treatyRequest(api['saved-routes']({ id }).delete());
 }

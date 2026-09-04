@@ -11,15 +11,15 @@ import { useSyncExternalStore } from 'react';
 const DESKTOP_QUERY = '(min-width: 1024px)';
 
 function subscribe(onChange: () => void): () => void {
-  const query = window.matchMedia(DESKTOP_QUERY);
-  query.addEventListener('change', onChange);
-  return () => query.removeEventListener('change', onChange);
+    const query = window.matchMedia(DESKTOP_QUERY);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
 }
 
 function readDesktop(): boolean {
-  return window.matchMedia(DESKTOP_QUERY).matches;
+    return window.matchMedia(DESKTOP_QUERY).matches;
 }
 
 export function useDesktopLayout(): boolean {
-  return useSyncExternalStore(subscribe, readDesktop, () => false);
+    return useSyncExternalStore(subscribe, readDesktop, () => false);
 }

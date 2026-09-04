@@ -91,6 +91,11 @@ Le depot reste sur **TypeScript 7**. Tant que `typescript-eslint` ne le prend
 pas en charge, ESLint utilise le parseur Babel pour la syntaxe ; `tsc` strict
 reste l'autorite pour les types et les symboles inutilises.
 
+Le format de reference des fichiers JavaScript et TypeScript est celui du LSP
+TypeScript 7 appele par Neovim a la sauvegarde : espaces, indentation de quatre
+colonnes, sans Prettier ni Biome. `.editorconfig` porte ces options pour eviter
+qu'un autre editeur ne reformate le depot avec deux espaces.
+
 Le serveur porte **l'API et le client** : une seule origine, donc un cookie de
 session de premiere partie et aucun en-tete CORS. Il n'y a pas de serveur de
 developpement separe.

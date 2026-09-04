@@ -11,14 +11,14 @@ import { useSession } from './session';
  * arbre : garder la derniere valeur du composant rend ce dernier rendu stable.
  */
 export function useUser(): SessionUser {
-  const { data: session } = useSession();
-  const profile = useProfile();
-  const lastSession = useRef(session);
-  if (session) {
-    lastSession.current = session;
-  }
-  if (!lastSession.current) {
-    throw new Error('Aucune session ouverte.');
-  }
-  return { ...lastSession.current.user, displayName: profile.displayName, profile };
+    const { data: session } = useSession();
+    const profile = useProfile();
+    const lastSession = useRef(session);
+    if (session) {
+        lastSession.current = session;
+    }
+    if (!lastSession.current) {
+        throw new Error('Aucune session ouverte.');
+    }
+    return { ...lastSession.current.user, displayName: profile.displayName, profile };
 }

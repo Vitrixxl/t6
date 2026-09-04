@@ -8,19 +8,19 @@ import { distanceToCenterKm, METRO_RADIUS_KM } from '../transport/feeds/area';
 export const MAX_ACCESS_CANDIDATES = 8;
 
 export function haversineDistanceKm(a: Pick<GeoPoint, 'lat' | 'lon'>, b: Pick<GeoPoint, 'lat' | 'lon'>): number {
-  const radiusKm = 6371;
-  const dLat = toRadians(b.lat - a.lat);
-  const dLon = toRadians(b.lon - a.lon);
-  const lat1 = toRadians(a.lat);
-  const lat2 = toRadians(b.lat);
-  const value =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  return 2 * radiusKm * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+    const radiusKm = 6371;
+    const dLat = toRadians(b.lat - a.lat);
+    const dLon = toRadians(b.lon - a.lon);
+    const lat1 = toRadians(a.lat);
+    const lat2 = toRadians(b.lat);
+    const value =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 2 * radiusKm * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 }
 
 export function toRadians(value: number): number {
-  return (value * Math.PI) / 180;
+    return (value * Math.PI) / 180;
 }
 
 /**
@@ -29,34 +29,34 @@ export function toRadians(value: number): number {
  * de ces huit candidats appartient a access.ts et repose sur OSRM.
  */
 export function stationCandidates(stations: SharedStation[], point: GeoPoint): SharedStation[] {
-  return stations
-    .slice()
-    .map((station) => ({ station, distanceKm: haversineDistanceKm(stationToPoint(station), point) }))
-    .filter(({ distanceKm }) => distanceKm <= MAX_STATION_ACCESS_KM)
-    .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, MAX_ACCESS_CANDIDATES)
-    .map(({ station }) => station);
+    return stations
+        .slice()
+        .map((station) => ({ station, distanceKm: haversineDistanceKm(stationToPoint(station), point) }))
+        .filter(({ distanceKm }) => distanceKm <= MAX_STATION_ACCESS_KM)
+        .sort((a, b) => a.distanceKm - b.distanceKm)
+        .slice(0, MAX_ACCESS_CANDIDATES)
+        .map(({ station }) => station);
 }
 
 // Repli deterministe des tests purs ; le parcours affiche utilise le classement OSRM.
 export function nearestStation(stations: SharedStation[], point: GeoPoint): SharedStation | null {
-  return stationCandidates(stations, point)[0] ?? null;
+    return stationCandidates(stations, point)[0] ?? null;
 }
 
 export function stopToPoint(stop: GtfsStop): GeoPoint {
-  return {
-    label: stop.stop_name,
-    lat: stop.stop_lat,
-    lon: stop.stop_lon,
-  };
+    return {
+        label: stop.stop_name,
+        lat: stop.stop_lat,
+        lon: stop.stop_lon,
+    };
 }
 
 export function stationToPoint(station: SharedStation): GeoPoint {
-  return {
-    label: station.name,
-    lat: station.lat,
-    lon: station.lon,
-  };
+    return {
+        label: station.name,
+        lat: station.lat,
+        lon: station.lon,
+    };
 }
 
 /**
@@ -70,5 +70,5 @@ export function stationToPoint(station: SharedStation): GeoPoint {
  * ce qui n'a aucun sens pour une flotte libre (B17).
  */
 export function withinServiceArea(point: Pick<GeoPoint, 'lat' | 'lon'>): boolean {
-  return distanceToCenterKm(point.lat, point.lon) <= METRO_RADIUS_KM;
+    return distanceToCenterKm(point.lat, point.lon) <= METRO_RADIUS_KM;
 }

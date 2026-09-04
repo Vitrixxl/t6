@@ -13,8 +13,8 @@ const DEMO_PASSWORD = Bun.env.DEMO_PASSWORD ?? 'UrbanFlow2026!';
 
 const config = loadConfig();
 if (config.isProduction && !Bun.env.DEMO_PASSWORD) {
-  console.error('En production, definir DEMO_PASSWORD plutot que le mot de passe par defaut.');
-  process.exit(1);
+    console.error('En production, definir DEMO_PASSWORD plutot que le mot de passe par defaut.');
+    process.exit(1);
 }
 
 const db = openDatabase(config.databasePath);
@@ -26,16 +26,16 @@ const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: 'Demo UrbanF
 // d'un compte propre, sans trajet herite d'une session precedente.
 const existing = users.findByEmail(DEMO_EMAIL);
 if (existing) {
-  users.delete(existing.id);
+    users.delete(existing.id);
 }
 
 users.insert({
-  id: crypto.randomUUID(),
-  email: DEMO_EMAIL,
-  displayName: profile.displayName,
-  passwordHash: await hashPassword(DEMO_PASSWORD),
-  createdAt: new Date().toISOString(),
-  profile,
+    id: crypto.randomUUID(),
+    email: DEMO_EMAIL,
+    displayName: profile.displayName,
+    passwordHash: await hashPassword(DEMO_PASSWORD),
+    createdAt: new Date().toISOString(),
+    profile,
 });
 
 db.$client.close();

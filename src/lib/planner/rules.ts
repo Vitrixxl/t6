@@ -2,7 +2,7 @@
 import type { RouteLeg, RouteOption, RoutePreselection } from '../../types';
 
 export function totalWalkMinutes(option: RouteOption): number {
-  return option.legs.filter((leg) => leg.mode === 'walk').reduce((sum, leg) => sum + leg.durationMinutes, 0);
+    return option.legs.filter((leg) => leg.mode === 'walk').reduce((sum, leg) => sum + leg.durationMinutes, 0);
 }
 
 /**
@@ -12,7 +12,7 @@ export function totalWalkMinutes(option: RouteOption): number {
  * « Gare de Venissieux vers Gare de Venissieux » qui n'aide personne.
  */
 export function visibleLegs(option: RouteOption): RouteLeg[] {
-  return option.legs.filter((leg) => leg.transfer || leg.mode !== 'walk' || leg.distanceKm >= 0.05);
+    return option.legs.filter((leg) => leg.transfer || leg.mode !== 'walk' || leg.distanceKm >= 0.05);
 }
 
 /**
@@ -26,19 +26,19 @@ export function visibleLegs(option: RouteOption): RouteLeg[] {
  * ni a l'ordre ni au contenu de la liste.
  */
 export function preselectRoute(routes: RouteOption[], preselection: RoutePreselection = 'fastest'): RouteOption | null {
-  if (routes.length === 0) {
-    return null;
-  }
+    if (routes.length === 0) {
+        return null;
+    }
 
-  const fastest = (candidates: RouteOption[]) =>
-    candidates.reduce((best, option) => (option.durationMinutes < best.durationMinutes ? option : best));
+    const fastest = (candidates: RouteOption[]) =>
+        candidates.reduce((best, option) => (option.durationMinutes < best.durationMinutes ? option : best));
 
-  if (preselection === 'fastest') {
-    return fastest(routes);
-  }
+    if (preselection === 'fastest') {
+        return fastest(routes);
+    }
 
-  // Un mode preselectionne qui n'existe pas sur ce trajet ne doit pas laisser
-  // l'utilisateur sans selection : on retombe sur la plus rapide.
-  const matching = routes.filter((option) => option.modes.includes(preselection));
-  return matching.length > 0 ? fastest(matching) : fastest(routes);
+    // Un mode preselectionne qui n'existe pas sur ce trajet ne doit pas laisser
+    // l'utilisateur sans selection : on retombe sur la plus rapide.
+    const matching = routes.filter((option) => option.modes.includes(preselection));
+    return matching.length > 0 ? fastest(matching) : fastest(routes);
 }

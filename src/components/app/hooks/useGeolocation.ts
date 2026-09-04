@@ -25,83 +25,83 @@ const WATCH_OPTIONS: PositionOptions = { enableHighAccuracy: true, maximumAge: 1
  * subsiste.
  */
 const DEV_POSITION: GeoPoint = {
-  label: 'Ma position',
-  lat: 45.75378,
-  lon: 4.84685,
-  accuracyMeters: 15,
+    label: 'Ma position',
+    lat: 45.75378,
+    lon: 4.84685,
+    accuracyMeters: 15,
 };
 
 export interface Geolocation {
-  currentPosition: GeoPoint | null;
-  /** Message affiche a l'utilisateur : la precision reelle est annoncee, jamais supposee. */
-  status: string;
-  requestCurrentPosition: () => Promise<GeoPoint | null>;
+    currentPosition: GeoPoint | null;
+    /** Message affiche a l'utilisateur : la precision reelle est annoncee, jamais supposee. */
+    status: string;
+    requestCurrentPosition: () => Promise<GeoPoint | null>;
 }
 
 export function useGeolocation(): Geolocation {
-  const [currentPosition, setCurrentPosition] = useState<GeoPoint | null>(null);
-  const [status, setStatus] = useState('GPS non demande');
-  const watchIdRef = useRef<number | null>(null);
+    const [currentPosition, setCurrentPosition] = useState<GeoPoint | null>(null);
+    const [status, setStatus] = useState('GPS non demande');
+    const watchIdRef = useRef<number | null>(null);
 
-  // Le suivi est arrete au demontage : pas de capteur laisse actif en fond.
-  useEffect(
-    () => () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
-    },
-    [],
-  );
+    // Le suivi est arrete au demontage : pas de capteur laisse actif en fond.
+    useEffect(
+        () => () => {
+            if (watchIdRef.current !== null) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+            }
+        },
+        [],
+    );
 
-  const applyGpsPosition = (position: GeolocationPosition): GeoPoint => {
-    const point = {
-      label: 'Ma position',
-      lat: position.coords.latitude,
-      lon: position.coords.longitude,
-      accuracyMeters: position.coords.accuracy,
+    const applyGpsPosition = (position: GeolocationPosition): GeoPoint => {
+        const point = {
+            label: 'Ma position',
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+            accuracyMeters: position.coords.accuracy,
+        };
+        setCurrentPosition(point);
+        setStatus(`GPS ok - precision ${Math.round(position.coords.accuracy)} m`);
+        return point;
     };
-    setCurrentPosition(point);
-    setStatus(`GPS ok - precision ${Math.round(position.coords.accuracy)} m`);
-    return point;
-  };
 
-  const startPositionWatch = (): void => {
-    if (watchIdRef.current !== null || !navigator.geolocation) {
-      return;
-    }
-    watchIdRef.current = navigator.geolocation.watchPosition(applyGpsPosition, () => undefined, WATCH_OPTIONS);
-  };
+    const startPositionWatch = (): void => {
+        if (watchIdRef.current !== null || !navigator.geolocation) {
+            return;
+        }
+        watchIdRef.current = navigator.geolocation.watchPosition(applyGpsPosition, () => undefined, WATCH_OPTIONS);
+    };
 
-  const requestCurrentPosition = (): Promise<GeoPoint | null> =>
-    new Promise((resolve) => {
-      if (IS_DEV) {
-        setCurrentPosition(DEV_POSITION);
-        setStatus('GPS simule (developpement)');
-        resolve(DEV_POSITION);
-        return;
-      }
+    const requestCurrentPosition = (): Promise<GeoPoint | null> =>
+        new Promise((resolve) => {
+            if (IS_DEV) {
+                setCurrentPosition(DEV_POSITION);
+                setStatus('GPS simule (developpement)');
+                resolve(DEV_POSITION);
+                return;
+            }
 
-      if (!navigator.geolocation) {
-        setStatus('GPS indisponible');
-        resolve(null);
-        return;
-      }
+            if (!navigator.geolocation) {
+                setStatus('GPS indisponible');
+                resolve(null);
+                return;
+            }
 
-      setStatus('GPS en cours');
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const point = applyGpsPosition(position);
-          startPositionWatch();
-          resolve(point);
-        },
-        (error) => {
-          // Refus assume : l'utilisateur garde la saisie manuelle (C6).
-          setStatus(`GPS refuse: ${error.message}`);
-          resolve(null);
-        },
-        FIRST_FIX_OPTIONS,
-      );
-    });
+            setStatus('GPS en cours');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const point = applyGpsPosition(position);
+                    startPositionWatch();
+                    resolve(point);
+                },
+                (error) => {
+                    // Refus assume : l'utilisateur garde la saisie manuelle (C6).
+                    setStatus(`GPS refuse: ${error.message}`);
+                    resolve(null);
+                },
+                FIRST_FIX_OPTIONS,
+            );
+        });
 
-  return { currentPosition, status, requestCurrentPosition };
+    return { currentPosition, status, requestCurrentPosition };
 }

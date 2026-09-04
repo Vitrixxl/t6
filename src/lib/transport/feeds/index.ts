@@ -9,42 +9,42 @@ import { fetchLiveSharedMobility } from './gbfs';
 import { OPEN_METEO_URL, weatherFromOpenMeteo, type OpenMeteoCurrent } from './weather';
 
 export async function loadTransportNetwork(fetcher: typeof fetch = fetch): Promise<TransportNetwork> {
-  const gtfs = await fetchJson<GtfsFeed>('/data/gtfs-feed.json', fetcher);
-  const sources: NetworkSources = {
-    gtfs: gtfs.agency.agency_id === 'ufm-metropole' ? 'local' : 'tcl-odbl',
-    sharedMobility: 'local',
-    weather: 'local',
-  };
+    const gtfs = await fetchJson<GtfsFeed>('/data/gtfs-feed.json', fetcher);
+    const sources: NetworkSources = {
+        gtfs: gtfs.agency.agency_id === 'ufm-metropole' ? 'local' : 'tcl-odbl',
+        sharedMobility: 'local',
+        weather: 'local',
+    };
 
-  let sharedMobility: SharedMobilityFeed;
-  try {
-    sharedMobility = await fetchLiveSharedMobility(fetcher);
-    sources.sharedMobility = 'gbfs-live';
-  } catch {
-    sharedMobility = await fetchJson<SharedMobilityFeed>('/data/shared-mobility.json', fetcher);
-  }
+    let sharedMobility: SharedMobilityFeed;
+    try {
+        sharedMobility = await fetchLiveSharedMobility(fetcher);
+        sources.sharedMobility = 'gbfs-live';
+    } catch {
+        sharedMobility = await fetchJson<SharedMobilityFeed>('/data/shared-mobility.json', fetcher);
+    }
 
-  try {
-    const meteo = await fetchJson<{ current: OpenMeteoCurrent }>(OPEN_METEO_URL, fetcher);
-    gtfs.weather = weatherFromOpenMeteo(meteo.current);
-    sources.weather = 'open-meteo';
-  } catch {
-    // Meteo locale du feed conservee.
-  }
+    try {
+        const meteo = await fetchJson<{ current: OpenMeteoCurrent }>(OPEN_METEO_URL, fetcher);
+        gtfs.weather = weatherFromOpenMeteo(meteo.current);
+        sources.weather = 'open-meteo';
+    } catch {
+        // Meteo locale du feed conservee.
+    }
 
-  return {
-    gtfs,
-    sharedMobility,
-    sources,
-  };
+    return {
+        gtfs,
+        sharedMobility,
+        sources,
+    };
 }
 
 export function getFeedFreshness(feed: SharedMobilityFeed): string {
-  const updatedAt = new Date(feed.last_updated * 1000);
-  return updatedAt.toLocaleString('fr-FR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
+    const updatedAt = new Date(feed.last_updated * 1000);
+    return updatedAt.toLocaleString('fr-FR', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+    });
 }
 
 export { CITY_CENTER, METRO_RADIUS_KM } from './area';

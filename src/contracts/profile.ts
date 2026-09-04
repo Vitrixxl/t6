@@ -18,36 +18,36 @@ export const DEFAULT_WEEKLY_SAVED_GOAL_GRAMS = 2000;
 export const DEFAULT_MONTHLY_SAVED_GOAL_GRAMS = 8000;
 
 export const mobilityProfile = z.object({
-  displayName: z
-    .string()
-    .min(1, 'Le nom affiche est obligatoire.')
-    .max(60, '60 caracteres au plus.')
-    // Les chevrons n'ont rien a faire dans un nom : refuses plutot que retires en silence.
-    .regex(/^[^<>]*$/, 'Le nom ne peut pas contenir de chevrons.'),
-  preferredModes: requiredModes,
-  maxWalkMinutes: z.int().min(5).max(45),
-  accessibilityNeed: z.boolean(),
-  avoidRain: z.boolean(),
-  carbonGoalGramsPerWeek: z.number().min(250, '250 g au moins.').max(20_000, '20 000 g au plus.'),
-  /** Objectifs saisis par l'utilisateur (absents sur les anciens profils). */
-  weeklyTripsGoal: z.int().min(1, '1 trajet au moins.').max(60, '60 trajets au plus.').optional(),
-  weeklySavedGoalGrams: z.number().min(100, '100 g au moins.').max(50_000, '50 000 g au plus.').optional(),
-  monthlySavedGoalGrams: z.number().min(100, '100 g au moins.').max(200_000, '200 000 g au plus.').optional(),
-  /** Option preselectionnee au calcul d'un itineraire. Absent sur les anciens profils : la plus rapide s'applique. */
-  routePreselection: routePreselection.optional(),
+    displayName: z
+        .string()
+        .min(1, 'Le nom affiche est obligatoire.')
+        .max(60, '60 caracteres au plus.')
+        // Les chevrons n'ont rien a faire dans un nom : refuses plutot que retires en silence.
+        .regex(/^[^<>]*$/, 'Le nom ne peut pas contenir de chevrons.'),
+    preferredModes: requiredModes,
+    maxWalkMinutes: z.int().min(5).max(45),
+    accessibilityNeed: z.boolean(),
+    avoidRain: z.boolean(),
+    carbonGoalGramsPerWeek: z.number().min(250, '250 g au moins.').max(20_000, '20 000 g au plus.'),
+    /** Objectifs saisis par l'utilisateur (absents sur les anciens profils). */
+    weeklyTripsGoal: z.int().min(1, '1 trajet au moins.').max(60, '60 trajets au plus.').optional(),
+    weeklySavedGoalGrams: z.number().min(100, '100 g au moins.').max(50_000, '50 000 g au plus.').optional(),
+    monthlySavedGoalGrams: z.number().min(100, '100 g au moins.').max(200_000, '200 000 g au plus.').optional(),
+    /** Option preselectionnee au calcul d'un itineraire. Absent sur les anciens profils : la plus rapide s'applique. */
+    routePreselection: routePreselection.optional(),
 });
 export type MobilityProfile = z.infer<typeof mobilityProfile>;
 
 /** Profil attribue a la creation d'un compte, avant toute personnalisation. */
 export const DEFAULT_PROFILE: MobilityProfile = {
-  displayName: 'Citoyen UrbanFlow',
-  preferredModes: ['transit', 'bike', 'walk'],
-  maxWalkMinutes: 15,
-  accessibilityNeed: false,
-  avoidRain: true,
-  carbonGoalGramsPerWeek: 2500,
-  weeklyTripsGoal: DEFAULT_WEEKLY_TRIPS_GOAL,
-  weeklySavedGoalGrams: DEFAULT_WEEKLY_SAVED_GOAL_GRAMS,
-  monthlySavedGoalGrams: DEFAULT_MONTHLY_SAVED_GOAL_GRAMS,
-  routePreselection: 'fastest',
+    displayName: 'Citoyen UrbanFlow',
+    preferredModes: ['transit', 'bike', 'walk'],
+    maxWalkMinutes: 15,
+    accessibilityNeed: false,
+    avoidRain: true,
+    carbonGoalGramsPerWeek: 2500,
+    weeklyTripsGoal: DEFAULT_WEEKLY_TRIPS_GOAL,
+    weeklySavedGoalGrams: DEFAULT_WEEKLY_SAVED_GOAL_GRAMS,
+    monthlySavedGoalGrams: DEFAULT_MONTHLY_SAVED_GOAL_GRAMS,
+    routePreselection: 'fastest',
 };

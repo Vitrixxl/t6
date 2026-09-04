@@ -4,45 +4,45 @@ import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
 import {
-  errorResponse,
-  okResponse,
-  resourceIdParams,
-  savedRoute,
-  savedRouteInput,
-  savedRoutes,
+    errorResponse,
+    okResponse,
+    resourceIdParams,
+    savedRoute,
+    savedRouteInput,
+    savedRoutes,
 } from '../../../src/contracts/index.ts';
 import { deleteSavedRoute, saveSavedRoute } from '../services/saved-routes.ts';
 
 export function savedRouteRoutes(ctx: AppContext) {
-  return new Elysia({ prefix: '/saved-routes', tags: ['Itineraires enregistres'] })
-    .use(authGuard(ctx))
-    .get('', ({ userId, repositories }) => repositories.savedRoutes.list(userId), {
-      response: { 200: savedRoutes, 401: errorResponse },
-      detail: { summary: 'Lire les itineraires enregistres' },
-    })
-    .put(
-      '/:id',
-      ({ userId, params, body, db, status }) => {
-        const saved = saveSavedRoute(db, { ...body, id: params.id, userId });
-        return saved ?? status(409, { error: 'Cet itineraire depasse la limite de conservation.' });
-      },
-      {
-        params: resourceIdParams,
-        body: savedRouteInput,
-        response: { 200: savedRoute, 401: errorResponse, 409: errorResponse, 422: errorResponse },
-        detail: { summary: 'Creer ou remplacer un itineraire enregistre (idempotent)' },
-      },
-    )
-    .delete(
-      '/:id',
-      ({ userId, params, db }) => {
-        deleteSavedRoute(db, userId, params.id);
-        return { ok: true };
-      },
-      {
-        params: resourceIdParams,
-        response: { 200: okResponse, 401: errorResponse, 422: errorResponse },
-        detail: { summary: 'Supprimer un itineraire enregistre (idempotent)' },
-      },
-    );
+    return new Elysia({ prefix: '/saved-routes', tags: ['Itineraires enregistres'] })
+        .use(authGuard(ctx))
+        .get('', ({ userId, repositories }) => repositories.savedRoutes.list(userId), {
+            response: { 200: savedRoutes, 401: errorResponse },
+            detail: { summary: 'Lire les itineraires enregistres' },
+        })
+        .put(
+            '/:id',
+            ({ userId, params, body, db, status }) => {
+                const saved = saveSavedRoute(db, { ...body, id: params.id, userId });
+                return saved ?? status(409, { error: 'Cet itineraire depasse la limite de conservation.' });
+            },
+            {
+                params: resourceIdParams,
+                body: savedRouteInput,
+                response: { 200: savedRoute, 401: errorResponse, 409: errorResponse, 422: errorResponse },
+                detail: { summary: 'Creer ou remplacer un itineraire enregistre (idempotent)' },
+            },
+        )
+        .delete(
+            '/:id',
+            ({ userId, params, db }) => {
+                deleteSavedRoute(db, userId, params.id);
+                return { ok: true };
+            },
+            {
+                params: resourceIdParams,
+                response: { 200: okResponse, 401: errorResponse, 422: errorResponse },
+                detail: { summary: 'Supprimer un itineraire enregistre (idempotent)' },
+            },
+        );
 }

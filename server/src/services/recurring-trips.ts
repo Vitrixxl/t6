@@ -5,16 +5,16 @@ import { createRepositories } from '../repositories/index.ts';
 import { RECURRING_LIMIT, type RecurringTrip } from '../../../src/contracts/index.ts';
 
 export function saveRecurringTrip(db: Db, trip: RecurringTrip): RecurringTrip | null {
-  return db.transaction((tx) => {
-    const repository = createRepositories(tx).recurringTrips;
-    if (!repository.findById(trip.userId, trip.id) && repository.count(trip.userId) >= RECURRING_LIMIT) {
-      return null;
-    }
-    repository.upsert(trip);
-    return repository.findById(trip.userId, trip.id);
-  });
+    return db.transaction((tx) => {
+        const repository = createRepositories(tx).recurringTrips;
+        if (!repository.findById(trip.userId, trip.id) && repository.count(trip.userId) >= RECURRING_LIMIT) {
+            return null;
+        }
+        repository.upsert(trip);
+        return repository.findById(trip.userId, trip.id);
+    });
 }
 
 export function deleteRecurringTrip(db: Db, userId: string, id: string): void {
-  createRepositories(db).recurringTrips.deleteById(userId, id);
+    createRepositories(db).recurringTrips.deleteById(userId, id);
 }

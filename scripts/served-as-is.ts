@@ -8,10 +8,10 @@
 import type { BunPlugin } from 'bun';
 
 const servedAsIs: BunPlugin = {
-  name: 'served-as-is',
-  setup(build) {
-    build.onResolve({ filter: /^\// }, (args) => ({ path: args.path, external: true }));
-  },
+    name: 'served-as-is',
+    setup(build) {
+        build.onResolve({ filter: /^\// }, (args) => ({ path: args.path, external: true }));
+    },
 };
 
 export default servedAsIs;

@@ -11,54 +11,54 @@ export type UserRow = typeof users.$inferSelect;
 export type NewUserRow = typeof users.$inferInsert;
 
 interface EndpointRow {
-  originLabel: string;
-  originLat: number;
-  originLon: number;
-  destinationLabel: string;
-  destinationLat: number;
-  destinationLon: number;
+    originLabel: string;
+    originLat: number;
+    originLon: number;
+    destinationLabel: string;
+    destinationLat: number;
+    destinationLon: number;
 }
 
 interface MeasureRow {
-  modes: MobilityMode[];
-  distanceKm: number;
-  durationMinutes: number;
-  carbonGrams: number;
-  carbonSavedGrams: number | null;
+    modes: MobilityMode[];
+    distanceKm: number;
+    durationMinutes: number;
+    carbonGrams: number;
+    carbonSavedGrams: number | null;
 }
 
 interface Endpoints {
-  origin: GeoPoint;
-  destination: GeoPoint;
+    origin: GeoPoint;
+    destination: GeoPoint;
 }
 
 export const endpoints = (row: EndpointRow): Endpoints => ({
-  origin: { label: row.originLabel, lat: row.originLat, lon: row.originLon },
-  destination: { label: row.destinationLabel, lat: row.destinationLat, lon: row.destinationLon },
+    origin: { label: row.originLabel, lat: row.originLat, lon: row.originLon },
+    destination: { label: row.destinationLabel, lat: row.destinationLat, lon: row.destinationLon },
 });
 
 export const flattenEndpoints = (input: Endpoints): EndpointRow => ({
-  originLabel: input.origin.label,
-  originLat: input.origin.lat,
-  originLon: input.origin.lon,
-  destinationLabel: input.destination.label,
-  destinationLat: input.destination.lat,
-  destinationLon: input.destination.lon,
+    originLabel: input.origin.label,
+    originLat: input.origin.lat,
+    originLon: input.origin.lon,
+    destinationLabel: input.destination.label,
+    destinationLat: input.destination.lat,
+    destinationLon: input.destination.lon,
 });
 
 export const measures = (row: MeasureRow): MeasureRow => ({
-  modes: row.modes,
-  distanceKm: row.distanceKm,
-  durationMinutes: row.durationMinutes,
-  carbonGrams: row.carbonGrams,
-  carbonSavedGrams: row.carbonSavedGrams,
+    modes: row.modes,
+    distanceKm: row.distanceKm,
+    durationMinutes: row.durationMinutes,
+    carbonGrams: row.carbonGrams,
+    carbonSavedGrams: row.carbonSavedGrams,
 });
 
 export function toSessionUser(row: UserRow): SessionUser {
-  return {
-    id: row.id,
-    email: row.email,
-    displayName: row.displayName,
-    profile: row.profile,
-  };
+    return {
+        id: row.id,
+        email: row.email,
+        displayName: row.displayName,
+        profile: row.profile,
+    };
 }

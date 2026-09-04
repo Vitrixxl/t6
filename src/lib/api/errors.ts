@@ -5,19 +5,19 @@
 
 /** Erreur metier renvoyee par le serveur (validation, conflit, session expiree). */
 export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
+    constructor(
+        message: string,
+        readonly status: number,
+    ) {
+        super(message);
+        this.name = 'ApiError';
+    }
 }
 
 /** Le serveur est injoignable : l'etat en memoire reste affiche, l'envoi sera retente. */
 export class ApiUnavailableError extends Error {
-  constructor() {
-    super('Serveur UrbanFlow injoignable.');
-    this.name = 'ApiUnavailableError';
-  }
+    constructor() {
+        super('Serveur UrbanFlow injoignable.');
+        this.name = 'ApiUnavailableError';
+    }
 }
