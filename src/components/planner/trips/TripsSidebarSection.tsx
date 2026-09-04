@@ -1,15 +1,16 @@
 // Bloc trajets du rail lateral : raccourcis vers le hub et prochaines echeances.
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { CalendarClock, Check, ChevronRight } from 'lucide-react';
 import { Button } from '../../ui/button';
-import { activitySummaryAtom, markTripDoneAtom, openHubAtom, upcomingAtom } from '../../../state';
+import { useActivitySummary, useMarkTripDone, useUpcomingTrips } from '../../../queries';
+import { openHubAtom } from '../../../state';
 import { Metric } from '../../app/shared';
 import { formatScheduleLabel } from './format';
 
 export function TripsSidebarSection() {
-  const summary = useAtomValue(activitySummaryAtom);
-  const upcoming = useAtomValue(upcomingAtom);
-  const markDone = useSetAtom(markTripDoneAtom);
+  const summary = useActivitySummary();
+  const upcoming = useUpcomingTrips();
+  const markDone = useMarkTripDone();
   const openHub = useSetAtom(openHubAtom);
 
   return (

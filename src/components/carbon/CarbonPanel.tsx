@@ -4,16 +4,15 @@
 // Les chiffres de l'entete portent sur la semaine, l'historique dessous sur les
 // cinquante derniers trajets : les libelles le disent, sinon le meme ecran
 // affiche deux periodes sans le signaler (B16).
-import { useAtomValue, useSetAtom } from 'jotai';
 import { Button } from '../ui/button';
-import { carbonSummaryAtom, clearTripHistoryAtom, profileAtom, tripRecordsAtom } from '../../state';
+import { useCarbonSummary, useClearTripHistory, useProfile, useTripRecords } from '../../queries';
 import { Metric } from '../app/shared';
 
 export function CarbonPanel() {
-  const profile = useAtomValue(profileAtom);
-  const records = useAtomValue(tripRecordsAtom);
-  const summary = useAtomValue(carbonSummaryAtom);
-  const clearHistory = useSetAtom(clearTripHistoryAtom);
+  const profile = useProfile();
+  const records = useTripRecords();
+  const summary = useCarbonSummary();
+  const clearHistory = useClearTripHistory();
 
   return (
     <section className="overflow-hidden rounded-xl border border-border/70 bg-muted/20">
@@ -43,7 +42,7 @@ export function CarbonPanel() {
         ) : (
           <p className="text-sm text-muted-foreground">Marque un trajet planifie comme fait pour alimenter le suivi.</p>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={() => clearHistory()} disabled={records.length === 0}>
+        <Button type="button" variant="outline" size="sm" onClick={clearHistory} disabled={records.length === 0}>
           Effacer l'historique
         </Button>
       </div>

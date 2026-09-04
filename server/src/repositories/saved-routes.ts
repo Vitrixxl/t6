@@ -3,7 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { savedRoutes } from '../db/schema.ts';
 import type { SavedRouteRecord } from '../../../src/types.ts';
-import { SAVED_ROUTES_LIMIT } from './limits.ts';
+import { SAVED_ROUTES_LIMIT } from '../../../src/contracts/limits.ts';
 import { chunks, endpoints, flattenEndpoints, measures } from './mappers.ts';
 
 export function createSavedRouteRepository(db: Executor) {

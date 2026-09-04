@@ -3,7 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { tripRecords } from '../db/schema.ts';
 import type { TripRecord } from '../../../src/types.ts';
-import { TRIP_HISTORY_LIMIT } from './limits.ts';
+import { TRIP_HISTORY_LIMIT } from '../../../src/contracts/limits.ts';
 import { chunks, measures } from './mappers.ts';
 
 export function createTripRecordRepository(db: Executor) {

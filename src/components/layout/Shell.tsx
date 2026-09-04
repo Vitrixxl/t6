@@ -1,9 +1,8 @@
 // Module layout desktop : barre laterale (planificateur, calques).
-import { useAtomValue } from 'jotai';
 import { CalendarClock, CircleHelp, Layers3, Navigation, UserRound } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { TransportNetwork } from '../../types';
-import { userAtom } from '../../state';
+import { useUser } from '../../queries';
 import { LayerToggle, type LayerState } from '../app/shared';
 import { TripsSidebarSection } from '../planner/trips';
 import { getFeedFreshness } from '../../lib/transport';
@@ -47,7 +46,7 @@ export function ShellSidebar({
   onOpenProfile: () => void;
   onStartTutorial: () => void;
 }) {
-  const user = useAtomValue(userAtom);
+  const user = useUser();
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

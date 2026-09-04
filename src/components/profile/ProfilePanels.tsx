@@ -1,14 +1,20 @@
 // Module profil : preferences de mobilite, objectifs carbone et compte.
-import { FormEvent, useEffect, useState } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { Check, CircleHelp, LogOut, Trash2, UserRound } from 'lucide-react';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { Button } from '../ui/button';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { Input } from '../ui/input';
 import type { MobilityMode, MobilityProfile } from '../../types';
-import { deleteAccountAtom, logoutAtom, setProfileAtom, userAtom } from '../../state';
+import { mobilityProfile } from '../../contracts';
+import { useDeleteAccount, useLogout, useUpdateProfile, useUser } from '../../queries';
 import { MODE_ICON, MODE_OPTIONS } from '../app/shared';
+
+function FieldError({ message }: { message?: string }) {
+  return message ? <p className="text-xs font-normal text-destructive">{message}</p> : null;
+}
 
 export function ProfileDrawer({
   open,
@@ -18,9 +24,9 @@ export function ProfileDrawer({
   onOpenChange: (open: boolean) => void;
   onStartTutorial: () => void;
 }) {
-  const user = useAtomValue(userAtom);
-  const logout = useSetAtom(logoutAtom);
-  const deleteAccount = useSetAtom(deleteAccountAtom);
+  const user = useUser();
+  const logout = useLogout();
+  const deleteAccount = useDeleteAccount();
   const [confirming, setConfirming] = useState<'logout' | 'delete' | null>(null);
   const onLogout = () => {
     onOpenChange(false);
@@ -28,7 +34,7 @@ export function ProfileDrawer({
   };
   const onDeleteAccount = () => {
     onOpenChange(false);
-    void deleteAccount();
+    deleteAccount.mutate();
   };
 
   return (
@@ -104,29 +110,26 @@ export function ProfileDrawer({
 }
 
 export function ProfilePanel() {
-  const user = useAtomValue(userAtom);
-  const onSave = useSetAtom(setProfileAtom);
-  const [profile, setProfile] = useState<MobilityProfile>(user.profile);
+  const user = useUser();
+  const updateProfile = useUpdateProfile();
+  // Le formulaire valide avec le contrat que l'API applique : ce qui passe ici
+  // n'est jamais refuse a l'envoi. `values` le rattache au profil courant.
+  const form = useForm<MobilityProfile>({ resolver: zodResolver(mobilityProfile), values: user.profile });
+  const { errors } = form.formState;
+  const preferredModes = form.watch('preferredModes');
+  const maxWalkMinutes = form.watch('maxWalkMinutes');
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    setProfile(user.profile);
-  }, [user]);
-
   const toggleMode = (mode: MobilityMode) => {
-    setProfile((currentProfile) => ({
-      ...currentProfile,
-      preferredModes: currentProfile.preferredModes.includes(mode)
-        ? currentProfile.preferredModes.filter((item) => item !== mode)
-        : [...currentProfile.preferredModes, mode] }));
+    const next = preferredModes.includes(mode) ? preferredModes.filter((item) => item !== mode) : [...preferredModes, mode];
+    form.setValue('preferredModes', next, { shouldValidate: form.formState.isSubmitted, shouldDirty: true });
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    onSave(profile);
+  const onSubmit = form.handleSubmit((profile) => {
+    updateProfile(profile);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1600);
-  };
+  });
 
   return (
     <section className="p-4">
@@ -139,25 +142,23 @@ export function ProfilePanel() {
           <h2 className="font-semibold">{user.displayName}</h2>
         </div>
       </div>
-      <form className="grid gap-3" onSubmit={handleSubmit}>
+      <form className="grid gap-3" noValidate onSubmit={onSubmit}>
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-display-name">
           Nom affiche
-          <Input
-            id="profile-display-name"
-            value={profile.displayName}
-            onChange={(event) => setProfile({ ...profile, displayName: event.target.value })}
-          />
+          <Input id="profile-display-name" aria-invalid={Boolean(errors.displayName)} {...form.register('displayName')} />
+          <FieldError message={errors.displayName?.message} />
         </label>
         <fieldset className="grid gap-2">
           <legend className="text-sm font-medium">Modes preferes</legend>
           <div className="grid grid-cols-2 gap-2">
             {MODE_OPTIONS.map((option) => {
               const Icon = MODE_ICON[option.mode];
-              const active = profile.preferredModes.includes(option.mode);
+              const active = preferredModes.includes(option.mode);
               return (
                 <button
                   key={option.mode}
                   type="button"
+                  aria-pressed={active}
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
                     active ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'
                   }`}
@@ -169,30 +170,20 @@ export function ProfilePanel() {
               );
             })}
           </div>
+          <FieldError message={errors.preferredModes?.message} />
         </fieldset>
         <label className="grid gap-1.5 text-sm font-medium">
-          Marche max: {profile.maxWalkMinutes} min
-          <input
-            type="range"
-            min="5"
-            max="45"
-            step="5"
-            value={profile.maxWalkMinutes}
-            onChange={(event) => setProfile({ ...profile, maxWalkMinutes: Number(event.target.value) })}
-            className="accent-primary"
-          />
+          Marche max: {maxWalkMinutes} min
+          <input type="range" min="5" max="45" step="5" className="accent-primary" {...form.register('maxWalkMinutes', { valueAsNumber: true })} />
         </label>
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-route-preselection">
           Option retenue par defaut
           <select
             id="profile-route-preselection"
-            value={profile.routePreselection ?? 'fastest'}
-            onChange={(event) =>
-              setProfile({ ...profile, routePreselection: event.target.value as MobilityProfile['routePreselection'] })
-            }
             // Hauteur en pixels : la racine du document est a 14 px, une valeur
             // en rem raterait la cible tactile de 44 px.
             className="h-[44px] rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground"
+            {...form.register('routePreselection')}
           >
             <option value="fastest">Le plus rapide</option>
             {MODE_OPTIONS.map((option) => (
@@ -214,17 +205,13 @@ export function ProfilePanel() {
             min={250}
             max={20000}
             step={250}
-            value={profile.carbonGoalGramsPerWeek}
-            onChange={(event) => setProfile({ ...profile, carbonGoalGramsPerWeek: Number(event.target.value) })}
+            aria-invalid={Boolean(errors.carbonGoalGramsPerWeek)}
+            {...form.register('carbonGoalGramsPerWeek', { valueAsNumber: true })}
           />
+          <FieldError message={errors.carbonGoalGramsPerWeek?.message} />
         </label>
         <label className="flex items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            checked={profile.accessibilityNeed}
-            onChange={(event) => setProfile({ ...profile, accessibilityNeed: event.target.checked })}
-            className="size-4 accent-primary"
-          />
+          <input type="checkbox" className="size-4 accent-primary" {...form.register('accessibilityNeed')} />
           Priorite PMR
         </label>
         <Button type="submit" size="sm">

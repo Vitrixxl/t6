@@ -3,7 +3,7 @@
 // compte a mot de passe connu au demarrage du serveur.
 import { loadConfig } from './config/index.ts';
 import { openDatabase } from './db/index.ts';
-import { DEFAULT_PROFILE } from './models/profile.ts';
+import { DEFAULT_PROFILE } from '../../src/contracts/index.ts';
 import { createRepositories } from './repositories/index.ts';
 import { hashPassword } from './security/password.ts';
 import type { MobilityProfile } from '../../src/types.ts';

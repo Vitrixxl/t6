@@ -2,7 +2,7 @@
 import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
-import { accountExport, errorResponse, mobilityProfile, okResponse } from '../models/index.ts';
+import { accountExport, errorResponse, mobilityProfile, okResponse } from '../../../src/contracts/index.ts';
 import { toSessionUser } from '../repositories/index.ts';
 import { hashToken } from '../security/tokens.ts';
 import { SESSION_COOKIE } from '../services/sessions.ts';
@@ -10,6 +10,20 @@ import { SESSION_COOKIE } from '../services/sessions.ts';
 export function meRoutes(ctx: AppContext) {
   return new Elysia({ prefix: '/me', tags: ['Compte'] })
     .use(authGuard(ctx))
+    .get(
+      '/profile',
+      ({ userId, repositories, status }) => {
+        const row = repositories.users.findById(userId);
+        if (!row) {
+          return status(401, { error: 'Session expiree.' });
+        }
+        return row.profile;
+      },
+      {
+        response: { 200: mobilityProfile, 401: errorResponse },
+        detail: { summary: 'Lire le profil de mobilite' },
+      },
+    )
     // Le profil se remplace seul : changer une preference ne reecrit aucun
     // trajet. Le nom affiche suit le profil, la session le rend a jour.
     .put(

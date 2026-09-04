@@ -1,11 +1,9 @@
 // Operations sur les trajets programmes et les routines : des fonctions pures
-// sur des listes. L'etat du compte est tenu en memoire par l'application et
-// envoye en entier au serveur apres chaque action ; rien n'est stocke ici.
+// sur des listes. Chaque liste est renvoyee en entier au serveur apres
+// l'action qui la modifie (src/queries/) ; rien n'est stocke ici.
 import type { PlannedTrip, PlannedTripStatus, RecurringTrip } from '../../types';
+import { PLANNED_LIMIT } from '../../contracts/limits';
 import { isRoutinePaused } from './routines';
-
-/** Minimisation : au-dela, les trajets les plus anciens sont ecartes. */
-export const PLANNED_LIMIT = 400;
 
 export function sortPlanned(trips: PlannedTrip[]): PlannedTrip[] {
   return trips.slice().sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));

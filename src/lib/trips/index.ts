@@ -2,7 +2,6 @@
 // routines et vues de lecture. Le reste de l'application importe d'ici.
 export { WEEKDAY_LABELS, createPlannedTrip, createRecurringTrip, type TripSource } from './factory';
 export {
-  PLANNED_LIMIT,
   removePlanned,
   removeRecurring,
   setPlannedStatus,

@@ -1,29 +1,24 @@
-// Etat du compte : ce que le serveur renvoie a la connexion, et ce que le
-// client lui renvoie, partie par partie, apres chaque action.
+// Etat du compte : rendu en entier a l'ouverture de session, puis une route
+// par partie, en lecture (GET) comme en remplacement (PUT).
 //
-// Le serveur est la seule source de verite. Le client garde l'etat en memoire
-// le temps de la session, sans cache local. Une action modifie une ou deux
-// parties de l'etat ; seules celles-la repartent, chacune vers sa propre
-// route, en entier. Changer une preference n'envoie aucun trajet.
-import type { MobilityProfile, PlannedTrip, RecurringTrip, SavedRouteRecord, SessionUser, TripRecord } from '../../types';
+// Le serveur est la seule source de verite. Le client tient chaque partie
+// dans son cache de requetes (src/queries/) et, apres une action, renvoie en
+// entier la ou les parties qu'elle a touchees, chacune vers sa route. Changer
+// une preference n'envoie aucun trajet.
+import type { AccountState, Session } from '../../contracts';
 import { ApiError, ApiUnavailableError } from './errors';
 import { apiRequest } from './http';
 
-export interface AccountState {
-  profile: MobilityProfile;
-  tripRecords: TripRecord[];
-  plannedTrips: PlannedTrip[];
-  recurringTrips: RecurringTrip[];
-  savedRoutes: SavedRouteRecord[];
-}
+export type { AccountState, Session };
 
 /** Une partie de l'etat : le profil, ou l'une des collections. */
 export type AccountPart = keyof AccountState;
 
-/** Ce que rendent l'inscription, la connexion et la reprise de session. */
-export interface Session {
-  user: SessionUser;
-  state: AccountState;
+export const ACCOUNT_PARTS: readonly AccountPart[] = ['profile', 'tripRecords', 'plannedTrips', 'recurringTrips', 'savedRoutes'];
+
+/** Les parties presentes dans un lot de modifications. */
+export function accountPartsOf(changes: Partial<AccountState>): AccountPart[] {
+  return ACCOUNT_PARTS.filter((part) => part in changes);
 }
 
 /**
@@ -42,7 +37,7 @@ export async function restoreSession(): Promise<Session | null> {
   }
 }
 
-/** Une route par partie : chaque PUT remplace la partie en entier. */
+/** Une route par partie : GET la lit, PUT la remplace en entier. */
 const PART_PATHS: Record<AccountPart, string> = {
   profile: '/me/profile',
   tripRecords: '/trips/history',
@@ -60,16 +55,32 @@ function withoutOwner(records: ReadonlyArray<{ userId: string }>): object[] {
   });
 }
 
-function payloadOf(state: AccountState, part: AccountPart): unknown {
-  return part === 'profile' ? state.profile : withoutOwner(state[part]);
+function payloadOf(value: AccountState[AccountPart]): unknown {
+  return Array.isArray(value) ? withoutOwner(value) : value;
 }
 
-/** Remplace une partie de l'etat sur le serveur. PUT : rejouer donne le meme resultat. */
-export async function saveAccountPart(state: AccountState, part: AccountPart): Promise<void> {
-  await apiRequest(PART_PATHS[part], { method: 'PUT', body: JSON.stringify(payloadOf(state, part)) });
+/** Lit une partie telle que le serveur la tient. */
+export function fetchAccountPart<P extends AccountPart>(part: P): Promise<AccountState[P]> {
+  return apiRequest<AccountState[P]>(PART_PATHS[part]);
+}
+
+/** Remplace une partie sur le serveur, qui la rend telle qu'elle est desormais. PUT : rejouer donne le meme resultat. */
+export function saveAccountPart<P extends AccountPart>(part: P, value: AccountState[P]): Promise<AccountState[P]> {
+  return apiRequest<AccountState[P]>(PART_PATHS[part], { method: 'PUT', body: JSON.stringify(payloadOf(value)) });
+}
+
+async function savePart<P extends AccountPart>(saved: Partial<AccountState>, part: P, value: AccountState[P]): Promise<void> {
+  saved[part] = await saveAccountPart(part, value);
 }
 
 /** Envoie plusieurs parties en parallele : elles sont independantes. Echoue si l'une echoue. */
-export async function saveAccountParts(state: AccountState, parts: Iterable<AccountPart>): Promise<void> {
-  await Promise.all([...parts].map((part) => saveAccountPart(state, part)));
+export async function saveAccountParts(changes: Partial<AccountState>): Promise<Partial<AccountState>> {
+  const saved: Partial<AccountState> = {};
+  await Promise.all(
+    accountPartsOf(changes).map((part) => {
+      const value = changes[part];
+      return value === undefined ? Promise.resolve() : savePart(saved, part, value);
+    }),
+  );
+  return saved;
 }

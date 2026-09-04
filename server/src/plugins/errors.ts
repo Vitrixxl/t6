@@ -5,7 +5,7 @@
 // client (OWASP A09 - journalisation et supervision).
 import { Elysia } from 'elysia';
 
-/** Extrait le message le plus parlant d'une erreur de validation TypeBox. */
+/** Extrait le message le plus parlant d'une erreur de validation zod exposee par Elysia. */
 function firstValidationMessage(error: unknown): string {
     const first = (error as { all?: { summary?: string; message?: string }[] }).all?.[0];
     return first?.message ?? first?.summary ?? 'Requete invalide.';

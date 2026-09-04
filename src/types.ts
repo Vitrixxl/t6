@@ -1,45 +1,27 @@
-export type MobilityMode = 'walk' | 'bike' | 'scooter' | 'transit';
+// Contrat de donnees du domaine, importe par le client et par l'API.
+//
+// Tout ce qui s'echange avec le serveur ou se saisit dans un formulaire est
+// decrit par un schema zod dans src/contracts/ ; son type en derive et se
+// reexporte ici pour que le reste du code n'ait qu'un point d'import. Les
+// types ci-dessous sont ceux qui ne se valident pas : flux transport et
+// resultats du moteur d'itineraires, calcules et jamais recus d'un tiers.
+export type {
+  GeoPoint,
+  MobilityMode,
+  MobilityProfile,
+  PlannedTrip,
+  PlannedTripStatus,
+  RecurringTrip,
+  RouteInstruction,
+  RoutePreselection,
+  RoutinePeriod,
+  SavedRouteRecord,
+  SessionUser,
+  TripRecord,
+} from './contracts';
+import type { GeoPoint, MobilityMode, MobilityProfile, RouteInstruction } from './contracts';
 
 export type Occupancy = 'low' | 'medium' | 'high';
-
-export interface GeoPoint {
-  lat: number;
-  lon: number;
-  label: string;
-  accuracyMeters?: number;
-}
-
-export interface MobilityProfile {
-  displayName: string;
-  preferredModes: MobilityMode[];
-  maxWalkMinutes: number;
-  accessibilityNeed: boolean;
-  avoidRain: boolean;
-  carbonGoalGramsPerWeek: number;
-  /** Objectifs hebdomadaires saisis par l'utilisateur (absents sur les anciens profils). */
-  weeklyTripsGoal?: number;
-  weeklySavedGoalGrams?: number;
-  /**
-   * Option preselectionnee au calcul d'un itineraire : la plus rapide, ou
-   * celle qui emprunte un mode donne. Absent sur les anciens profils, la plus
-   * rapide s'applique alors.
-   */
-  routePreselection?: RoutePreselection;
-}
-
-/**
- * `'fastest'` ou un mode. Le mode n'est pas un filtre : si aucune option ne
- * l'emprunte pour ce trajet, la plus rapide reste selectionnee, et toutes les
- * options restent proposees.
- */
-export type RoutePreselection = 'fastest' | MobilityMode;
-
-export interface SessionUser {
-  id: string;
-  email: string;
-  displayName: string;
-  profile: MobilityProfile;
-}
 
 export interface GtfsAgency {
   agency_id: string;
@@ -193,13 +175,6 @@ export interface LegEstimate {
   carbonGramsPerKm: number;
 }
 
-export interface RouteInstruction {
-  text: string;
-  distanceMeters: number;
-  detail?: string;
-  kind: 'turn' | 'roundabout' | 'depart' | 'arrive' | 'transfer' | 'continue';
-}
-
 export interface RouteOption {
   id: string;
   title: string;
@@ -225,96 +200,12 @@ export interface RouteRequest {
   network: TransportNetwork;
 }
 
-export interface TripRecord {
-  id: string;
-  userId: string;
-  routeTitle: string;
-  modes: MobilityMode[];
-  distanceKm: number;
-  durationMinutes: number;
-  carbonGrams: number;
-  carbonSavedGrams: number;
-  createdAt: string;
-}
-
-export interface SavedRouteRecord {
-  id: string;
-  userId: string;
-  routeId: string;
-  routeTitle: string;
-  origin: GeoPoint;
-  destination: GeoPoint;
-  modes: MobilityMode[];
-  distanceKm: number;
-  durationMinutes: number;
-  carbonGrams: number;
-  carbonSavedGrams: number;
-  score: number;
-  createdAt: string;
-}
-
 export interface CarbonSummary {
   trips: number;
   totalDistanceKm: number;
   totalCarbonGrams: number;
   totalSavedGrams: number;
   goalUsagePercent: number;
-}
-
-export type PlannedTripStatus = 'planned' | 'done' | 'cancelled';
-
-export interface PlannedTrip {
-  id: string;
-  userId: string;
-  label: string;
-  origin: GeoPoint;
-  destination: GeoPoint;
-  modes: MobilityMode[];
-  distanceKm: number;
-  durationMinutes: number;
-  carbonGrams: number;
-  carbonSavedGrams: number;
-  /** Date/heure prevue du depart (ISO). */
-  scheduledFor: string;
-  status: PlannedTripStatus;
-  createdAt: string;
-  completedAt: string | null;
-}
-
-/**
- * Periode pendant laquelle une routine compte ses passages. `to` reste null
- * tant qu'elle court ; une mise en pause la clot, une reprise en ouvre une
- * nouvelle.
- */
-export interface RoutinePeriod {
-  from: string;
-  to: string | null;
-}
-
-export interface RecurringTrip {
-  id: string;
-  userId: string;
-  label: string;
-  origin: GeoPoint;
-  destination: GeoPoint;
-  modes: MobilityMode[];
-  distanceKm: number;
-  durationMinutes: number;
-  carbonGrams: number;
-  carbonSavedGrams: number;
-  /** Jours actifs, convention JS Date.getDay() : 0 = dimanche ... 6 = samedi. */
-  daysOfWeek: number[];
-  /** Heure de depart "HH:MM". */
-  departureTime: string;
-  /** Heure du retour "HH:MM" pour un aller-retour, sinon null. */
-  returnTime: string | null;
-  /**
-   * Une routine n'est jamais materialisee en trajets : ses passages sont
-   * comptes a la lecture, sur ces periodes. La derniere est ouverte tant que
-   * la routine n'est pas en pause.
-   */
-  periods: RoutinePeriod[];
-  createdAt: string;
 }
 
 export interface TripActivitySummary {

@@ -1,38 +1,107 @@
 // Module authentification : connexion et inscription.
-import { FormEvent, useState } from 'react';
-import { Bike, Navigation, Route, ShieldCheck, Sparkles} from 'lucide-react';
+//
+// Chaque formulaire valide avec le contrat que l'API applique (contracts/auth) :
+// une saisie refusee ici le serait au meme titre par le serveur.
+import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { Bike, Navigation, Route, ShieldCheck, Sparkles } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
-import type { Session } from '../../lib/api/account';
-import { loginUser, registerUser } from '../../lib/auth';
+import { credentials, registration, type Credentials, type Registration } from '../../contracts';
+import { useLogin, useRegister } from '../../queries';
 
-export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Session) => void }) {
+function FieldError({ message }: { message?: string }) {
+  return message ? <p className="text-xs text-destructive">{message}</p> : null;
+}
+
+function RequestError({ error }: { error: Error | null }) {
+  return error ? (
+    <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+      {error.message}
+    </p>
+  ) : null;
+}
+
+function LoginForm() {
+  const login = useLogin();
+  const form = useForm<Credentials>({ resolver: zodResolver(credentials), defaultValues: { email: '', password: '' } });
+  const { errors } = form.formState;
+
+  return (
+    <form className="grid gap-3" noValidate onSubmit={form.handleSubmit((values) => login.mutate(values))}>
+      <label className="grid gap-1.5 text-sm font-medium" htmlFor="auth-email">
+        Email
+        <Input id="auth-email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} {...form.register('email')} />
+        <FieldError message={errors.email?.message} />
+      </label>
+      <label className="grid gap-1.5 text-sm font-medium" htmlFor="auth-password">
+        Mot de passe
+        <Input
+          id="auth-password"
+          type="password"
+          autoComplete="current-password"
+          aria-invalid={Boolean(errors.password)}
+          {...form.register('password')}
+        />
+        <FieldError message={errors.password?.message} />
+      </label>
+      <RequestError error={login.error} />
+      <Button type="submit" disabled={login.isPending}>
+        {login.isPending ? 'Traitement...' : 'Ouvrir la carte'}
+      </Button>
+    </form>
+  );
+}
+
+function RegisterForm() {
+  const register = useRegister();
+  const form = useForm<Registration>({
+    resolver: zodResolver(registration),
+    defaultValues: { displayName: '', email: '', password: '' },
+  });
+  const { errors } = form.formState;
+
+  return (
+    <form className="grid gap-3" noValidate onSubmit={form.handleSubmit((values) => register.mutate(values))}>
+      <label className="grid gap-1.5 text-sm font-medium" htmlFor="register-display-name">
+        Nom affiche
+        <Input
+          id="register-display-name"
+          autoComplete="name"
+          aria-invalid={Boolean(errors.displayName)}
+          {...form.register('displayName')}
+        />
+        <FieldError message={errors.displayName?.message} />
+      </label>
+      <label className="grid gap-1.5 text-sm font-medium" htmlFor="auth-email">
+        Email
+        <Input id="auth-email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} {...form.register('email')} />
+        <FieldError message={errors.email?.message} />
+      </label>
+      <label className="grid gap-1.5 text-sm font-medium" htmlFor="auth-password">
+        Mot de passe
+        <Input
+          id="auth-password"
+          type="password"
+          autoComplete="new-password"
+          aria-invalid={Boolean(errors.password)}
+          {...form.register('password')}
+        />
+        <FieldError message={errors.password?.message} />
+      </label>
+      <RequestError error={register.error} />
+      <Button type="submit" disabled={register.isPending}>
+        {register.isPending ? 'Traitement...' : 'Creer le compte'}
+      </Button>
+    </form>
+  );
+}
+
+export function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setBusy(true);
-    setError('');
-
-    try {
-      const session =
-        mode === 'register'
-          ? await registerUser({ displayName, email, password })
-          : await loginUser({ email, password });
-      onAuthenticated(session);
-    } catch (currentError) {
-      setError(currentError instanceof Error ? currentError.message : 'Action impossible.');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <main className="grid min-h-dvh place-items-center bg-[radial-gradient(circle_at_18%_12%,oklch(0.93_0.05_130/0.65),transparent_42%),radial-gradient(circle_at_85%_90%,oklch(0.9_0.17_122/0.28),transparent_38%),linear-gradient(160deg,oklch(0.976_0.008_95),oklch(0.955_0.018_110))] p-4">
@@ -99,56 +168,18 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Ses
             <CardDescription>Connecte-toi pour planifier tes trajets et suivre tes objectifs carbone.</CardDescription>
           </CardHeader>
           <CardContent>
-          <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Mode d'authentification">
-            <Button type="button" role="tab" aria-selected={mode === 'login'} variant={mode === 'login' ? 'default' : 'ghost'} size="sm" onClick={() => setMode('login')}>
-              Connexion
-            </Button>
-            <Button type="button" role="tab" aria-selected={mode === 'register'} variant={mode === 'register' ? 'default' : 'ghost'} size="sm" onClick={() => setMode('register')}>
-              Inscription
-            </Button>
-          </div>
-          <form className="grid gap-3" onSubmit={handleSubmit}>
-            {mode === 'register' ? (
-              <label className="grid gap-1.5 text-sm font-medium" htmlFor="register-display-name">
-                Nom affiche
-                <Input
-                  id="register-display-name"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  autoComplete="name"
-                  required
-                />
-              </label>
-            ) : null}
-            <label className="grid gap-1.5 text-sm font-medium" htmlFor="auth-email">
-              Email
-              <Input id="auth-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
-            </label>
-            <label className="grid gap-1.5 text-sm font-medium" htmlFor="auth-password">
-              Mot de passe
-              <Input
-                id="auth-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                minLength={12}
-                required
-              />
-            </label>
-            {error ? (
-              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <Button type="submit" disabled={busy}>
-              {busy ? 'Traitement...' : mode === 'register' ? 'Creer le compte' : 'Ouvrir la carte'}
-            </Button>
-          </form>
+            <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Mode d'authentification">
+              <Button type="button" role="tab" aria-selected={mode === 'login'} variant={mode === 'login' ? 'default' : 'ghost'} size="sm" onClick={() => setMode('login')}>
+                Connexion
+              </Button>
+              <Button type="button" role="tab" aria-selected={mode === 'register'} variant={mode === 'register' ? 'default' : 'ghost'} size="sm" onClick={() => setMode('register')}>
+                Inscription
+              </Button>
+            </div>
+            {mode === 'login' ? <LoginForm /> : <RegisterForm />}
           </CardContent>
         </Card>
       </div>
     </main>
   );
 }
-

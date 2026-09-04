@@ -1458,7 +1458,7 @@ def section_6() -> list:
                 ["Station de mobilite partagee", "SharedStation", "Publier flux GTFS / GBFS (Fig. 2)", "src/types.ts"],
                 ["Option d'itineraire proposee", "RouteOption (+ RouteLeg, RouteInstruction)", "message 5 (Fig. 3)", "src/types.ts"],
                 ["Trajet enregistre", "TripRecord", "message 8 (Fig. 3)", "src/types.ts"],
-                ["Service d'authentification", "AuthService", ":AuthService (Fig. 4)", "src/lib/auth.ts"],
+                ["Service d'authentification", "sessionQuery + mutations", ":AuthService (Fig. 4)", "src/queries/session.ts"],
                 ["Moteur d'itineraires", "RoutePlanner (fonction planRoutes)", ":RoutePlanner (Fig. 3 et 4)", "src/lib/routePlanner.ts"],
                 ["Adaptateur transport", "TransportApi (loadTransportNetwork)", ":TransportApi (Fig. 4)", "src/lib/transportApi.ts"],
                 ["Adaptateur APIs externes", "ExternalApis (searchPlaces, enhanceRoutes...)", ":ExternalApis (Fig. 4)", "src/lib/externalApis.ts"],

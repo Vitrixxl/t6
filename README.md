@@ -6,16 +6,18 @@ Application PWA React/TypeScript **mobile first** pour le sujet T6 CDSD "Urban F
 
 Deux briques, une seule origine pour le navigateur :
 
-- **Client** (`src/`) : PWA React/TypeScript. L'etat du compte vit en memoire, charge a la connexion.
+- **Client** (`src/`) : PWA React/TypeScript. Les donnees du compte vivent dans le cache de requetes (React Query), amorce a la connexion.
 - **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, calcul d'itinéraires.
+- **Contrats** (`src/contracts/`) : un schema zod par objet echange, importe par les deux : validation de l'API, validation des formulaires (react-hook-form), types, OpenAPI.
 
 Le serveur est la seule source de verite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
-en base, etat du compte rendu a la connexion (`GET /api/state`) et renvoye par collection apres chaque action :
-`PUT /api/trips/planned`, `/api/trips/recurring`, `/api/trips/history`, `/api/saved-routes`, `/api/me/profile`.
-Chaque liste se remplace seule, en transaction, bornee a quelques dizaines ou centaines de lignes ; une action
-n'envoie que ce qu'elle a touche. Pas de cache local : l'etat vit en memoire (atomes jotai, `src/state/`) le temps de la session, et une
-ecriture refusee par le reseau est signalee a l'utilisateur. Exigence C10 (connectivite variable) : cache du socle et
-des flux transport par le service worker, etats de chargement explicites, erreurs reseau propres.
+en base, etat du compte rendu a la connexion et une route par collection ensuite, en lecture comme en
+remplacement : `GET`/`PUT /api/trips/planned`, `/api/trips/recurring`, `/api/trips/history`, `/api/saved-routes`,
+`/api/me/profile`. Chaque liste se remplace seule, en transaction, bornee a quelques dizaines ou centaines de
+lignes ; une action n'envoie que ce qu'elle a touche, les envois sont serialises. Pas de cache local persistant :
+les listes vivent dans le cache React Query (`src/queries/`) le temps de la session, et une ecriture refusee est
+signalee a l'utilisateur, la liste etant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
+socle et des flux transport par le service worker, etats de chargement explicites, erreurs reseau propres.
 
 Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
 
@@ -29,7 +31,6 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | --- | --- |
 | `config/` | lecture et validation des variables d'environnement |
 | `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
-| `models/` | contrats TypeBox : valident la requête, typent le gestionnaire et génèrent l'OpenAPI |
 | `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
 | `services/` | règles métier (remplacement des collections, sessions, routage et son cache) |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
@@ -41,15 +42,16 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | --- | --- |
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
-| `lib/api/` | couche serveur du client : client HTTP, reprise de session, envoi de l'etat par partie |
-| `state/` | etat global (jotai) : session, etat du compte, atomes derives et actions |
-| `lib/auth/` | authentification : appels API, cache de session, normalisation du profil |
+| `contracts/` | schemas zod partages avec l'API : validation, types derives, OpenAPI |
+| `lib/api/` | couche serveur du client : client HTTP, authentification, une route par partie du compte |
+| `queries/` | ressources servies par l'API dans le cache React Query : une ressource par fichier, sa requete et ses actions |
+| `state/` | etat d'ecran partage entre modules (jotai) : formulaire de planification, hub |
 | `components/map/` | carte MapLibre : composant, popups, sources |
 | `components/planner/trips/` | module trajets : hub, listes, formulaire, objectifs |
 | `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
 
 Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
-`server/src/services/collections.ts` et `src/state/session.ts` (l'etat par collection, chaque action n'envoie que ce qu'elle a touche),
+`server/src/services/collections.ts` et `src/queries/account.ts` (l'etat par collection, chaque action n'envoie que ce qu'elle a touche),
 `src/lib/planner/index.ts` (le métier).
 
 ## Livrables
@@ -136,8 +138,8 @@ Chemin Chromium des scripts configurable via `CHROME_BIN`.
 
 Côté serveur : mots de passe hachés en argon2id (19 Mio, t=2, p=1 — paramètres OWASP, fonction *memory-hard*),
 sessions opaques de 256 bits dont seule l'empreinte SHA-256 est stockée (révocables à la déconnexion), cookie
-`httpOnly` + `SameSite=Lax` (pas de jeton manipulable en JavaScript, pas de CSRF inter-site), validation TypeBox de
-toute entrée, limitation de débit (10 req/min sur l'authentification), en-têtes de sécurité helmet, message
+`httpOnly` + `SameSite=Lax` (pas de jeton manipulable en JavaScript, pas de CSRF inter-site), validation zod de
+toute entrée (les memes contrats que les formulaires du client), limitation de débit (10 req/min sur l'authentification), en-têtes de sécurité helmet, message
 d'erreur unique à la connexion pour ne pas divulguer l'existence d'un compte. Aucun en-tête CORS n'est émis :
 l'API n'est consommée qu'en même origine.
 

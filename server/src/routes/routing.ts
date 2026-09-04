@@ -2,10 +2,9 @@
 // l'indisponibilite du calculateur en 503 explicite : le client doit pouvoir
 // distinguer « pas de trace » de « trace en cours de calcul ».
 import { Elysia } from 'elysia';
-import type { MobilityMode } from '../../../src/types.ts';
 import type { AppContext } from '../plugins/context.ts';
 import type { ServerConfig } from '../config/index.ts';
-import { errorResponse, routeGeometry, routeQuery } from '../models/index.ts';
+import { errorResponse, routeGeometry, routeQuery } from '../../../src/contracts/index.ts';
 import { createRoutingService, type Coordinates } from '../services/routing/index.ts';
 
 /** `"4.832,45.7578"` -> coordonnees. Le format est verifie par le schema. */
@@ -20,7 +19,7 @@ export function routingRoutes(ctx: AppContext, config: ServerConfig) {
     return new Elysia({ tags: ['Transport'] }).get(
         '/route',
         async ({ query, set }) => {
-            const result = await routing.route(query.mode as MobilityMode, parseCoordinates(query.from), parseCoordinates(query.to));
+            const result = await routing.route(query.mode, parseCoordinates(query.from), parseCoordinates(query.to));
 
             if (!result) {
                 set.status = 503;
