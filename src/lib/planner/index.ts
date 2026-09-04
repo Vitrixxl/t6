@@ -5,6 +5,7 @@
 // appeler et trier le resultat. Ajouter un mode revient donc a ajouter un
 // fichier, sans toucher a la logique de classement.
 import type { MobilityProfile, RouteLeg, RouteOption, RouteRequest } from '../../types';
+import { estimateRouteAccessPlan, type RouteAccessPlan } from './access';
 import { haversineDistanceKm } from './geo';
 import { createBikeOption } from './options/bike';
 import { createBikeTransitOption } from './options/bike-transit';
@@ -15,14 +16,22 @@ import { createWalkOption } from './options/walk';
 import { applyRoutedLegs } from './legs';
 import { scoreOption } from './scoring';
 
-export function planRoutes(request: RouteRequest): RouteOption[] {
+export function planRoutes(
+    request: RouteRequest,
+    access: RouteAccessPlan = estimateRouteAccessPlan({
+        origin: request.origin,
+        destination: request.destination,
+        network: request.network,
+        requireAccessible: request.profile.accessibilityNeed,
+    }),
+): RouteOption[] {
     const directKm = Math.max(haversineDistanceKm(request.origin, request.destination), 0.15);
     const candidates = [
-        createTransitOption(request),
-        createBikeTransitOption(request, directKm),
-        createScooterTransitOption(request, directKm),
-        createBikeOption(request, directKm),
-        createScooterOption(request, directKm),
+        createTransitOption(request, access.transit),
+        createBikeTransitOption(request, directKm, access.bikeTransit),
+        createScooterTransitOption(request, directKm, access.scooterTransit),
+        createBikeOption(request, directKm, access.bike),
+        createScooterOption(request, directKm, access.scooter),
         createWalkOption(request, directKm),
     ].filter((option): option is RouteOption => Boolean(option));
 
@@ -41,10 +50,9 @@ export function rankRoutes(routes: RouteOption[], profile: MobilityProfile): Rou
 /**
  * Mesure toutes les options par le service de routage, puis les reclasse.
  *
- * Le moteur local calcule a vol d'oiseau pour savoir quelles options existent.
- * Ces chiffres ne doivent pas atteindre l'interface : une liste ou une ligne est
- * mesuree et les autres estimees n'est pas comparable, et changer de selection
- * changeait les valeurs affichees (B20).
+ * Les distances a vol d'oiseau ne servent qu'a construire les segments avant
+ * leur mesure. Ces chiffres ne doivent pas atteindre l'interface : une liste ou
+ * une ligne mesuree et les autres estimees ne sont pas comparables (B20).
  */
 export async function measureRoutes(
     routes: RouteOption[],
@@ -59,7 +67,9 @@ export async function measureRoutes(
     // supposerait de retomber sur son estimation, donc de remettre deux methodes
     // dans la meme liste.
     return rankRoutes(
-        measured.filter((option) => option.legs.length > 0 && option.legs.every((leg) => leg.path.length >= 2)),
+        measured.filter((option) =>
+            option.legs.length > 0 && option.legs.every((leg) => leg.transfer || leg.path.length >= 2),
+        ),
         profile,
     );
 }
@@ -78,3 +88,4 @@ export {
 } from './nearby';
 export { applyRoutedLegs } from './legs';
 export { midpointOfPath } from './shape';
+export { prepareRoutedAccessPlan, type RouteAccessPlan, type RouteMatrixMeasurer } from './access';

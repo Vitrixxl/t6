@@ -1,11 +1,14 @@
 // Generateur d'option : transit.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { haversineDistanceKm, stopToPoint } from '../geo';
+import type { RouteAccessPlan } from '../access';
+import { stopToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
-import { findTransitJourney, transitLegs } from '../transit';
+import { transitLegs } from '../transit';
 
-export function createTransitOption({ origin, destination, profile, network }: RouteRequest): RouteOption | null {
-  const journey = findTransitJourney(network, origin, destination, profile.accessibilityNeed);
+export function createTransitOption(
+  { origin, destination }: RouteRequest,
+  journey: RouteAccessPlan['transit'],
+): RouteOption | null {
   if (!journey) {
     // Aucune ligne ne relie les deux points en une correspondance au plus, ou
     // aucune station accessible a proximite pour un profil PMR. On ne propose
@@ -15,8 +18,8 @@ export function createTransitOption({ origin, destination, profile, network }: R
 
   const boarding = journey.rides[0].boarding;
   const alighting = journey.rides[journey.rides.length - 1].alighting;
-  const firstWalkKm = haversineDistanceKm(origin, stopToPoint(boarding));
-  const lastWalkKm = haversineDistanceKm(stopToPoint(alighting), destination);
+  const firstWalkKm = journey.departureAccess.distanceKm;
+  const lastWalkKm = journey.arrivalAccess.distanceKm;
   const delayed = journey.rides.some((ride) => ride.waitMinutes > 4);
 
   const legs: RouteLeg[] = [

@@ -37,6 +37,18 @@ describe('profil de mobilite', () => {
     expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, carbonGoalGramsPerWeek: 10 }).success).toBe(false);
   });
 
+  it('valide des objectifs d economie de CO2 hebdomadaire et mensuel independants', () => {
+    expect(
+      mobilityProfile.safeParse({
+        ...DEFAULT_PROFILE,
+        weeklySavedGoalGrams: 1500,
+        monthlySavedGoalGrams: 9500,
+      }).success,
+    ).toBe(true);
+    expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, weeklySavedGoalGrams: 50 }).success).toBe(false);
+    expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, monthlySavedGoalGrams: 250_000 }).success).toBe(false);
+  });
+
   it('exige au moins un mode', () => {
     expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, preferredModes: [] }).success).toBe(false);
   });

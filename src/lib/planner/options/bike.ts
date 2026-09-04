@@ -1,23 +1,24 @@
 // Generateur d'option : bike.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { haversineDistanceKm, nearestStation, stationToPoint } from '../geo';
+import type { RouteAccessPlan } from '../access';
+import { haversineDistanceKm, stationToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
 
-export function createBikeOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
-  const stations = network.sharedMobility.data.stations.filter(
-    (station) => station.is_installed && station.is_renting && station.is_returning && station.bikes_available > 0,
-  );
-  const fromStation = nearestStation(stations, origin);
-  const toStation = nearestStation(stations, destination);
-
-  if (!fromStation || !toStation) {
+export function createBikeOption(
+  { origin, destination, profile, network }: RouteRequest,
+  directKm: number,
+  access: RouteAccessPlan['bike'],
+): RouteOption | null {
+  if (!access) {
     return null;
   }
+  const fromStation = access.pickup.station;
+  const toStation = access.dropoff.station;
 
   const rainWarning = network.gtfs.weather.condition.includes('rain');
-  const firstWalkKm = haversineDistanceKm(origin, stationToPoint(fromStation));
+  const firstWalkKm = access.pickup.measure.distanceKm;
   const bikeKm = Math.max(haversineDistanceKm(stationToPoint(fromStation), stationToPoint(toStation)) * 1.1, directKm);
-  const lastWalkKm = haversineDistanceKm(stationToPoint(toStation), destination);
+  const lastWalkKm = access.dropoff.measure.distanceKm;
   const legs: RouteLeg[] = [
     createLeg({
       id: 'walk-to-bike',

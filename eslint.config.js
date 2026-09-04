@@ -1,9 +1,9 @@
+import babelParser from '@babel/eslint-parser';
 import js from '@eslint/js';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
-import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
+export default [
   {
     ignores: [
       'dist',
@@ -31,15 +31,22 @@ export default tseslint.config(
       globals: { process: 'readonly', console: 'readonly' },
     },
   },
-  ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
+      parser: babelParser,
       ecmaVersion: 2022,
       sourceType: 'module',
       parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        requireConfigFile: false,
+        babelOptions: {
+          babelrc: false,
+          configFile: false,
+          presets: [
+            ['@babel/preset-typescript', { allExtensions: true, isTSX: true }],
+          ],
+          plugins: ['@babel/plugin-syntax-jsx'],
+        },
       },
     },
     plugins: {
@@ -50,6 +57,16 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.configs.recommended.rules,
       'no-undef': 'off',
+      // Babel retire les annotations avant l'analyse des portees. TypeScript
+      // reste l'autorite pour les symboles inutilises et les types implicites.
+      'no-unused-vars': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'TSAnyKeyword',
+          message: 'Le type any est interdit : decrire le contrat attendu.',
+        },
+      ],
     },
   },
-);
+];

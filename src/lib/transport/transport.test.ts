@@ -1,12 +1,15 @@
 import { afterEach, describe, expect, it, vi } from '../../test/harness';
-import { enhanceLegsWithLiveRouting, searchPlaces } from './index';
+import { enhanceLegsWithLiveRouting, hasCompleteGeometry, searchPlaces } from './index';
 import type { RouteLeg } from '../../types';
 
 const origin = { label: 'Bellecour', lat: 45.7578, lon: 4.832 };
 const destination = { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 };
 
 function jsonResponse(payload: unknown): Response {
-  return { ok: true, json: async () => payload } as Response;
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 // La recherche interroge deux geocodeurs: on route les stubs fetch par URL.
@@ -210,5 +213,26 @@ describe('enhanceLegsWithLiveRouting', () => {
 
     expect(stub).not.toHaveBeenCalled();
     expect(enhanced.path).toBe(transitPath);
+  });
+
+  it("n'envoie pas une correspondance interieure a OSRM et accepte son absence de trace", async () => {
+    const stub = vi.fn(async () => jsonResponse({}));
+    vi.stubGlobal('fetch', stub);
+    const transfer: RouteLeg = {
+      ...roadLeg,
+      id: 'transfer',
+      mode: 'walk',
+      title: 'Correspondance a pied',
+      path: [],
+      distanceKm: 0,
+      durationMinutes: 4,
+      transfer: true,
+    };
+
+    const [enhanced] = await enhanceLegsWithLiveRouting([transfer]);
+
+    expect(stub).not.toHaveBeenCalled();
+    expect(enhanced).toBe(transfer);
+    expect(hasCompleteGeometry([transfer])).toBe(true);
   });
 });

@@ -5,6 +5,9 @@
 // borne — on n'enrichit que l'itineraire selectionne, soit trois a quatre
 // appels, et seulement quand la selection change.
 //
+// Toutes les options candidates sont mesurees avant affichage. Le cache partage
+// absorbe les segments identiques entre options et utilisateurs.
+//
 // Un segment dont le routage ne repond pas ressort **sans geometrie**. C'est
 // deliberé : l'interface affichera un calcul en cours ou une indisponibilite,
 // jamais une ligne inventee. Un trace faux se lit comme un itineraire reel et
@@ -21,7 +24,7 @@ export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: Abor
       // decoupe entre les deux stations. OSRM ne route pas le rail : le lui
       // demander renvoyait un itineraire *routier* entre les deux stations, ce
       // qui dessinait le metro sur les quais et les sens uniques (B12).
-      if (leg.mode === 'transit') {
+      if (leg.mode === 'transit' || leg.transfer) {
         return leg;
       }
 
@@ -49,5 +52,5 @@ export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: Abor
 
 /** Un itineraire est pret a etre dessine quand tous ses segments ont un trace. */
 export function hasCompleteGeometry(legs: RouteLeg[]): boolean {
-  return legs.length > 0 && legs.every((leg) => leg.path.length >= 2);
+  return legs.length > 0 && legs.every((leg) => leg.transfer || leg.path.length >= 2);
 }

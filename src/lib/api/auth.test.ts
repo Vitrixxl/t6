@@ -32,10 +32,10 @@ describe('session', () => {
     await expect(loginUser({ email: 'a@b.fr', password: 'faux' })).rejects.toThrow('Identifiants invalides.');
   });
 
-  it('la deconnexion revoque la session cote serveur', () => {
+  it('la deconnexion revoque la session cote serveur', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
 
-    logoutUser();
+    await logoutUser();
 
     expect(String(fetchSpy.mock.calls[0]?.[0])).toContain('/api/auth/logout');
   });

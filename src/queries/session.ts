@@ -10,67 +10,68 @@ import { deleteAccount, loginUser, logoutUser, registerUser, restoreSession, typ
 import { mutationKeys, queryKeys } from './keys';
 
 export const sessionQuery = queryOptions({
-  queryKey: queryKeys.session,
-  queryFn: () => restoreSession(),
-  staleTime: Infinity,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
+    queryKey: queryKeys.session,
+    queryFn: () => restoreSession(),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
 });
 
 export function readSession(client: QueryClient): Session | null {
-  return client.getQueryData(sessionQuery.queryKey) ?? null;
+    return client.getQueryData(sessionQuery.queryKey) ?? null;
 }
 
 /** Ouvre une session : le compte et son etat, tels que le serveur les rend. */
 export function openSession(client: QueryClient, session: Session): void {
-  client.setQueryData(sessionQuery.queryKey, session);
+    client.setQueryData(sessionQuery.queryKey, session);
 }
 
 export function closeSession(client: QueryClient): void {
-  // Purger d'abord les ressources puis fermer la session. Les observateurs
-  // des ecrans du compte peuvent encore se rendre entre deux notifications :
-  // ils doivent alors voir l'ancienne session, jamais un compte deja absent.
-  client.getMutationCache().clear();
-  client.removeQueries({ queryKey: queryKeys.account });
-  client.setQueryData(sessionQuery.queryKey, null);
+    // Purger d'abord les ressources puis fermer la session. Les observateurs
+    // des ecrans du compte peuvent encore se rendre entre deux notifications :
+    // ils doivent alors voir l'ancienne session, jamais un compte deja absent.
+    client.getMutationCache().clear();
+    client.removeQueries({ queryKey: queryKeys.account });
+    client.setQueryData(sessionQuery.queryKey, null);
 }
 
-export function logout(client: QueryClient): void {
-  logoutUser();
-  closeSession(client);
+export function logout(client: QueryClient): Promise<void> {
+    const revocation = logoutUser();
+    closeSession(client);
+    return revocation;
 }
 
 /** Droit a l'effacement : le serveur supprime en cascade, puis la session se ferme. */
 export function deleteAccountOptions(client: QueryClient) {
-  return mutationOptions({
-    mutationKey: mutationKeys.deleteAccount,
-    mutationFn: () => deleteAccount(),
-    onSuccess: () => closeSession(client),
-    // Un refus reste lisible (useSaveError) tant qu'un succes ne l'a pas remplace.
-    gcTime: Infinity,
-  });
+    return mutationOptions({
+        mutationKey: mutationKeys.deleteAccount,
+        mutationFn: () => deleteAccount(),
+        onSuccess: () => closeSession(client),
+        // Un refus reste lisible (useSaveError) tant qu'un succes ne l'a pas remplace.
+        gcTime: Infinity,
+    });
 }
 
 export function useSession() {
-  return useQuery(sessionQuery);
+    return useQuery(sessionQuery);
 }
 
 export function useLogin() {
-  const client = useQueryClient();
-  return useMutation({ mutationFn: loginUser, onSuccess: (session) => openSession(client, session) });
+    const client = useQueryClient();
+    return useMutation({ mutationFn: loginUser, onSuccess: (session) => openSession(client, session) });
 }
 
 export function useRegister() {
-  const client = useQueryClient();
-  return useMutation({ mutationFn: registerUser, onSuccess: (session) => openSession(client, session) });
+    const client = useQueryClient();
+    return useMutation({ mutationFn: registerUser, onSuccess: (session) => openSession(client, session) });
 }
 
 export function useLogout(): () => void {
-  const client = useQueryClient();
-  return useCallback(() => logout(client), [client]);
+    const client = useQueryClient();
+    return useCallback(() => void logout(client), [client]);
 }
 
 export function useDeleteAccount() {
-  const client = useQueryClient();
-  return useMutation(deleteAccountOptions(client));
+    const client = useQueryClient();
+    return useMutation(deleteAccountOptions(client));
 }

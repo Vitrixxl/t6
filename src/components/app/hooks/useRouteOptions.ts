@@ -1,9 +1,9 @@
-// Calcul des itineraires : le moteur local propose les options, le service de
-// routage les mesure.
+// Calcul des itineraires : OSRM classe d'abord les acces possibles, le moteur
+// assemble les options, puis OSRM mesure tous leurs segments de voirie.
 //
 // **Aucune estimation n'atteint l'interface.** Le calcul local sert uniquement
-// a savoir quelles options existent ; ses chiffres restent dans le hook. Toutes
-// les options sont mesurees, puis affichees ensemble.
+// a savoir quelles options existent ; ses chiffres restent dans la requete.
+// Toutes les options sont mesurees, puis affichees ensemble.
 //
 // C'est le prix d'une liste comparable. Ne mesurer que l'option selectionnee
 // coutait trois appels au lieu d'une quinzaine, mais melangeait deux methodes
@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { GeoPoint, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
-import { planRoutes, preselectRoute } from '../../../lib/planner';
+import { preselectRoute } from '../../../lib/planner';
 import { measuredRoutesQuery, type RouteSearch } from '../../../queries';
 
 /**
@@ -57,15 +57,12 @@ export function useRouteOptions(input: {
     () => (origin && destination ? { origin, destination, profile } : null),
     [destination, origin, profile],
   );
-  const localRoutes = useMemo(() => (search ? planRoutes({ ...search, network }) : NO_ROUTES), [network, search]);
-
-  // La mesure est une requete : changer d'extremites l'annule, et la liste se
-  // vide pendant la nouvelle mesure. Afficher les estimations en attendant
-  // reviendrait a montrer des chiffres qui vont changer sous les yeux.
-  const measured = useQuery(measuredRoutesQuery(search, localRoutes));
+  // La selection des acces et la mesure forment une seule requete : changer
+  // d'extremites l'annule, et la liste se vide pendant le nouveau calcul.
+  const measured = useQuery(measuredRoutesQuery(search, network));
   const routes = measured.data ?? NO_ROUTES;
   const routingStatus: RoutingStatus =
-    localRoutes.length === 0 ? 'idle' : measured.isPending ? 'pending' : routes.length > 0 ? 'ready' : 'unavailable';
+    !search ? 'idle' : measured.isPending ? 'pending' : routes.length > 0 ? 'ready' : 'unavailable';
 
   // La selection manuelle vaut pour la recherche en cours ; une nouvelle
   // recherche repart de la preselection du profil, sans quoi le choix fait sur

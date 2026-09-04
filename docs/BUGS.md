@@ -481,3 +481,144 @@ Le scenario `bun run e2e` doit en plus terminer ses 7/7 assertions sans
 `PAGE ERROR` dans un vrai navigateur.
 
 **Niveau de verrouillage** : **automatise** (test du cache + scenario E2E).
+
+---
+
+## B23 — Le point d'acces le plus proche n'etait pas toujours le plus rapide
+
+**Criticite** : majeur — un mur, des voies ferrees ou une entree situee de
+l'autre cote d'un ilot pouvaient faire choisir une station Velo'v, une
+trottinette ou un arret plus long a rejoindre qu'un candidat un peu plus loin.
+
+### Identifier la source
+
+Le defaut a ete trouve en questionnant le choix technique pendant la revue du
+moteur : la selection des stations utilisait uniquement la distance Haversine,
+alors que la duree affichee ensuite venait d'OSRM. Le moteur optimisait donc une
+grandeur differente de celle annoncee a l'utilisateur.
+
+**Symptome** : deux points d'acces proches pouvaient etre classes dans le
+mauvais ordre des qu'un obstacle imposait un detour pieton.
+
+**Cause racine** : `nearestStation` et les candidats GTFS decidaient directement
+sur la distance a vol d'oiseau. OSRM n'intervenait qu'apres la construction de
+l'option, trop tard pour corriger le point d'acces choisi.
+
+### Corriger
+
+Haversine ne prend plus de decision : il borne seulement la recherche a huit
+candidats. `POST /api/route-matrix` mesure ensuite, en une requete OSRM Table,
+les durees reelles vers ces candidats. Le moteur retient le plus rapide dans la
+limite metier, puis construit les options. La marche choisit le profil pieton ;
+le rabattement velo et trottinette utilise le profil velo.
+
+Les cellules de la matrice rejoignent le cache SQLite partage de B13 sous des
+cles distinctes des geometries. Une geometrie deja connue peut fournir sa
+mesure ; une entree expiree peut encore servir si OSRM tombe.
+
+**Ou le voir** : `src/lib/planner/access.ts`,
+`server/src/services/routing/index.ts`, `server/src/routes/routing.ts`
+
+**Commit** : [`4c170ad`](https://github.com/Vitrixxl/t6/commit/4c170ad)
+
+### Tester et valider le correctif
+
+`src/lib/planner/access.test.ts` oppose une station plus proche a vol d'oiseau
+mais accessible en douze minutes a une station plus eloignee accessible en 110
+secondes : la seconde doit gagner. Les tests API verifient qu'une matrice
+complete ne produit qu'un appel amont, puis ressort entierement du cache.
+
+Le test de selection a ete ajoute apres la premiere implementation : il
+detectera une regression, mais n'a pas ete vu rouge avant le correctif initial.
+
+**Niveau de verrouillage** : **faible** (regression automatisee, protocole
+rouge-puis-vert initial non observe).
+
+---
+
+## B24 — Le temps de correspondance metro etait invisible dans les etapes
+
+**Criticite** : moyenne — la duree totale comptait quatre minutes, mais la fiche
+passait directement de la premiere ligne a la seconde. L'utilisateur ne voyait
+ni qu'il devait marcher ni d'ou venait ce temps.
+
+### Identifier la source
+
+Le defaut a ete signale sur une capture du trajet Metro A vers Metro B a
+Charpennes : les deux cartes de ligne etaient consecutives, sans etape entre
+elles. La constante `TRANSFER_PENALTY_MINUTES` etait seulement ajoutee au total
+du parcours dans `findTransitJourney`.
+
+**Cause racine** : la correspondance etait une penalite de scoring, pas un
+segment du domaine. La restitution ne pouvait donc pas l'afficher, et le temps
+de marche maximal du profil ne pouvait pas la compter comme marche.
+
+### Corriger
+
+`transitLegs` insere entre deux trajets un segment `walk` intitule
+« Correspondance a pied », de quatre minutes. Il reste visible meme avec une
+distance nulle et participe aux agregats. Le segment porte `transfer: true` :
+le routeur et la verification de geometrie savent alors que l'absence de trace
+est volontaire. Le GTFS ne publiant pas les cheminements interieurs entre quais,
+aucune ligne droite trompeuse n'est dessinee sur la carte.
+
+**Ou le voir** : `src/lib/planner/transit.ts`,
+`src/components/planner/RouteSteps.tsx`, `src/lib/transport/routing/legs.ts`
+
+**Commit** : [`4c170ad`](https://github.com/Vitrixxl/t6/commit/4c170ad)
+
+### Tester et valider le correctif
+
+Le test construit deux lignes qui se croisent a Charpennes et exige exactement
+trois segments : metro A, marche, metro B. La premiere execution a ete vue
+**rouge** : la fabrique ajoutait sa minute minimale de parcours aux quatre
+minutes fixes et rendait cinq minutes. Apres distinction entre distance nulle
+et temps fixe, le test est vert a quatre minutes. Un second test verifie
+qu'OSRM n'est pas appele et que la geometrie vide est acceptee.
+
+**Niveau de verrouillage** : **automatise**.
+
+---
+
+## B25 — L'objectif mensuel de CO2 ne pouvait pas etre choisi
+
+**Criticite** : moyenne — le planificateur affichait une progression mensuelle,
+mais sa cible etait toujours l'objectif hebdomadaire multiplie par quatre. Un
+utilisateur ne pouvait donc pas fixer une ambition propre au mois.
+
+### Identifier la source
+
+**Symptome** : modifier l'objectif hebdomadaire changeait automatiquement la
+cible mensuelle, sans champ mensuel dans le profil.
+
+**Cause racine** : `TripGoalsCard` calculait directement
+`weeklySavedGoalGrams * 4`. Le contrat `MobilityProfile` ne portait aucune
+valeur mensuelle a persister ; l'interface ne pouvait donc pas faire autrement.
+
+### Corriger
+
+Le contrat partage porte maintenant `monthlySavedGoalGrams`, avec ses bornes et
+une valeur par defaut pour les comptes anterieurs. Le profil presente deux
+champs explicites et independants, puis le planificateur compare chaque agregat
+a la cible de sa periode. `PUT /api/me/profile` persiste le profil entier :
+aucune route ou table supplementaire n'est necessaire.
+
+**Ou le voir** : `src/contracts/profile.ts`,
+`src/components/profile/ProfilePanels.tsx`,
+`src/components/planner/trips/TripGoalsCard.tsx`
+
+**Commit** : [`23c028a`](https://github.com/Vitrixxl/t6/commit/23c028a)
+
+### Tester et valider le correctif
+
+Le test de contrat fixe deux valeurs volontairement non proportionnelles et
+verifie leurs bornes independamment. Le test d'integration API remplace ensuite
+le profil avec un objectif mensuel, le relit et exige la meme valeur. Enfin, la
+recette navigateur a enregistre 2 300 g par semaine et 11 500 g par mois, puis
+a confirme leur conservation apres rechargement.
+
+Le test automatise a ete ajoute avec le champ et n'a pas ete vu rouge avant sa
+premiere implementation.
+
+**Niveau de verrouillage** : **faible** (contrat et persistance automatises,
+recette visuelle manuelle, protocole rouge-puis-vert initial non observe).

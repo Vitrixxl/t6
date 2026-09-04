@@ -4,29 +4,27 @@
 // cookie httpOnly ; l'etat du compte lui est rendu a chaque ouverture de
 // session (voir account.ts).
 import type { Credentials, Registration, Session } from '../../contracts';
-import { apiRequest } from './http';
+import { api, treatyRequest } from './client';
 
-export function registerUser(input: Registration): Promise<Session> {
-  return apiRequest<Session>('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ email: input.email.trim(), password: input.password, displayName: input.displayName }),
-  });
+export async function registerUser(input: Registration): Promise<Session> {
+    return treatyRequest(api.auth.register.post({
+        email: input.email.trim(),
+        password: input.password,
+        displayName: input.displayName,
+    }));
 }
 
-export function loginUser(input: Credentials): Promise<Session> {
-  return apiRequest<Session>('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email: input.email.trim(), password: input.password }),
-  });
+export async function loginUser(input: Credentials): Promise<Session> {
+    return treatyRequest(api.auth.login.post({ email: input.email.trim(), password: input.password }));
 }
 
-export function logoutUser(): void {
-  // La session est revoquee cote serveur ; un echec reseau ne doit pas
-  // empecher de quitter l'ecran, le cookie expirera de lui-meme.
-  void apiRequest('/auth/logout', { method: 'POST' }).catch(() => undefined);
+export async function logoutUser(): Promise<void> {
+    // La session est revoquee cote serveur ; un echec reseau ne doit pas
+    // empecher de quitter l'ecran, le cookie expirera de lui-meme.
+    await treatyRequest(api.auth.logout.post()).then(() => undefined, () => undefined);
 }
 
 /** Droit a l'effacement (RGPD art. 17) : le serveur supprime tout en cascade. */
 export async function deleteAccount(): Promise<void> {
-  await apiRequest('/me', { method: 'DELETE' });
+    await treatyRequest(api.me.delete());
 }

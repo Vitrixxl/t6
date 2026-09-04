@@ -4,6 +4,9 @@ import type { GeoPoint, GtfsStop, SharedStation } from '../../types';
 import { MAX_STATION_ACCESS_KM } from './constants';
 import { distanceToCenterKm, METRO_RADIUS_KM } from '../transport/feeds/area';
 
+/** Nombre de points proches soumis au classement par temps de trajet reel. */
+export const MAX_ACCESS_CANDIDATES = 8;
+
 export function haversineDistanceKm(a: Pick<GeoPoint, 'lat' | 'lon'>, b: Pick<GeoPoint, 'lat' | 'lon'>): number {
   const radiusKm = 6371;
   const dLat = toRadians(b.lat - a.lat);
@@ -20,17 +23,24 @@ export function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
 
-// RG3 : seule une station situee dans le rayon de marche (400 m) est exploitable.
-export function nearestStation(stations: SharedStation[], point: GeoPoint): SharedStation | null {
-  if (stations.length === 0) {
-    return null;
-  }
-
-  const closest = stations
+/**
+ * Premier filtre, volontairement geometrique : tout trajet de moins de 400 m
+ * sur la voirie est aussi a moins de 400 m a vol d'oiseau. Le classement final
+ * de ces huit candidats appartient a access.ts et repose sur OSRM.
+ */
+export function stationCandidates(stations: SharedStation[], point: GeoPoint): SharedStation[] {
+  return stations
     .slice()
-    .sort((a, b) => haversineDistanceKm(stationToPoint(a), point) - haversineDistanceKm(stationToPoint(b), point))[0];
+    .map((station) => ({ station, distanceKm: haversineDistanceKm(stationToPoint(station), point) }))
+    .filter(({ distanceKm }) => distanceKm <= MAX_STATION_ACCESS_KM)
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, MAX_ACCESS_CANDIDATES)
+    .map(({ station }) => station);
+}
 
-  return haversineDistanceKm(stationToPoint(closest), point) <= MAX_STATION_ACCESS_KM ? closest : null;
+// Repli deterministe des tests purs ; le parcours affiche utilise le classement OSRM.
+export function nearestStation(stations: SharedStation[], point: GeoPoint): SharedStation | null {
+  return stationCandidates(stations, point)[0] ?? null;
 }
 
 export function stopToPoint(stop: GtfsStop): GeoPoint {

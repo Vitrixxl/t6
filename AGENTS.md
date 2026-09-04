@@ -87,6 +87,10 @@ Toute la chaine tourne sous **Bun**, sans exception : execution, regroupement,
 tests, serveur. Pas de `npm`, pas de `node`, pas de bundler tiers. Un outil de
 plus doit se justifier par un besoin que Bun ne couvre pas.
 
+Le depot reste sur **TypeScript 7**. Tant que `typescript-eslint` ne le prend
+pas en charge, ESLint utilise le parseur Babel pour la syntaxe ; `tsc` strict
+reste l'autorite pour les types et les symboles inutilises.
+
 Le serveur porte **l'API et le client** : une seule origine, donc un cookie de
 session de premiere partie et aucun en-tete CORS. Il n'y a pas de serveur de
 developpement separe.
@@ -128,7 +132,9 @@ authentification, une route par partie du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa
 requete et ses actions), `state/` (l'etat d'ecran partage entre modules, en
 atomes jotai), `components/map/`, `components/planner/trips/`,
-`components/app/hooks/`. Les composants appellent les hooks dont ils ont
+`components/app/hooks/`. Tous les appels du client vers l'API UrbanFlow passent
+par Eden Treaty et sont types depuis l'arbre Elysia ; les appels aux services
+tiers restent dans `lib/transport/`. Les composants appellent les hooks dont ils ont
 besoin ; on ne fait pas transiter l'etat par des props. Un formulaire valide
 avec le contrat que l'API applique (react-hook-form + zod) : aucune borne
 n'est recopiee dans un composant.
@@ -174,6 +180,10 @@ dossier ; ne pas produire d'affichage qui les contredit.
 En revanche le nom de ligne **est** affiche depuis l'integration de la desserte
 publiee : une ligne n'est proposee que si elle dessert reellement les deux
 stations du segment.
+
+Les objectifs d'economie de CO2 hebdomadaire et mensuel sont deux valeurs de
+profil independantes. Le mensuel ne se derive pas du premier : chaque periode
+est comparee a son propre objectif persiste par l'API.
 
 **Commentaires : le pourquoi, pas le quoi.** Ils sont en francais, sans
 accents, alignes sur le style existant. Un commentaire qui paraphrase la ligne

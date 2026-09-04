@@ -12,6 +12,11 @@ import { mobilityMode, requiredModes } from './primitives';
 export const routePreselection = z.union([z.literal('fastest'), mobilityMode]);
 export type RoutePreselection = z.infer<typeof routePreselection>;
 
+/** Valeurs appliquees aux profils crees avant l'ajout des objectifs. */
+export const DEFAULT_WEEKLY_TRIPS_GOAL = 5;
+export const DEFAULT_WEEKLY_SAVED_GOAL_GRAMS = 2000;
+export const DEFAULT_MONTHLY_SAVED_GOAL_GRAMS = 8000;
+
 export const mobilityProfile = z.object({
   displayName: z
     .string()
@@ -24,9 +29,10 @@ export const mobilityProfile = z.object({
   accessibilityNeed: z.boolean(),
   avoidRain: z.boolean(),
   carbonGoalGramsPerWeek: z.number().min(250, '250 g au moins.').max(20_000, '20 000 g au plus.'),
-  /** Objectifs hebdomadaires saisis par l'utilisateur (absents sur les anciens profils). */
+  /** Objectifs saisis par l'utilisateur (absents sur les anciens profils). */
   weeklyTripsGoal: z.int().min(1, '1 trajet au moins.').max(60, '60 trajets au plus.').optional(),
   weeklySavedGoalGrams: z.number().min(100, '100 g au moins.').max(50_000, '50 000 g au plus.').optional(),
+  monthlySavedGoalGrams: z.number().min(100, '100 g au moins.').max(200_000, '200 000 g au plus.').optional(),
   /** Option preselectionnee au calcul d'un itineraire. Absent sur les anciens profils : la plus rapide s'applique. */
   routePreselection: routePreselection.optional(),
 });
@@ -40,7 +46,8 @@ export const DEFAULT_PROFILE: MobilityProfile = {
   accessibilityNeed: false,
   avoidRain: true,
   carbonGoalGramsPerWeek: 2500,
-  weeklyTripsGoal: 5,
-  weeklySavedGoalGrams: 2000,
+  weeklyTripsGoal: DEFAULT_WEEKLY_TRIPS_GOAL,
+  weeklySavedGoalGrams: DEFAULT_WEEKLY_SAVED_GOAL_GRAMS,
+  monthlySavedGoalGrams: DEFAULT_MONTHLY_SAVED_GOAL_GRAMS,
   routePreselection: 'fastest',
 };

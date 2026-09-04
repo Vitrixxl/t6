@@ -65,7 +65,7 @@ const network: TransportNetwork = {
           lon: 4.8325,
           capacity: 20,
           bikes_available: 8,
-          scooters_available: 4,
+          scooters_available: 0,
           is_installed: true,
           is_renting: true,
           is_returning: true,
@@ -80,7 +80,21 @@ const network: TransportNetwork = {
           lon: 4.859,
           capacity: 20,
           bikes_available: 3,
-          scooters_available: 2,
+          scooters_available: 0,
+          is_installed: true,
+          is_renting: true,
+          is_returning: true,
+          last_reported: 1789365900,
+        },
+        {
+          station_id: 'trott-1',
+          kind: 'scooter' as const,
+          name: 'Trottinettes Bellecour',
+          lat: 45.7581,
+          lon: 4.8324,
+          capacity: 0,
+          bikes_available: 0,
+          scooters_available: 4,
           is_installed: true,
           is_renting: true,
           is_returning: true,
@@ -138,6 +152,25 @@ describe('planRoutes', () => {
         }
       }
     }
+  });
+
+  it('n invente pas une ligne droite quand le trace officiel est inexploitable', () => {
+    const withoutShape: TransportNetwork = {
+      ...network,
+      gtfs: {
+        ...network.gtfs,
+        routes: network.gtfs.routes.map((route) => ({ ...route, shape: [] })),
+      },
+    };
+
+    const routes = planRoutes({
+      origin: LANDMARKS[0],
+      destination: LANDMARKS[1],
+      profile: DEFAULT_PROFILE,
+      network: withoutShape,
+    });
+
+    expect(routes.some((route) => route.modes.includes('transit'))).toBe(false);
   });
 
   it('penalizes inaccessible options when PMR profile is enabled', () => {

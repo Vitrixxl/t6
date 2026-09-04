@@ -8,3 +8,4 @@
 // somme de celles de ses segments.
 
 export { enhanceLegsWithLiveRouting, hasCompleteGeometry } from './legs';
+export { fetchRouteMatrix } from './osrm';

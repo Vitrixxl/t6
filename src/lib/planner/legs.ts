@@ -35,6 +35,9 @@ export function legDuration(travelMinutes: number, estimate: LegEstimate): numbe
 
 export function createLeg(input: LegInput): RouteLeg {
   const roundedDistance = round(input.distanceKm, 2);
+  // Une etape sans distance connue (correspondance dans une station) ne doit
+  // pas recevoir la minute minimale d'un parcours. Seul son temps fixe compte.
+  const travelMinutes = roundedDistance === 0 ? 0 : minutesForDistance(roundedDistance, SPEED_KMH[input.mode]);
   const estimate: LegEstimate = {
     travelFactor: input.estimate?.travelFactor ?? 1,
     overheadMinutes: input.estimate?.overheadMinutes ?? 0,
@@ -51,7 +54,7 @@ export function createLeg(input: LegInput): RouteLeg {
     toPoint: input.to,
     path: input.path ?? [],
     distanceKm: roundedDistance,
-    durationMinutes: legDuration(minutesForDistance(roundedDistance, SPEED_KMH[input.mode]), estimate),
+    durationMinutes: legDuration(travelMinutes, estimate),
     carbonGrams: Math.round(roundedDistance * estimate.carbonGramsPerKm),
     accessible: input.accessible,
     detail: `${MODE_LABELS[input.mode]} sur ${roundedDistance.toFixed(2)} km.`,

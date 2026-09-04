@@ -6,7 +6,7 @@ Application PWA React/TypeScript **mobile first** pour le sujet T6 CDSD "Urban F
 
 Deux briques, une seule origine pour le navigateur :
 
-- **Client** (`src/`) : PWA React/TypeScript. Les donnees du compte vivent dans le cache de requetes (React Query), amorce a la connexion.
+- **Client** (`src/`) : PWA React/TypeScript 7. Les donnees du compte vivent dans le cache de requetes (React Query), amorce a la connexion. Tous les appels a l'API UrbanFlow passent par Eden Treaty et heritent leurs types de l'arbre Elysia.
 - **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, calcul d'itinéraires.
 - **Contrats** (`src/contracts/`) : un schema zod par objet echange, importe par les deux : validation de l'API, validation des formulaires (react-hook-form), types, OpenAPI.
 
@@ -23,9 +23,10 @@ Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API abse
 
 ## Organisation du code
 
-Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
+Le decoupage suit les responsabilites fonctionnelles ; la longueur seule ne
+commande pas la creation d'un module.
 
-**API** (`server/src/`, 113 lignes au maximum)
+**API** (`server/src/`)
 
 | Dossier | Rôle |
 | --- | --- |
@@ -43,7 +44,7 @@ Aucun fichier ne dépasse 450 lignes ; chaque dossier porte une responsabilité.
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
 | `contracts/` | schemas zod partages avec l'API : validation, types derives, OpenAPI |
-| `lib/api/` | couche serveur du client : client HTTP, authentification, une route par partie du compte |
+| `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une route par partie du compte |
 | `queries/` | ressources servies par l'API dans le cache React Query : une ressource par fichier, sa requete et ses actions |
 | `state/` | etat d'ecran partage entre modules (jotai) : formulaire de planification, hub |
 | `components/map/` | carte MapLibre : composant, popups, sources |
@@ -69,7 +70,7 @@ Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/au
 | --- | --- | --- |
 | Géocodage adresses | `api-adresse.data.gouv.fr` (BAN) | live navigateur |
 | Géocodage lieux/quartiers | Photon (`photon.komoot.io`, OSM) | live navigateur |
-| Routage | OSRM (foot/bike/driving), auto-hébergeable | relais API `/api/route` (cache SQLite partagé) |
+| Routage | OSRM (foot/bike ; trottinette sur bike), auto-hébergeable | relais API `/api/route` et `/api/route-matrix` (cache SQLite partagé) |
 | Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | live navigateur |
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | live navigateur |
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | intégré au build (`bun run generate:gtfs`) |
@@ -80,14 +81,31 @@ Chaque flux a un fallback local (`public/data/`) signalé dans l'UI.
 
 ## Calcul d'itinéraires
 
-Le navigateur n'appelle jamais le calculateur directement : il passe par `GET /api/route`, qui met les tracés en cache dans SQLite et les partage entre tous les clients.
+Le navigateur n'appelle jamais le calculateur directement. Une recherche se deroule en trois temps :
+
+1. Haversine ne garde que huit stations ou arrets proches, afin de borner le cout.
+2. `POST /api/route-matrix` demande a OSRM la duree routable vers chacun d'eux ; le moteur choisit donc l'acces le plus rapide a pied ou a velo, pas le point geometriquement le plus proche.
+3. Le moteur assemble les options, puis `GET /api/route` mesure et trace chaque segment de voirie avant affichage.
+
+Les deux routes utilisent le meme cache SQLite partage entre tous les clients. Une mesure de matrice peut reutiliser un trace deja connu, et inversement le cache evite de redemander les memes couples de points a OSRM. Les appels a l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs reponses sont inferes directement depuis les routes Elysia, sans type HTTP recopie dans le front.
+
+Une correspondance entre deux lignes apparait comme une etape pietonne de quatre minutes. Le temps est explicite, mais aucun trait interieur n'est invente : le GTFS publie la desserte et les traces des lignes, pas les cheminements entre quais.
+
+## Objectifs carbone personnels
+
+Le profil distingue trois notions : le budget carbone hebdomadaire, l'objectif
+d'economie hebdomadaire et l'objectif d'economie mensuel. Les deux objectifs
+d'economie sont independants : le mensuel n'est pas une multiplication arbitraire
+du chiffre hebdomadaire. Ils sont valides par le contrat partage, persistes avec
+`PUT /api/me/profile`, puis compares aux memes agregats semaine/mois que le suivi
+carbone dans le planificateur.
 
 Sans configuration, la source est l'instance publique de démonstration d'OpenStreetMap. Elle dépanne, mais elle n'a **aucun engagement de service et limite par adresse IP** — une session de test un peu active suffit à la déclencher (cf. `docs/BUGS.md`, B13).
 
 Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localement :
 
 ```bash
-./infra/osrm-prepare.sh                      # télécharge et prétraite les 3 profils (une fois)
+./infra/osrm-prepare.sh                      # télécharge et prétraite les 2 profils (une fois)
 docker compose -f infra/compose.yml up -d    # application + calculateur
 ```
 
@@ -97,7 +115,7 @@ Pour faire pointer une API lancée hors conteneur sur le calculateur local, publ
 
 Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
 
-OSRM sert un profil par processus — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services, regroupés par une façade derrière un seul port. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une à l'autre ne change qu'une URL.
+OSRM sert un profil par processus — pieton et velo n'ont pas les memes regles sur les memes rues — d'ou deux services, regroupes par une facade derriere un seul port. La trottinette reprend le profil velo et l'application ne propose pas de trajet voiture. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une a l'autre ne change qu'une URL.
 
 ## Commandes
 
@@ -122,6 +140,11 @@ bun run e2e              # scénario E2E de planification (Playwright, 7 asserti
 regroupement du client (`Bun.build`), tests du client et de l'API (`bun test`), scripts d'outillage.
 Aucun bundler ni lanceur de tests tiers. Seules l'ingestion GTFS et la génération du dossier restent en
 Python, faute d'équivalent dans l'écosystème JavaScript.
+
+Le depot conserve TypeScript 7. En attendant sa prise en charge par
+`typescript-eslint`, ESLint analyse la syntaxe TypeScript avec le parseur Babel ;
+`tsc` strict reste l'autorite pour les types et les symboles inutilises, et une
+regle ESLint interdit explicitement le mot-cle `any`.
 
 Le serveur porte **l'API et le client** : une seule origine, donc un cookie de session de première partie
 et aucun en-tête CORS. En développement, `bun run dev` lance le serveur et reconstruit le client à chaque

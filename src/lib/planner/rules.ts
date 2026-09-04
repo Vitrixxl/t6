@@ -12,7 +12,7 @@ export function totalWalkMinutes(option: RouteOption): number {
  * « Gare de Venissieux vers Gare de Venissieux » qui n'aide personne.
  */
 export function visibleLegs(option: RouteOption): RouteLeg[] {
-  return option.legs.filter((leg) => leg.mode !== 'walk' || leg.distanceKm >= 0.05);
+  return option.legs.filter((leg) => leg.transfer || leg.mode !== 'walk' || leg.distanceKm >= 0.05);
 }
 
 /**

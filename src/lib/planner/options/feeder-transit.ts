@@ -5,23 +5,17 @@
 // pied. Seul change ce qui tient a l'engin : ou le prendre, ou l'on a le droit
 // de le laisser, combien de temps il coute a deverrouiller. Le generateur porte
 // l'enchainement, chaque mode ne decrit que sa difference.
-import type { GeoPoint, MobilityMode, RouteLeg, RouteOption, RouteRequest, SharedStation } from '../../../types';
-import { haversineDistanceKm, nearestStation, stationToPoint, stopToPoint } from '../geo';
+import type { MobilityMode, RouteLeg, RouteOption, RouteRequest, SharedStation } from '../../../types';
+import type { FeederAccess } from '../access';
+import { haversineDistanceKm, stationToPoint, stopToPoint } from '../geo';
 import { MODE_LABELS } from '../labels';
 import { buildOption, createLeg } from '../legs';
-import { findTransitJourney, transitLegs } from '../transit';
+import { transitLegs } from '../transit';
 
 export interface Feeder {
   id: 'bike-transit' | 'scooter-transit';
   mode: Extract<MobilityMode, 'bike' | 'scooter'>;
   title: string;
-  /** Une station ou un engin est effectivement a louer. */
-  available(station: SharedStation): boolean;
-  /**
-   * L'engin doit pouvoir etre laisse a la station de montee : sur une borne
-   * pour le Velo'v, dans la zone de service pour une flotte libre (B17).
-   */
-  canDropOff(stations: SharedStation[], point: GeoPoint): boolean;
   detail(station: SharedStation): string;
   /** Temps fixe de prise en main : deverrouillage, sortie de borne. */
   unlockMinutes: number;
@@ -33,35 +27,28 @@ export function createFeederTransitOption(
   { origin, destination, profile, network }: RouteRequest,
   directKm: number,
   feeder: Feeder,
+  access: FeederAccess | null,
 ): RouteOption | null {
-  const stations = network.sharedMobility.data.stations;
   const vehicle = MODE_LABELS[feeder.mode];
   const Vehicle = vehicle.charAt(0).toUpperCase() + vehicle.slice(1);
-  const fromStation = nearestStation(stations.filter(feeder.available), origin);
-  if (!fromStation) {
+  if (!access) {
     return null;
   }
-
-  // L'engin sert de rabattement : la recherche de trajet part donc de la
-  // station, pas du domicile. Sans cela, la station de montee choisie serait
-  // celle du depart a pied, que l'engin aurait deja depassee.
-  const journey = findTransitJourney(network, stationToPoint(fromStation), destination, profile.accessibilityNeed);
-  if (!journey) {
-    return null;
-  }
+  const fromStation = access.vehicle.station;
+  const journey = access.journey;
 
   const boarding = journey.rides[0].boarding;
   const alighting = journey.rides[journey.rides.length - 1].alighting;
-  if (!feeder.canDropOff(stations, stopToPoint(boarding))) {
-    return null;
-  }
+  const feederDestination = access.dropoff ? stationToPoint(access.dropoff.station) : stopToPoint(boarding);
 
-  const firstWalkKm = haversineDistanceKm(origin, stationToPoint(fromStation));
+  const firstWalkKm = access.vehicle.measure.distanceKm;
   // Estimation de tri seulement, remplacee par la mesure de la voirie avant
   // affichage : un plancher evite qu'un rabattement quasi nul ne classe
   // l'option devant le transport seul.
-  const feederKm = Math.max(haversineDistanceKm(stationToPoint(fromStation), stopToPoint(boarding)) * 1.2, directKm * 0.22);
-  const finalWalkKm = haversineDistanceKm(stopToPoint(alighting), destination);
+  const feederKm = access.dropoff
+    ? Math.max(haversineDistanceKm(stationToPoint(fromStation), feederDestination) * 1.2, directKm * 0.22)
+    : journey.departureAccess.distanceKm;
+  const finalWalkKm = journey.arrivalAccess.distanceKm;
   const rainWarning = network.gtfs.weather.condition.includes('rain');
   const delayed = journey.rides.some((ride) => ride.waitMinutes > 4);
 
@@ -81,13 +68,26 @@ export function createFeederTransitOption(
         mode: feeder.mode,
         title: `${Vehicle} vers correspondance`,
         from: stationToPoint(fromStation),
-        to: stopToPoint(boarding),
+        to: feederDestination,
         distanceKm: feederKm,
         accessible: !profile.accessibilityNeed,
         estimate: { overheadMinutes: feeder.unlockMinutes },
       }),
       detail: feeder.detail(fromStation),
     },
+    ...(access.dropoff
+      ? [
+          createLeg({
+            id: `${feeder.id}-walk-to-transit`,
+            mode: 'walk' as const,
+            title: 'Rejoindre la station de transport',
+            from: feederDestination,
+            to: stopToPoint(boarding),
+            distanceKm: access.dropoff.measure.distanceKm,
+            accessible: true,
+          }),
+        ]
+      : []),
     ...transitLegs(journey, feeder.id),
     createLeg({
       id: `${feeder.id}-walk-from-transit`,

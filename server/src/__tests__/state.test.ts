@@ -144,12 +144,15 @@ describe('profil de mobilite', () => {
       carbonGoalGramsPerWeek: 1800,
       weeklyTripsGoal: 8,
       weeklySavedGoalGrams: 3000,
+      monthlySavedGoalGrams: 14000,
     };
 
     const response = await api.putProfile(cookie, profile);
 
     expect(response.status).toBe(200);
-    expect((await json<{ maxWalkMinutes: number }>(response)).maxWalkMinutes).toBe(10);
+    const savedProfile = await json<{ maxWalkMinutes: number; monthlySavedGoalGrams: number }>(response);
+    expect(savedProfile.maxWalkMinutes).toBe(10);
+    expect(savedProfile.monthlySavedGoalGrams).toBe(14000);
     // Le nom affiche suit le profil : la session le rend a jour.
     expect((await json<AuthBody>(await api.call('/api/auth/session', { cookie }))).user.displayName).toBe('Camille');
     // Le profil vit seul : l'historique n'a pas ete reecrit.
