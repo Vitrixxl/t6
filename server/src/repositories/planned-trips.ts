@@ -1,12 +1,41 @@
-// Depot des trajets programmes a une date.
-import { asc, eq } from 'drizzle-orm';
+// Depot des trajets programmes a une date. Une commande ne touche qu'une
+// ligne identifiee par (utilisateur, id) ; le depot ne recoit jamais la vue
+// complete tenue par le client.
+import { and, asc, desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { plannedTrips } from '../db/schema.ts';
 import type { PlannedTrip } from '../../../src/types.ts';
 import { PLANNED_LIMIT } from '../../../src/contracts/limits.ts';
-import { chunks, endpoints, flattenEndpoints, measures } from './mappers.ts';
+import { endpoints, flattenEndpoints, measures } from './mappers.ts';
+
+type PlannedTripRow = typeof plannedTrips.$inferSelect;
+
+function toPlannedTrip(row: PlannedTripRow): PlannedTrip {
+  return {
+    id: row.id,
+    userId: row.userId,
+    label: row.label,
+    ...endpoints(row),
+    ...measures(row),
+    scheduledFor: row.scheduledFor,
+    status: row.status,
+    createdAt: row.createdAt,
+    completedAt: row.completedAt,
+  };
+}
+
+function valuesOf(trip: PlannedTrip): typeof plannedTrips.$inferInsert {
+  const { origin, destination, ...values } = trip;
+  return { ...values, ...flattenEndpoints({ origin, destination }) };
+}
 
 export function createPlannedTripRepository(db: Executor) {
+  const deleteById = (userId: string, id: string): void => {
+    db.delete(plannedTrips)
+      .where(and(eq(plannedTrips.userId, userId), eq(plannedTrips.id, id)))
+      .run();
+  };
+
   return {
     list(userId: string): PlannedTrip[] {
       return db
@@ -16,28 +45,59 @@ export function createPlannedTripRepository(db: Executor) {
         .orderBy(asc(plannedTrips.scheduledFor))
         .limit(PLANNED_LIMIT)
         .all()
-        .map((row) => ({
-          id: row.id,
-          userId,
-          label: row.label,
-          ...endpoints(row),
-          ...measures(row),
-          scheduledFor: row.scheduledFor,
-          status: row.status,
-          createdAt: row.createdAt,
-          completedAt: row.completedAt,
-        }));
+        .map(toPlannedTrip);
     },
 
-    /** Remplace les trajets par ceux du client. Au-dela de la borne, les plus anciens sont ecartes. */
-    replaceAll(userId: string, trips: Omit<PlannedTrip, 'userId'>[]): void {
-      db.delete(plannedTrips).where(eq(plannedTrips.userId, userId)).run();
-      const rows = [...trips]
-        .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))
-        .slice(-PLANNED_LIMIT)
-        .map(({ origin, destination, ...rest }) => ({ ...rest, ...flattenEndpoints({ origin, destination }), userId }));
-      for (const batch of chunks(rows)) {
-        db.insert(plannedTrips).values(batch).run();
+    findById(userId: string, id: string): PlannedTrip | null {
+      const row = db
+        .select()
+        .from(plannedTrips)
+        .where(and(eq(plannedTrips.userId, userId), eq(plannedTrips.id, id)))
+        .get();
+      return row ? toPlannedTrip(row) : null;
+    },
+
+    upsert(trip: PlannedTrip): void {
+      const row = valuesOf(trip);
+      db.insert(plannedTrips)
+        .values(row)
+        .onConflictDoUpdate({
+          target: [plannedTrips.userId, plannedTrips.id],
+          set: {
+            label: row.label,
+            originLabel: row.originLabel,
+            originLat: row.originLat,
+            originLon: row.originLon,
+            destinationLabel: row.destinationLabel,
+            destinationLat: row.destinationLat,
+            destinationLon: row.destinationLon,
+            modes: row.modes,
+            distanceKm: row.distanceKm,
+            durationMinutes: row.durationMinutes,
+            carbonGrams: row.carbonGrams,
+            carbonSavedGrams: row.carbonSavedGrams,
+            scheduledFor: row.scheduledFor,
+            status: row.status,
+            createdAt: row.createdAt,
+            completedAt: row.completedAt,
+          },
+        })
+        .run();
+    },
+
+    deleteById,
+
+    /** La conservation bornee retire seulement les lignes surnumeraires. */
+    prune(userId: string): void {
+      const overflow = db
+        .select({ id: plannedTrips.id })
+        .from(plannedTrips)
+        .where(eq(plannedTrips.userId, userId))
+        .orderBy(desc(plannedTrips.scheduledFor))
+        .all()
+        .slice(PLANNED_LIMIT);
+      for (const row of overflow) {
+        deleteById(userId, row.id);
       }
     },
   };

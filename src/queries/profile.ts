@@ -1,7 +1,8 @@
 // Le profil de mobilite : lecture, et remplacement en entier.
 import { useCallback } from 'react';
 import type { AccountState, MobilityProfile } from '../contracts';
-import { useAccountPart, useAccountWrite } from './account';
+import { saveProfile } from '../lib/api';
+import { useAccountMutation, useAccountPart, type AccountMutation } from './account';
 
 export function useProfile(): MobilityProfile {
   return useAccountPart('profile');
@@ -12,7 +13,15 @@ export function updateProfile(profile: MobilityProfile): Partial<AccountState> {
   return { profile };
 }
 
+export const profileSaveMutation = {
+  key: 'profile-save',
+  parts: ['profile'],
+  mutationFn: saveProfile,
+  optimistic: (_state, profile) => updateProfile(profile),
+  reconcile: (_state, profile) => updateProfile(profile),
+} satisfies AccountMutation<MobilityProfile, MobilityProfile>;
+
 export function useUpdateProfile(): (profile: MobilityProfile) => void {
-  const write = useAccountWrite();
-  return useCallback((profile: MobilityProfile) => write(() => updateProfile(profile)), [write]);
+  const save = useAccountMutation(profileSaveMutation);
+  return useCallback((profile: MobilityProfile) => save(profile), [save]);
 }

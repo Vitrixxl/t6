@@ -129,7 +129,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Validation zod de toutes les entrees (contrats `src/contracts/` partages avec les formulaires du client), limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
-- [x] Etat du compte : rendu a la connexion, tenu dans le cache React Query, une route par collection en lecture et en remplacement (`GET`/`PUT /api/trips/*`, `/api/saved-routes`, `/api/me/profile` : chaque liste remplacee seule, en transaction, bornee par le contrat ; relue apres un refus).
+- [x] Etat du compte : rendu a la connexion, tenu dans le cache React Query, collections lues par `GET`, ressources ecrites seules par `PUT/DELETE /api/.../:id` ; completion trajet + historique atomique, aucune liste renvoyee par le client, vue concernee relue apres un refus.
 - [x] Tous les appels du front vers l'API UrbanFlow passent par Eden Treaty et sont inferes depuis l'arbre Elysia ; aucun type HTTP duplique.
 - [x] Profil : objectifs d'economie de CO2 hebdomadaire et mensuel configurables independamment, valides par zod, persistes par `PUT /api/me/profile` et visibles dans le planificateur.
 - [x] Points d'acces Velo'v, trottinette et transport classes par duree OSRM sur huit candidats bornes ; test de regression sur l'obstacle pieton.
@@ -157,8 +157,8 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] API : `bun server/src/index.ts`, sans etape de compilation ni dependance native.
 - [x] Serveur de developpement et build du client executes par Bun (`bun scripts/dev.ts`, `Bun.build`).
 - [x] TypeScript 7 conserve ; `tsc` strict controle types et symboles inutilises, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
-- [x] Tests client / metier : 126 tests verts dans `src/`.
-- [x] Tests d'API : `bun test server`, 44 tests verts.
+- [x] Tests client / metier : 122 tests verts dans `src/`.
+- [x] Tests d'API : `bun test server`, 48 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) executes par Bun.
 - [x] Verifications rejouees apres bascule : `bun run check` complet (170 tests), E2E 7/7, audit axe-core 0 violation sur 4 ecrans.
 - [x] Limite assumee : l'ingestion GTFS et la generation du dossier restent en Python, faute d'equivalent JavaScript.

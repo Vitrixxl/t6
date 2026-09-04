@@ -2,7 +2,8 @@
 // recurrente, itineraire sauvegarde.
 //
 // Chaque objet existe sous deux formes : tel que le serveur le rend, avec son
-// proprietaire, et tel que le client l'envoie (`...Input`), sans lui.
+// identifiant et son proprietaire, et tel que le client l'envoie au PUT de la
+// ressource (`...Input`), sans les deux valeurs portees par l'URL/la session.
 import { z } from 'zod';
 import {
   carbonGrams,
@@ -29,7 +30,6 @@ export const tripRecord = z.object({
   carbonSavedGrams,
   createdAt: isoDate,
 });
-export const tripRecordInput = tripRecord.omit({ userId: true });
 export type TripRecord = z.infer<typeof tripRecord>;
 
 export const PLANNED_TRIP_STATUSES = ['planned', 'done', 'cancelled'] as const;
@@ -46,7 +46,11 @@ export const plannedTrip = z.object({
   createdAt: isoDate,
   completedAt: isoDate.nullable(),
 });
-export const plannedTripInput = plannedTrip.omit({ userId: true });
+export const plannedTripInput = plannedTrip.omit({ id: true, userId: true }).extend({
+  // L'etat `done` passe exclusivement par la transition atomique completion.
+  status: z.enum(['planned', 'cancelled']),
+  completedAt: z.null(),
+});
 export type PlannedTrip = z.infer<typeof plannedTrip>;
 
 /**
@@ -81,7 +85,7 @@ export const recurringTrip = z.object({
   periods: z.array(routinePeriod).min(1).max(100),
   createdAt: isoDate,
 });
-export const recurringTripInput = recurringTrip.omit({ userId: true });
+export const recurringTripInput = recurringTrip.omit({ id: true, userId: true });
 export type RecurringTrip = z.infer<typeof recurringTrip>;
 
 export const savedRoute = z.object({
@@ -93,5 +97,12 @@ export const savedRoute = z.object({
   score: z.number().min(-1000).max(1000),
   createdAt: isoDate,
 });
-export const savedRouteInput = savedRoute.omit({ userId: true });
+export const savedRouteInput = savedRoute.omit({ id: true, userId: true });
 export type SavedRouteRecord = z.infer<typeof savedRoute>;
+
+/** Identifiant d'une ressource appartenant au compte courant. */
+export const resourceIdParams = z.object({ id: identifier });
+
+/** Reponse atomique de la transition qui alimente le suivi carbone. */
+export const completedPlannedTrip = z.object({ plannedTrip, tripRecord });
+export type CompletedPlannedTrip = z.infer<typeof completedPlannedTrip>;

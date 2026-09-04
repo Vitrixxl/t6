@@ -3,7 +3,8 @@
 import { useCallback } from 'react';
 import type { AccountState } from '../contracts';
 import type { TripRecord } from '../types';
-import { useAccountPart, useAccountWrite } from './account';
+import { clearTripHistory as clearTripHistoryRequest } from '../lib/api';
+import { useAccountMutation, useAccountPart, type AccountMutation } from './account';
 
 export function useTripRecords(): TripRecord[] {
   return useAccountPart('tripRecords');
@@ -13,7 +14,15 @@ export function clearTripHistory(): Partial<AccountState> {
   return { tripRecords: [] };
 }
 
+export const tripHistoryClearMutation = {
+  key: 'history-clear',
+  parts: ['tripRecords'],
+  mutationFn: (_variables) => clearTripHistoryRequest(),
+  optimistic: () => clearTripHistory(),
+  reconcile: () => clearTripHistory(),
+} satisfies AccountMutation<undefined, void>;
+
 export function useClearTripHistory(): () => void {
-  const write = useAccountWrite();
-  return useCallback(() => write(clearTripHistory), [write]);
+  const clear = useAccountMutation(tripHistoryClearMutation);
+  return useCallback(() => clear(undefined), [clear]);
 }

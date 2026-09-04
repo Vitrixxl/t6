@@ -2,7 +2,7 @@
 // tests recoivent l'ensemble coherent, sans jamais instancier un depot isole.
 //
 // L'argument est un `Executor` : la base elle-meme, ou une transaction en
-// cours. Un remplacement d'etat se construit ainsi des depots lies a sa
+// cours. Une transition multi-ressource construit ainsi des depots lies a sa
 // transaction, sans que les depots aient a le savoir.
 import type { Executor } from '../db/index.ts';
 import { createPlannedTripRepository } from './planned-trips.ts';

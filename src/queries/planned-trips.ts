@@ -2,11 +2,12 @@
 // font changer d'etat. Chaque action est une fonction pure sur l'etat du
 // compte, exportee pour etre testee, et un hook qui l'ecrit.
 import { useCallback, useMemo } from 'react';
-import type { AccountState } from '../contracts';
+import type { AccountState, CompletedPlannedTrip } from '../contracts';
 import type { PlannedTrip } from '../types';
 import { recordTrip } from '../lib/carbon';
+import { completePlannedTrip, deletePlannedTrip, savePlannedTrip } from '../lib/api';
 import { createPlannedTrip, plannedTripToRecord, removePlanned, setPlannedStatus, upcomingTrips, upsertPlanned, type TripSource } from '../lib/trips';
-import { useAccountPart, useAccountWrite } from './account';
+import { useAccountMutation, useAccountPart, type AccountMutation } from './account';
 import { useUser } from './user';
 
 export function usePlannedTrips(): PlannedTrip[] {
@@ -43,26 +44,53 @@ export function removeTrip(state: AccountState, trip: PlannedTrip): Partial<Acco
   return { plannedTrips: removePlanned(state.plannedTrips, trip.id) };
 }
 
+export const plannedTripSaveMutation = {
+  key: 'planned-save',
+  parts: ['plannedTrips'],
+  mutationFn: savePlannedTrip,
+  optimistic: (state, trip) => ({ plannedTrips: upsertPlanned(state.plannedTrips, trip) }),
+  reconcile: (state, trip) => ({ plannedTrips: upsertPlanned(state.plannedTrips, trip) }),
+} satisfies AccountMutation<PlannedTrip, PlannedTrip>;
+
+export const plannedTripCompletionMutation = {
+  key: 'planned-complete',
+  parts: ['plannedTrips', 'tripRecords'],
+  mutationFn: (trip) => completePlannedTrip(trip.id),
+  optimistic: (state, trip) => completeTrip(state, trip),
+  reconcile: (state, completed) => ({
+    plannedTrips: upsertPlanned(state.plannedTrips, completed.plannedTrip),
+    tripRecords: recordTrip(state.tripRecords, completed.tripRecord),
+  }),
+} satisfies AccountMutation<PlannedTrip, CompletedPlannedTrip>;
+
+export const plannedTripDeleteMutation = {
+  key: 'planned-delete',
+  parts: ['plannedTrips'],
+  mutationFn: (trip) => deletePlannedTrip(trip.id),
+  optimistic: (state, trip) => removeTrip(state, trip),
+  reconcile: (state, _result, trip) => removeTrip(state, trip),
+} satisfies AccountMutation<PlannedTrip, void>;
+
 export function usePlanTrip(): (source: TripSource, scheduledFor: Date) => void {
   const user = useUser();
-  const write = useAccountWrite();
+  const save = useAccountMutation(plannedTripSaveMutation);
   return useCallback(
-    (source: TripSource, scheduledFor: Date) => write((state) => planTrip(state, user.id, source, scheduledFor)),
-    [user.id, write],
+    (source: TripSource, scheduledFor: Date) => save(createPlannedTrip(user.id, source, scheduledFor)),
+    [save, user.id],
   );
 }
 
 export function useMarkTripDone(): (trip: PlannedTrip) => void {
-  const write = useAccountWrite();
-  return useCallback((trip: PlannedTrip) => write((state) => completeTrip(state, trip)), [write]);
+  const complete = useAccountMutation(plannedTripCompletionMutation);
+  return useCallback((trip: PlannedTrip) => complete(trip), [complete]);
 }
 
 export function useCancelTrip(): (trip: PlannedTrip) => void {
-  const write = useAccountWrite();
-  return useCallback((trip: PlannedTrip) => write((state) => cancelTrip(state, trip)), [write]);
+  const save = useAccountMutation(plannedTripSaveMutation);
+  return useCallback((trip: PlannedTrip) => save({ ...trip, status: 'cancelled', completedAt: null }), [save]);
 }
 
 export function useRemoveTrip(): (trip: PlannedTrip) => void {
-  const write = useAccountWrite();
-  return useCallback((trip: PlannedTrip) => write((state) => removeTrip(state, trip)), [write]);
+  const remove = useAccountMutation(plannedTripDeleteMutation);
+  return useCallback((trip: PlannedTrip) => remove(trip), [remove]);
 }

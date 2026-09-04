@@ -7,7 +7,6 @@ import {
   mobilityMode,
   mobilityProfile,
   plannedTripInput,
-  plannedTripsInput,
   recurringTrip,
   registration,
   routableMode,
@@ -82,10 +81,11 @@ describe('trajets', () => {
     expect(routableMode.safeParse('car').success).toBe(true);
   });
 
-  it('un trajet envoye ne porte pas de proprietaire : la propriete est retiree', () => {
+  it('un trajet envoye ne porte ni identifiant ni proprietaire : ils viennent de l URL et de la session', () => {
     const parsed = plannedTripInput.parse({ ...TRIP, userId: 'intrus' });
 
     expect(parsed).not.toHaveProperty('userId');
+    expect(parsed).not.toHaveProperty('id');
     expect(parsed.status).toBe('planned');
   });
 
@@ -100,11 +100,8 @@ describe('trajets', () => {
     expect(plannedTripInput.safeParse({ ...TRIP, status: 'perdu' }).success).toBe(false);
   });
 
-  it('borne une collection a sa limite de conservation', () => {
-    const trips = Array.from({ length: 401 }, (_, index) => ({ ...TRIP, id: `trip-${index}` }));
-
-    expect(plannedTripsInput.safeParse(trips).success).toBe(false);
-    expect(plannedTripsInput.safeParse(trips.slice(0, 400)).success).toBe(true);
+  it('reserve le statut fait a la commande de completion', () => {
+    expect(plannedTripInput.safeParse({ ...TRIP, status: 'done', completedAt: '2026-09-02T07:00:00.000Z' }).success).toBe(false);
   });
 
   it('une routine a au moins un jour, une periode, et des heures HH:MM', () => {

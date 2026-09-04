@@ -1,10 +1,23 @@
-// Depot de l'historique des trajets realises (alimente le suivi carbone).
-import { desc, eq } from 'drizzle-orm';
+// Depot de l'historique des trajets realises (alimente par la transition
+// serveur d'un trajet programme). Le client ne peut pas injecter une liste.
+import { and, desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { tripRecords } from '../db/schema.ts';
 import type { TripRecord } from '../../../src/types.ts';
 import { TRIP_HISTORY_LIMIT } from '../../../src/contracts/limits.ts';
-import { chunks, measures } from './mappers.ts';
+import { measures } from './mappers.ts';
+
+type TripRecordRow = typeof tripRecords.$inferSelect;
+
+function toTripRecord(row: TripRecordRow): TripRecord {
+  return {
+    id: row.id,
+    userId: row.userId,
+    routeTitle: row.routeTitle,
+    ...measures(row),
+    createdAt: row.createdAt,
+  };
+}
 
 export function createTripRecordRepository(db: Executor) {
   return {
@@ -16,24 +29,53 @@ export function createTripRecordRepository(db: Executor) {
         .orderBy(desc(tripRecords.createdAt))
         .limit(TRIP_HISTORY_LIMIT)
         .all()
-        .map((row) => ({
-          id: row.id,
-          userId,
-          routeTitle: row.routeTitle,
-          ...measures(row),
-          createdAt: row.createdAt,
-        }));
+        .map(toTripRecord);
     },
 
-    /** Remplace l'historique par celui du client. Minimisation : seuls les plus recents sont gardes. */
-    replaceAll(userId: string, records: Omit<TripRecord, 'userId'>[]): void {
+    findById(userId: string, id: string): TripRecord | null {
+      const row = db
+        .select()
+        .from(tripRecords)
+        .where(and(eq(tripRecords.userId, userId), eq(tripRecords.id, id)))
+        .get();
+      return row ? toTripRecord(row) : null;
+    },
+
+    upsert(record: TripRecord): void {
+      db.insert(tripRecords)
+        .values(record)
+        .onConflictDoUpdate({
+          target: [tripRecords.userId, tripRecords.id],
+          set: {
+            routeTitle: record.routeTitle,
+            modes: record.modes,
+            distanceKm: record.distanceKm,
+            durationMinutes: record.durationMinutes,
+            carbonGrams: record.carbonGrams,
+            carbonSavedGrams: record.carbonSavedGrams,
+            createdAt: record.createdAt,
+          },
+        })
+        .run();
+    },
+
+    /** Seule l'action utilisateur « effacer l'historique » appelle cette operation. */
+    clear(userId: string): void {
       db.delete(tripRecords).where(eq(tripRecords.userId, userId)).run();
-      const rows = [...records]
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, TRIP_HISTORY_LIMIT)
-        .map((record) => ({ ...record, userId }));
-      for (const batch of chunks(rows)) {
-        db.insert(tripRecords).values(batch).run();
+    },
+
+    prune(userId: string): void {
+      const overflow = db
+        .select({ id: tripRecords.id })
+        .from(tripRecords)
+        .where(eq(tripRecords.userId, userId))
+        .orderBy(desc(tripRecords.createdAt))
+        .all()
+        .slice(TRIP_HISTORY_LIMIT);
+      for (const row of overflow) {
+        db.delete(tripRecords)
+          .where(and(eq(tripRecords.userId, userId), eq(tripRecords.id, row.id)))
+          .run();
       }
     },
   };

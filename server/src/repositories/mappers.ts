@@ -54,19 +54,6 @@ export const measures = (row: MeasureRow): MeasureRow => ({
   carbonSavedGrams: row.carbonSavedGrams,
 });
 
-/**
- * Decoupe une liste pour l'insertion en bloc. SQLite borne le nombre de
- * parametres d'une requete ; cent lignes d'une vingtaine de colonnes restent
- * tres en dessous, quel que soit le build du moteur.
- */
-export function chunks<T>(items: T[], size = 100): T[][] {
-  const result: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    result.push(items.slice(index, index + size));
-  }
-  return result;
-}
-
 export function toSessionUser(row: UserRow): SessionUser {
   return {
     id: row.id,

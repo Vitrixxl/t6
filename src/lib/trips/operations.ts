@@ -1,6 +1,6 @@
-// Operations sur les trajets programmes et les routines : des fonctions pures
-// sur des listes. Chaque liste est renvoyee en entier au serveur apres
-// l'action qui la modifie (src/queries/) ; rien n'est stocke ici.
+// Operations pures sur les vues locales des trajets programmes et routines.
+// Elles projettent immediatement une commande granulaire dans le cache ; elles
+// ne definissent ni requete HTTP ni stockage.
 import type { PlannedTrip, PlannedTripStatus, RecurringTrip } from '../../types';
 import { PLANNED_LIMIT } from '../../contracts/limits';
 import { isRoutinePaused } from './routines';

@@ -26,6 +26,8 @@ it('publie une documentation OpenAPI decrivant les routes', async () => {
   expect(Object.keys(spec.paths)).toContain('/api/auth/login');
   expect(Object.keys(spec.paths)).toContain('/api/state');
   expect(Object.keys(spec.paths)).toContain('/api/trips/planned');
+  expect(Object.keys(spec.paths)).toContain('/api/trips/planned/{id}');
+  expect(Object.keys(spec.paths)).toContain('/api/trips/planned/{id}/completion');
   expect(Object.keys(spec.paths)).toContain('/api/me/profile');
 });
 
@@ -44,11 +46,9 @@ it('renvoie une erreur opaque sur une route inconnue', async () => {
   expect((await json<ErrorBody>(response)).error).toBe('Ressource inconnue.');
 });
 
-it('refuse un corps de requete illisible', async () => {
+it('ne publie plus de remplacement global de l historique', async () => {
   const cookie = await api.register('parse@lyon.fr');
   const response = await api.call('/api/trips/history', { cookie, body: undefined, method: 'PUT' });
 
-  // Corps absent : la validation refuse, sans trace technique dans la reponse.
-  expect([400, 422]).toContain(response.status);
-  expect(await response.text()).not.toContain('at ');
+  expect(response.status).toBe(404);
 });
