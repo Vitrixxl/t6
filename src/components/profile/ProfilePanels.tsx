@@ -8,7 +8,12 @@ import { Button } from '../ui/button';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { Input } from '../ui/input';
 import type { MobilityMode, MobilityProfile } from '../../types';
-import { mobilityProfile } from '../../contracts';
+import {
+  DEFAULT_MONTHLY_SAVED_GOAL_GRAMS,
+  DEFAULT_WEEKLY_SAVED_GOAL_GRAMS,
+  DEFAULT_WEEKLY_TRIPS_GOAL,
+  mobilityProfile,
+} from '../../contracts';
 import { useDeleteAccount, useLogout, useUpdateProfile, useUser } from '../../queries';
 import { MODE_ICON, MODE_OPTIONS } from '../app/shared';
 
@@ -114,7 +119,15 @@ export function ProfilePanel() {
   const updateProfile = useUpdateProfile();
   // Le formulaire valide avec le contrat que l'API applique : ce qui passe ici
   // n'est jamais refuse a l'envoi. `values` le rattache au profil courant.
-  const form = useForm<MobilityProfile>({ resolver: zodResolver(mobilityProfile), values: user.profile });
+  const form = useForm<MobilityProfile>({
+    resolver: zodResolver(mobilityProfile),
+    values: {
+      ...user.profile,
+      weeklyTripsGoal: user.profile.weeklyTripsGoal ?? DEFAULT_WEEKLY_TRIPS_GOAL,
+      weeklySavedGoalGrams: user.profile.weeklySavedGoalGrams ?? DEFAULT_WEEKLY_SAVED_GOAL_GRAMS,
+      monthlySavedGoalGrams: user.profile.monthlySavedGoalGrams ?? DEFAULT_MONTHLY_SAVED_GOAL_GRAMS,
+    },
+  });
   const { errors } = form.formState;
   const preferredModes = form.watch('preferredModes');
   const maxWalkMinutes = form.watch('maxWalkMinutes');
@@ -210,6 +223,40 @@ export function ProfilePanel() {
           />
           <FieldError message={errors.carbonGoalGramsPerWeek?.message} />
         </label>
+        <fieldset className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3">
+          <legend className="px-1 text-sm font-semibold">Objectifs d&apos;economie de CO2</legend>
+          <p className="text-xs leading-5 text-muted-foreground">
+            Ces deux objectifs sont independants du budget carbone et servent a mesurer les emissions evitees par tes trajets.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-weekly-saved-goal">
+              Par semaine (g)
+              <Input
+                id="profile-weekly-saved-goal"
+                type="number"
+                min={100}
+                max={50000}
+                step={100}
+                aria-invalid={Boolean(errors.weeklySavedGoalGrams)}
+                {...form.register('weeklySavedGoalGrams', { valueAsNumber: true })}
+              />
+              <FieldError message={errors.weeklySavedGoalGrams?.message} />
+            </label>
+            <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-monthly-saved-goal">
+              Par mois (g)
+              <Input
+                id="profile-monthly-saved-goal"
+                type="number"
+                min={100}
+                max={200000}
+                step={100}
+                aria-invalid={Boolean(errors.monthlySavedGoalGrams)}
+                {...form.register('monthlySavedGoalGrams', { valueAsNumber: true })}
+              />
+              <FieldError message={errors.monthlySavedGoalGrams?.message} />
+            </label>
+          </div>
+        </fieldset>
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" className="size-4 accent-primary" {...form.register('accessibilityNeed')} />
           Priorite PMR
