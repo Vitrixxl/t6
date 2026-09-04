@@ -5,6 +5,9 @@
 // d'OSRM. Aucun appel reseau ne sort.
 import { afterEach, describe, expect, it } from 'bun:test';
 import { createTestApi, json, type ErrorBody } from './helpers.ts';
+import { loadConfig } from '../config/index.ts';
+import { fetchUpstreamMatrix, fetchUpstreamRoute } from '../services/routing/osrm.ts';
+import type { RoutableMode } from '../../../src/types.ts';
 
 const realFetch = globalThis.fetch;
 
@@ -60,6 +63,50 @@ afterEach(() => {
 });
 
 const PATH = '/api/route?mode=bike&from=4.832,45.7578&to=4.8594,45.7606';
+
+describe('adresses des moteurs OSRM', () => {
+    const modes: Array<{ mode: RoutableMode; engine: 'foot' | 'bike' | 'car'; profile: string }> = [
+        { mode: 'walk', engine: 'foot', profile: 'foot' },
+        { mode: 'bike', engine: 'bike', profile: 'bike' },
+        { mode: 'scooter', engine: 'bike', profile: 'bike' },
+        { mode: 'car', engine: 'car', profile: 'driving' },
+    ];
+
+    for (const { mode, engine, profile } of modes) {
+        it(`appelle directement le moteur ${engine} pour ${mode}, en route et en matrice`, async () => {
+            const calls: string[] = [];
+            stubUpstream((url) => {
+                calls.push(url);
+                return url.includes('/table/')
+                    ? Response.json({ code: 'Ok', distances: [[1200]], durations: [[300]] })
+                    : okResponse();
+            });
+            const urls = loadConfig({
+                OSRM_FOOT_URL: 'http://osrm-foot:5000',
+                OSRM_BIKE_URL: 'http://osrm-bike:5000',
+                OSRM_CAR_URL: 'http://osrm-car:5000',
+            }).osrmUrls;
+            const from = { lon: 4.832, lat: 45.7578 };
+            const to = { lon: 4.8594, lat: 45.7606 };
+            expect(await fetchUpstreamRoute(urls, mode, from, to)).not.toBeNull();
+            expect(await fetchUpstreamMatrix(urls, mode, [from], [to])).not.toBeNull();
+            expect(calls[0]).toStartWith(`http://osrm-${engine}:5000/route/v1/${profile}/`);
+            expect(calls[1]).toStartWith(`http://osrm-${engine}:5000/table/v1/${profile}/`);
+            expect(new URL(calls[0]).searchParams.get('geometries')).toBe('geojson');
+        });
+
+        it(`conserve le préfixe public pour ${mode}`, async () => {
+            const calls: string[] = [];
+            stubUpstream((url) => {
+                calls.push(url);
+                return okResponse();
+            });
+            const point = { lon: 4.832, lat: 45.7578 };
+            expect(await fetchUpstreamRoute(loadConfig({}).osrmUrls, mode, point, point)).not.toBeNull();
+            expect(calls[0]).toStartWith(`https://routing.openstreetmap.de/routed-${engine}/route/v1/${profile}/`);
+        });
+    }
+});
 
 describe('GET /api/route', () => {
     it('renvoie le trace, la distance et la duree du calculateur', async () => {
@@ -172,7 +219,7 @@ describe('POST /api/route-matrix', () => {
 
     it('mesure tous les acces en une requete OSRM puis partage le cache', async () => {
         const upstream = stubUpstream((url) => {
-            expect(url).toContain('/routed-foot/table/v1/foot/');
+            expect(url).toContain('http://osrm-foot:5000/table/v1/foot/');
             expect(url).toContain('annotations=distance%2Cduration');
             return new Response(
                 JSON.stringify({
@@ -216,7 +263,7 @@ describe('POST /api/route-matrix', () => {
 
     it('mesure la reference voiture avec driving et la ressort du cache partage', async () => {
         const upstream = stubUpstream((url) => {
-            expect(url).toContain('/routed-car/table/v1/driving/');
+            expect(url).toContain('http://osrm-car:5000/table/v1/driving/');
             return new Response(
                 JSON.stringify({ code: 'Ok', distances: [[3000]], durations: [[600]] }),
                 { status: 200, headers: { 'content-type': 'application/json' } },

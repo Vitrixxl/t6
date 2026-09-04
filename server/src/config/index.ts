@@ -17,13 +17,11 @@ export interface ServerConfig {
      */
     trustProxy: boolean;
     /**
-     * Base du service de routage. Par defaut l'instance publique de
-     * demonstration d'OpenStreetMap : elle depanne, mais elle n'a aucun
-     * engagement de service et limite par adresse IP (B13). Pointer cette
-     * variable sur une instance OSRM locale supprime toute dependance tierce a
-     * l'execution — voir le README.
+     * Une adresse par moteur, avec le préfixe éventuel de l'hébergeur.
+     * Par défaut, l'instance publique limite les appels par IP (B13).
+     * Docker fournit les trois adresses internes, sans proxy intermédiaire.
      */
-    osrmBaseUrl: string;
+    osrmUrls: { foot: string; bike: string; car: string };
     /**
      * Dossier du client construit, servi par l'API elle-meme. Une seule origine
      * pour l'application et son API : cookie de premiere partie, aucun CORS.
@@ -78,7 +76,11 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
         webRoot: text(env.WEB_ROOT, 'dist'),
         tlsCertPath: text(env.TLS_CERT_PATH, ''),
         tlsKeyPath: text(env.TLS_KEY_PATH, ''),
-        osrmBaseUrl: text(env.OSRM_BASE_URL, 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
+        osrmUrls: {
+            foot: text(env.OSRM_FOOT_URL, 'https://routing.openstreetmap.de/routed-foot').replace(/\/+$/, ''),
+            bike: text(env.OSRM_BIKE_URL, 'https://routing.openstreetmap.de/routed-bike').replace(/\/+$/, ''),
+            car: text(env.OSRM_CAR_URL, 'https://routing.openstreetmap.de/routed-car').replace(/\/+$/, ''),
+        },
         routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
     };
 }

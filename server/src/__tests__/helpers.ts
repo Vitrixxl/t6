@@ -34,7 +34,11 @@ export function createTestApi(overrides: Partial<ServerConfig> = {}): TestApi {
         databasePath: ':memory:',
         // Le faux calculateur des tests ne doit pas subir la temporisation reservee
         // au service public, meme si fetch est remplace juste apres par le test.
-        osrmBaseUrl: 'https://osrm.test',
+        osrmUrls: {
+            foot: 'http://osrm-foot:5000',
+            bike: 'http://osrm-bike:5000',
+            car: 'http://osrm-car:5000',
+        },
         ...overrides,
     });
     // Les compteurs de debit sont partages par le processus : on repart de zero

@@ -101,7 +101,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levee.
 - [x] theme-color aligne (index.html/manifest), scripts Bun e2e/screens exposes, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, economie chiffree, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 170 tests verts (19 fichiers), lint 0 erreur, build OK, scenario E2E tutoriel mobile + planification bloquant vert (8/8 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
+- [x] 178 tests verts (19 fichiers), lint 0 erreur, build OK, scenario E2E tutoriel mobile + planification bloquant vert (8/8 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
 
 ## 9. Preuves concretes
 
@@ -116,9 +116,11 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectee).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et controlees en planche-contact et pleine page.
-- Verification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 170 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 ecrans) et `bun run e2e` OK (8/8).
+- Verification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 178 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 ecrans) et `bun run e2e` OK (8/8).
 
 ## 10. Backend (ajout post-audit)
+
+- [x] Appels directs aux trois moteurs OSRM via `OSRM_FOOT_URL`, `OSRM_BIKE_URL`, `OSRM_CAR_URL` ; aucun conteneur Caddy, aucun port OSRM publié par défaut. Tests des destinations locales et des préfixes publics, cache et contrats HTTP conservés.
 
 - [x] API HTTP dediee (`server/`) : Elysia sur Bun + SQLite via `bun:sqlite`, aucune dependance native, aucune etape de compilation.
 - [x] Schema relationnel migre au demarrage (users, sessions, trip_records, planned_trips, recurring_trips, saved_routes) avec cles etrangeres et suppression en cascade.
@@ -160,7 +162,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Serveur de developpement et build du client executes par Bun (`bun scripts/dev.ts`, `Bun.build`).
 - [x] TypeScript 7 conserve ; `tsc` strict controle types et symboles inutilises, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
 - [x] Tests client / metier : 122 tests verts dans `src/`.
-- [x] Tests d'API : `bun test server`, 48 tests verts.
+- [x] Tests d'API : `bun test server`, 56 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) executes par Bun.
-- [x] Verifications rejouees apres bascule : `bun run check` complet (170 tests), E2E 8/8, audit axe-core 0 violation sur 4 ecrans.
+- [x] Verifications rejouees apres bascule : `bun run check` complet (178 tests), E2E 8/8, audit axe-core 0 violation sur 4 ecrans.
 - [x] Limite assumee : l'ingestion GTFS et la generation du dossier restent en Python, faute d'equivalent JavaScript.

@@ -149,13 +149,23 @@ Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localeme
 docker compose -f infra/compose.yml up -d    # application + calculateur
 ```
 
-`infra/compose.yml` lance **l'application et le calculateur ensemble** : l'API vise la façade OSRM par son nom de service, il n'y a rien à configurer. L'application écoute en **HTTPS** sur le port 4000, avec un certificat auto-signé généré au premier démarrage — le navigateur réserve au contexte sécurisé la géolocalisation, `crypto.randomUUID` et le service worker, sans quoi rien ne fonctionne depuis un téléphone. Pour y accéder depuis le réseau local, inscrire l'adresse de la machine dans le certificat : `TLS_EXTRA_HOSTS=IP:192.168.1.37 docker compose -f infra/compose.yml up -d`.
+`infra/compose.yml` lance **l'application et les trois moteurs ensemble** : l'API appelle directement `osrm-foot:5000`, `osrm-bike:5000` et `osrm-car:5000` sur le réseau Docker, sans port OSRM publié ni proxy intermédiaire. Les variables `OSRM_FOOT_URL`, `OSRM_BIKE_URL` et `OSRM_CAR_URL` y sont déjà configurées. L'application écoute en **HTTPS** sur le port 4000, avec un certificat auto-signé généré au premier démarrage. Pour y accéder depuis le réseau local, inscrire l'adresse de la machine dans le certificat : `TLS_EXTRA_HOSTS=IP:192.168.1.37 docker compose -f infra/compose.yml up -d`.
 
-Pour faire pointer une API lancée hors conteneur sur le calculateur local, publier le port de la façade et renseigner `OSRM_BASE_URL=http://127.0.0.1:5000` dans `.env`. **Tant que cette ligne est absente ou vide, l'application utilise l'instance publique** : revenir en arrière ne demande rien d'autre que de la commenter.
+Pour une API lancée hors conteneur, ajouter temporairement une publication loopback à chaque service dans Compose : `ports: ['127.0.0.1:5001:5000']` pour `osrm-foot`, `5002:5000` pour `osrm-bike` et `5003:5000` pour `osrm-car`, toujours avec `127.0.0.1`. Renseigner ensuite `.env` :
+
+```dotenv
+OSRM_FOOT_URL=http://127.0.0.1:5001
+OSRM_BIKE_URL=http://127.0.0.1:5002
+OSRM_CAR_URL=http://127.0.0.1:5003
+```
+
+Chaque variable absente ou vide utilise son profil public par défaut : `https://routing.openstreetmap.de/routed-foot`, `/routed-bike` ou `/routed-car`. Le préfixe public appartient à l'URL configurée ; le serveur ajoute uniquement `/route/v1/<profil>/` ou `/table/v1/<profil>/`. Les appels publics partagent toujours la limitation de débit. Une panne ne déclenche pas de bascule vers un autre hébergeur : le cache connu reste utilisable, sinon l'API répond 503.
+
+Migration : remplacer l'ancienne variable `OSRM_BASE_URL` par ces trois variables. Après mise à jour d'une pile existante, `docker compose -f infra/compose.yml up -d --build --remove-orphans` retire aussi l'ancien conteneur Caddy.
 
 Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
 
-OSRM sert un profil par processus — pieton, velo et voiture n'ont pas les memes regles sur les memes rues — d'ou trois services, regroupes par une facade derriere un seul port. La trottinette reprend le profil velo ; le profil voiture ne fournit que la reference carbone et l'application ne propose jamais ce mode. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une a l'autre ne change qu'une URL.
+OSRM sert un profil par processus : piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues. La trottinette reprend le moteur vélo ; le moteur voiture utilise le profil `driving` et ne fournit que la référence carbone, jamais une option proposée. Trois URL distinctes évitent un conteneur intermédiaire et sa consommation de ressources ; aucun gain mémoire chiffré n'a été mesuré.
 
 ## Commandes
 

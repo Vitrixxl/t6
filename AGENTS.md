@@ -126,6 +126,11 @@ assume. La generation du dossier PDF est gelee par la regle ci-dessus.
 
 ## Architecture
 
+Les moteurs OSRM sont appelés directement depuis l'API : `OSRM_FOOT_URL`,
+`OSRM_BIKE_URL` et `OSRM_CAR_URL`, avec préfixe public éventuel dans chaque URL.
+Compose fournit les noms des trois services internes, sans Caddy ni port OSRM
+publié. La trottinette partage le moteur vélo ; la voiture reste une référence.
+
 Un fichier, une raison de changer. Ce n'est pas un seuil de lignes : un fichier
 long mais cohesif reste preferable a trois fichiers qui se renvoient la balle.
 
