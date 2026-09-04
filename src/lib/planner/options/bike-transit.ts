@@ -1,78 +1,26 @@
 // Generateur d'option : bike + transit.
-import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { haversineDistanceKm, nearestStation, stationToPoint, stopToPoint } from '../geo';
-import { buildOption, createLeg } from '../legs';
-import { findTransitJourney, transitLegs } from '../transit';
+import type { RouteOption, RouteRequest, SharedStation } from '../../../types';
+import { nearestStation } from '../geo';
+import { createFeederTransitOption, type Feeder } from './feeder-transit';
 
-export function createBikeTransitOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
-  const stations = network.sharedMobility.data.stations.filter(
-    (station) => station.is_installed && station.is_renting && station.is_returning && station.bikes_available > 0,
-  );
-  const fromStation = nearestStation(stations, origin);
-  if (!fromStation) {
-    return null;
-  }
+const rentable = (station: SharedStation) =>
+  station.is_installed && station.is_renting && station.is_returning && station.bikes_available > 0;
 
-  // Le velo sert de rabattement : la recherche de trajet part donc de la
-  // station Velo'v, pas du domicile. Sans cela, la station de montee choisie
-  // serait celle du depart a pied, que le velo aurait deja depassee.
-  const journey = findTransitJourney(network, stationToPoint(fromStation), destination, profile.accessibilityNeed);
-  if (!journey) {
-    return null;
-  }
+const bikeFeeder: Feeder = {
+  id: 'bike-transit',
+  mode: 'bike',
+  title: 'Velo + transport en commun',
+  available: rentable,
+  // RG3 aux deux bouts : le Velo'v se rend a une borne, il en faut une a
+  // portee de marche de la station de montee.
+  canDropOff: (stations, point) =>
+    nearestStation(stations.filter((station) => station.is_installed && station.is_returning), point) !== null,
+  detail: (station) => `${station.bikes_available} velos disponibles pour rejoindre la correspondance.`,
+  // Sortie de borne et remise en station.
+  unlockMinutes: 2,
+  reliability: { clear: 90, degraded: 78 },
+};
 
-  const boarding = journey.rides[0].boarding;
-  const alighting = journey.rides[journey.rides.length - 1].alighting;
-  const firstWalkKm = haversineDistanceKm(origin, stationToPoint(fromStation));
-  const bikeKm = Math.max(haversineDistanceKm(stationToPoint(fromStation), stopToPoint(boarding)) * 1.2, directKm * 0.22);
-  const finalWalkKm = haversineDistanceKm(stopToPoint(alighting), destination);
-  const rainWarning = network.gtfs.weather.condition.includes('rain');
-  const delayed = journey.rides.some((ride) => ride.waitMinutes > 4);
-
-  const legs: RouteLeg[] = [
-    createLeg({
-      id: 'hybrid-walk-to-bike',
-      mode: 'walk',
-      title: 'Approche velo',
-      from: origin,
-      to: stationToPoint(fromStation),
-      distanceKm: firstWalkKm,
-      accessible: true,
-    }),
-    {
-      ...createLeg({
-        id: 'hybrid-bike-to-transit',
-        mode: 'bike',
-        title: 'Velo vers correspondance',
-        from: stationToPoint(fromStation),
-        to: stopToPoint(boarding),
-        distanceKm: bikeKm,
-        accessible: !profile.accessibilityNeed,
-        estimate: { overheadMinutes: 2 },
-      }),
-      detail: `${fromStation.bikes_available} velos disponibles pour rejoindre la correspondance.`,
-    },
-    ...transitLegs(journey, 'hybrid'),
-    createLeg({
-      id: 'hybrid-walk-from-transit',
-      mode: 'walk',
-      title: 'Derniers metres',
-      from: stopToPoint(alighting),
-      to: destination,
-      distanceKm: finalWalkKm,
-      accessible: true,
-    }),
-  ];
-
-  const lines = journey.rides.map((ride) => ride.route.route_short_name).join(' puis ');
-
-  return buildOption({
-    id: 'bike-transit',
-    title: 'Velo + transport en commun',
-    summary: `Velo partage jusqu'a ${boarding.stop_name}, puis ligne ${lines}.`,
-    modes: ['walk', 'bike', 'transit'],
-    legs,
-    reliabilityScore: delayed || rainWarning ? 78 : 90,
-    warnings: rainWarning && profile.avoidRain ? ['Pluie legere detectee sur la portion velo.'] : [],
-  });
+export function createBikeTransitOption(request: RouteRequest, directKm: number): RouteOption | null {
+  return createFeederTransitOption(request, directKm, bikeFeeder);
 }

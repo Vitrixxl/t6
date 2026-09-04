@@ -25,9 +25,34 @@ code produit sans comprendre ce qu'il fait.
 - Pas de code mort, pas de commentaire perime, pas de vocabulaire herite
   d'une version precedente. Quand la chose change, son nom change.
 - Un changement de conception se propage partout ou il est decrit : code,
-  tests, README, CHECKLIST, OpenAPI, et ce fichier.
+  tests, README, CHECKLIST, OpenAPI, ce fichier, et les fichiers de
+  soutenance (section ci-dessous).
 - Avant de proposer, se demander comment un relecteur exigeant verrait le
   code. Si la reponse est « bricole », ne pas le proposer.
+
+## Fichiers de soutenance — a tenir a jour
+
+Le depot est defendu a l'oral a partir de fichiers qui decrivent
+l'application. Ils ne sont pas versionnes (`output/` est ignore) mais ils sont
+critiques : une phrase qui contredit le code se voit en revue, et c'est le
+candidat qui la porte.
+
+- `output/soutenance/01-deroule.html` : le deroule d'oral, ce qu'il faut dire
+  et dans quel ordre.
+- `output/soutenance/02-bogues.html` : l'echantillon de bogues presente en
+  revue de test.
+- `output/soutenance/03-ecarts.html` : les ecarts assumes entre le sujet et
+  le livrable.
+- `output/revue-code.html` : le guide de lecture du code, avec des extraits
+  cites par numero de ligne.
+- `scripts/generate_dossier.py` : le texte du dossier PDF.
+
+**Toute modification fonctionnelle se reporte dans ces fichiers dans le meme
+travail**, pas dans un second temps : nombre d'options du moteur, modes et
+combinaisons proposes, regles de gestion, nombre de tests par suite, plages de
+lignes des extraits cites, comportement en cas de panne d'une API. Avant de
+rendre la main, relire chacun d'eux en se demandant s'il decrit encore
+l'application telle qu'elle est.
 
 ## Journal des bogues — obligatoire
 

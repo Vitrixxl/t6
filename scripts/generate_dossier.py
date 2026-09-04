@@ -1054,8 +1054,8 @@ def section_2() -> list:
                  "profil : modes preferes, marche max, priorite PMR, sensibilite pluie, budget CO2 et objectifs "
                  "hebdomadaires de trajets et de CO2 évité."],
                 ["F2", "Planificateur d'itineraires multimodal avec geolocalisation temps reel",
-                 "Moteur planRoutes : six options (a pied, velo partage, trottinette, transport en commun, combinaison "
-                 "velo + transport en commun, covoiturage) comparees et scorees ; position GPS temps reel utilisable comme "
+                 "Moteur planRoutes : six options (a pied, velo partage, trottinette, transport en commun, et deux "
+                 "combinaisons en rabattement : velo + transport en commun, trottinette + transport en commun) comparees et scorees ; position GPS temps reel utilisable comme "
                  "point de depart (watchPosition, precision affichee) ; trajets programmables a une date ou en routines "
                  "recurrentes (aller-retour, pause/reprise) avec marquage fait/annule."],
                 ["F3", "Integration d'APIs de transport (GTFS, velos/trottinettes partages)",
@@ -1698,7 +1698,7 @@ def section_11() -> list:
         p("11.2 Planification multimodale sur donnees reelles", "h2"),
         screenshot("03-planner-desktop.png", 168,
                    "Planificateur (desktop) : trajet Place Bellecour vers la gare Part-Dieu. Six options multimodales scorees "
-                   "(velo + transport en commun, transport en commun, velo, trottinette, a pied, covoiturage), segments detailles : "
+                   "(velo + transport en commun, trottinette + transport en commun, transport en commun, velo, trottinette, a pied), segments detailles : "
                    "approche velo vers une station Velo'v reelle (disponibilites GBFS live), correspondance vers un arret GTFS TCL "
                    "(mode affiche sans numero de ligne, non garanti par le MVP, cf. section 7.3), CO2 ventile par segment, badge PMR "
                    "et alertes trafic TCL temps reel affichees sur l'option concernee."),

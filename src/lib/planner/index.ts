@@ -9,6 +9,7 @@ import { haversineDistanceKm } from './geo';
 import { createBikeOption } from './options/bike';
 import { createBikeTransitOption } from './options/bike-transit';
 import { createScooterOption } from './options/scooter';
+import { createScooterTransitOption } from './options/scooter-transit';
 import { createTransitOption } from './options/transit';
 import { createWalkOption } from './options/walk';
 import { applyRoutedLegs } from './legs';
@@ -19,6 +20,7 @@ export function planRoutes(request: RouteRequest): RouteOption[] {
     const candidates = [
         createTransitOption(request),
         createBikeTransitOption(request, directKm),
+        createScooterTransitOption(request, directKm),
         createBikeOption(request, directKm),
         createScooterOption(request, directKm),
         createWalkOption(request, directKm),

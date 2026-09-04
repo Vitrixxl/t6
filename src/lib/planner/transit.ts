@@ -167,9 +167,9 @@ export function findTransitJourney(
 }
 
 /**
- * Segments d'un trajet en transport public. Les deux generateurs d'options qui
- * empruntent le reseau (transport seul, velo + transport) partagent cette
- * construction : le libelle, la couleur et la duree d'un segment ne doivent pas
+ * Segments d'un trajet en transport public. Tous les generateurs d'options qui
+ * empruntent le reseau (transport seul, velo ou trottinette + transport)
+ * partagent cette construction : le libelle, la couleur et la duree d'un segment ne doivent pas
  * dependre du generateur qui l'appelle.
  */
 export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg[] {

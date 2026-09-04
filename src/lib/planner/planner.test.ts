@@ -376,6 +376,50 @@ describe('portee des modes partages (RG3)', () => {
     expect(dehors).not.toContain('bike');
     expect(dehors).not.toContain('scooter');
     expect(dehors).not.toContain('bike-transit');
+    expect(dehors).not.toContain('scooter-transit');
+  });
+});
+
+// Le rabattement vers le reseau ne se limite pas au Velo'v : une trottinette
+// en flotte libre mene aussi a la station de montee, et se laisse sur place.
+describe('trottinette + transport en commun', () => {
+  const routes = planRoutes({
+    origin: LANDMARKS[0],
+    destination: LANDMARKS[1],
+    profile: DEFAULT_PROFILE,
+    network,
+  });
+
+  it('propose la trottinette en rabattement vers la ligne', () => {
+    const option = routes.find((route) => route.id === 'scooter-transit');
+    expect(option).toBeDefined();
+    expect(option!.modes).toEqual(['walk', 'scooter', 'transit']);
+    expect(option!.legs.map((leg) => leg.mode)).toEqual(['walk', 'scooter', 'transit', 'walk']);
+  });
+
+  it('partage les segments de ligne avec l option transport seul', () => {
+    const combined = routes.find((route) => route.id === 'scooter-transit');
+    const transitOnly = routes.find((route) => route.id === 'transit');
+    const rideTitles = (route: typeof routes[number]) =>
+      route.legs.filter((leg) => leg.mode === 'transit').map((leg) => leg.title);
+    expect(rideTitles(combined!)).toEqual(rideTitles(transitOnly!));
+  });
+
+  it('disparait quand aucune trottinette n est disponible au depart', () => {
+    const sansTrottinette: TransportNetwork = {
+      ...network,
+      sharedMobility: {
+        ...network.sharedMobility,
+        data: {
+          stations: network.sharedMobility.data.stations.map((station) => ({ ...station, scooters_available: 0 })),
+        },
+      },
+    };
+    const ids = planRoutes({ origin: LANDMARKS[0], destination: LANDMARKS[1], profile: DEFAULT_PROFILE, network: sansTrottinette })
+      .map((route) => route.id);
+    expect(ids).not.toContain('scooter-transit');
+    // Le Velo'v, lui, reste disponible : les deux rabattements sont independants.
+    expect(ids).toContain('bike-transit');
   });
 });
 
