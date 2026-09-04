@@ -101,7 +101,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levée.
 - [x] theme-color aligne (index.html/manifest), scripts Bun e2e/screens exposés, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, économie chiffrée, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 203 tests verts (23 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 écrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
+- [x] 205 tests verts (24 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 écrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
 
 ## 9. Preuves concrètes
 
@@ -116,7 +116,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectée).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et contrôlées en planche-contact et pleine page.
-- Vérification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 203 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 écrans) et `bun run e2e` OK (9/9).
+- Vérification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 205 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 écrans) et `bun run e2e` OK (9/9).
 
 ## 10. Backend (ajout post-audit)
 
@@ -161,10 +161,10 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] API : `bun server/src/index.ts`, sans étape de compilation ni dépendance native.
 - [x] Serveur de développement et build du client exécutés par Bun (`bun scripts/dev.ts`, `Bun.build`).
 - [x] TypeScript 7 conserve ; `tsc` strict contrôle types et symboles inutilisés, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
-- [x] Tests client / métier : 139 tests verts dans `src/`.
+- [x] Tests client / métier : 141 tests verts dans `src/`.
 - [x] Tests d'API : `bun test server`, 64 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) exécutés par Bun.
-- [x] Vérifications rejouées après bascule : `bun run check` complet (203 tests), E2E 9/9, audit axe-core 0 violation sur 4 écrans.
+- [x] Vérifications rejouées après bascule : `bun run check` complet (205 tests), E2E 9/9, audit axe-core 0 violation sur 4 écrans.
 - [x] Limite assumée : l'ingestion GTFS et la génération du dossier restent en Python, faute d'équivalent JavaScript.
 
 ## Correctif du hub et des annulations
@@ -177,3 +177,5 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Vérification navigateur du hub avec `bun run e2e:trips` : quatre onglets, cinq largeurs et persistance après rechargement.
 
 - [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, six options mobiles sans troncature et tailles Carte/Aperçu/Détails accessibles par boutons, glissement et clavier. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.
+
+- [x] B37–B39 : cadrage borné à la taille du canvas avec rotation E2E ; certificat local reconnu comme certificat serveur par Chromium ; image Docker contenant les contrats et règles partagées, démarrée après migration d’une copie de la base.

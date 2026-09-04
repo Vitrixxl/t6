@@ -5,6 +5,7 @@ dist
 output
 tmp
 .git
+.claude
 .venv
 .env
 *.pem

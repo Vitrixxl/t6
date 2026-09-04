@@ -32,6 +32,9 @@ RUN bun install --frozen-lockfile --production
 # tourne pas sans lui.
 COPY server ./server
 COPY src/types.ts ./src/types.ts
+COPY src/contracts ./src/contracts
+# Les règles de récurrence sont partagées avec les services du serveur.
+COPY src/lib/trips/calendar.ts src/lib/trips/routines.ts ./src/lib/trips/
 COPY --from=build /app/dist ./dist
 
 # Le certificat est génère au premier démarrage s'il manque : voir entrypoint.sh.

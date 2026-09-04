@@ -10,6 +10,7 @@ import { legColor } from './legStyle';
 import { syncLegLabels } from './legLabels';
 import { syncEndpointMarkers } from './endpointMarkers';
 import { installMapLayers } from './layers';
+import { routeViewportPadding } from './viewport';
 import type { SharedStation } from '../../types';
 import { IS_DEV } from '../../env';
 
@@ -268,19 +269,27 @@ export function UrbanMap({
             return;
         }
 
-        // Cadre le trajet selectionne pour qu'il remplisse la zone visible de la
-        // carte (le conteneur exclut déjà les rails lateraux) en évitant seulement
-        // la barre de recherche en haut et le bandeau d'options en bas.
-        map.fitBounds(bounds, {
-            padding: {
-                top: window.innerWidth >= 1024 ? 96 : 140,
-                right: 48,
-                bottom: window.innerWidth >= 1024 ? 88 : 300,
-                left: 48,
-            },
-            maxZoom: 16.2,
-            duration: 650,
-        });
+        const fitRoute = () => {
+            const { clientWidth, clientHeight } = map.getContainer();
+            if (clientWidth === 0 || clientHeight === 0) {
+                return;
+            }
+            map.fitBounds(bounds, {
+                padding: routeViewportPadding(clientWidth, clientHeight, window.innerWidth >= 1024),
+                maxZoom: 16.2,
+                duration: 650,
+            });
+        };
+        // Une rotation ou un rail redimensionné change le canvas, même si les
+        // extrémités du trajet n’ont pas changé.
+        const observer = new ResizeObserver(() => map.resize());
+        observer.observe(map.getContainer());
+        map.on('resize', fitRoute);
+        fitRoute();
+        return () => {
+            observer.disconnect();
+            map.off('resize', fitRoute);
+        };
     }, [destination, loaded, origin, selectedRoute]);
 
     useEffect(() => {

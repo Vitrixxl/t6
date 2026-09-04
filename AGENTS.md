@@ -186,6 +186,8 @@ de desserte et de mesure réelle restent celles du moteur. Les durées sont
 formatées par `src/lib/duration.ts` : `63 min` se lit `1h03`.
 Le panneau mobile propose trois tailles explicites (Carte, Aperçu, Détails),
 avec des commandes accessibles même lorsque son contenu défile.
+Le cadrage de carte utilise les dimensions du canvas : les marges doivent
+laisser une zone de dessin positive, même en paysage ou après redimensionnement.
 
 **Ne jamais afficher un plafond comme une mesure.** Ce fut un vrai bogue
 (B9) : l'interface annonçait « 300 trottinettes » parce que c'était la

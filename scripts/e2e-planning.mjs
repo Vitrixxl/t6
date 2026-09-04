@@ -38,6 +38,11 @@ page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
 
 const log = (...args) => console.log('•', ...args);
 const failures = [];
+page.on('console', (message) => {
+    if (message.text().includes('Map cannot fit within canvas')) {
+        failures.push(`cadrage MapLibre impossible : ${message.text()}`);
+    }
+});
 
 const MOBILE_TUTORIAL_STEPS = [
     { title: 'Bienvenue sur UrbanFlow' },
@@ -107,7 +112,14 @@ async function testMobileSheet() {
         await choice.click();
         if (await choice.getAttribute('aria-pressed') !== 'true') failures.push('option mobile impossible à sélectionner');
     }
-    log('panneau mobile : trois tailles, défilement, clavier, glissement et sélection vérifiés à 320 et 390 px');
+    // En paysage, les anciennes marges fixes (140 + 300 px) dépassaient
+    // les 390 px de hauteur du canvas. Changer d’option doit encore cadrer.
+    await page.setViewportSize({ width: 844, height: 390 });
+    await choices.first().click();
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: 'tmp/screenshots/routes-landscape.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    log('panneau mobile : tailles, défilement, clavier, glissement, sélection et rotation vérifiés');
 }
 
 async function testMobileTutorial() {

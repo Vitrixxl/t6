@@ -62,6 +62,10 @@ horaire ; les anciennes routines prennent `Europe/Paris` et aucune annulation.
 `bun run e2e:trips` vérifie les quatre onglets de 320 à 1280 px, les annulations
 et leur conservation après rechargement, sur un serveur local de test.
 
+Le cadrage réserve des marges aux contrôles en fonction de la taille réelle du
+canvas. Une rotation ou un redimensionnement des panneaux recalcule ces marges ;
+elles laissent toujours une zone disponible pour le trajet, même en paysage.
+
 ## Organisation du code
 
 Le découpage suit les responsabilités fonctionnelles ; la longueur seule ne
@@ -206,6 +210,31 @@ Migration : remplacer l'ancienne variable `OSRM_BASE_URL` par ces trois variable
 Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
 
 OSRM sert un profil par processus : piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues. La trottinette reprend le moteur vélo ; le moteur voiture utilise le profil `driving` et ne fournit que la référence carbone, jamais une option proposée. Trois URL distinctes évitent un conteneur intermédiaire et sa consommation de ressources ; aucun gain mémoire chiffré n'a été mesuré.
+
+### Certificat local et service worker
+
+Passer l’avertissement d’un certificat auto-signé ne suffit pas à autoriser le
+service worker : le navigateur doit reconnaître ce certificat. Sur Chromium
+sous Linux, importer le certificat public du conteneur local comme certificat
+serveur de confiance (`P,,`, sans lui donner le rôle d’autorité de certification) :
+
+```bash
+mkdir -p tmp/certs
+docker cp urbanflow:/certs/cert.pem tmp/certs/urbanflow-localhost.pem
+certutil -d sql:$HOME/.pki/nssdb -A -t 'P,,' -n 'UrbanFlow localhost 2026' -i tmp/certs/urbanflow-localhost.pem
+```
+
+Cet exemple vise le conteneur local nommé `urbanflow` et une base NSS existante.
+Les installations Chromium récentes utilisent `~/.local/share/pki/nssdb` si
+`~/.pki/nssdb` n’existe pas. La [documentation Chromium](https://chromium.googlesource.com/chromium/src/+/master/docs/linux/cert_management.md)
+précise les chemins et l’import depuis l’interface. Relancer le navigateur si
+une fenêtre ouverte conserve l’ancien état du certificat. La confiance est
+propre au poste : un téléphone doit aussi reconnaître son certificat.
+
+L’image Docker copie les contrats et les règles calendaires partagées avec
+l’API, en plus du client construit. Après une mise à jour du code, reconstruire
+l’image et recréer le conteneur en conservant les volumes de données et de
+certificats ; modifier `main` seul ne change pas le conteneur déjà lancé.
 
 ## Commandes
 
