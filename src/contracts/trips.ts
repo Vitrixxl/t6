@@ -65,16 +65,32 @@ export const routinePeriod = z.object({
 export type RoutinePeriod = z.infer<typeof routinePeriod>;
 
 /** Heure "HH:MM". */
-export const timeOfDay = z.string().regex(/^\d{2}:\d{2}$/, 'Heure au format HH:MM.');
+export const timeOfDay = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'Heure au format HH:MM.');
 /** Convention JS Date.getDay() : 0 = dimanche ... 6 = samedi. */
 export const dayOfWeek = z.int().min(0).max(6);
 export const daysOfWeek = z.array(dayOfWeek).min(1, 'Choisis au moins un jour.').max(7);
+
+export const tripDirection = z.enum(['outbound', 'return']);
+export type TripDirection = z.infer<typeof tripDirection>;
+export const cancelledPassage = z.object({ date: z.iso.date(), direction: tripDirection });
+export type CancelledPassage = z.infer<typeof cancelledPassage>;
+export const recurringCancellationInput = z.object({ directions: z.array(tripDirection).min(1).max(2) });
+
+const routineTimeZone = z.string().max(100).refine((value) => {
+    try {
+        new Intl.DateTimeFormat('fr-FR', { timeZone: value });
+        return true;
+    } catch {
+        return false;
+    }
+}, 'Fuseau horaire inconnu.').default('Europe/Paris');
 
 export const recurringTrip = z.object({
     id: identifier,
     ...owned,
     ...tripShape,
     daysOfWeek,
+    timeZone: routineTimeZone,
     departureTime: timeOfDay,
     /** Heure du retour pour un aller-retour, sinon null. */
     returnTime: timeOfDay.nullable(),
@@ -83,9 +99,11 @@ export const recurringTrip = z.object({
     // ouvre une) ; la borne haute garde l'état fini, une pause et une reprise
     // n'ajoutant qu'une entrée.
     periods: z.array(routinePeriod).min(1).max(100),
+    /** Exceptions datées : seuls les sens annulés sont exclus des calculs. */
+    cancelledPassages: z.array(cancelledPassage).default([]),
     createdAt: isoDate,
 });
-export const recurringTripInput = recurringTrip.omit({ id: true, userId: true });
+export const recurringTripInput = recurringTrip.omit({ id: true, userId: true, cancelledPassages: true });
 export type RecurringTrip = z.infer<typeof recurringTrip>;
 
 export const savedRoute = z.object({
@@ -106,3 +124,6 @@ export const resourceIdParams = z.object({ id: identifier });
 /** Réponse atomique de la transition qui alimente le suivi carbone. */
 export const completedPlannedTrip = z.object({ plannedTrip, tripRecord });
 export type CompletedPlannedTrip = z.infer<typeof completedPlannedTrip>;
+
+/** Une annulation désigne une journée de la routine, jamais sa collection d’exceptions. */
+export const recurringCancellationParams = resourceIdParams.extend({ date: z.iso.date() });

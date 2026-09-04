@@ -19,7 +19,6 @@ export {
     type RoutineTotals,
 } from './routines';
 export {
-    completedTrips,
     plannedTripToRecord,
     summarizeTripActivity,
     upcomingTrips,

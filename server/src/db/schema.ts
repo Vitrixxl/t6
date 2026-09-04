@@ -6,7 +6,7 @@
 // DBA, et prennent un nom camelCase côté TypeScript pour coller au domaine.
 import { desc, sql } from 'drizzle-orm';
 import { check, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { PLANNED_TRIP_STATUSES } from '../../../src/contracts/trips.ts';
+import { PLANNED_TRIP_STATUSES, type CancelledPassage } from '../../../src/contracts/trips.ts';
 import type { MobilityMode, MobilityProfile, RoutinePeriod } from '../../../src/types.ts';
 
 export const users = sqliteTable('users', {
@@ -121,12 +121,14 @@ export const recurringTrips = sqliteTable(
         ...endpointColumns(),
         ...measureColumns(),
         daysOfWeek: text('days_of_week', { mode: 'json' }).$type<number[]>().notNull(),
+        timeZone: text('time_zone').notNull().default('Europe/Paris'),
         departureTime: text('departure_time').notNull(),
         returnTime: text('return_time'),
         // Périodes d'activite, lues et écrites en bloc avec la routine : la
         // derniere est ouverte tant qu'elle n'est pas en pause. Aucune requête ne
         // porte sur une période isolée, JSON est le bon grain.
         periods: text('periods_json', { mode: 'json' }).$type<RoutinePeriod[]>().notNull(),
+        cancelledPassages: text('cancelled_passages_json', { mode: 'json' }).$type<CancelledPassage[]>().notNull().default([]),
         createdAt: text('created_at').notNull(),
     },
     (t) => [primaryKey({ columns: [t.userId, t.id] })],

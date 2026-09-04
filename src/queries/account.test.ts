@@ -6,10 +6,11 @@ import { DEFAULT_PROFILE, type Session } from '../contracts';
 import { summarizeCarbon } from '../lib/carbon';
 import { createPlannedTrip, createRecurringTrip, isRoutinePaused, setRecurringPaused, upcomingTrips } from '../lib/trips';
 import { createSavedRouteRecord } from '../lib/savedRoutes';
-import type { PlannedTrip, RouteOption } from '../types';
+import type { PlannedTrip, RecurringTrip, RouteOption } from '../types';
 import { createQueryClient } from './client';
 import { mutationKeys } from './keys';
 import {
+    cancelPlannedTripOptions,
     completePlannedTripOptions,
     deletePlannedTripOptions,
     plannedTripsQuery,
@@ -17,7 +18,7 @@ import {
     savePlannedTripOptions,
 } from './planned-trips';
 import { profileQuery, saveProfileOptions } from './profile';
-import { deleteRecurringTripOptions, readRecurringTrips, saveRecurringTripOptions } from './recurring-trips';
+import { cancelRecurringDateOptions, deleteRecurringTripOptions, readRecurringTrips, saveRecurringTripOptions } from './recurring-trips';
 import { saveErrorFrom } from './save-error';
 import { deleteSavedRouteOptions, readSavedRoutes, saveSavedRouteOptions, savedRoutesQuery } from './saved-routes';
 import { deleteAccountOptions, logout, openSession, readSession, sessionQuery } from './session';
@@ -360,5 +361,43 @@ describe('refus et rafales', () => {
 
         expect(sentRequests(fetchSpy).map(({ path }) => path)).toEqual(['/api/trips/history', `/api/saved-routes/${record.id}`]);
         expect(saveError()).toBe('');
+    });
+});
+
+
+describe('cache après annulation', () => {
+    it('retire la contribution carbone même si seul l’état de connexion l’avait amorcée', async () => {
+        const trip = { ...futureTrip(), status: 'done' as const, completedAt: '2026-09-02T07:00:00Z' };
+        const record = {
+            id: `trip:${trip.id}`, userId: trip.userId, routeTitle: trip.label, modes: trip.modes,
+            distanceKm: trip.distanceKm, durationMinutes: trip.durationMinutes,
+            carbonGrams: trip.carbonGrams, carbonSavedGrams: trip.carbonSavedGrams, createdAt: trip.completedAt,
+        };
+        openSession(client, session({ plannedTrips: [trip], tripRecords: [record] }));
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ ...trip, status: 'cancelled', completedAt: null }));
+        await write(cancelPlannedTripOptions(client), trip);
+        expect(readPlannedTrips(client)[0]?.status).toBe('cancelled');
+        expect(readTripRecords(client)).toEqual([]);
+        expect(String(fetchSpy.mock.calls[0]?.[0])).toContain(`/api/trips/planned/${trip.id}/cancellation`);
+    });
+
+    it('envoie seulement les sens de la date annulée et applique la réponse serveur', async () => {
+        const trip = createRecurringTrip('user-1', SOURCE, EVERY_DAY);
+        openSession(client, session({ recurringTrips: [trip] }));
+        const saved: RecurringTrip = { ...trip, cancelledPassages: [{ date: '2026-09-01', direction: 'return' }] };
+        fetchSpy.mockResolvedValueOnce(jsonResponse(saved));
+        await write(cancelRecurringDateOptions(client), { id: trip.id, date: '2026-09-01', directions: ['return'] });
+        expect(parsedBody(fetchSpy.mock.calls[0]?.[1])).toEqual({ directions: ['return'] });
+        expect(String(fetchSpy.mock.calls[0]?.[0])).toContain(`/cancellations/2026-09-01`);
+        expect(readRecurringTrips(client)).toEqual([saved]);
+    });
+
+    it('garde le bilan et rend le refus visible si l’annulation échoue', async () => {
+        const trip = createRecurringTrip('user-1', SOURCE, EVERY_DAY);
+        openSession(client, session({ recurringTrips: [trip] }));
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Passage introuvable.' }, 404));
+        await write(cancelRecurringDateOptions(client), { id: trip.id, date: '2026-09-01', directions: ['outbound'] });
+        expect(readRecurringTrips(client)).toEqual([trip]);
+        expect(saveError()).toBe('Passage introuvable.');
     });
 });

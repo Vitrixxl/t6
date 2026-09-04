@@ -22,7 +22,16 @@ function toTripRecord(trip: PlannedTrip): TripRecord {
 /** Enregistre une ressource et elague uniquement un eventuel surplus. */
 export function savePlannedTrip(db: Db, trip: PlannedTrip): PlannedTrip | null {
     return db.transaction((tx) => {
-        const repository = createRepositories(tx).plannedTrips;
+        const repositories = createRepositories(tx);
+        const repository = repositories.plannedTrips;
+        const current = repository.findById(trip.userId, trip.id);
+        // Une modification de formulaire ne doit pas rétablir un trajet terminé.
+        if (current?.status === 'done' && trip.status !== 'cancelled') {
+            return null;
+        }
+        if (trip.status === 'cancelled') {
+            repositories.tripRecords.deleteById(trip.userId, `trip:${trip.id}`);
+        }
         repository.upsert(trip);
         repository.prune(trip.userId);
         return repository.findById(trip.userId, trip.id);
@@ -47,5 +56,20 @@ export function completePlannedTrip(db: Db, userId: string, id: string, now = ne
         repositories.tripRecords.upsert(tripRecord);
         repositories.tripRecords.prune(userId);
         return { plannedTrip, tripRecord };
+    });
+}
+
+/** Annuler conserve le trajet pour l’historique et retire sa contribution carbone. */
+export function cancelPlannedTrip(db: Db, userId: string, id: string): PlannedTrip | null {
+    return db.transaction((tx) => {
+        const repositories = createRepositories(tx);
+        const current = repositories.plannedTrips.findById(userId, id);
+        if (!current) {
+            return null;
+        }
+        const cancelled: PlannedTrip = { ...current, status: 'cancelled', completedAt: null };
+        repositories.plannedTrips.upsert(cancelled);
+        repositories.tripRecords.deleteById(userId, `trip:${id}`);
+        return cancelled;
     });
 }

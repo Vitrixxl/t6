@@ -59,6 +59,12 @@ export function createTripRecordRepository(db: Executor) {
                 .run();
         },
 
+        deleteById(userId: string, id: string): void {
+            db.delete(tripRecords)
+                .where(and(eq(tripRecords.userId, userId), eq(tripRecords.id, id)))
+                .run();
+        },
+
         /** Seule l'action utilisateur « effacer l'historique » appelle cette opération. */
         clear(userId: string): void {
             db.delete(tripRecords).where(eq(tripRecords.userId, userId)).run();

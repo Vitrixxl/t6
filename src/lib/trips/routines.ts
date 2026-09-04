@@ -1,10 +1,10 @@
 // Routines : une habitude déclarée, jamais matérialisée.
 //
-// Une routine dit « ces jours-la, a cette heure, je fais ce trajet ». Rien
-// n'est génère à l'avance : au moment de compter les trajets faits ou le CO2
-// évite, on regarde simplement combien de passages sont déjà tombes dans ses
-// périodes d'activite. Pas d'occurrence a créér, a dedoublonner ni a purger ;
-// un compteur se recalcule, il ne peut pas se désynchroniser.
+// Les passages échus sont calculés dans le fuseau de la routine, sur ses
+// périodes d’activité. Les exceptions datées retirent uniquement les sens
+// annulés ; aucun trajet ponctuel n’est créé pour représenter une occurrence.
+import { atCalendarTime, calendarDate, nextCalendarDate } from './calendar';
+import type { TripDirection } from '../../contracts';
 import type { RecurringTrip } from '../../types';
 
 /** Une routine est en pause quand sa derniere période d'activite est close. */
@@ -20,12 +20,13 @@ export function occurrencesBetween(routine: RecurringTrip, from: Date, to: Date)
         return occurrences;
     }
     const times = routine.returnTime ? [routine.departureTime, routine.returnTime].sort() : [routine.departureTime];
-    for (let day = startOfDay(from); day.getTime() < to.getTime(); day = nextDay(day)) {
-        if (!routine.daysOfWeek.includes(day.getDay())) {
+    const lastDay = calendarDate(to, routine.timeZone);
+    for (let day = calendarDate(from, routine.timeZone); day <= lastDay; day = nextCalendarDate(day)) {
+        if (!routine.daysOfWeek.includes(new Date(`${day}T12:00:00Z`).getUTCDay())) {
             continue;
         }
         for (const time of times) {
-            const at = atTime(day, time);
+            const at = atCalendarTime(day, time, routine.timeZone);
             if (at.getTime() >= from.getTime() && at.getTime() < to.getTime()) {
                 occurrences.push(at);
             }
@@ -40,13 +41,8 @@ export function occurrencesBetween(routine: RecurringTrip, from: Date, to: Date)
  * ce qui n'a pas encore pu être fait n'est pas fait.
  */
 export function countOccurrences(routine: RecurringTrip, floor: Date, now: Date): number {
-    let count = 0;
-    for (const period of routine.periods) {
-        const from = latest(new Date(period.from), floor);
-        const to = period.to ? earliest(new Date(period.to), now) : now;
-        count += occurrencesBetween(routine, from, to).length;
-    }
-    return count;
+    return routinePassagesBetween(routine, floor, now)
+        .filter((passage) => !isPassageCancelled(routine, passage)).length;
 }
 
 /** Prochain passage d'une routine active, ou null si elle est en pause ou sans jour actif. */
@@ -56,7 +52,8 @@ export function nextOccurrence(routine: RecurringTrip, now: Date = new Date()): 
     }
     // Huit jours : une routine qui a au moins un jour actif tombe forcement dedans.
     const horizon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 8);
-    return occurrencesBetween(routine, now, horizon)[0] ?? null;
+    return routinePassagesBetween(routine, now, horizon)
+        .find((passage) => !isPassageCancelled(routine, passage))?.at ?? null;
 }
 
 /** Ce que les routines apportent aux compteurs depuis `floor` : passages et mesures cumulees. */
@@ -84,23 +81,41 @@ export function sumRoutines(routines: RecurringTrip[], floor: Date, now: Date): 
 /** Plancher pour « depuis toujours » : avant toute date de création possible. */
 export const BEGINNING_OF_TIME = new Date(0);
 
-function startOfDay(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function nextDay(day: Date): Date {
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
-}
-
-function atTime(day: Date, time: string): Date {
-    const [hours = 0, minutes = 0] = time.split(':').map(Number);
-    return new Date(day.getFullYear(), day.getMonth(), day.getDate(), hours, minutes);
-}
-
 function latest(a: Date, b: Date): Date {
     return a.getTime() >= b.getTime() ? a : b;
 }
 
 function earliest(a: Date, b: Date): Date {
     return a.getTime() <= b.getTime() ? a : b;
+}
+
+/** Passages effectifs du calendrier, y compris ceux annulés, pour l’historique. */
+export function activeOccurrencesBetween(routine: RecurringTrip, floor: Date, until: Date): Date[] {
+    const occurrences = routine.periods.flatMap((period) => {
+        const from = latest(latest(new Date(period.from), new Date(routine.createdAt)), floor);
+        const to = period.to ? earliest(new Date(period.to), until) : until;
+        return occurrencesBetween(routine, from, to);
+    });
+    return [...new Set(occurrences.map((at) => at.getTime()))].sort((a, b) => a - b).map((at) => new Date(at));
+}
+
+export interface RoutinePassage {
+    at: Date;
+    direction: TripDirection;
+}
+
+/** Le sens fait partie de l’identité : deux passages à la même heure restent distincts. */
+export function routinePassagesBetween(routine: RecurringTrip, from: Date, to: Date): RoutinePassage[] {
+    const outbound = activeOccurrencesBetween({ ...routine, returnTime: null }, from, to)
+        .map((at): RoutinePassage => ({ at, direction: 'outbound' }));
+    const returning = routine.returnTime
+        ? activeOccurrencesBetween({ ...routine, departureTime: routine.returnTime, returnTime: null }, from, to)
+            .map((at): RoutinePassage => ({ at, direction: 'return' }))
+        : [];
+    return [...outbound, ...returning].sort((a, b) => a.at.getTime() - b.at.getTime());
+}
+
+export function isPassageCancelled(routine: RecurringTrip, passage: RoutinePassage): boolean {
+    const date = calendarDate(passage.at, routine.timeZone);
+    return routine.cancelledPassages.some((item) => item.date === date && item.direction === passage.direction);
 }

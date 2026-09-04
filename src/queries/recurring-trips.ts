@@ -1,8 +1,9 @@
 // Routines : lecture, création, pause et suppression de la ressource visée.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import type { TripDirection } from '../contracts';
 import type { RecurringTrip } from '../types';
-import { deleteRecurringTrip, fetchRecurringTrips, saveRecurringTrip } from '../lib/api/recurring-trips';
+import { cancelRecurringDate, deleteRecurringTrip, fetchRecurringTrips, saveRecurringTrip } from '../lib/api/recurring-trips';
 import { createRecurringTrip, isRoutinePaused, removeRecurring, setRecurringPaused, upsertRecurring, type TripSource } from '../lib/trips';
 import { mutationKeys, queryKeys } from './keys';
 import { readSession } from './session';
@@ -92,4 +93,28 @@ export function useRemoveRoutine(): (routine: RecurringTrip) => void {
     const client = useQueryClient();
     const remove = useMutation(deleteRecurringTripOptions(client));
     return useCallback((routine: RecurringTrip) => remove.mutate(routine), [remove]);
+}
+
+export interface CancelRoutineDate {
+    id: string;
+    date: string;
+    directions: TripDirection[];
+}
+
+export function cancelRecurringDateOptions(client: QueryClient) {
+    return mutationOptions({
+        mutationKey: mutationKeys.recurringCancel,
+        scope: { id: 'account' },
+        mutationFn: ({ id, date, directions }: CancelRoutineDate) => cancelRecurringDate(id, date, directions),
+        onMutate: () => client.cancelQueries({ queryKey: queryKeys.recurringTrips }),
+        onSuccess: (saved) => updateRecurringTrips(client, (trips) => upsertRecurring(trips, saved)),
+        onError: () => reloadRecurringTrips(client),
+        gcTime: Infinity,
+    });
+}
+
+export function useCancelRoutineDate(): (input: CancelRoutineDate) => void {
+    const client = useQueryClient();
+    const cancel = useMutation(cancelRecurringDateOptions(client));
+    return useCallback((input: CancelRoutineDate) => cancel.mutate(input), [cancel]);
 }

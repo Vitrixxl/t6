@@ -58,10 +58,12 @@ export function createRecurringTrip(
         carbonGrams: source.carbonGrams,
         carbonSavedGrams: source.carbonSavedGrams,
         daysOfWeek: [...schedule.daysOfWeek].sort((a, b) => a - b),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         departureTime: schedule.departureTime,
         returnTime: schedule.returnTime,
         // Active des sa création : ses passages comptent à partir de maintenant.
         periods: [{ from: now.toISOString(), to: null }],
+        cancelledPassages: [],
         createdAt: now.toISOString(),
     };
 }

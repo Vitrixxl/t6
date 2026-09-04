@@ -17,9 +17,11 @@ function toRecurringTrip(row: RecurringTripRow): RecurringTrip {
         ...endpoints(row),
         ...measures(row),
         daysOfWeek: row.daysOfWeek,
+        timeZone: row.timeZone,
         departureTime: row.departureTime,
         returnTime: row.returnTime,
         periods: row.periods,
+        cancelledPassages: row.cancelledPassages,
         createdAt: row.createdAt,
     };
 }
@@ -75,9 +77,11 @@ export function createRecurringTripRepository(db: Executor) {
                         carbonGrams: row.carbonGrams,
                         carbonSavedGrams: row.carbonSavedGrams,
                         daysOfWeek: row.daysOfWeek,
+                        timeZone: row.timeZone,
                         departureTime: row.departureTime,
                         returnTime: row.returnTime,
                         periods: row.periods,
+                        cancelledPassages: row.cancelledPassages,
                         createdAt: row.createdAt,
                     },
                 })

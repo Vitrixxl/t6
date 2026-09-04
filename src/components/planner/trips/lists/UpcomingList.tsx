@@ -28,11 +28,11 @@ export function UpcomingList({
     }
 
     return (
-        <ul className="grid gap-2">
+        <ul className="grid min-w-0 grid-cols-1 gap-2">
             {trips.map((trip) => (
-                <li key={trip.id} className="grid gap-2 rounded-xl border border-border/70 bg-background p-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
+                <li key={trip.id} className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
+                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                        <div className="min-w-0 max-w-full">
                             <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-primary">
                                 <TripStatusDot status={trip.status} />
                                 {formatScheduleLabel(trip.scheduledFor)}
@@ -40,7 +40,7 @@ export function UpcomingList({
                             <h3 className="mt-0.5 truncate text-sm font-semibold">{trip.label}</h3>
                             <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />
                         </div>
-                        <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0 sm:flex-col sm:items-end sm:text-right">
                             <span className="font-mono text-[11px] text-muted-foreground">
                                 {trip.durationMinutes} min · {trip.distanceKm.toFixed(1)} km
                             </span>
