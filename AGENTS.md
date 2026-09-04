@@ -25,13 +25,24 @@ code produit sans comprendre ce qu'il fait.
   sans `eslint-disable` de confort. Un type qui refuse a souvent raison.
 - Pas de code mort, pas de commentaire perime, pas de vocabulaire herite
   d'une version precedente. Quand la chose change, son nom change.
+- ESLint bloque une complexite cyclomatique superieure a 10 et plus de trois
+  niveaux d'imbrication. L'objectif n'est pas de deplacer les branches dans un
+  relais generique : extraire une responsabilite nommee et garder le parcours
+  appelant lineaire.
 - Un changement de conception se propage partout ou il est decrit : code,
-  tests, README, CHECKLIST, OpenAPI, ce fichier, et les fichiers de
-  soutenance (section ci-dessous).
+  tests, README, CHECKLIST, OpenAPI, ce fichier, et les supports de revue
+  maintenus (section ci-dessous).
 - Avant de proposer, se demander comment un relecteur exigeant verrait le
   code. Si la reponse est « bricole », ne pas le proposer.
 
-## Fichiers de soutenance — a tenir a jour
+## Dossier PDF — artefact gele
+
+**Ne jamais modifier `scripts/generate_dossier.py`, ne jamais regenerer ni
+controler `output/pdf/`.** Le dossier PDF est un livrable historique gele qui
+ne sera plus mis a jour. Un changement fonctionnel futur ne s'y reporte pas,
+meme si son contenu devient anterieur au code courant.
+
+## Supports de revue — a tenir a jour
 
 Le depot est defendu a l'oral a partir de fichiers qui decrivent
 l'application. Ils ne sont pas versionnes (`output/` est ignore) mais ils sont
@@ -46,10 +57,9 @@ candidat qui la porte.
   le livrable.
 - `output/revue-code.html` : la roadmap de lecture du depot, dans l'ordre des
   appels, avec les fichiers et symboles a ouvrir dans l'editeur.
-- `scripts/generate_dossier.py` : le texte du dossier PDF.
 
-**Toute modification fonctionnelle se reporte dans ces fichiers dans le meme
-travail**, pas dans un second temps : nombre d'options du moteur, modes et
+**Toute modification fonctionnelle se reporte dans ces quatre fichiers dans
+le meme travail**, pas dans un second temps : nombre d'options du moteur, modes et
 combinaisons proposes, regles de gestion, nombre de tests par suite,
 comportement en cas de panne d'une API. Pour la roadmap, verifier les chemins,
 les symboles et l'ordre des appels. Avant de rendre la main, relire chacun
@@ -111,8 +121,8 @@ bun run e2e          # scenario de planification (Playwright)
 bun run audit:a11y   # axe-core sur quatre ecrans
 ```
 
-L'ingestion GTFS et la generation du dossier restent en Python : pas
-d'equivalent JavaScript, et c'est assume.
+L'ingestion GTFS reste en Python : pas d'equivalent JavaScript, et c'est
+assume. La generation du dossier PDF est gelee par la regle ci-dessus.
 
 ## Architecture
 
@@ -137,8 +147,11 @@ base `:memory:` des tests.
 authentification, une commande par ressource du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa
 requete et ses actions), `state/` (l'etat d'ecran partage entre modules, en
-atomes jotai), `components/map/`, `components/planner/trips/`,
-`components/app/hooks/`. Tous les appels du client vers l'API UrbanFlow passent
+atomes jotai), `components/map/` (cycle de vie et couches separes),
+`components/planner/` (etat de recherche et rendu separes),
+`components/app/` (orchestrateur, dispositions et hooks),
+`components/tutorial/` (parcours distincts desktop et mobile, cibles posees sur
+les controles reels). Tous les appels du client vers l'API UrbanFlow passent
 par Eden Treaty et sont types depuis l'arbre Elysia ; aucun appel n'envoie une
 collection complete. Les appels aux services tiers restent dans
 `lib/transport/`. Les composants appellent les hooks dont ils ont
@@ -180,8 +193,8 @@ sont apparus le jour ou le service tiers a cesse de repondre.
 
 **Nommer les limites plutot que les masquer.** Le moteur d'itineraires reste
 heuristique et il n'y a pas de graphe horaire GTFS : les frequences sont des
-moyennes, pas des horaires. Ces limites sont ecrites dans le code et dans le
-dossier ; ne pas produire d'affichage qui les contredit.
+moyennes, pas des horaires. Ces limites sont ecrites dans le code et dans les
+supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
 En revanche le nom de ligne **est** affiche depuis l'integration de la desserte
 publiee : une ligne n'est proposee que si elle dessert reellement les deux

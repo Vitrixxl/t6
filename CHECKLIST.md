@@ -78,7 +78,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] GTFS statique reel TCL/SYTRAL (ODbL) integre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 2435 arrets et 13 lignes structurantes avec leur desserte et leur trace reel (metropole entiere, rayon 16 km).
 - [x] Planificateur: trajets programmes a une date, routines recurrentes (aller-retour, pause/reprise), statuts fait/annule, objectifs d'economie CO2 hebdomadaire et mensuel independants avec progression.
 - [x] Recherche geocodee double source (BAN adresses + Photon quartiers/gares/lieux), typee et bornee a la metropole (dept 69).
-- [x] Onboarding spotlight 11 etapes (auto premiere visite, relance via bouton « ? »).
+- [x] Onboarding spotlight adapte a la disposition : 11 etapes desktop, 9 etapes mobile sur les controles reellement presents, auto a la premiere visite et relancable depuis le profil.
 - [x] Meteo live Open-Meteo injectee dans le scoring (pluie/vent).
 - [x] Fallback local pour chaque flux + statut des sources affiche dans l'UI.
 - [x] Tests unitaires sur la fusion GBFS et la classification meteo (`src/lib/transport/feeds.test.ts`).
@@ -101,7 +101,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levee.
 - [x] theme-color aligne (index.html/manifest), scripts Bun e2e/screens exposes, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, economie chiffree, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 170 tests verts (19 fichiers), lint 0 erreur, build OK, scenario E2E planification bloquant vert (7/7 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
+- [x] 170 tests verts (19 fichiers), lint 0 erreur, build OK, scenario E2E tutoriel mobile + planification bloquant vert (8/8 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
 
 ## 9. Preuves concretes
 
@@ -116,7 +116,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectee).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et controlees en planche-contact et pleine page.
-- Verification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 170 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 ecrans) et `bun run e2e` OK (7/7).
+- Verification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 170 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 ecrans) et `bun run e2e` OK (8/8).
 
 ## 10. Backend (ajout post-audit)
 
@@ -138,7 +138,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17).
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
 - [x] Tests d'integration API via `app.handle` (base :memory:) et tests client sur les operations pures (trajets, routines, carbone, profil) ; suite complete sous `bun test`.
-- [x] Verification bout en bout en navigateur : connexion, calcul d'options, planification, marquage fait, persistance et deconnexion, 7/7 assertions.
+- [x] Verification bout en bout en navigateur : tutoriel mobile complet, connexion, calcul d'options, planification, marquage fait, persistance et deconnexion, 8/8 assertions.
 
 ## 11. Architecture de fichiers (revue de code)
 
@@ -147,9 +147,11 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Moteur d'itineraires eclate : 559 lignes -> 13 fichiers, un generateur par mode dans `options/`.
 - [x] Couche transport eclatee : 780 lignes -> 14 fichiers (`geocoding/`, `routing/`, `feeds/`), une source externe par fichier.
 - [x] Module d'authentification : appels API, cache de session, normalisation du profil.
-- [x] Carte eclatee (composant, popups avec echappement HTML, sources) et type `LayerState` dedoublonne.
-- [x] Geolocalisation et calcul d'itineraires extraits en hooks testables.
-- [x] Decoupage par responsabilite plutot que par seuil arbitraire de lignes ; verification par lint, typage, tests et scenario E2E 7/7.
+- [x] Carte eclatee : cycle de vie dans `UrbanMap`, definitions dans `layers`, donnees GeoJSON, popups et marqueurs isoles.
+- [x] Ecran principal separe : `MobilityMapApp` tient l'etat et les actions ; `MobilityLayouts` porte uniquement les dispositions desktop/mobile.
+- [x] Recherche, gestes de feuille mobile, geolocalisation et calcul d'itineraires extraits en hooks nommes.
+- [x] Chaque ressource React Query porte directement sa lecture et ses actions ; aucun orchestrateur generique `AccountMutation` entre le clic et Eden.
+- [x] Decoupage par responsabilite plutot que par seuil arbitraire de lignes ; ESLint bloque complexite > 10 et imbrication > 3, puis typage, tests et scenario E2E valident le comportement.
 
 ## 12. Chaine d'outillage unifiee sous Bun
 
@@ -160,5 +162,5 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Tests client / metier : 122 tests verts dans `src/`.
 - [x] Tests d'API : `bun test server`, 48 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) executes par Bun.
-- [x] Verifications rejouees apres bascule : `bun run check` complet (170 tests), E2E 7/7, audit axe-core 0 violation sur 4 ecrans.
+- [x] Verifications rejouees apres bascule : `bun run check` complet (170 tests), E2E 8/8, audit axe-core 0 violation sur 4 ecrans.
 - [x] Limite assumee : l'ingestion GTFS et la generation du dossier restent en Python, faute d'equivalent JavaScript.

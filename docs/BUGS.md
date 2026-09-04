@@ -692,7 +692,7 @@ Les tests couvrent la cause plutot qu'un seul affichage :
 
 La recette navigateur a affiche, pour le meme trajet, une empreinte pietonne de
 `0 gCO₂e` et `564 gCO₂e evites` issus de la reference routiere. Le scenario E2E
-reste vert a 7/7 et axe-core ne detecte aucune violation sur les quatre ecrans.
+reste vert a 8/8 et axe-core ne detecte aucune violation sur les quatre ecrans.
 
 Ces tests ont ete ajoutes avec la correction et n'ont pas ete observes rouges
 sur la version initiale.
@@ -738,17 +738,23 @@ uniquement les lignes excedentaires.
 La completion passe par
 `PUT /api/trips/planned/:id/completion`. Le service termine le trajet et cree
 son `TripRecord` dans une seule transaction SQLite ; le rejeu rend le meme
-etat sans doublon. Le client projette la commande dans les vues React Query,
-mais Eden Treaty n'envoie que la ressource ciblee. Seul
+etat sans doublon. Chaque fichier React Query porte directement la lecture et
+les commandes de sa ressource : il n'existe plus d'orchestrateur generique
+capable de modifier une partie arbitraire du compte. Apres un succes, seule la
+reponse du serveur est appliquee aux caches concernes ; Eden Treaty n'envoie
+que la ressource ciblee. Seul
 `DELETE /api/trips/history`, declenche par le bouton d'effacement explicite,
 supprime volontairement tout l'historique.
 
 **Ou le voir** : `server/src/routes/planned-trips.ts`,
 `server/src/services/planned-trips.ts`,
-`server/src/repositories/planned-trips.ts`, `src/queries/account.ts`,
+`server/src/repositories/planned-trips.ts`, `src/queries/planned-trips.ts`,
 `src/lib/api/planned-trips.ts`
 
 **Commit** : [`e32f643`](https://github.com/Vitrixxl/t6/commit/e32f643)
+
+**Simplification du flux client** :
+[`8d2257b`](https://github.com/Vitrixxl/t6/commit/8d2257b)
 
 ### Tester et valider le correctif
 
@@ -768,3 +774,95 @@ sur une reproduction isolee avant la correction.
 
 **Niveau de verrouillage** : **faible** (regressions automatisees et scenario
 E2E adapte, protocole rouge-puis-vert initial non observe).
+
+---
+
+## B28 — L'action des objectifs n'indiquait pas ce qu'elle modifiait
+
+**Criticite** : faible — la carte Objectifs ne contenait qu'un bouton
+« Modifier ». Dans un planificateur qui permet aussi de modifier le profil et
+les trajets, l'objet de cette action devait etre devine.
+
+### Identifier la source
+
+**Symptome** : dans l'en-tete « Objectifs », l'action secondaire affichait le
+seul mot « Modifier », sans nom accessible plus precis.
+
+**Cause racine** : le libelle avait ete raccourci pour tenir dans la carte,
+alors que l'espace disponible permettait de nommer directement la ressource.
+
+### Corriger
+
+Le bouton porte desormais le texte visible et le nom accessible « Modifier les
+objectifs ». L'action, son objet et le formulaire qui s'ouvre utilisent ainsi
+le meme vocabulaire.
+
+**Ou le voir** : `src/components/planner/trips/TripGoalsCard.tsx`
+
+**Commit** : [`8d2257b`](https://github.com/Vitrixxl/t6/commit/8d2257b)
+
+### Tester et valider le correctif
+
+Le scenario navigateur ouvre le planificateur apres avoir programme un trajet,
+puis cherche exactement un bouton accessible nomme « Modifier les objectifs ».
+Le test echoue si le libelle redevient vague ou si l'action disparait. Une
+capture en vue mobile a aussi confirme que le texte tient dans l'en-tete.
+
+Le controle a ete ajoute avec le correctif et n'a pas ete observe rouge avant
+sa premiere implementation.
+
+**Niveau de verrouillage** : **faible** (controle E2E bloquant et recette
+visuelle, protocole rouge-puis-vert initial non observe).
+
+---
+
+## B29 — Le tutoriel mobile sautait les fonctions de l'application
+
+**Criticite** : majeur — lors d'une premiere visite sur telephone, le guide
+passait de la recherche a la fin sans montrer la carte, les couches, les
+trajets, les objectifs ni le profil.
+
+### Identifier la source
+
+**Symptome** : apres l'ecran d'accueil et la recherche, « Suivant » arrivait
+presque immediatement sur « C'est tout ! ». Les rares explications pouvaient en
+plus se superposer au controle designe sur un petit ecran.
+
+**Cause racine** : une liste unique d'etapes ciblait surtout les panneaux du
+shell desktop. Le mecanisme sautait correctement une cible absente, mais sur
+mobile presque toutes les cibles l'etaient. La regle de placement centrait
+aussi la bulle sur toute cible large, y compris la barre de recherche mobile.
+
+### Corriger
+
+Le desktop conserve ses onze etapes. Le mobile possede maintenant un parcours
+de neuf etapes qui cible les controles reellement rendus : recherche, carte,
+position, proximite, couches, trajets/objectifs et profil. Les boutons de la
+barre d'actions ainsi que leurs equivalents dans la feuille d'itineraire
+portent des cibles mobiles explicites.
+
+La bulle mobile mesure l'espace disponible et se place sous une cible haute ou
+au-dessus d'une cible basse. Sa largeur est bornee par celle du viewport. La
+cle de premiere visite passe en version 2 afin que les utilisateurs ayant deja
+vu le parcours incomplet recoivent le parcours corrige.
+
+**Ou le voir** : `src/components/tutorial/TutorialOverlay.tsx`,
+`src/components/planner/MobileQuickPanels.tsx`,
+`src/components/app/MobilityLayouts.tsx`, `scripts/e2e-planning.mjs`
+
+**Commit** : [`d3ac1b0`](https://github.com/Vitrixxl/t6/commit/d3ac1b0)
+
+### Tester et valider le correctif
+
+Le scenario E2E a d'abord ete etendu avec les neuf titres et les sept cibles
+attendus. Son premier passage rouge s'est arrete sur
+`la cible mobile-search n'est pas visible`. Apres correction, il parcourt les
+neuf etapes, verifie que chaque cible existe et calcule l'intersection entre la
+bulle et chaque controle : toute superposition fait echouer le test.
+
+La recette visuelle en 390 x 844 confirme que la carte reste lisible et que le
+bouton « Trajets et objectifs » est seul dans le spotlight. Le scenario complet
+termine ensuite la planification, la completion et la deconnexion en 8/8.
+
+**Niveau de verrouillage** : **automatise** (E2E ecrit et observe rouge avant
+le correctif, puis vert ; captures mobiles de controle).

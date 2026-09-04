@@ -34,7 +34,7 @@ commande pas la creation d'un module.
 | `config/` | lecture et validation des variables d'environnement |
 | `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
 | `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
-| `services/` | règles métier (commandes par ressource, transition de completion, sessions, routage et son cache) |
+| `services/` | règles métier qui composent plusieurs opérations : completion, sessions, routage et son cache |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
 
@@ -48,13 +48,16 @@ commande pas la creation d'un module.
 | `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une commande par ressource du compte |
 | `queries/` | ressources servies par l'API dans le cache React Query : une ressource par fichier, sa requete et ses actions |
 | `state/` | etat d'ecran partage entre modules (jotai) : formulaire de planification, hub |
-| `components/map/` | carte MapLibre : composant, popups, sources |
-| `components/planner/trips/` | module trajets : hub, listes, formulaire, objectifs |
-| `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
+| `components/map/` | carte MapLibre : cycle de vie, couches, popups, sources et marqueurs |
+| `components/planner/` | recherche : état réseau, liste de résultats et panneaux de restitution séparés |
+| `components/planner/trips/` | module trajets : hub, listes, formulaire, champs de planification et objectifs |
+| `components/app/` | orchestration de l'écran, dispositions desktop/mobile et hooks de géolocalisation/routage |
+| `components/tutorial/` | parcours de découverte distincts : 11 étapes desktop et 9 étapes ciblant les contrôles réellement présents sur mobile |
 
 Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (securite),
-`server/src/routes/planned-trips.ts`, `server/src/services/planned-trips.ts` et `src/queries/account.ts`
-(commande granulaire et projection optimiste), puis `src/lib/planner/index.ts` (moteur d'itineraires).
+`server/src/routes/planned-trips.ts`, `server/src/services/planned-trips.ts`, `src/lib/api/planned-trips.ts`
+et `src/queries/planned-trips.ts` (commande granulaire de bout en bout), puis
+`src/queries/routes.ts` et `src/lib/planner/index.ts` (moteur d'itineraires).
 
 ## Livrables
 
@@ -132,6 +135,11 @@ du chiffre hebdomadaire. Ils sont valides par le contrat partage, persistes avec
 `PUT /api/me/profile`, puis compares aux memes agregats semaine/mois que le suivi
 carbone dans le planificateur.
 
+Le tutoriel de premiere visite suit la disposition courante. Sur mobile, il
+montre successivement la recherche, la carte, le GPS, les disponibilites a
+proximite, les couches, les trajets/objectifs et le profil. Sa bulle se place
+au-dessus ou au-dessous du controle vise pour ne pas le masquer.
+
 Sans configuration, la source est l'instance publique de démonstration d'OpenStreetMap. Elle dépanne, mais elle n'a **aucun engagement de service et limite par adresse IP** — une session de test un peu active suffit à la déclencher (cf. `docs/BUGS.md`, B13).
 
 Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localement :
@@ -165,7 +173,7 @@ bun run generate:icons   # icônes PWA
 bun run generate:pdf     # dossier projet PDF
 bun run start            # sert le build de production
 bun run check            # lint + typage + tests + build production
-bun run e2e              # scénario E2E de planification (Playwright, 7 assertions)
+bun run e2e              # tutoriel mobile + planification (Playwright, 8 assertions)
 ```
 
 **Toute la chaîne tourne sous Bun, sans exception** : gestionnaire de paquets, exécution du serveur,
@@ -176,7 +184,9 @@ Python, faute d'équivalent dans l'écosystème JavaScript.
 Le depot conserve TypeScript 7. En attendant sa prise en charge par
 `typescript-eslint`, ESLint analyse la syntaxe TypeScript avec le parseur Babel ;
 `tsc` strict reste l'autorite pour les types et les symboles inutilises, et une
-regle ESLint interdit explicitement le mot-cle `any`.
+regle ESLint interdit explicitement le mot-cle `any`. Le lint bloque aussi une
+complexite cyclomatique superieure a 10 ou plus de trois niveaux d'imbrication :
+un flux dense doit etre decoupe en responsabilites nommees avant d'etre fusionne.
 
 Le serveur porte **l'API et le client** : une seule origine, donc un cookie de session de première partie
 et aucun en-tête CORS. En développement, `bun run dev` lance le serveur et reconstruit le client à chaque
