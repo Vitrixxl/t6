@@ -7,18 +7,11 @@ import type { PlannedTrip, RecurringTrip, TripActivitySummary, TripRecord } from
 import { startOfWeek } from '../week';
 import { BEGINNING_OF_TIME, isRoutinePaused, sumRoutines } from './routines';
 
-export function upcomingTrips(trips: PlannedTrip[], now: Date = new Date(), graceHours = 24): PlannedTrip[] {
+export function upcomingTrips(trips: PlannedTrip[], now: Date = new Date(), graceHours = 0): PlannedTrip[] {
     const floor = now.getTime() - graceHours * 3_600_000;
     return trips
         .filter((trip) => trip.status === 'planned' && new Date(trip.scheduledFor).getTime() >= floor)
         .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
-}
-
-/** Trajets faits, du plus récent au plus ancien. */
-export function completedTrips(trips: PlannedTrip[]): PlannedTrip[] {
-    return trips
-        .filter((trip) => trip.status === 'done')
-        .sort((a, b) => (b.completedAt ?? b.scheduledFor).localeCompare(a.completedAt ?? a.scheduledFor));
 }
 
 export function summarizeTripActivity(

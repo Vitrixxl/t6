@@ -2,6 +2,7 @@
 // rien dans l'historique : leurs passages échus sont ajoutés au moment de
 // compter, par les mêmes fonctions pour les objectifs et le suivi carbone,
 // donc les deux écrans annoncent le même chiffre.
+import { useNow } from '../state/clock';
 import { useMemo } from 'react';
 import type { CarbonSummary, TripActivitySummary } from '../types';
 import { summarizeCarbon } from '../lib/carbon';
@@ -14,12 +15,14 @@ import { useTripRecords } from './trip-records';
 export function useActivitySummary(): TripActivitySummary {
     const planned = usePlannedTrips();
     const recurring = useRecurringTrips();
-    return useMemo(() => summarizeTripActivity(planned, recurring), [planned, recurring]);
+    const now = useNow();
+    return useMemo(() => summarizeTripActivity(planned, recurring, now), [planned, recurring, now]);
 }
 
 export function useCarbonSummary(): CarbonSummary {
     const records = useTripRecords();
     const recurring = useRecurringTrips();
     const goal = useProfile().carbonGoalGramsPerWeek;
-    return useMemo(() => summarizeCarbon(records, recurring, goal), [goal, records, recurring]);
+    const now = useNow();
+    return useMemo(() => summarizeCarbon(records, recurring, goal, now), [goal, records, recurring, now]);
 }

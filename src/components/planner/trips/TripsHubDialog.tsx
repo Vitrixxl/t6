@@ -8,7 +8,8 @@ import { Search } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
 import type { SavedRouteRecord } from '../../../types';
-import { completedTrips } from '../../../lib/trips';
+import { tripHistory } from '../../../lib/trips/history';
+import { useNow } from '../../../state/clock';
 import {
     useActivitySummary,
     useCancelTrip,
@@ -33,7 +34,7 @@ import { UpcomingList } from './lists/UpcomingList';
 export type { TripsHubTab };
 
 const HUB_TABS: Array<{ id: TripsHubTab; label: string }> = [
-    { id: 'upcoming', label: 'À venir' },
+    { id: 'upcoming', label: 'Une fois' },
     { id: 'recurring', label: 'Récurrents' },
     { id: 'history', label: 'Historique' },
     { id: 'saved', label: 'Enregistrés' },
@@ -69,7 +70,8 @@ export function TripsHubDialog({
         }
     }, [hub.open, hub.tab]);
 
-    const history = useMemo(() => completedTrips(plannedTrips), [plannedTrips]);
+    const now = useNow();
+    const history = useMemo(() => tripHistory(plannedTrips, recurringTrips, now), [plannedTrips, recurringTrips, now]);
 
     const counts: Record<TripsHubTab, number> = {
         upcoming: upcoming.length,
@@ -93,13 +95,13 @@ export function TripsHubDialog({
 
     return (
         <Dialog open={hub.open} onOpenChange={(open) => setHub({ ...hub, open })}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl grid-cols-[minmax(0,1fr)]">
                 <DialogHeader>
                     <DialogTitle className="font-display">Planificateur de trajets</DialogTitle>
                     <DialogDescription>Planifie, automatise et suis tes déplacements bas carbone.</DialogDescription>
                 </DialogHeader>
 
-                <div className="grid max-h-[calc(100dvh-14rem)] gap-3 overflow-y-auto px-5 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] max-h-[calc(100dvh-14rem)] gap-3 overflow-y-auto px-5 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <Metric label="Fait / semaine" value={String(summary.doneThisWeek)} compact />
                         <Metric label="CO₂e évité / sem." value={`${summary.savedThisWeekGrams} gCO₂e`} compact />
@@ -109,19 +111,19 @@ export function TripsHubDialog({
 
                     <TripGoalsCard />
 
-                    <Button type="button" className="h-11 w-full justify-center rounded-xl" onClick={onNewTrip}>
+                    <Button type="button" className="h-auto min-h-11 w-full justify-center whitespace-normal rounded-xl py-2 text-center" onClick={onNewTrip}>
                         <Search className="size-4" aria-hidden="true" />
                         Nouveau trajet — choisir un départ et une arrivée
                     </Button>
 
-                    <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Sections trajets">
+                    <div className="grid grid-cols-2 gap-1 rounded-lg sm:grid-cols-4 bg-muted p-1" role="tablist" aria-label="Sections trajets">
                         {HUB_TABS.map((item) => (
                             <button
                                 key={item.id}
                                 type="button"
                                 role="tab"
                                 aria-selected={tab === item.id}
-                                className={`flex h-8 items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition ${tab === item.id ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
+                                className={`flex min-h-10 min-w-0 flex-wrap items-center justify-center gap-1.5 rounded-md text-xs font-semibold transition ${tab === item.id ? 'bg-background text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
                                     }`}
                                 onClick={() => setTab(item.id)}
                             >
@@ -139,7 +141,7 @@ export function TripsHubDialog({
                     {tab === 'recurring' ? (
                         <RecurringList trips={recurringTrips} onTogglePaused={togglePaused} onDelete={removeRecurring} />
                     ) : null}
-                    {tab === 'history' ? <HistoryList trips={history} /> : null}
+                    {tab === 'history' ? <HistoryList entries={history} /> : null}
                     {tab === 'saved' ? (
                         <SavedList routes={savedRoutes} onLoad={onLoadSavedRoute} onPlan={planSavedRoute} onDelete={deleteSavedRoute} />
                     ) : null}

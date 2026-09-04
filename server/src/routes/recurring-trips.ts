@@ -6,12 +6,14 @@ import type { AppContext } from '../plugins/context.ts';
 import {
     errorResponse,
     okResponse,
+    recurringCancellationInput,
+    recurringCancellationParams,
     recurringTrip,
     recurringTripInput,
     recurringTrips,
     resourceIdParams,
 } from '../../../src/contracts/index.ts';
-import { saveRecurringTrip } from '../services/recurring-trips.ts';
+import { cancelRecurringDate, saveRecurringTrip } from '../services/recurring-trips.ts';
 
 export function recurringTripRoutes(ctx: AppContext) {
     return new Elysia({ prefix: '/trips/recurring', tags: ['Routines'] })
@@ -31,6 +33,19 @@ export function recurringTripRoutes(ctx: AppContext) {
                 body: recurringTripInput,
                 response: { 200: recurringTrip, 401: errorResponse, 409: errorResponse, 422: errorResponse },
                 detail: { summary: 'Créer ou remplacer une routine (idempotent)' },
+            },
+        )
+        .put(
+            '/:id/cancellations/:date',
+            ({ userId, params, body, db, status }) => {
+                const updated = cancelRecurringDate(db, userId, params.id, params.date, body.directions);
+                return updated ?? status(404, { error: 'Aucun passage passé de cette routine à cette date.' });
+            },
+            {
+                params: recurringCancellationParams,
+                body: recurringCancellationInput,
+                response: { 200: recurringTrip, 401: errorResponse, 404: errorResponse, 422: errorResponse },
+                detail: { summary: 'Annuler l’aller, le retour ou les deux d’une journée passée (idempotent)' },
             },
         )
         .delete(

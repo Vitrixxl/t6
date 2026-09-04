@@ -26,11 +26,11 @@ export function SavedList({
     }
 
     return (
-        <ul className="grid gap-2">
+        <ul className="grid min-w-0 grid-cols-1 gap-2">
             {routes.map((route) => (
-                <li key={route.id} className="grid gap-2 rounded-xl border border-border/70 bg-background p-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
+                <li key={route.id} className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
+                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                        <div className="min-w-0 max-w-full">
                             <h3 className="truncate text-sm font-semibold">{route.routeTitle}</h3>
                             <OriginDestination origin={route.origin.label} destination={route.destination.label} />
                         </div>

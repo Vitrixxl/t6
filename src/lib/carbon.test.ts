@@ -131,6 +131,8 @@ function makeRoutine(createdAt: Date, carbonSavedGrams: number): RecurringTrip {
         departureTime: '08:00',
         returnTime: null,
         periods: [{ from: createdAt.toISOString(), to: null }],
+        cancelledPassages: [],
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         createdAt: createdAt.toISOString(),
     };
 }

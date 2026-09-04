@@ -6,7 +6,7 @@ export { useDeleteAccount, useLogin, useLogout, useRegister, useSession } from '
 export { useUser } from './user';
 export { useProfile, useUpdateProfile } from './profile';
 export { useCancelTrip, useMarkTripDone, usePlanTrip, usePlannedTrips, useRemoveTrip, useUpcomingTrips } from './planned-trips';
-export { useCreateRoutine, useRecurringTrips, useRemoveRoutine, useToggleRoutinePaused, type RoutineSchedule } from './recurring-trips';
+export { useCancelRoutineDate, useCreateRoutine, useRecurringTrips, useRemoveRoutine, useToggleRoutinePaused, type RoutineSchedule } from './recurring-trips';
 export { useClearTripHistory, useTripRecords } from './trip-records';
 export { useDeleteSavedRoute, useSaveRoute, useSavedRoutes, type SaveRouteInput } from './saved-routes';
 export { useActivitySummary, useCarbonSummary } from './summaries';

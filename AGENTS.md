@@ -193,6 +193,16 @@ réécrit aucun trajet. Une écriture refusée se dit à l'utilisateur, elle ne 
 masque pas : seule la vue concernée est relue depuis son GET, l'écran revient à
 ce que le serveur tient, et l'action est à rejouer.
 
+**Les récurrences ne se cochent pas.** Le hub sépare Une fois, Récurrents,
+Historique et Enregistrés. Une récurrence compte ses passages échus dans son
+fuseau enregistré, sur ses périodes d’activité. L’historique permet d’annuler
+l’aller, le retour ou les deux d’une journée passée : seules les exceptions
+`(date, sens)` sont persistées dans `cancelledPassages`, jamais une collection
+de trajets matérialisés. Une annulation exclut le passage de tous les agrégats
+(distance, émissions et économies CO₂e, objectifs) et reste visible. Annuler
+un ponctuel, même fait, conserve sa trace et retire son historique carbone
+dans une seule transaction. Vérifier ce parcours avec `bun run e2e:trips`.
+
 **Jamais de géométrie approchée.** Un tracé faux se lit comme un itinéraire
 réel et envoie l'utilisateur ailleurs ; un tracé absent se voit. Tant qu'une
 source réelle n'a pas répondu, un segment n'a pas de tracé, la carte n'affiche

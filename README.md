@@ -22,6 +22,32 @@ socle et des flux transport par le service worker, états de chargement explicit
 
 Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
 
+## Planificateur et annulations
+
+Le hub comporte quatre onglets : **Une fois**, **Récurrents**, **Historique** et
+**Enregistrés**. Les trajets ponctuels futurs se marquent « Fait » ; les ponctuels
+passés restent accessibles dans l’historique pour confirmation ou annulation.
+Les récurrences n’ont aucun bouton « Fait » : leurs passages échus comptent
+sur leurs périodes d’activité, dans leur fuseau horaire enregistré.
+
+Dans l’historique, une journée récurrente propose **Annuler l’aller**, **Annuler
+le retour** ou **Annuler les deux**, uniquement pour les passages déjà échus.
+L’API persiste des exceptions `(date, sens)` via
+`PUT /api/trips/recurring/:id/cancellations/:date` ; le corps contient les seuls
+`sens` demandés sous la clé `directions` (`outbound`, `return`). Un rejeu ne crée
+pas de doublon et une nouvelle exception n’efface pas les précédentes. Il n’y a
+pas de matérialisation des occurrences en trajets ponctuels.
+
+`PUT /api/trips/planned/:id/cancellation` conserve un ponctuel annulé dans
+l’historique et supprime sa contribution carbone dans une transaction. Les
+émissions, distances, économies CO₂e et objectifs excluent les passages annulés.
+Les comparaisons négatives et indisponibles gardent leur signification.
+
+La migration `0004_annulations-par-sens.sql` ajoute les exceptions et le fuseau
+horaire ; les anciennes routines prennent `Europe/Paris` et aucune annulation.
+`bun run e2e:trips` vérifie les quatre onglets de 320 à 1280 px, les annulations
+et leur conservation après rechargement, sur un serveur local de test.
+
 ## Organisation du code
 
 Le découpage suit les responsabilités fonctionnelles ; la longueur seule ne

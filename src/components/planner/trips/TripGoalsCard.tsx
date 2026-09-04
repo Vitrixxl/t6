@@ -41,10 +41,10 @@ function GoalRow({
     const reached = goal > 0 && value >= goal;
     return (
         <div className="grid gap-1.5">
-            <div className="flex items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="font-semibold text-foreground">{label}</span>
                 {field ? (
-                    <span className="inline-flex items-center gap-1.5 font-medium text-muted-foreground">
+                    <span className="inline-flex flex-wrap items-center gap-1.5 font-medium text-muted-foreground">
                         {value} /
                         <Input type="number" min={1} className="h-7 w-20 px-2 text-right text-xs" aria-label={`Objectif ${label}`} {...field} />
                         {unit}
@@ -133,7 +133,7 @@ export function TripGoalsCard() {
 
     return (
         <form className="rounded-xl border border-border/70 bg-background/75 p-3" aria-label="Objectifs" noValidate onSubmit={commit}>
-            <div className="mb-2.5 flex items-center justify-between gap-2">
+            <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     <Target className="size-3.5 text-primary" aria-hidden="true" />
                     Objectifs

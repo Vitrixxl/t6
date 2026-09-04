@@ -4,9 +4,11 @@ import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, t
 import { useCallback, useMemo } from 'react';
 import type { PlannedTrip, TripRecord } from '../types';
 import { recordTrip } from '../lib/carbon';
-import { completePlannedTrip, deletePlannedTrip, fetchPlannedTrips, savePlannedTrip } from '../lib/api/planned-trips';
+import { cancelPlannedTrip, completePlannedTrip, deletePlannedTrip, fetchPlannedTrips, savePlannedTrip } from '../lib/api/planned-trips';
 import { createPlannedTrip, removePlanned, upcomingTrips, upsertPlanned, type TripSource } from '../lib/trips';
+import { useNow } from '../state/clock';
 import { mutationKeys, queryKeys } from './keys';
+import { readTripRecords } from './trip-records';
 import { readSession } from './session';
 
 const EMPTY_PLANNED_TRIPS: PlannedTrip[] = [];
@@ -71,6 +73,28 @@ export function completePlannedTripOptions(client: QueryClient) {
     });
 }
 
+export function cancelPlannedTripOptions(client: QueryClient) {
+    return mutationOptions({
+        mutationKey: mutationKeys.plannedCancel,
+        scope: { id: 'account' },
+        mutationFn: (trip: PlannedTrip) => cancelPlannedTrip(trip.id),
+        onMutate: () => Promise.all([
+            client.cancelQueries({ queryKey: queryKeys.plannedTrips }),
+            client.cancelQueries({ queryKey: queryKeys.tripRecords }),
+        ]),
+        onSuccess: (saved) => {
+            updatePlannedTrips(client, (trips) => upsertPlanned(trips, saved));
+            client.setQueryData(queryKeys.tripRecords,
+                readTripRecords(client).filter((record) => record.id !== `trip:${saved.id}`));
+        },
+        onError: () => Promise.all([
+            reloadPlannedTrips(client),
+            client.invalidateQueries({ queryKey: queryKeys.tripRecords }),
+        ]),
+        gcTime: Infinity,
+    });
+}
+
 export function deletePlannedTripOptions(client: QueryClient) {
     return mutationOptions({
         mutationKey: mutationKeys.plannedDelete,
@@ -90,7 +114,8 @@ export function usePlannedTrips(): PlannedTrip[] {
 
 export function useUpcomingTrips(): PlannedTrip[] {
     const planned = usePlannedTrips();
-    return useMemo(() => upcomingTrips(planned), [planned]);
+    const now = useNow();
+    return useMemo(() => upcomingTrips(planned, now), [planned, now]);
 }
 
 export function usePlanTrip(): (source: TripSource, scheduledFor: Date) => void {
@@ -112,11 +137,8 @@ export function useMarkTripDone(): (trip: PlannedTrip) => void {
 
 export function useCancelTrip(): (trip: PlannedTrip) => void {
     const client = useQueryClient();
-    const save = useMutation(savePlannedTripOptions(client));
-    return useCallback(
-        (trip: PlannedTrip) => save.mutate({ ...trip, status: 'cancelled', completedAt: null }),
-        [save],
-    );
+    const cancel = useMutation(cancelPlannedTripOptions(client));
+    return useCallback((trip: PlannedTrip) => cancel.mutate(trip), [cancel]);
 }
 
 export function useRemoveTrip(): (trip: PlannedTrip) => void {

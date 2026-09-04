@@ -942,3 +942,104 @@ antérieure à la passe : ils sont identiques. La CI complète est relancée au 
 **Niveau de verrouillage** : **faible** en local (contrôle ponctuel, sans nouveau
 test permanent). L'exécution du script reste bloquante dans la CI ; les tests
 unitaires seuls ne vérifient pas les commandes du workflow.
+
+---
+
+## B32 — Le planificateur débordait horizontalement sur mobile
+
+**Symptôme observé** : sur la capture mobile, les chiffres des objectifs,
+la quatrième section et les actions à droite des trajets étaient coupés.
+
+**Cause racine** : les grilles et les cartes conservaient une largeur minimale
+imposée par leur contenu. Le long bouton ne revenait pas à la ligne, les
+quatre onglets restaient sur une seule rangée et un libellé long pouvait
+repousser la pastille de pause hors de la carte. Masquer le débordement du
+dialogue dissimulait les contrôles au lieu d’adapter leur disposition.
+
+**Correctif** : colonnes réductibles et cartes bornées, bouton multilignes,
+onglets sur deux colonnes sur mobile, chiffres et actions capables de revenir
+à la ligne, séparation du titre tronqué et de la pastille de pause.
+
+**Commit** : [b73ffd7 — hub mobile et annulations](https://github.com/Vitrixxl/t6/commit/b73ffd7cc82a0e369b2c7b2bea5af2c6ba992a4c).
+
+**Où le montrer** : `src/components/planner/trips/TripsHubDialog.tsx`,
+`TripGoalsCard.tsx` et `lists/{UpcomingList,RecurringList,SavedList,HistoryList}.tsx`
+dans le même dossier ; captures dans `tmp/screenshots/trips-*-mobile.png`.
+
+**Test du correctif** : `bun run e2e:trips` ouvre chaque onglet dans Chromium
+à 320, 390, 540, 768 et 1280 px, avec des noms et adresses longs. Il compare
+les limites des éléments à celles du dialogue. Ce contrôle a échoué à 320 px
+sur les grilles, puis sur la pastille de pause, pendant le correctif ; il passe
+après correction. Les captures ont également été relues. Le scénario existant
+`bun run e2e` reste vert (8/8), axe-core détecte zéro violation sur quatre écrans.
+
+**Niveau de verrouillage** : **automatisé** pour les débordements mesurés dans
+ces vingt configurations ; **faible** pour l’appréciation visuelle et les
+tailles non parcourues par le scénario.
+
+---
+
+## B33 — Un passage récurrent non effectué restait compté dans le bilan CO₂e
+
+**Symptôme observé** : l’utilisateur ne pouvait pas retirer un aller ou un
+retour non effectué des économies et émissions calculées automatiquement.
+L’historique ne montrait que les ponctuels marqués faits ; un ponctuel passé
+non confirmé ou annulé en disparaissait. Annuler un ponctuel déjà fait via
+son remplacement pouvait laisser sa contribution dans l’historique carbone.
+
+**Cause racine** : aucun contrat ni stockage ne représentait une exception
+par date et sens. Le comptage ne regardait que les périodes d’activité, et
+l’historique filtrait sur `status === 'done'`. La mise à jour du statut et le
+retrait de l’enregistrement carbone n’étaient pas une transition atomique.
+Enfin, une date civile devait être interprétée dans le même fuseau côté
+serveur et côté navigateur pour désigner le même passage.
+
+**Correctif** : quatre onglets Une fois, Récurrents, Historique et Enregistrés.
+Les récurrences restent automatiques, sans action Fait/Annuler sur leur fiche.
+L’historique rapproche les ponctuels passés et les journées récurrentes ; il
+propose Annuler l’aller, Annuler le retour ou Annuler les deux pour les seuls
+passages échus. `cancelledPassages` conserve les exceptions `(date, direction)`
+sans matérialiser les occurrences. Le fuseau est enregistré avec la routine
+(Europe/Paris pour les anciennes données lors de la migration).
+
+Le PUT d’annulation ajoute atomiquement les sens choisis sans perdre les
+exceptions précédentes. Tous les agrégats retirent seulement les passages
+annulés, en conservant les références carbone négatives ou indisponibles.
+Annuler un ponctuel, même terminé, conserve sa trace et retire sa contribution
+carbone dans une transaction. Le cache applique la réponse serveur ; un refus
+est affiché et provoque une relecture des ressources concernées.
+
+**Commit** : [b73ffd7 — annulations persistées par sens](https://github.com/Vitrixxl/t6/commit/b73ffd7cc82a0e369b2c7b2bea5af2c6ba992a4c).
+
+**Où le montrer** : `src/contracts/trips.ts`,
+`server/drizzle/0004_annulations-par-sens.sql`,
+`server/src/services/{recurring-trips,planned-trips}.ts`,
+`src/lib/trips/{routines,calendar,history}.ts`,
+`src/queries/{recurring-trips,planned-trips}.ts` et
+`src/components/planner/trips/lists/HistoryList.tsx`.
+
+**Test du correctif** :
+
+- `src/lib/trips/history.test.ts` vérifie chaque combinaison de sens, les
+  journées voisines, les pauses, les passages futurs, le calendrier dans le
+  fuseau enregistré, les changements d’heure et les agrégats semaine/mois.
+- `server/src/__tests__/cancellations.test.ts` vérifie la persistance en base,
+  le rejeu sans doublon, la conservation des autres dates et des exceptions
+  lors d’un PUT ultérieur, l’isolation des comptes, les refus et l’atomicité.
+- `src/queries/account.test.ts` vérifie les corps envoyés par Eden, la mise à
+  jour du bilan depuis l’état initial et l’affichage des écritures refusées.
+- `bun run e2e:trips` annule séparément l’aller et le retour, recharge la page,
+  annule un ponctuel fait, puis utilise le bouton Annuler les deux sur une
+  seconde routine. Les données relues par GET doivent correspondre aux actions.
+
+Ces tests ont été ajoutés avec le correctif. Une réintroduction contrôlée du
+comptage sans exceptions produit **cinq échecs** ; supprimer le retrait du
+carbone lors d’une annulation ponctuelle produit **un échec API**. Les fichiers
+corrigés ont été restaurés et les suites repassent. Vérification complète :
+**191 tests verts dans 21 fichiers** (136 client/métier, 55 API), lint et typage
+strict verts, build produit, E2E historique et planification verts.
+Après intégration des huit tests OSRM présents sur `main`, la suite fusionnée
+compte **199 tests verts** (136 client/métier, 63 API), toujours dans 21 fichiers.
+
+**Niveau de verrouillage** : **automatisé** pour les règles, la persistance et
+les parcours contrôlés ; **faible** pour les détails purement visuels.

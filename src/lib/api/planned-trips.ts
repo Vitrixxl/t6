@@ -21,3 +21,7 @@ export function completePlannedTrip(id: string): Promise<CompletedPlannedTrip> {
 export async function deletePlannedTrip(id: string): Promise<void> {
     await treatyRequest(api.trips.planned({ id }).delete());
 }
+
+export function cancelPlannedTrip(id: string): Promise<PlannedTrip> {
+    return treatyRequest(api.trips.planned({ id }).cancellation.put());
+}

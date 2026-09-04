@@ -1,41 +1,97 @@
-// Trajets faits ou annulés : lecture seule.
-import { Check, Leaf } from 'lucide-react';
+// Historique mixte : une annulation conserve la trace et corrige les compteurs.
+import { useState } from 'react';
+import { Check, X } from 'lucide-react';
 import type { PlannedTrip } from '../../../../types';
+import type { TripDirection } from '../../../../contracts';
+import type { RoutineHistoryDay, TripHistoryEntry } from '../../../../lib/trips/history';
 import { formatCarbonComparison } from '../../../../lib/carbon-comparison';
+import { useCancelRoutineDate, useCancelTrip, useMarkTripDone } from '../../../../queries';
+import { Button } from '../../../ui/button';
 import { EmptyState, OriginDestination } from '../atoms';
 import { formatScheduleLabel } from '../format';
 
-export function HistoryList({ trips }: { trips: PlannedTrip[] }) {
-    if (trips.length === 0) {
-        return (
-            <EmptyState
-                icon={<Check className="size-4" aria-hidden="true" />}
-                title="Aucun trajet fait pour le moment"
-                hint="Marque un trajet planifié comme « Fait » : il alimente ici ton historique, tes stats et le suivi carbone. Les passages des routines comptent dans les stats sans passer par ici."
-            />
-        );
-    }
-
+function OnceHistoryCard({ trip }: { trip: PlannedTrip }) {
+    const cancel = useCancelTrip();
+    const markDone = useMarkTripDone();
+    const cancelled = trip.status === 'cancelled';
     return (
-        <ul className="grid gap-2">
-            {trips.map((trip) => (
-                <li key={trip.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background px-3 py-2.5">
-                    <div className="min-w-0">
-                        <p className="text-[11px] font-semibold text-muted-foreground">
-                            {formatScheduleLabel(trip.completedAt ?? trip.scheduledFor)}
-                        </p>
-                        <h3 className="truncate text-sm font-semibold">{trip.label}</h3>
-                        <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                            <Leaf className="size-3" aria-hidden="true" />
-                            {formatCarbonComparison(trip.carbonSavedGrams)}
+        <li className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
+            <p className="text-xs text-muted-foreground">Une fois · {formatScheduleLabel(trip.completedAt ?? trip.scheduledFor)}</p>
+            <h3 className="truncate text-sm font-semibold">{trip.label}</h3>
+            <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />
+            <p className="text-xs text-muted-foreground">
+                {cancelled ? 'Annulé · exclu des calculs CO₂e' : trip.status === 'done'
+                    ? `Fait · ${formatCarbonComparison(trip.carbonSavedGrams)}` : 'Passé · à confirmer, hors calculs CO₂e'}
+            </p>
+            {!cancelled ? (
+                <div className="flex flex-wrap gap-2">
+                    {trip.status === 'planned' ? (
+                        <Button size="sm" onClick={() => markDone(trip)}><Check className="size-3.5" aria-hidden="true" />Fait</Button>
+                    ) : null}
+                    <Button size="sm" variant="outline" onClick={() => cancel(trip)}>
+                        <X className="size-3.5" aria-hidden="true" />Annuler
+                    </Button>
+                </div>
+            ) : null}
+        </li>
+    );
+}
+
+const DIRECTION_LABEL: Record<TripDirection, string> = { outbound: 'Aller', return: 'Retour' };
+const DAY_FORMAT = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' });
+
+function RoutineHistoryCard({ day }: { day: RoutineHistoryDay }) {
+    const cancel = useCancelRoutineDate();
+    const remaining = day.passages.filter((passage) => !passage.cancelled).map((passage) => passage.direction);
+    const cancelDirections = (directions: TripDirection[]) => cancel({ id: day.routine.id, date: day.date, directions });
+    return (
+        <li className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
+            <p className="text-xs text-muted-foreground">Récurrent · {DAY_FORMAT.format(new Date(`${day.date}T12:00:00Z`))}</p>
+            <h3 className="truncate text-sm font-semibold">{day.routine.label}</h3>
+            <OriginDestination origin={day.routine.origin.label} destination={day.routine.destination.label} />
+            <ul className="grid gap-1 text-xs">
+                {day.passages.map((passage) => (
+                    <li key={passage.direction} className="flex flex-wrap items-center justify-between gap-2">
+                        <span>
+                            {DIRECTION_LABEL[passage.direction]} · {passage.direction === 'outbound' ? day.routine.departureTime : day.routine.returnTime}
+                            {passage.cancelled ? ' · Annulé, hors calculs CO₂e' : ` · Compté automatiquement · ${formatCarbonComparison(day.routine.carbonSavedGrams)}`}
                         </span>
-                        <span className="font-mono text-[11px] text-muted-foreground">{trip.distanceKm.toFixed(1)} km</span>
-                    </div>
-                </li>
-            ))}
-        </ul>
+                    </li>
+                ))}
+            </ul>
+            {remaining.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                    {remaining.map((direction) => (
+                        <Button key={direction} size="sm" variant="outline" onClick={() => cancelDirections([direction])}>
+                            Annuler {direction === 'outbound' ? 'l’aller' : 'le retour'}
+                        </Button>
+                    ))}
+                    {remaining.length === 2 ? (
+                        <Button size="sm" variant="outline" onClick={() => cancelDirections(remaining)}>Annuler les deux</Button>
+                    ) : null}
+                </div>
+            ) : null}
+        </li>
+    );
+}
+
+export function HistoryList({ entries }: { entries: TripHistoryEntry[] }) {
+    const [visibleCount, setVisibleCount] = useState(20);
+    if (entries.length === 0) {
+        return <EmptyState icon={<Check className="size-4" aria-hidden="true" />} title="Aucun trajet dans l’historique"
+            hint="Les trajets ponctuels passés et les passages échus des récurrences apparaissent ici. Tu peux les annuler pour corriger ton bilan CO₂e." />;
+    }
+    return (
+        <div className="grid min-w-0 grid-cols-1 gap-3">
+            <p className="text-xs text-muted-foreground">Les récurrences comptent automatiquement après l’heure prévue. Annule ici un aller, un retour ou les deux si tu ne les as pas effectués.</p>
+            <ul className="grid min-w-0 grid-cols-1 gap-2">
+                {entries.slice(0, visibleCount).map((entry) => entry.kind === 'once'
+                    ? <OnceHistoryCard key={entry.id} trip={entry.trip} />
+                    : <RoutineHistoryCard key={entry.id} day={entry} />)}
+            </ul>
+            {entries.length > visibleCount ? (
+                <Button variant="outline" onClick={() => setVisibleCount((count) => count + 20)}>Afficher les jours précédents</Button>
+            ) : null}
+        </div>
     );
 }
