@@ -129,7 +129,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Validation zod de toutes les entrees (contrats `src/contracts/` partages avec les formulaires du client), limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
-- [x] Etat du compte : rendu a la connexion, tenu dans le cache React Query, une route par collection en lecture et en remplacement (`GET`/`PUT /api/trips/*`, `/api/saved-routes`, `/api/me/profile` : chaque liste remplacee seule, en transaction, bornee par le contrat ; relue apres un refus).
+- [x] Etat du compte : rendu a la connexion, tenu dans le cache React Query, collections lues par `GET`, ressources ecrites seules par `PUT/DELETE /api/.../:id` ; completion trajet + historique atomique, aucune liste renvoyee par le client, vue concernee relue apres un refus.
 - [x] Tous les appels du front vers l'API UrbanFlow passent par Eden Treaty et sont inferes depuis l'arbre Elysia ; aucun type HTTP duplique.
 - [x] Profil : objectifs d'economie de CO2 hebdomadaire et mensuel configurables independamment, valides par zod, persistes par `PUT /api/me/profile` et visibles dans le planificateur.
 - [x] Points d'acces Velo'v, trottinette et transport classes par duree OSRM sur huit candidats bornes ; test de regression sur l'obstacle pieton.

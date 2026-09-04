@@ -51,3 +51,11 @@ export async function treatyRequest<T>(request: Promise<TreatyResult<T>>): Promi
   }
   throw new ApiError(message ?? 'Requete refusee par le serveur.', result.status);
 }
+
+/** L'identifiant vient de l'URL et le proprietaire de la session. */
+export function resourceBody<T extends { id: string; userId: string }>(record: T): Omit<T, 'id' | 'userId'> {
+  const { id, userId, ...body } = record;
+  void id;
+  void userId;
+  return body;
+}

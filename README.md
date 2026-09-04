@@ -11,12 +11,13 @@ Deux briques, une seule origine pour le navigateur :
 - **Contrats** (`src/contracts/`) : un schema zod par objet echange, importe par les deux : validation de l'API, validation des formulaires (react-hook-form), types, OpenAPI.
 
 Le serveur est la seule source de verite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
-en base, etat du compte rendu a la connexion et une route par collection ensuite, en lecture comme en
-remplacement : `GET`/`PUT /api/trips/planned`, `/api/trips/recurring`, `/api/trips/history`, `/api/saved-routes`,
-`/api/me/profile`. Chaque liste se remplace seule, en transaction, bornee a quelques dizaines ou centaines de
-lignes ; une action n'envoie que ce qu'elle a touche, les envois sont serialises. Pas de cache local persistant :
-les listes vivent dans le cache React Query (`src/queries/`) le temps de la session, et une ecriture refusee est
-signalee a l'utilisateur, la liste etant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
+en base, etat du compte rendu a la connexion, puis collections lues par `GET`. Chaque trajet, routine ou
+itineraire enregistre s'ecrit seul par `PUT /api/.../:id` et se retire par `DELETE /api/.../:id` ; aucun corps HTTP
+ne contient une collection complete. `PUT /api/trips/planned/:id/completion` termine le trajet et cree son entree
+carbone dans une seule transaction idempotente. Seul `DELETE /api/trips/history` efface volontairement tout
+l'historique. Les envois sont serialises. Pas de cache local persistant : les vues vivent dans le cache React Query
+(`src/queries/`) le temps de la session, et une ecriture refusee est signalee a l'utilisateur, la vue concernee
+etant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
 socle et des flux transport par le service worker, etats de chargement explicites, erreurs reseau propres.
 
 Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
@@ -33,7 +34,7 @@ commande pas la creation d'un module.
 | `config/` | lecture et validation des variables d'environnement |
 | `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
 | `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
-| `services/` | règles métier (remplacement des collections, sessions, routage et son cache) |
+| `services/` | règles métier (commandes par ressource, transition de completion, sessions, routage et son cache) |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
 
@@ -44,21 +45,21 @@ commande pas la creation d'un module.
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
 | `contracts/` | schemas zod partages avec l'API : validation, types derives, OpenAPI |
-| `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une route par partie du compte |
+| `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une commande par ressource du compte |
 | `queries/` | ressources servies par l'API dans le cache React Query : une ressource par fichier, sa requete et ses actions |
 | `state/` | etat d'ecran partage entre modules (jotai) : formulaire de planification, hub |
 | `components/map/` | carte MapLibre : composant, popups, sources |
 | `components/planner/trips/` | module trajets : hub, listes, formulaire, objectifs |
 | `components/app/hooks/` | géolocalisation et calcul d'itinéraires |
 
-Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
-`server/src/services/collections.ts` et `src/queries/account.ts` (l'etat par collection, chaque action n'envoie que ce qu'elle a touche),
-`src/lib/planner/index.ts` (le métier).
+Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (securite),
+`server/src/routes/planned-trips.ts`, `server/src/services/planned-trips.ts` et `src/queries/account.ts`
+(commande granulaire et projection optimiste), puis `src/lib/planner/index.ts` (moteur d'itineraires).
 
 ## Livrables
 
 - `src/` : application fonctionnelle (auth + profils, planificateur multimodal, trajets programmes et routines, objectifs, suivi carbone).
-- `server/` : API HTTP (authentification, profil, etat du compte par collection, RGPD, calcul d'itinéraires).
+- `server/` : API HTTP (authentification, profil, ressources du compte, RGPD, calcul d'itineraires).
 - `public/manifest.webmanifest` + `public/sw.js` : PWA installable avec cache offline.
 - `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` : dossier projet (30 pages, généré par script).
 - `output/screens/` : captures automatisées (Playwright) intégrées au dossier.

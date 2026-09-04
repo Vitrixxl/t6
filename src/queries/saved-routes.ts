@@ -3,8 +3,9 @@
 import { useCallback } from 'react';
 import type { AccountState } from '../contracts';
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';
+import { deleteSavedRoute as deleteSavedRouteRequest, saveSavedRoute } from '../lib/api';
 import { addSavedRoute, createSavedRouteRecord, removeSavedRoute } from '../lib/savedRoutes';
-import { useAccountPart, useAccountWrite } from './account';
+import { useAccountMutation, useAccountPart, type AccountMutation } from './account';
 import { useUser } from './user';
 
 export interface SaveRouteInput {
@@ -26,13 +27,32 @@ export function deleteSavedRoute(state: AccountState, recordId: string): Partial
   return { savedRoutes: removeSavedRoute(state.savedRoutes, recordId) };
 }
 
+export const savedRouteSaveMutation = {
+  key: 'saved-route-save',
+  parts: ['savedRoutes'],
+  mutationFn: saveSavedRoute,
+  optimistic: (state, record) => ({ savedRoutes: addSavedRoute(state.savedRoutes, record) }),
+  reconcile: (state, record) => ({ savedRoutes: addSavedRoute(state.savedRoutes, record) }),
+} satisfies AccountMutation<SavedRouteRecord, SavedRouteRecord>;
+
+export const savedRouteDeleteMutation = {
+  key: 'saved-route-delete',
+  parts: ['savedRoutes'],
+  mutationFn: deleteSavedRouteRequest,
+  optimistic: (state, recordId) => deleteSavedRoute(state, recordId),
+  reconcile: (state, _result, recordId) => deleteSavedRoute(state, recordId),
+} satisfies AccountMutation<string, void>;
+
 export function useSaveRoute(): (input: SaveRouteInput) => void {
   const user = useUser();
-  const write = useAccountWrite();
-  return useCallback((input: SaveRouteInput) => write((state) => saveRoute(state, user.id, input)), [user.id, write]);
+  const save = useAccountMutation(savedRouteSaveMutation);
+  return useCallback(
+    (input: SaveRouteInput) => save(createSavedRouteRecord(user.id, input.origin, input.destination, input.option)),
+    [save, user.id],
+  );
 }
 
 export function useDeleteSavedRoute(): (recordId: string) => void {
-  const write = useAccountWrite();
-  return useCallback((recordId: string) => write((state) => deleteSavedRoute(state, recordId)), [write]);
+  const remove = useAccountMutation(savedRouteDeleteMutation);
+  return useCallback((recordId: string) => remove(recordId), [remove]);
 }

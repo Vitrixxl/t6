@@ -1,18 +1,14 @@
 // Les parties de l'etat du compte dans le cache de requetes : une requete par
-// partie, et une seule mutation pour les ecrire.
+// partie et une commande typee par ressource pour les modifier.
 //
-// Une action calcule, par une fonction pure sur des listes, les parties
-// qu'elle remplace. Elles s'affichent tout de suite, puis partent chacune
-// vers sa route. Les envois sont serialises (`scope`) : deux actions en
-// rafale partent dans l'ordre, la seconde avec l'etat que la premiere a
-// laisse. Un refus est signale (save-error.ts) et, des qu'aucun envoi n'est
-// plus en cours, les parties marquees sont relues depuis le serveur :
-// l'ecran revient a ce que le serveur tient, il ne garde pas une modification
-// refusee.
+// Une commande applique sa projection optimiste au cache, puis n'envoie que
+// l'element vise. Les envois sont serialises (`scope`) pour conserver l'ordre
+// des actions. Un refus invalide seulement les vues concernees ; elles sont
+// relues des que la rafale est terminee.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { DEFAULT_PROFILE, type AccountState } from '../contracts';
-import { ACCOUNT_PARTS, accountPartsOf, fetchAccountPart, saveAccountParts, type AccountPart } from '../lib/api';
+import { ACCOUNT_PARTS, fetchAccountPart, type AccountPart } from '../lib/api';
 import { mutationKeys, queryKeys } from './keys';
 import { readSession } from './session';
 
@@ -70,44 +66,26 @@ export function useAccountPart<P extends AccountPart>(part: P): AccountState[P] 
 
 // --- Ecriture ---------------------------------------------------------------
 
-/** Une action : une fonction pure qui rend les parties qu'elle remplace. */
-export type AccountUpdate = (state: AccountState) => Partial<AccountState>;
-
-function copyAccountPart<P extends AccountPart>(to: Partial<AccountState>, from: Partial<AccountState>, part: P): void {
-  to[part] = from[part];
+export interface AccountMutation<Variables, Result> {
+  /** Suffixe lisible dans les outils React Query. */
+  key: string;
+  /** Vues a invalider si le serveur refuse la commande. */
+  parts: readonly AccountPart[];
+  mutationFn: (variables: Variables) => Promise<Result>;
+  optimistic: (state: AccountState, variables: Variables) => Partial<AccountState>;
+  reconcile: (state: AccountState, result: Result, variables: Variables) => Partial<AccountState>;
 }
 
-/** Les parties dont la reference a change : les fonctions pures ne recreent que ce qu'elles modifient. */
-export function accountChanges(state: AccountState, next: Partial<AccountState>): Partial<AccountState> {
-  const changes: Partial<AccountState> = {};
+/** Applique une projection au cache, sans transformer cette vue en corps HTTP. */
+export function stageAccountChanges(client: QueryClient, changes: Partial<AccountState>): void {
   for (const part of ACCOUNT_PARTS) {
-    if (part in next && next[part] !== state[part]) {
-      copyAccountPart(changes, next, part);
+    if (changes[part] === undefined) {
+      continue;
     }
-  }
-  return changes;
-}
-
-/**
- * Applique une action : calcule les parties qu'elle remplace, les affiche, et
- * rend ce qu'il reste a envoyer (null si l'action n'a rien change).
- *
- * L'affichage precede l'envoi, de facon synchrone : deux actions dans le meme
- * tour de boucle voient chacune l'etat que la precedente a laisse.
- */
-export function stageAccountWrite(client: QueryClient, update: AccountUpdate): Partial<AccountState> | null {
-  const state = readAccountState(client);
-  const changes = accountChanges(state, update(state));
-  const parts = accountPartsOf(changes);
-  if (parts.length === 0) {
-    return null;
-  }
-  for (const part of parts) {
     // Une lecture en vol rendrait un etat anterieur a l'action : annulee.
     void client.cancelQueries({ queryKey: queryKeys.accountPart(part) });
     applyAccountPart(client, changes, part);
   }
-  return changes;
 }
 
 function othersInFlight(client: QueryClient): boolean {
@@ -115,27 +93,28 @@ function othersInFlight(client: QueryClient): boolean {
   return client.isMutating({ mutationKey: mutationKeys.accountWrite }) > 1;
 }
 
-export function accountWriteOptions(client: QueryClient) {
+export function accountMutationOptions<Variables, Result>(client: QueryClient, command: AccountMutation<Variables, Result>) {
   return mutationOptions({
-    mutationKey: mutationKeys.accountWrite,
+    mutationKey: [...mutationKeys.accountWrite, command.key],
     // Un envoi a la fois, dans l'ordre des actions.
     scope: { id: 'account' },
-    mutationFn: (changes: Partial<AccountState>) => saveAccountParts(changes),
-    onSuccess: (saved) => {
-      // Le serveur rend chaque partie telle qu'il la tient. Elle ne remplace
-      // le cache que si aucun envoi ne suit : sinon l'ecran reculerait le
-      // temps que le suivant reponde.
+    mutationFn: command.mutationFn,
+    onMutate: (variables) => {
+      stageAccountChanges(client, command.optimistic(readAccountState(client), variables));
+    },
+    onSuccess: (result, variables) => {
+      // Le serveur rend la ressource telle qu'il la tient. Elle ne remplace le
+      // cache que si aucun envoi ne suit : une projection optimiste plus
+      // recente ne doit pas disparaitre pendant la rafale.
       if (othersInFlight(client)) {
         return;
       }
-      for (const part of accountPartsOf(saved)) {
-        applyAccountPart(client, saved, part);
-      }
+      stageAccountChanges(client, command.reconcile(readAccountState(client), result, variables));
     },
     onError: () => {
-      // Marquees a relire, sans relecture tant qu'un envoi suit : c'est le
-      // dernier de la rafale qui la declenche (onSettled).
-      void client.invalidateQueries({ queryKey: queryKeys.account, refetchType: 'none' });
+      for (const part of command.parts) {
+        void client.invalidateQueries({ queryKey: queryKeys.accountPart(part), refetchType: 'none' });
+      }
     },
     onSettled: async () => {
       if (othersInFlight(client)) {
@@ -148,17 +127,9 @@ export function accountWriteOptions(client: QueryClient) {
   });
 }
 
-/** Rend la fonction qui applique une action au compte : affichage immediat, puis envoi. */
-export function useAccountWrite(): (update: AccountUpdate) => void {
+/** Rend une commande : projection optimiste immediate, puis appel Eden type. */
+export function useAccountMutation<Variables, Result>(command: AccountMutation<Variables, Result>): (variables: Variables) => void {
   const client = useQueryClient();
-  const { mutate } = useMutation(accountWriteOptions(client));
-  return useCallback(
-    (update: AccountUpdate) => {
-      const changes = stageAccountWrite(client, update);
-      if (changes) {
-        mutate(changes);
-      }
-    },
-    [client, mutate],
-  );
+  const { mutate } = useMutation(accountMutationOptions(client, command));
+  return useCallback((variables: Variables) => mutate(variables), [mutate]);
 }

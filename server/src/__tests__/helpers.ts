@@ -14,8 +14,8 @@ export const PASSWORD = 'UrbanFlow2026!';
 export interface TestApi {
   call: (path: string, options?: CallOptions) => Promise<Response>;
   register: (email?: string) => Promise<string>;
-  /** Remplace une collection en entier, comme le client le fait apres une action. */
-  putCollection: (cookie: string, path: CollectionPath, items: unknown[]) => Promise<Response>;
+  /** Ecrit une seule ressource, dont l'identifiant figure deja dans l'URL. */
+  putResource: (cookie: string, path: string, body: unknown) => Promise<Response>;
   /** Remplace le profil de mobilite. */
   putProfile: (cookie: string, profile: Record<string, unknown>) => Promise<Response>;
   /** Acces direct a la base, pour verifier ce que l'API a reellement ecrit. */
@@ -70,8 +70,8 @@ export function createTestApi(overrides: Partial<ServerConfig> = {}): TestApi {
       }
       return sessionCookie(response);
     },
-    putCollection(cookie, path, items) {
-      return call(path, { method: 'PUT', cookie, body: items });
+    putResource(cookie, path, body) {
+      return call(path, { method: 'PUT', cookie, body });
     },
     putProfile(cookie, profile) {
       return call('/api/me/profile', { method: 'PUT', cookie, body: profile });
@@ -115,9 +115,6 @@ export interface OpenApiSpec {
   paths: Record<string, unknown>;
 }
 
-/** Une route par collection : chaque PUT remplace la liste en entier. */
-export type CollectionPath = '/api/trips/planned' | '/api/trips/recurring' | '/api/trips/history' | '/api/saved-routes';
-
 /** Lit le corps JSON d'une reponse dans la forme attendue par le test. */
 export function json<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
@@ -148,4 +145,12 @@ export const TRIP_SHAPE = {
   carbonGrams: 90,
   carbonSavedGrams: 400,
   createdAt: '2026-09-01T08:00:00.000Z',
+};
+
+export const PLANNED_TRIP = {
+  ...TRIP_SHAPE,
+  label: 'Domicile - travail',
+  scheduledFor: '2026-09-02T06:15:00.000Z',
+  status: 'planned',
+  completedAt: null,
 };

@@ -118,8 +118,9 @@ long mais cohesif reste preferable a trois fichiers qui se renvoient la balle.
 `plugins/` `routes/`. Les routes ne portent aucune regle metier, seule la
 couche depot interroge la base (Drizzle sur `bun:sqlite`, jamais `sql.raw` sur
 une entree), et les contrats zod de `src/contracts/` valident la requete,
-typent le gestionnaire et generent l'OpenAPI depuis une source unique. Chaque
-collection du compte a sa route, en lecture (GET) comme en remplacement (PUT).
+typent le gestionnaire et generent l'OpenAPI depuis une source unique. Une
+collection se lit par GET ; chaque ressource s'ecrit ou se retire par son URL.
+Aucun depot ne remplace une collection complete.
 
 Le schema vit dans `server/src/db/schema.ts`. Toute modification passe par
 `bun run db:generate`, et la migration produite dans `server/drizzle/` se
@@ -128,13 +129,14 @@ base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
-authentification, une route par partie du compte), `queries/` (les ressources
+authentification, une commande par ressource du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa
 requete et ses actions), `state/` (l'etat d'ecran partage entre modules, en
 atomes jotai), `components/map/`, `components/planner/trips/`,
 `components/app/hooks/`. Tous les appels du client vers l'API UrbanFlow passent
-par Eden Treaty et sont types depuis l'arbre Elysia ; les appels aux services
-tiers restent dans `lib/transport/`. Les composants appellent les hooks dont ils ont
+par Eden Treaty et sont types depuis l'arbre Elysia ; aucun appel n'envoie une
+collection complete. Les appels aux services tiers restent dans
+`lib/transport/`. Les composants appellent les hooks dont ils ont
 besoin ; on ne fait pas transiter l'etat par des props. Un formulaire valide
 avec le contrat que l'API applique (react-hook-form + zod) : aucune borne
 n'est recopiee dans un composant.
@@ -156,13 +158,12 @@ annonce reste le nombre reel.
 **Le serveur est la seule source de verite.** Il n'y a ni mode sans serveur
 ni cache local persistant : c'est l'API qui sert le client, l'etat du compte
 est recu a la connexion et amorce le cache de requetes (React Query,
-`src/queries/`), et chaque action renvoie en entier la ou les collections
-qu'elle a touchees, chacune vers sa route (`PUT /api/trips/planned`,
-`/api/trips/recurring`, `/api/trips/history`, `/api/saved-routes`,
-`/api/me/profile`), les envois etant serialises. Une preference ne reecrit
-aucun trajet. Une ecriture refusee se dit a l'utilisateur, elle ne se masque
-pas : la collection est relue depuis le serveur (`GET` de la meme route),
-l'ecran revient a ce qu'il tient, et l'action est a rejouer.
+`src/queries/`). Chaque commande transporte une ressource, jamais la collection
+complete ; les envois sont serialises. La completion d'un trajet et la creation
+de son historique forment une seule transaction serveur. Une preference ne
+reecrit aucun trajet. Une ecriture refusee se dit a l'utilisateur, elle ne se
+masque pas : seule la vue concernee est relue depuis son GET, l'ecran revient a
+ce que le serveur tient, et l'action est a rejouer.
 
 **Jamais de geometrie approchee.** Un trace faux se lit comme un itineraire
 reel et envoie l'utilisateur ailleurs ; un trace absent se voit. Tant qu'une

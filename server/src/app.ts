@@ -18,8 +18,7 @@ import { requestLog } from './plugins/request-log.ts';
 import { securityHeaders } from './plugins/security-headers.ts';
 import { routes } from './routes/index.ts';
 
-/** Chaque collection est bornee : au-dela, la requete est refusee
- *  avant meme d'etre lue en entier. */
+/** Borne defensive des corps JSON, independante des limites metier. */
 const MAX_BODY_BYTES = 512 * 1024;
 
 export function createApp(overrides: Partial<ServerConfig> = {}) {

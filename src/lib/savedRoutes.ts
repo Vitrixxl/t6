@@ -1,5 +1,5 @@
-// Itineraires enregistres : creation et operations pures sur la liste. La
-// liste est renvoyee en entier au serveur apres chaque action (src/queries/).
+// Itineraires enregistres : creation et projection pure dans la vue locale.
+// La couche queries envoie ensuite seulement la ressource concernee.
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';
 import { SAVED_ROUTES_LIMIT } from '../contracts/limits';
 

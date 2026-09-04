@@ -1,6 +1,6 @@
 // Etat complet d'un compte : ce que le serveur rend a l'ouverture de session
-// pour que le client amorce son cache. Il ne s'ecrit jamais en bloc : chaque
-// partie a sa propre route (collections.ts, profile.ts).
+// pour que le client amorce son cache. Il ne s'ecrit jamais en bloc : les
+// collections exposent ensuite une route par ressource.
 import { z } from 'zod';
 import { sessionUser } from './auth';
 import { plannedTrips, recurringTrips, savedRoutes, tripRecords } from './collections';
