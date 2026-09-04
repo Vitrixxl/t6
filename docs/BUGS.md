@@ -443,3 +443,41 @@ passees`), sur un serveur et une base neufs. Le scenario bureau (profil,
 objectifs, rechargement, deconnexion) rejoue aussi vert.
 
 **Niveau de verrouillage** : **automatise** (scenario E2E bloquant en CI).
+
+---
+
+## B22 — Une erreur React apparaissait pendant la deconnexion
+
+**Criticite** : moyenne — la session etait bien revoquee, mais la console du
+navigateur signalait `Aucune session ouverte.` pendant le retour a l'ecran de
+connexion.
+
+### Identifier la source
+
+Le scenario E2E passait ses sept assertions tout en remontant une
+`PAGE ERROR` juste apres la purge du compte. `closeSession` publiait d'abord
+une session nulle, puis supprimait les requetes et mutations du compte. Entre
+ces notifications, un composant encore monte pouvait se rendre, appeler
+`useUser` et constater que sa session avait deja disparu.
+
+### Corriger
+
+`closeSession` purge maintenant les mutations et les ressources du compte
+avant de publier sa fermeture. Comme React Query regroupe ses notifications,
+`useUser` conserve aussi dans une reference de composant sa derniere session
+valide : le dernier rendu precedant le demontage reste coherent, sans faire
+survivre cette valeur au composant ni a la prochaine connexion.
+
+**Ou le voir** : `src/queries/session.ts` (`closeSession`),
+`src/queries/user.ts` (`useUser`)
+
+**Commit** : [`65d2e5b`](https://github.com/Vitrixxl/t6/commit/65d2e5b)
+
+### Tester et valider le correctif
+
+Le test de deconnexion observe la requete de session et verifie qu'au moment
+exact ou elle devient nulle, aucune requete de l'ancien compte ne subsiste.
+Le scenario `bun run e2e` doit en plus terminer ses 7/7 assertions sans
+`PAGE ERROR` dans un vrai navigateur.
+
+**Niveau de verrouillage** : **automatise** (test du cache + scenario E2E).

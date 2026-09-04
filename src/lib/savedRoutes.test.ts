@@ -1,5 +1,6 @@
 import { describe, expect, it } from '../test/harness';
-import { SAVED_ROUTES_LIMIT, addSavedRoute, createSavedRouteRecord, removeSavedRoute } from './savedRoutes';
+import { SAVED_ROUTES_LIMIT } from '../contracts/limits';
+import { addSavedRoute, createSavedRouteRecord, removeSavedRoute } from './savedRoutes';
 import type { GeoPoint, RouteOption } from '../types';
 
 const origin: GeoPoint = { label: 'Bellecour', lat: 45.7578, lon: 4.832 };

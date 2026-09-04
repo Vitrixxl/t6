@@ -1,15 +1,17 @@
 // Orchestrateur principal : recherche d'itineraires, comparaison des options et
 // carte. Il ne tient que l'etat de l'ecran (depart, arrivee, calques, panneaux
-// ouverts) : l'etat du compte vit dans les atomes, que chaque module lit.
+// ouverts) : l'etat du compte vit dans le cache de requetes (src/queries/),
+// que chaque module lit.
 import { useEffect, useState } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import type { GeoPoint, RouteOption, SavedRouteRecord, TransportNetwork } from '../../types';
 import { haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useRouteOptions } from './hooks/useRouteOptions';
 import { useDesktopLayout } from './hooks/useDesktopLayout';
 import { CITY_CENTER, METRO_RADIUS_KM, describePoint } from '../../lib/transport';
-import { closeHubAtom, planSourceAtom, profileAtom, saveErrorAtom, saveRouteAtom } from '../../state';
+import { useProfile, useSaveError, useSaveRoute } from '../../queries';
+import { closeHubAtom, planSourceAtom } from '../../state';
 import { UrbanMap, DEFAULT_LAYERS, MergeFillet, type LayerState } from './shared';
 import { ShellSidebar } from '../layout/Shell';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
@@ -25,9 +27,9 @@ import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 const SAVE_CONFIRMATION_MS = 1800;
 
 export function MobilityMapApp({ network }: { network: TransportNetwork }) {
-  const profile = useAtomValue(profileAtom);
-  const saveError = useAtomValue(saveErrorAtom);
-  const persistRoute = useSetAtom(saveRouteAtom);
+  const profile = useProfile();
+  const saveError = useSaveError();
+  const persistRoute = useSaveRoute();
   const startPlanning = useSetAtom(planSourceAtom);
   const closeHub = useSetAtom(closeHubAtom);
 
@@ -173,10 +175,11 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
     });
   };
 
-  // Une ecriture refusee par le serveur se dit, elle ne se masque pas.
+  // Une ecriture refusee par le serveur se dit, elle ne se masque pas : ce
+  // que le serveur tient reprend l'ecran, et l'action est a rejouer.
   const saveErrorBanner = saveError ? (
     <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs leading-5 text-red-800">
-      Enregistrement refuse par le serveur : {saveError}
+      Action refusee par le serveur : {saveError}
     </p>
   ) : null;
 

@@ -10,9 +10,10 @@
 // dans le meme tableau : changer de selection changeait les chiffres (B20). Le
 // surcout est absorbe par le cache partage de l'API.
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { GeoPoint, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
-import { measureRoutes, planRoutes, preselectRoute } from '../../../lib/planner';
-import { enhanceLegsWithLiveRouting } from '../../../lib/transport';
+import { planRoutes, preselectRoute } from '../../../lib/planner';
+import { measuredRoutesQuery, type RouteSearch } from '../../../queries';
 
 /**
  * Etat du trace. `pending` et `unavailable` sont deux choses differentes pour
@@ -41,6 +42,8 @@ export interface RouteOptions {
   routingStatus: RoutingStatus;
 }
 
+const NO_ROUTES: RouteOption[] = [];
+
 export function useRouteOptions(input: {
   origin: GeoPoint | null;
   destination: GeoPoint | null;
@@ -48,45 +51,21 @@ export function useRouteOptions(input: {
   network: TransportNetwork;
 }): RouteOptions {
   const { origin, destination, profile, network } = input;
-  const [routingStatus, setRoutingStatus] = useState<RoutingStatus>('idle');
   const [selectedRouteId, setSelectedRouteId] = useState('');
 
-  const [routes, setRoutes] = useState<RouteOption[]>([]);
-
-  const localRoutes = useMemo(
-    () => (origin && destination ? planRoutes({ origin, destination, profile, network }) : []),
-    [destination, network, origin, profile],
+  const search = useMemo<RouteSearch | null>(
+    () => (origin && destination ? { origin, destination, profile } : null),
+    [destination, origin, profile],
   );
+  const localRoutes = useMemo(() => (search ? planRoutes({ ...search, network }) : NO_ROUTES), [network, search]);
 
-  useEffect(() => {
-    if (localRoutes.length === 0) {
-      setRoutes([]);
-      setRoutingStatus('idle');
-      return;
-    }
-
-    // La liste se vide pendant la mesure : afficher les estimations en attendant
-    // reviendrait a montrer des chiffres qui vont changer sous les yeux.
-    setRoutes([]);
-    setRoutingStatus('pending');
-
-    const controller = new AbortController();
-    measureRoutes(localRoutes, profile, (legs) => enhanceLegsWithLiveRouting(legs, controller.signal))
-      .then((measured) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-        setRoutes(measured);
-        setRoutingStatus(measured.length > 0 ? 'ready' : 'unavailable');
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setRoutingStatus('unavailable');
-        }
-      });
-
-    return () => controller.abort();
-  }, [localRoutes, profile]);
+  // La mesure est une requete : changer d'extremites l'annule, et la liste se
+  // vide pendant la nouvelle mesure. Afficher les estimations en attendant
+  // reviendrait a montrer des chiffres qui vont changer sous les yeux.
+  const measured = useQuery(measuredRoutesQuery(search, localRoutes));
+  const routes = measured.data ?? NO_ROUTES;
+  const routingStatus: RoutingStatus =
+    localRoutes.length === 0 ? 'idle' : measured.isPending ? 'pending' : routes.length > 0 ? 'ready' : 'unavailable';
 
   // La selection manuelle vaut pour la recherche en cours ; une nouvelle
   // recherche repart de la preselection du profil, sans quoi le choix fait sur

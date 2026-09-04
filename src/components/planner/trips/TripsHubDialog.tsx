@@ -1,30 +1,28 @@
 // Hub central des trajets : a venir, routines, historique, enregistres.
 // Le dialogue ne fait qu'aiguiller vers la liste correspondante ; chaque liste
-// vit dans son propre fichier. Il lit l'etat du compte et declenche les actions
-// directement : rien ne transite par l'orchestrateur.
+// vit dans son propre fichier. Il lit les ressources du compte et declenche
+// leurs actions directement : rien ne transite par l'orchestrateur.
 import { useEffect, useMemo, useState } from 'react';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { Search } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../ui/dialog';
 import type { SavedRouteRecord } from '../../../types';
 import { completedTrips } from '../../../lib/trips';
 import {
-  activitySummaryAtom,
-  cancelTripAtom,
-  deleteSavedRouteAtom,
-  markTripDoneAtom,
-  planSourceAtom,
-  plannedTripsAtom,
-  recurringTripsAtom,
-  removeRecurringAtom,
-  removeTripAtom,
-  savedRoutesAtom,
-  toggleRecurringPausedAtom,
-  tripsHubAtom,
-  upcomingAtom,
-  type TripsHubTab,
-} from '../../../state';
+  useActivitySummary,
+  useCancelTrip,
+  useDeleteSavedRoute,
+  useMarkTripDone,
+  usePlannedTrips,
+  useRecurringTrips,
+  useRemoveRoutine,
+  useRemoveTrip,
+  useSavedRoutes,
+  useToggleRoutinePaused,
+  useUpcomingTrips,
+} from '../../../queries';
+import { planSourceAtom, tripsHubAtom, type TripsHubTab } from '../../../state';
 import { Metric } from '../../app/shared';
 import { TripGoalsCard } from './TripGoalsCard';
 import { HistoryList } from './lists/HistoryList';
@@ -50,17 +48,17 @@ export function TripsHubDialog({
   onLoadSavedRoute: (route: SavedRouteRecord) => void;
 }) {
   const [hub, setHub] = useAtom(tripsHubAtom);
-  const plannedTrips = useAtomValue(plannedTripsAtom);
-  const recurringTrips = useAtomValue(recurringTripsAtom);
-  const savedRoutes = useAtomValue(savedRoutesAtom);
-  const summary = useAtomValue(activitySummaryAtom);
-  const upcoming = useAtomValue(upcomingAtom);
-  const markDone = useSetAtom(markTripDoneAtom);
-  const cancelTrip = useSetAtom(cancelTripAtom);
-  const removeTrip = useSetAtom(removeTripAtom);
-  const togglePaused = useSetAtom(toggleRecurringPausedAtom);
-  const removeRecurring = useSetAtom(removeRecurringAtom);
-  const deleteSavedRoute = useSetAtom(deleteSavedRouteAtom);
+  const plannedTrips = usePlannedTrips();
+  const recurringTrips = useRecurringTrips();
+  const savedRoutes = useSavedRoutes();
+  const summary = useActivitySummary();
+  const upcoming = useUpcomingTrips();
+  const markDone = useMarkTripDone();
+  const cancelTrip = useCancelTrip();
+  const removeTrip = useRemoveTrip();
+  const togglePaused = useToggleRoutinePaused();
+  const removeRecurring = useRemoveRoutine();
+  const deleteSavedRoute = useDeleteSavedRoute();
   const setPlanSource = useSetAtom(planSourceAtom);
 
   const [tab, setTab] = useState<TripsHubTab>(hub.tab);

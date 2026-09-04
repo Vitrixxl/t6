@@ -8,9 +8,10 @@
 // gauche ce qui appartient a l'utilisateur (son profil, ses trajets), a droite
 // ce qui agit sur la carte (se localiser, choisir les calques, regarder autour).
 import { useState } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import { Layers, LocateFixed, Radar, Route, UserRound } from 'lucide-react';
-import { openHubAtom, savedRoutesAtom } from '../../state';
+import { useSavedRoutes } from '../../queries';
+import { openHubAtom } from '../../state';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { LayerPill, type LayerState } from '../app/shared';
 import type { GeoPoint, TransportNetwork } from '../../types';
@@ -63,7 +64,7 @@ export function MobileActionRail({
   onOpenProfile: () => void;
   onLocate: () => void;
 }) {
-  const savedCount = useAtomValue(savedRoutesAtom).length;
+  const savedCount = useSavedRoutes().length;
   const openHub = useSetAtom(openHubAtom);
   const onOpenSavedTrips = () => openHub('saved');
   const [nearbyOpen, setNearbyOpen] = useState(false);

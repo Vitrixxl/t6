@@ -104,7 +104,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 ## 9. Preuves concretes
 
 - Application PWA: `package.json`, `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/icons/icon-192.png`, `public/icons/icon-512.png`.
-- F1 inscription/connexion/profil: `src/lib/auth.ts`, `src/App.tsx` (`AuthScreen`, `ProfilePanel`).
+- F1 inscription/connexion/profil: `src/lib/api/auth.ts`, `src/queries/session.ts`, `src/App.tsx` (`AuthScreen`, `ProfileDrawer`).
 - F2 planificateur multimodal + geolocalisation temps reel: `src/lib/routePlanner.ts`, `src/App.tsx` (`MobilityMapApp`, `navigator.geolocation.watchPosition`).
 - Carte mobile-first: `src/components/UrbanMap.tsx`, MapLibre GL, route selectionnee, alternatives, position utilisateur, destination, arrets GTFS et stations partagees.
 - UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `select.tsx`, `src/styles.css`.
@@ -124,10 +124,10 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Mots de passe argon2id 19 Mio / t=2 / p=1 (parametres OWASP, fonction memory-hard) via Bun.password ; comparaison a temps constant.
 - [x] Sessions opaques 256 bits, seule l'empreinte SHA-256 est stockee, revocation en base a la deconnexion, purge des sessions expirees.
 - [x] Cookie `httpOnly` + `SameSite=Lax` + `Secure` en production : verifie en navigateur reel (`document.cookie` ne voit pas le jeton).
-- [x] Validation TypeBox de toutes les entrees, limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
+- [x] Validation zod de toutes les entrees (contrats `src/contracts/` partages avec les formulaires du client), limitation de debit (300 req/min globale, 10 req/min sur l'authentification), en-tetes helmet, corps de requete borne a 512 ko.
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
-- [x] Etat du compte : charge a la connexion (`GET /api/state`), tenu en memoire, renvoye par collection apres chaque action (`PUT /api/trips/*`, `/api/saved-routes`, `/api/me/profile` : chaque liste remplacee seule, en transaction, bornee par le schema).
+- [x] Etat du compte : rendu a la connexion, tenu dans le cache React Query, une route par collection en lecture et en remplacement (`GET`/`PUT /api/trips/*`, `/api/saved-routes`, `/api/me/profile` : chaque liste remplacee seule, en transaction, bornee par le contrat ; relue apres un refus).
 - [x] Une seule origine : l'API sert le client, pas de mode sans serveur  ; une ecriture refusee par le reseau est signalee a l'utilisateur.
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17).
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
@@ -136,7 +136,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 ## 11. Architecture de fichiers (revue de code)
 
-- [x] API decoupee par responsabilite : `config/`, `db/`, `models/`, `repositories/`, `services/`, `plugins/`, `routes/` ; 113 lignes au maximum par fichier.
+- [x] API decoupee par responsabilite : `config/`, `db/`, `repositories/`, `services/`, `plugins/`, `routes/`, contrats zod dans `src/contracts/` ; 113 lignes au maximum par fichier.
 - [x] Module trajets eclate : 955 lignes -> 11 fichiers (hub, quatre listes, formulaire, objectifs, briques, formats).
 - [x] Moteur d'itineraires eclate : 559 lignes -> 13 fichiers, un generateur par mode dans `options/`.
 - [x] Couche transport eclatee : 780 lignes -> 14 fichiers (`geocoding/`, `routing/`, `feeds/`), une source externe par fichier.

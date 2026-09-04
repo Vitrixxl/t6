@@ -1,7 +1,7 @@
 // Etat du compte : remplacement par collection, idempotence, atomicite,
 // isolation entre collections, cloisonnement entre comptes.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { DEFAULT_PROFILE } from '../models/profile.ts';
+import { DEFAULT_PROFILE } from '../../../src/contracts/index.ts';
 import { TRIP_RECORD, TRIP_SHAPE, createTestApi, json, type AuthBody, type StateBody, type TestApi } from './helpers.ts';
 
 let api: TestApi;
@@ -105,6 +105,21 @@ describe('remplacement d une collection', () => {
     expect((await api.putCollection(cookie, '/api/trips/history', tripRecords)).status).toBe(422);
   });
 
+  it('chaque collection se lit seule, telle que le dernier remplacement l a laissee', async () => {
+    const cookie = await api.register('lecture@lyon.fr');
+    await api.putCollection(cookie, '/api/trips/planned', [OCCURRENCE]);
+
+    const planned = await json<{ id: string; userId: string }[]>(await api.call('/api/trips/planned', { cookie }));
+    const history = await json<unknown[]>(await api.call('/api/trips/history', { cookie }));
+
+    expect(planned).toHaveLength(1);
+    expect(planned[0].id).toBe('trip-1');
+    // Le proprietaire est rendu : c'est la forme complete que le client tient.
+    expect(planned[0].userId).toBeDefined();
+    expect(history).toHaveLength(0);
+    expect((await api.call('/api/trips/planned')).status).toBe(401);
+  });
+
   it('ne laisse jamais un utilisateur voir les donnees d un autre', async () => {
     const alice = await api.register('alice@lyon.fr');
     const bob = await api.register('bob@lyon.fr');
@@ -141,11 +156,21 @@ describe('profil de mobilite', () => {
     expect((await readState(cookie)).tripRecords).toHaveLength(1);
   });
 
-  it('refuse une valeur hors bornes', async () => {
+  it('refuse une valeur hors bornes, avec le message du contrat', async () => {
     const cookie = await api.register('bornes@lyon.fr');
 
     const response = await api.putProfile(cookie, { ...DEFAULT_PROFILE, maxWalkMinutes: 240 });
 
     expect(response.status).toBe(422);
+    expect((await json<{ error: string }>(response)).error).not.toBe('Requete invalide.');
+  });
+
+  it('le profil se lit seul', async () => {
+    const cookie = await api.register('lecture-profil@lyon.fr');
+    await api.putProfile(cookie, { ...DEFAULT_PROFILE, displayName: 'Camille' });
+
+    const profile = await json<{ displayName: string }>(await api.call('/api/me/profile', { cookie }));
+
+    expect(profile.displayName).toBe('Camille');
   });
 });

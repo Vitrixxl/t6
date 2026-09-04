@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from '../../test/harness';
-import { DEFAULT_PROFILE, deleteAccount, loginUser, logoutUser, sanitizeProfile } from './index';
-import type { SessionUser } from '../../types';
+import { DEFAULT_PROFILE, type SessionUser } from '../../contracts';
+import { deleteAccount, loginUser, logoutUser } from './auth';
 
 const USER: SessionUser = { id: 'user-1', email: 'a@b.fr', displayName: 'Test', profile: DEFAULT_PROFILE };
 
@@ -10,27 +10,6 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 afterEach(() => {
   vi.restoreAllMocks();
-});
-
-describe('sanitizeProfile', () => {
-  it('borne la marche maximale (5-45 min) et l\'objectif carbone (250-20000 g)', () => {
-    const profile = sanitizeProfile({ ...DEFAULT_PROFILE, maxWalkMinutes: 999, carbonGoalGramsPerWeek: 10 });
-
-    expect(profile.maxWalkMinutes).toBe(45);
-    expect(profile.carbonGoalGramsPerWeek).toBe(250);
-  });
-
-  it('deduplique les modes et retombe sur les modes par defaut si la liste est vide', () => {
-    expect(sanitizeProfile({ ...DEFAULT_PROFILE, preferredModes: ['bike', 'bike', 'walk'] }).preferredModes).toEqual(['bike', 'walk']);
-    expect(sanitizeProfile({ ...DEFAULT_PROFILE, preferredModes: [] }).preferredModes).toEqual(DEFAULT_PROFILE.preferredModes);
-  });
-
-  it('neutralise les chevrons du nom affiche (anti-injection)', () => {
-    const profile = sanitizeProfile({ ...DEFAULT_PROFILE, displayName: '<script>Nadia</script>' });
-
-    expect(profile.displayName).not.toMatch(/[<>]/);
-    expect(profile.displayName).toContain('Nadia');
-  });
 });
 
 describe('session', () => {

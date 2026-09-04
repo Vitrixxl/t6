@@ -8,6 +8,7 @@
 // debit, erreurs) sont installes avant les routes, pour s'appliquer a toutes.
 import { Elysia } from 'elysia';
 import { openapi } from '@elysiajs/openapi';
+import { z } from 'zod';
 import { loadConfig } from './config/index.ts';
 import type { ServerConfig } from './config/index.ts';
 import { context } from './plugins/context.ts';
@@ -32,11 +33,13 @@ export function createApp(overrides: Partial<ServerConfig> = {}) {
         .use(requestLog(config.isProduction))
         // Limitation globale ; les routes d'authentification resserrent encore.
         .use(rateLimit({ max: 300, windowMs: 60_000, scope: 'global', trustProxy: config.trustProxy }))
-        // Documentation OpenAPI generee a partir des schemas des routes : elle ne
-        // peut pas deriver du code puisqu'elle en est extraite.
+        // Documentation OpenAPI generee a partir des contrats des routes : elle ne
+        // peut pas deriver du code puisqu'elle en est extraite. Les contrats
+        // sont des schemas zod (src/contracts/), traduits en JSON Schema ici.
         .use(
             openapi({
                 path: '/doc',
+                mapJsonSchema: { zod: z.toJSONSchema },
                 documentation: {
                     info: {
                         title: 'API UrbanFlow Mobility',

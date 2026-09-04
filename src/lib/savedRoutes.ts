@@ -1,9 +1,7 @@
 // Itineraires enregistres : creation et operations pures sur la liste. La
-// persistance est celle de l'etat du compte, envoye en entier au serveur.
+// liste est renvoyee en entier au serveur apres chaque action (src/queries/).
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';
-
-/** Minimisation : seuls les plus recents sont conserves. */
-export const SAVED_ROUTES_LIMIT = 50;
+import { SAVED_ROUTES_LIMIT } from '../contracts/limits';
 
 export function createSavedRouteRecord(
   userId: string,

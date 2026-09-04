@@ -6,8 +6,7 @@ import type { ServerConfig } from '../config/index.ts';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
 import { rateLimit } from '../plugins/rate-limit.ts';
-import { authenticatedResponse, credentials, errorResponse, okResponse, registration } from '../models/index.ts';
-import { DEFAULT_PROFILE } from '../models/profile.ts';
+import { DEFAULT_PROFILE, credentials, errorResponse, okResponse, registration, session } from '../../../src/contracts/index.ts';
 import { toSessionUser } from '../repositories/index.ts';
 import { hashPassword, verifyPassword } from '../security/password.ts';
 import { hashToken } from '../security/tokens.ts';
@@ -48,7 +47,7 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
       },
       {
         body: registration,
-        response: { 201: authenticatedResponse, 409: errorResponse, 429: errorResponse },
+        response: { 201: session, 409: errorResponse, 429: errorResponse },
         detail: { summary: 'Creer un compte et ouvrir une session' },
       },
     )
@@ -74,7 +73,7 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
       },
       {
         body: credentials,
-        response: { 200: authenticatedResponse, 401: errorResponse, 429: errorResponse },
+        response: { 200: session, 401: errorResponse, 429: errorResponse },
         detail: { summary: 'Ouvrir une session' },
       },
     )
@@ -106,7 +105,7 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
         return { user, state: repositories.state.fullState(user.id, user.profile) };
       },
       {
-        response: { 200: authenticatedResponse, 401: errorResponse },
+        response: { 200: session, 401: errorResponse },
         detail: { summary: 'Reprendre la session portee par le cookie' },
       },
     );

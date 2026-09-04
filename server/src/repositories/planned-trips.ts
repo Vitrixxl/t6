@@ -3,7 +3,7 @@ import { asc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { plannedTrips } from '../db/schema.ts';
 import type { PlannedTrip } from '../../../src/types.ts';
-import { PLANNED_LIMIT } from './limits.ts';
+import { PLANNED_LIMIT } from '../../../src/contracts/limits.ts';
 import { chunks, endpoints, flattenEndpoints, measures } from './mappers.ts';
 
 export function createPlannedTripRepository(db: Executor) {

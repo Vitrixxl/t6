@@ -1,9 +1,7 @@
 import type { CarbonSummary, RecurringTrip, TripRecord } from '../types';
+import { TRIP_HISTORY_LIMIT } from '../contracts/limits';
 import { sumRoutines } from './trips/routines';
 import { startOfWeek } from './week';
-
-/** Minimisation : l'historique ne garde que les trajets les plus recents. */
-export const TRIP_HISTORY_LIMIT = 50;
 
 /**
  * Synthese de la semaine en cours.

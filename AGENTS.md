@@ -13,9 +13,10 @@ qu'un agent y a travaille. Pas un prototype qui marche par accident, pas du
 code produit sans comprendre ce qu'il fait.
 
 - Chaque chose a sa place, et une seule : une regle metier vit dans
-  `services/`, une requete dans `repositories/`, un contrat dans `models/`,
-  une action d'interface dans `state/`. Un morceau de code qui ne sait pas
-  dans quel dossier aller est mal decoupe.
+  `services/`, une requete dans `repositories/`, un contrat dans
+  `src/contracts/`, une ressource servie par l'API dans `src/queries/`, un
+  etat d'ecran dans `src/state/`. Un morceau de code qui ne sait pas dans
+  quel dossier aller est mal decoupe.
 - Une API se concoit par ressource : des routes qui disent ce qu'elles
   remplacent, des verbes qui ont leur sens (PUT idempotent), des reponses
   typees. Un point d'entree fourre-tout qui ecrase tout est un defaut de
@@ -109,11 +110,12 @@ d'equivalent JavaScript, et c'est assume.
 Un fichier, une raison de changer. Ce n'est pas un seuil de lignes : un fichier
 long mais cohesif reste preferable a trois fichiers qui se renvoient la balle.
 
-**API** (`server/src/`) : `config/` `db/` `models/` `repositories/` `services/`
+**API** (`server/src/`) : `config/` `db/` `repositories/` `services/`
 `plugins/` `routes/`. Les routes ne portent aucune regle metier, seule la
 couche depot interroge la base (Drizzle sur `bun:sqlite`, jamais `sql.raw` sur
-une entree), et les modeles TypeBox valident la requete, typent le gestionnaire
-et generent l'OpenAPI depuis une source unique.
+une entree), et les contrats zod de `src/contracts/` valident la requete,
+typent le gestionnaire et generent l'OpenAPI depuis une source unique. Chaque
+collection du compte a sa route, en lecture (GET) comme en remplacement (PUT).
 
 Le schema vit dans `server/src/db/schema.ts`. Toute modification passe par
 `bun run db:generate`, et la migration produite dans `server/drizzle/` se
@@ -122,15 +124,21 @@ base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
-reprise de session, envoi de l'etat par partie), `lib/auth/`, `components/map/`,
-`components/planner/trips/`, `components/app/hooks/`, et `state/` : l'etat
-global en atomes jotai (session, etat du compte, derives, actions). Les
-composants lisent les atomes dont ils ont besoin ; on ne fait pas transiter
-l'etat par des props.
+authentification, une route par partie du compte), `queries/` (les ressources
+servies par l'API dans le cache React Query : une ressource par fichier, sa
+requete et ses actions), `state/` (l'etat d'ecran partage entre modules, en
+atomes jotai), `components/map/`, `components/planner/trips/`,
+`components/app/hooks/`. Les composants appellent les hooks dont ils ont
+besoin ; on ne fait pas transiter l'etat par des props. Un formulaire valide
+avec le contrat que l'API applique (react-hook-form + zod) : aucune borne
+n'est recopiee dans un composant.
 
-Le contrat de donnees (`src/types.ts`) est importe **par le client et par
-l'API**. Un changement casse la compilation des deux cotes : c'est voulu, ne
-pas le contourner en dupliquant les types.
+Le contrat de donnees est importe **par le client et par l'API** :
+`src/contracts/` porte un schema zod par objet echange ou saisi, et le type
+qui en derive ; `src/types.ts` reexporte ces types et declare ceux qui ne se
+valident pas (flux transport, options d'itineraire). Un changement casse la
+compilation des deux cotes : c'est voulu, ne pas le contourner en dupliquant
+les types ni les bornes.
 
 ## Regles de fond
 
@@ -140,13 +148,15 @@ constante de troncature. Si une liste est bornee pour le rendu, le nombre
 annonce reste le nombre reel.
 
 **Le serveur est la seule source de verite.** Il n'y a ni mode sans serveur
-ni cache local : c'est l'API qui sert le client, l'etat du compte est recu a la
-connexion (`GET /api/state`), tenu en memoire (atomes jotai), et chaque action
-renvoie en entier la ou les collections qu'elle a touchees, chacune vers sa
-route (`PUT /api/trips/planned`, `/api/trips/recurring`, `/api/trips/history`,
-`/api/saved-routes`, `/api/me/profile`). Une preference ne reecrit aucun
-trajet. Une ecriture refusee par le reseau se dit a l'utilisateur, elle ne se
-masque pas, et la partie refusee repart avec la prochaine action.
+ni cache local persistant : c'est l'API qui sert le client, l'etat du compte
+est recu a la connexion et amorce le cache de requetes (React Query,
+`src/queries/`), et chaque action renvoie en entier la ou les collections
+qu'elle a touchees, chacune vers sa route (`PUT /api/trips/planned`,
+`/api/trips/recurring`, `/api/trips/history`, `/api/saved-routes`,
+`/api/me/profile`), les envois etant serialises. Une preference ne reecrit
+aucun trajet. Une ecriture refusee se dit a l'utilisateur, elle ne se masque
+pas : la collection est relue depuis le serveur (`GET` de la meme route),
+l'ecran revient a ce qu'il tient, et l'action est a rejouer.
 
 **Jamais de geometrie approchee.** Un trace faux se lit comme un itineraire
 reel et envoie l'utilisateur ailleurs ; un trace absent se voit. Tant qu'une

@@ -6,7 +6,8 @@
 // DBA, et prennent un nom camelCase cote TypeScript pour coller au domaine.
 import { sql } from 'drizzle-orm';
 import { check, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { MobilityMode, MobilityProfile, PlannedTripStatus, RoutinePeriod } from '../../../src/types.ts';
+import { PLANNED_TRIP_STATUSES } from '../../../src/contracts/trips.ts';
+import type { MobilityMode, MobilityProfile, RoutinePeriod } from '../../../src/types.ts';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -89,8 +90,8 @@ export const tripRecords = sqliteTable(
   ],
 );
 
-export const PLANNED_TRIP_STATUSES = ['planned', 'done', 'cancelled'] as const satisfies readonly PlannedTripStatus[];
-
+// Les statuts viennent du contrat partage : la colonne, le CHECK et le
+// schema zod ne peuvent pas diverger.
 export const plannedTrips = sqliteTable(
   'planned_trips',
   {
