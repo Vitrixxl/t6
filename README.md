@@ -70,7 +70,7 @@ Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/au
 | --- | --- | --- |
 | Géocodage adresses | `api-adresse.data.gouv.fr` (BAN) | live navigateur |
 | Géocodage lieux/quartiers | Photon (`photon.komoot.io`, OSM) | live navigateur |
-| Routage | OSRM (foot/bike ; trottinette sur bike), auto-hébergeable | relais API `/api/route` et `/api/route-matrix` (cache SQLite partagé) |
+| Routage | OSRM (foot/bike ; trottinette sur bike, voiture invisible sur driving), auto-hébergeable | relais API `/api/route` et `/api/route-matrix` (cache SQLite partagé) |
 | Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | live navigateur |
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | live navigateur |
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | intégré au build (`bun run generate:gtfs`) |
@@ -81,15 +81,46 @@ Chaque flux a un fallback local (`public/data/`) signalé dans l'UI.
 
 ## Calcul d'itinéraires
 
-Le navigateur n'appelle jamais le calculateur directement. Une recherche se deroule en trois temps :
+Le navigateur n'appelle jamais le calculateur directement. Une recherche se deroule en quatre temps :
 
 1. Haversine ne garde que huit stations ou arrets proches, afin de borner le cout.
-2. `POST /api/route-matrix` demande a OSRM la duree routable vers chacun d'eux ; le moteur choisit donc l'acces le plus rapide a pied ou a velo, pas le point geometriquement le plus proche.
+2. `POST /api/route-matrix` demande a OSRM la duree routable vers chacun d'eux ; le moteur choisit donc l'acces le plus rapide a pied ou a velo, pas le point geometriquement le plus proche. En parallele, une matrice voiture `1 x 1` mesure la reference carbone entre les deux extremites.
 3. Le moteur assemble les options, puis `GET /api/route` mesure et trace chaque segment de voirie avant affichage.
+4. Quand toutes les options portent leurs mesures reelles, la meme reference voiture leur est appliquee, puis elles sont affichees.
 
 Les deux routes utilisent le meme cache SQLite partage entre tous les clients. Une mesure de matrice peut reutiliser un trace deja connu, et inversement le cache evite de redemander les memes couples de points a OSRM. Les appels a l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs reponses sont inferes directement depuis les routes Elysia, sans type HTTP recopie dans le front.
 
 Une correspondance entre deux lignes apparait comme une etape pietonne de quatre minutes. Le temps est explicite, mais aucun trait interieur n'est invente : le GTFS publie la desserte et les traces des lignes, pas les cheminements entre quais.
+
+## Facteurs carbone
+
+La voiture n'appartient pas aux modes proposes ni aux preferences. C'est un
+scenario contrefactuel invisible, mesure une seule fois par le profil OSRM
+`driving` pour chaque couple depart-arrivee :
+
+```text
+CO2e voiture = distance routiere voiture x 142 gCO2e/km
+CO2e evite   = CO2e voiture - CO2e de l'option mesuree
+```
+
+Toutes les options d'une recherche utilisent donc strictement la meme
+reference, meme si leurs propres distances different. Une economie negative
+est conservee et affichee comme des `gCO2e supplementaires`. Si le profil
+voiture est indisponible, les alternatives restent visibles avec leur propre
+empreinte et l'interface indique `Comparaison voiture indisponible` ; aucun zero
+ni trajet approche n'est invente.
+
+| Usage | Facteur | Perimetre | Source/version |
+| --- | ---: | --- | --- |
+| Reference voiture | 142 gCO2e/passager-km | voiture thermique moyenne diesel, une personne | ADEME, modelisation transport 2025, consultee le 04/09/2026 |
+| Tramway (`route_type=0`) | 3,8 gCO2e/passager-km | par passager-kilometre | ADEME Impact CO2, modele 2025, consulte le 04/09/2026 |
+| Metro (`route_type=1`) | 4,2 gCO2e/passager-km | par passager-kilometre | ADEME Impact CO2, modele 2025, consulte le 04/09/2026 |
+| Funiculaire (`route_type=7`) | 4,2 gCO2e/passager-km | approximation par le facteur metro, faute de facteur specifique | ADEME Impact CO2, modele 2025, consulte le 04/09/2026 |
+| Marche / Velo'v / trottinette | 0 / 4 / 15 gCO2e/passager-km | hypotheses simplifiees UrbanFlow 2025 | versionnees dans `src/lib/planner/emissions.ts` |
+
+La valeur, l'unite, le perimetre, la source, le millesime et la date de
+consultation vivent ensemble dans `src/lib/planner/emissions.ts`. Le type
+`CarbonReference` conserve aussi la version du facteur utilisee.
 
 ## Objectifs carbone personnels
 
@@ -105,7 +136,7 @@ Sans configuration, la source est l'instance publique de démonstration d'OpenSt
 Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localement :
 
 ```bash
-./infra/osrm-prepare.sh                      # télécharge et prétraite les 2 profils (une fois)
+./infra/osrm-prepare.sh                      # télécharge et prétraite les 3 profils (une fois)
 docker compose -f infra/compose.yml up -d    # application + calculateur
 ```
 
@@ -115,7 +146,7 @@ Pour faire pointer une API lancée hors conteneur sur le calculateur local, publ
 
 Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
 
-OSRM sert un profil par processus — pieton et velo n'ont pas les memes regles sur les memes rues — d'ou deux services, regroupes par une facade derriere un seul port. La trottinette reprend le profil velo et l'application ne propose pas de trajet voiture. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une a l'autre ne change qu'une URL.
+OSRM sert un profil par processus — pieton, velo et voiture n'ont pas les memes regles sur les memes rues — d'ou trois services, regroupes par une facade derriere un seul port. La trottinette reprend le profil velo ; le profil voiture ne fournit que la reference carbone et l'application ne propose jamais ce mode. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une a l'autre ne change qu'une URL.
 
 ## Commandes
 

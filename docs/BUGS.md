@@ -218,7 +218,7 @@ la que le symptome se voit — et aurait casse un comportement voulu : on ne
 pourrait plus marquer fait, le soir, le trajet du matin. Le symptome et la cause
 n'etaient pas dans le meme fichier.
 
-**Ou le voir** : `src/lib/trips/recurrence.ts`
+**Ou le voir** : `src/lib/trips/routines.ts`
 
 ### Tester et valider le correctif
 
@@ -622,3 +622,80 @@ premiere implementation.
 
 **Niveau de verrouillage** : **faible** (contrat et persistance automatises,
 recette visuelle manuelle, protocole rouge-puis-vert initial non observe).
+
+---
+
+## B26 — Chaque option inventait sa propre reference voiture
+
+**Criticite** : majeur — deux alternatives entre le meme depart et la meme
+arrivee n'etaient pas comparees au meme scenario, donc l'indicateur central de
+la fonctionnalite carbone pouvait favoriser artificiellement l'option la plus
+longue.
+
+### Identifier la source
+
+Le defaut a ete trouve en expliquant la formule pendant la revue du moteur.
+`summarizeLegs` calculait la reference comme `distance de l'option x 180`, puis
+soustrayait l'empreinte de cette option. Une option de cinq kilometres recevait
+donc une voiture fictive de cinq kilometres, meme si la route automobile entre
+les extremites n'en faisait que trois.
+
+**Symptome** : deux options allant au meme endroit affichaient des references
+voiture differentes, proportionnelles a leurs propres detours. Une option plus
+longue pouvait annoncer davantage de CO2 evite uniquement parce que sa voiture
+de comparaison avait ete rallongee avec elle.
+
+**Cause racine** : la comparaison contrefactuelle etait calculee dans
+`summarizeLegs`, fonction qui ne connait que les segments de l'alternative.
+Elle ne disposait ni des extremites globales de la recherche ni d'une mesure
+automobile. Le `Math.max(..., 0)` masquait en plus tout resultat negatif.
+
+### Corriger
+
+La voiture reste hors de `MobilityMode` et n'apparait jamais dans les options
+ou les preferences. `car` n'existe que dans `RoutableMode` et pointe vers le
+profil OSRM `driving`. Au lancement d'une recherche, une matrice `1 x 1`
+mesure la distance voiture en parallele du choix des acces. Apres le routage de
+toutes les alternatives, `applyCarbonReference` leur applique le meme objet
+`CarbonReference` : distance, empreinte et version du facteur.
+
+Le facteur est fige a 142 gCO2e/passager-km pour une voiture thermique moyenne
+diesel, une personne, modelisation ADEME 2025. Les transports publics utilisent
+desormais le facteur de leur `route_type` GTFS : 3,8 pour le tramway, 4,2 pour
+le metro, et le funiculaire reprend explicitement le metro par approximation.
+
+Une economie negative est conservee et affichee en emissions supplementaires.
+Si le profil voiture echoue, l'empreinte propre des options reste visible,
+`carbonSavedGrams` vaut `null` dans le contrat et en base, et l'interface dit
+« Comparaison voiture indisponible ».
+
+**Ou le voir** : `src/queries/routes.ts`,
+`src/lib/planner/emissions.ts`, `src/lib/planner/legs.ts`,
+`server/src/services/routing/osrm.ts`, `server/drizzle/0003_reference-carbone-nullable.sql`
+
+**Commit** : [`a25171e`](https://github.com/Vitrixxl/t6/commit/a25171e)
+
+### Tester et valider le correctif
+
+Les tests couvrent la cause plutot qu'un seul affichage :
+
+1. une route voiture de 3 km produit exactement `3 x 142 = 426 gCO2e` ;
+2. des options de 2 et 5 km partagent le meme objet de reference ; la seconde,
+   a 500 gCO2e, conserve `426 - 500 = -74 gCO2e` ;
+3. la comparaison est appliquee apres le remplacement de l'estimation de 2 km
+   par une mesure OSRM de 5 km ;
+4. une panne voiture rend `null`, jamais zero ;
+5. le test API exige `/routed-car/table/v1/driving/`, puis verifie qu'un second
+   appel ressort du cache partage sans nouvel appel amont ;
+6. le contrat interdit toujours `car` dans les modes proposes et la migration
+   persiste bien une comparaison absente.
+
+La recette navigateur a affiche, pour le meme trajet, une empreinte pietonne de
+`0 gCO₂e` et `564 gCO₂e evites` issus de la reference routiere. Le scenario E2E
+reste vert a 7/7 et axe-core ne detecte aucune violation sur les quatre ecrans.
+
+Ces tests ont ete ajoutes avec la correction et n'ont pas ete observes rouges
+sur la version initiale.
+
+**Niveau de verrouillage** : **faible** (regressions automatisees et recette
+navigateur, protocole rouge-puis-vert initial non observe).

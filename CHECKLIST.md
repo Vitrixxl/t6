@@ -72,7 +72,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 ## 7. Integration d'APIs reelles (mise a jour finale)
 
 - [x] Geocodage live: api-adresse.data.gouv.fr (BAN).
-- [x] Routage live: OSRM routing.openstreetmap.de (profils foot/bike ; trottinette sur bike), matrice de choix des acces puis traces et instructions traduites.
+- [x] Routage live: OSRM routing.openstreetmap.de (profils foot/bike/driving ; trottinette sur bike, voiture uniquement comme reference invisible), matrice de choix des acces puis traces et instructions traduites.
 - [x] GBFS live Velo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
 - [x] GTFS statique reel TCL/SYTRAL (ODbL) integre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 2435 arrets et 13 lignes structurantes avec leur desserte et leur trace reel (metropole entiere, rayon 16 km).
@@ -81,7 +81,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Onboarding spotlight 11 etapes (auto premiere visite, relance via bouton « ? »).
 - [x] Meteo live Open-Meteo injectee dans le scoring (pluie/vent).
 - [x] Fallback local pour chaque flux + statut des sources affiche dans l'UI.
-- [x] Tests unitaires sur la fusion GBFS et la classification meteo (transportApi.test.ts).
+- [x] Tests unitaires sur la fusion GBFS et la classification meteo (`src/lib/transport/feeds.test.ts`).
 - [x] UI retravaillee (identite eco-urbaine, Bricolage Grotesque/Figtree, mobile first) via skill frontend-design.
 - [x] Captures finales automatisees dans output/screens/ et integrees au dossier.
 - [x] Dossier projet finalise: 30 pages, 15 sections alignees sur la grille, 6 figures, 7 captures, sources officielles et matrice critere vers preuve.
@@ -93,28 +93,30 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] RG3 (station a 400 m) et RG5 (marche maximale) reellement implementees et testees ; le curseur de marche du profil agit sur le classement.
 - [x] Plus de nom de ligne non garanti affiche (fini "Metro A vers Part-Dieu") ; encadre "limites assumees du MVP" ajoute (section 7.3).
 - [x] CO2 ventile par leg conserve a l'enrichissement live (velo+transport 136 g < transport seul 159 g).
+- [x] Reference voiture contrefactuelle commune : matrice OSRM driving `1 x 1`, facteur versionne a 142 gCO2e/km, applique apres la mesure reelle des options ; surplus et indisponibilite affiches sans faux zero.
+- [x] Facteur transport choisi par `route_type` GTFS : tramway 3,8, metro 4,2 et funiculaire documente comme approximation metro, en gCO2e/passager-km.
 - [x] Timeout reseau 8 s sur tous les appels externes (BAN, OSRM), pas seulement le GBFS.
 - [x] Crash latent nearestStop (profil PMR sans arret accessible) corrige : option non proposee plutot que plantage.
 - [x] Bundle decoupe : MapLibre en chunk charge a la demande (React.lazy), entree initiale ~115 kB gzip ; source maps desactivees en production.
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levee.
-- [x] theme-color aligne (index.html/manifest), scripts npm e2e/screens exposes, chemin Chromium configurable, filtre Rhonexpress.
+- [x] theme-color aligne (index.html/manifest), scripts Bun e2e/screens exposes, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, economie chiffree, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 160 tests verts (17 fichiers), lint 0 erreur, build OK, scenario E2E planification bloquant vert (7/7 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
+- [x] 170 tests verts (19 fichiers), lint 0 erreur, build OK, scenario E2E planification bloquant vert (7/7 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
 
 ## 9. Preuves concretes
 
 - Application PWA: `package.json`, `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/icons/icon-192.png`, `public/icons/icon-512.png`.
 - F1 inscription/connexion/profil: `src/lib/api/auth.ts`, `src/queries/session.ts`, `src/App.tsx` (`AuthScreen`, `ProfileDrawer`).
-- F2 planificateur multimodal + geolocalisation temps reel: `src/lib/routePlanner.ts`, `src/App.tsx` (`MobilityMapApp`, `navigator.geolocation.watchPosition`).
-- Carte mobile-first: `src/components/UrbanMap.tsx`, MapLibre GL, route selectionnee, alternatives, position utilisateur, destination, arrets GTFS et stations partagees.
-- UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `select.tsx`, `src/styles.css`.
-- APIs reelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM uniquement derriere `/api/route-matrix` et `/api/route`, avec cache SQLite partage et aucune geometrie inventee.
-- F3 integration transport: `src/lib/transportApi.ts`, `public/data/gtfs-feed.json`, `public/data/shared-mobility.json`.
+- F2 planificateur multimodal + geolocalisation temps reel: `src/lib/planner/`, `src/components/app/MobilityMapApp.tsx`, `src/components/app/hooks/useGeolocation.ts`.
+- Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, route selectionnee, alternatives, position utilisateur, destination, arrets GTFS et stations partagees.
+- UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `src/styles.css`.
+- APIs reelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM uniquement derriere `/api/route-matrix` et `/api/route`, avec cache SQLite partage, profil driving de reference et aucune geometrie inventee.
+- F3 integration transport: `src/lib/transport/feeds/`, `public/data/gtfs-feed.json`, `public/data/shared-mobility.json`.
 - Option carbone: `src/lib/carbon.ts`, `src/components/planner/trips/TripGoalsCard.tsx`, `src/components/profile/ProfilePanels.tsx` (objectifs hebdomadaire et mensuel independants).
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectee).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et controlees en planche-contact et pleine page.
-- Verification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 160 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 ecrans) et `bun run e2e` OK (7/7).
+- Verification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 170 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 ecrans) et `bun run e2e` OK (7/7).
 
 ## 10. Backend (ajout post-audit)
 
@@ -140,7 +142,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 ## 11. Architecture de fichiers (revue de code)
 
-- [x] API decoupee par responsabilite : `config/`, `db/`, `repositories/`, `services/`, `plugins/`, `routes/`, contrats zod dans `src/contracts/` ; 113 lignes au maximum par fichier.
+- [x] API decoupee par responsabilite : `config/`, `db/`, `repositories/`, `services/`, `plugins/`, `routes/`, contrats zod dans `src/contracts/` ; un fichier garde une seule raison de changer, sans seuil de lignes artificiel.
 - [x] Module trajets eclate : 955 lignes -> 11 fichiers (hub, quatre listes, formulaire, objectifs, briques, formats).
 - [x] Moteur d'itineraires eclate : 559 lignes -> 13 fichiers, un generateur par mode dans `options/`.
 - [x] Couche transport eclatee : 780 lignes -> 14 fichiers (`geocoding/`, `routing/`, `feeds/`), une source externe par fichier.
@@ -155,8 +157,8 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] API : `bun server/src/index.ts`, sans etape de compilation ni dependance native.
 - [x] Serveur de developpement et build du client executes par Bun (`bun scripts/dev.ts`, `Bun.build`).
 - [x] TypeScript 7 conserve ; `tsc` strict controle types et symboles inutilises, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
-- [x] Tests client / metier : `bun test src`, 118 tests verts.
-- [x] Tests d'API : `bun test server`, 42 tests verts.
+- [x] Tests client / metier : 126 tests verts dans `src/`.
+- [x] Tests d'API : `bun test server`, 44 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) executes par Bun.
-- [x] Verifications rejouees apres bascule : `bun run check` complet (160 tests), E2E 7/7, audit axe-core 0 violation sur 4 ecrans.
+- [x] Verifications rejouees apres bascule : `bun run check` complet (170 tests), E2E 7/7, audit axe-core 0 violation sur 4 ecrans.
 - [x] Limite assumee : l'ingestion GTFS et la generation du dossier restent en Python, faute d'equivalent JavaScript.

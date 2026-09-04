@@ -44,16 +44,16 @@ candidat qui la porte.
   revue de test.
 - `output/soutenance/03-ecarts.html` : les ecarts assumes entre le sujet et
   le livrable.
-- `output/revue-code.html` : le guide de lecture du code, avec des extraits
-  cites par numero de ligne.
+- `output/revue-code.html` : la roadmap de lecture du depot, dans l'ordre des
+  appels, avec les fichiers et symboles a ouvrir dans l'editeur.
 - `scripts/generate_dossier.py` : le texte du dossier PDF.
 
 **Toute modification fonctionnelle se reporte dans ces fichiers dans le meme
 travail**, pas dans un second temps : nombre d'options du moteur, modes et
-combinaisons proposes, regles de gestion, nombre de tests par suite, plages de
-lignes des extraits cites, comportement en cas de panne d'une API. Avant de
-rendre la main, relire chacun d'eux en se demandant s'il decrit encore
-l'application telle qu'elle est.
+combinaisons proposes, regles de gestion, nombre de tests par suite,
+comportement en cas de panne d'une API. Pour la roadmap, verifier les chemins,
+les symboles et l'ordre des appels. Avant de rendre la main, relire chacun
+d'eux en se demandant s'il decrit encore l'application telle qu'elle est.
 
 ## Journal des bogues — obligatoire
 
@@ -184,6 +184,20 @@ stations du segment.
 Les objectifs d'economie de CO2 hebdomadaire et mensuel sont deux valeurs de
 profil independantes. Le mensuel ne se derive pas du premier : chaque periode
 est comparee a son propre objectif persiste par l'API.
+
+**La voiture est une reference, jamais une option.** Elle n'entre pas dans
+`MobilityMode`, les preferences ni la liste des itineraires : seul
+`RoutableMode` connait `car`. Une matrice OSRM driving `1 x 1` mesure sa
+distance entre les extremites de la recherche, une seule fois et en parallele
+du reste. Cette meme reference est appliquee a toutes les options apres leurs
+mesures reelles. Le facteur est versionne dans `src/lib/planner/emissions.ts` ;
+une economie negative reste negative, et une reference indisponible reste
+`null` jusque dans les contrats et la base. Aucun zero de repli n'est invente.
+
+Les facteurs de transport public suivent le `route_type` GTFS. Tramway et
+metro portent leurs facteurs documentes ; le funiculaire reprend explicitement
+le facteur metro tant qu'aucune donnee specifique n'est disponible. Toute
+valeur carbone affichee utilise l'unite `gCO2e` (rendue `gCO₂e` dans l'UI).
 
 **Commentaires : le pourquoi, pas le quoi.** Ils sont en francais, sans
 accents, alignes sur le style existant. Un commentaire qui paraphrase la ligne
