@@ -92,7 +92,12 @@ if (!(await destButton.count())) {
   process.exit(1);
 }
 await destButton.click();
-await page.waitForTimeout(8000);
+// Le routage reel peut depasser huit secondes quand l'instance publique est
+// chargee. On attend l'etat fonctionnel plutot qu'un delai arbitraire.
+await page.getByRole('button', { name: /^planifier$/i }).first().waitFor({
+  state: 'visible',
+  timeout: 30000,
+});
 log('destination definie, options calculees');
 
 // La destination choisie, la barre passe a deux champs et le depart doit

@@ -699,3 +699,72 @@ sur la version initiale.
 
 **Niveau de verrouillage** : **faible** (regressions automatisees et recette
 navigateur, protocole rouge-puis-vert initial non observe).
+
+---
+
+## B27 — Modifier un element reecrivait toute sa collection
+
+**Criticite** : majeur — une vue locale perimee pouvait effacer silencieusement
+des trajets crees depuis un autre appareil, et une coupure entre deux requetes
+pouvait laisser un trajet termine sans son entree carbone.
+
+### Identifier la source
+
+Le defaut est apparu pendant la revue du depot `trip-records.ts` :
+`replaceAll` supprimait toutes les lignes de l'utilisateur, puis reinserait la
+liste fournie par le navigateur. La meme forme existait dans les quatre depots
+de collections et remontait jusqu'a une mutation React Query generique.
+
+**Symptome** : enregistrer, annuler ou supprimer un seul element envoyait une
+liste complete. Si deux appareils partaient de vues differentes, le dernier
+PUT gagnait a l'echelle de la collection et supprimait les lignes absentes de
+son cache. Marquer un trajet fait envoyait en plus deux PUT independants : un
+pour le trajet, un pour l'historique.
+
+**Cause racine** : l'idempotence avait ete concue autour du remplacement de
+liste plutot qu'autour de l'identite des ressources. Le client etait donc
+traite comme l'autorite sur une collection qu'il ne pouvait connaitre qu'a un
+instant donne.
+
+### Corriger
+
+Les collections restent lisibles par GET, mais chaque trajet programme,
+routine et itineraire sauvegarde possede maintenant un
+`PUT /api/.../:id` et un `DELETE /api/.../:id`. Les depots exposent
+`findById`, `upsert` et `deleteById` sur la cle composee utilisateur/id ; aucun
+d'eux ne recoit une collection complete. Les limites de conservation retirent
+uniquement les lignes excedentaires.
+
+La completion passe par
+`PUT /api/trips/planned/:id/completion`. Le service termine le trajet et cree
+son `TripRecord` dans une seule transaction SQLite ; le rejeu rend le meme
+etat sans doublon. Le client projette la commande dans les vues React Query,
+mais Eden Treaty n'envoie que la ressource ciblee. Seul
+`DELETE /api/trips/history`, declenche par le bouton d'effacement explicite,
+supprime volontairement tout l'historique.
+
+**Ou le voir** : `server/src/routes/planned-trips.ts`,
+`server/src/services/planned-trips.ts`,
+`server/src/repositories/planned-trips.ts`, `src/queries/account.ts`,
+`src/lib/api/planned-trips.ts`
+
+**Commit** : [`e32f643`](https://github.com/Vitrixxl/t6/commit/e32f643)
+
+### Tester et valider le correctif
+
+Les tests d'API prouvent qu'un second PUT conserve le premier element, qu'un
+DELETE conserve sa voisine et les autres collections, et reproduisent ces
+garanties pour les routines et les itineraires enregistres. Ils verifient
+aussi le rejeu de la completion, l'unicite de l'historique, le 404 sans trajet
+source et l'impossibilite d'injecter directement un statut `done`.
+
+Les tests du client inspectent les requetes reelles produites par Eden : corps
+unitaire sans `id` ni `userId`, identifiant dans l'URL, un seul endpoint de
+completion, DELETE explicites et serialisation des commandes en rafale. Un
+refus invalide uniquement la vue concernee.
+
+Ces tests ont ete ajoutes avec le refactoring et n'ont pas ete observes rouges
+sur une reproduction isolee avant la correction.
+
+**Niveau de verrouillage** : **faible** (regressions automatisees et scenario
+E2E adapte, protocole rouge-puis-vert initial non observe).

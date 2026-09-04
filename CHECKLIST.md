@@ -157,8 +157,8 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] API : `bun server/src/index.ts`, sans etape de compilation ni dependance native.
 - [x] Serveur de developpement et build du client executes par Bun (`bun scripts/dev.ts`, `Bun.build`).
 - [x] TypeScript 7 conserve ; `tsc` strict controle types et symboles inutilises, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
-- [x] Tests client / metier : 126 tests verts dans `src/`.
-- [x] Tests d'API : `bun test server`, 44 tests verts.
+- [x] Tests client / metier : 122 tests verts dans `src/`.
+- [x] Tests d'API : `bun test server`, 48 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) executes par Bun.
 - [x] Verifications rejouees apres bascule : `bun run check` complet (170 tests), E2E 7/7, audit axe-core 0 violation sur 4 ecrans.
 - [x] Limite assumee : l'ingestion GTFS et la generation du dossier restent en Python, faute d'equivalent JavaScript.
