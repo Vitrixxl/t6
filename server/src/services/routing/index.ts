@@ -7,9 +7,9 @@
 //     utilisateur : mille navigateurs derrière la même sortie réseau épuisent
 //     le même quota, et rien ne le mutualise (B13) ;
 //   - un cache partagé sert le même trajet à tous sans le recalculer, ce qui
-//     protege la source et vaut aussi comme mesure d'eco-conception ;
-//   - l'URL du calculateur devient une variable de configuration : basculer sur
-//     une instance auto-hébergée ne touche pas une ligne de code client.
+//     protège la source et vaut aussi comme mesure d'éco-conception ;
+//   - chaque moteur possède une URL configurable : passer aux trois moteurs
+//     auto-hébergés ne touche pas une ligne de code client.
 import { routeGeometry as routeGeometryContract, routeMeasure as routeMeasureContract } from '../../../../src/contracts/index.ts';
 import type { RoutableMode } from '../../../../src/types.ts';
 import type { ServerConfig } from '../../config/index.ts';
@@ -105,10 +105,10 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
                 return cached;
             }
 
-            const geometry = await fetchUpstreamRoute(config.osrmBaseUrl, mode, from, to);
+            const geometry = await fetchUpstreamRoute(config.osrmUrls, mode, from, to);
             if (!geometry) {
                 // Le calculateur ne répond pas. Une entrée expirée vaut mieux qu'aucune
-                // réponse : la voirie n'a pas change, et l'alternative serait une carte
+                // réponse : la voirie n'a pas changé, et l'alternative serait une carte
                 // vide. C'est le seul cas où l'on sert une donnée périmée.
                 if (cached) {
                     return cached;
@@ -136,7 +136,7 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
                 };
             }
 
-            const upstream = await fetchUpstreamMatrix(config.osrmBaseUrl, mode, origins, destinations);
+            const upstream = await fetchUpstreamMatrix(config.osrmUrls, mode, origins, destinations);
             if (!upstream) {
                 const measures = known.map((row) =>
                     row.map((entry): RoutingMeasure | null => entry ? { ...entry.measure, source: 'cache' } : null),

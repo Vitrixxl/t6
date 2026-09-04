@@ -3,8 +3,9 @@
 // OSRM prépare un jeu de données par profil : marche et vélo ont des règles
 // différentes sur les mêmes rues (sens uniques, escaliers, zones piétonnes),
 // et ne peuvent donc pas partager un index. La trottinette reprend le profil
-// vélo ; toutes les URLs restent dérivées d'une même racine configurable.
+// vélo ; chaque moteur possède sa propre adresse configurable.
 import { z } from 'zod';
+import type { ServerConfig } from '../../config/index.ts';
 import type { GeoPoint, RouteInstruction, RoutableMode } from '../../../../src/types.ts';
 import { buildInstructions } from './instructions.ts';
 
@@ -17,7 +18,7 @@ let nextPublicRequestAt = 0;
 /**
  * L'instance publique refuse les rafales (HTTP 429). Les appels de plusieurs
  * options partagent donc une cadence au niveau du serveur. Une instance locale
- * n'est pas ralentie ; son interet est précisément d'absorber la charge.
+ * n'est pas ralentie ; son intérêt est précisément d'absorber la charge.
  */
 async function waitForPublicSlot(baseUrl: string): Promise<void> {
     if (new URL(baseUrl).hostname !== PUBLIC_OSRM_HOST) {
@@ -35,8 +36,8 @@ async function waitForPublicSlot(baseUrl: string): Promise<void> {
     await turn;
 }
 
-async function requestOsrm(baseUrl: string, url: string): Promise<Response> {
-    await waitForPublicSlot(baseUrl);
+async function requestOsrm(url: string): Promise<Response> {
+    await waitForPublicSlot(url);
     return fetch(url, {
         headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
@@ -99,9 +100,8 @@ function routeMeasure(distanceMeters: number | null | undefined, durationSeconds
 }
 
 /**
- * Chemin du service pour un mode. Les noms suivent la convention des instances
- * OSRM (`/routed-<profil>/route/v1/<profil>/`), celle qu'utilisent aussi bien
- * l'instance publique que les images officielles auto-hébergées.
+ * Le profil de la voiture se nomme driving dans le protocole OSRM.
+ * La trottinette utilise les mêmes règles de circulation que le vélo.
  */
 function profile(mode: RoutableMode): 'foot' | 'bike' | 'driving' {
     if (mode === 'walk') {
@@ -113,24 +113,24 @@ function profile(mode: RoutableMode): 'foot' | 'bike' | 'driving' {
     return 'bike';
 }
 
-/** Chemin uniforme de l'instance publique et de la façade auto-hébergée. */
-export function servicePath(mode: RoutableMode, service: 'route' | 'table'): string {
+/** Chaque adresse inclut le préfixe éventuel de l'hébergeur public. */
+function serviceUrl(urls: ServerConfig['osrmUrls'], mode: RoutableMode, service: 'route' | 'table'): string {
     const name = profile(mode);
-    const serviceProfile = mode === 'car' ? 'car' : name;
-    return `/routed-${serviceProfile}/${service}/v1/${name}/`;
+    const baseUrl = mode === 'car' ? urls.car : name === 'foot' ? urls.foot : urls.bike;
+    return `${baseUrl}/${service}/v1/${name}/`;
 }
 
 export async function fetchUpstreamRoute(
-    baseUrl: string,
+    urls: ServerConfig['osrmUrls'],
     mode: RoutableMode,
     from: Pick<GeoPoint, 'lat' | 'lon'>,
     to: Pick<GeoPoint, 'lat' | 'lon'>,
 ): Promise<RouteGeometry | null> {
     const coordinates = `${from.lon},${from.lat};${to.lon},${to.lat}`;
-    const url = `${baseUrl}${servicePath(mode, 'route')}${coordinates}?overview=full&geometries=geojson&steps=true`;
+    const url = `${serviceUrl(urls, mode, 'route')}${coordinates}?overview=full&geometries=geojson&steps=true`;
 
     try {
-        const response = await requestOsrm(baseUrl, url);
+        const response = await requestOsrm(url);
         if (!response.ok) {
             return null;
         }
@@ -152,7 +152,7 @@ export async function fetchUpstreamRoute(
             instructions: buildInstructions(route.legs?.flatMap((leg) => leg.steps ?? []) ?? []),
         };
     } catch {
-        // Indisponibilité, délai dépasse, réponse illisible : l'appelant tranchera
+        // Indisponibilité, délai dépassé, réponse illisible : l'appelant tranchera
         // ce qu'il en dit à l'utilisateur. On ne fabrique pas de tracé de repli.
         return null;
     }
@@ -164,7 +164,7 @@ export async function fetchUpstreamRoute(
  * d'une station. Les valeurs `null` d'OSRM signalent un couple inaccessible.
  */
 export async function fetchUpstreamMatrix(
-    baseUrl: string,
+    urls: ServerConfig['osrmUrls'],
     mode: RoutableMode,
     origins: Array<Pick<GeoPoint, 'lat' | 'lon'>>,
     destinations: Array<Pick<GeoPoint, 'lat' | 'lon'>>,
@@ -174,10 +174,10 @@ export async function fetchUpstreamMatrix(
     const sources = origins.map((_, index) => index).join(';');
     const destinationsIndexes = destinations.map((_, index) => origins.length + index).join(';');
     const query = new URLSearchParams({ sources, destinations: destinationsIndexes, annotations: 'distance,duration' });
-    const url = `${baseUrl}${servicePath(mode, 'table')}${coordinates}?${query.toString()}`;
+    const url = `${serviceUrl(urls, mode, 'table')}${coordinates}?${query.toString()}`;
 
     try {
-        const response = await requestOsrm(baseUrl, url);
+        const response = await requestOsrm(url);
         if (!response.ok) {
             return null;
         }

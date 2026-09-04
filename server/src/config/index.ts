@@ -11,45 +11,43 @@ export interface ServerConfig {
     /** Durée de vie d'une session (cookie + ligne en base). */
     sessionTtlMs: number;
     /**
-     * A n'activer que derrière un proxy de confiance qui réécrit
+     * À n'activer que derrière un proxy de confiance qui réécrit
      * X-Forwarded-For : sinon n'importe quel client peut usurper son adresse et
      * contourner la limitation de débit.
      */
     trustProxy: boolean;
     /**
-     * Base du service de routage. Par défaut l'instance publique de
-     * démonstration d'OpenStreetMap : elle dépanne, mais elle n'a aucun
-     * engagement de service et limite par adresse IP (B13). Pointer cette
-     * variable sur une instance OSRM locale supprime toute dépendance tierce a
-     * l'exécution — voir le README.
+     * Une adresse par moteur, avec le préfixe éventuel de l'hébergeur.
+     * Par défaut, l'instance publique limite les appels par IP (B13).
+     * Docker fournit les trois adresses internes, sans proxy intermédiaire.
      */
-    osrmBaseUrl: string;
+    osrmUrls: { foot: string; bike: string; car: string };
     /**
      * Dossier du client construit, servi par l'API elle-même. Une seule origine
      * pour l'application et son API : cookie de première partie, aucun CORS.
      */
     webRoot: string;
     /**
-     * Certificat et clé TLS. Renseignes, le serveur écoute en HTTPS.
+     * Certificat et clé TLS. Renseignés, le serveur écoute en HTTPS.
      *
-     * Le chiffrement n'est pas qu'une précaution : le navigateur reserve au
-     * contexte securise la géolocalisation, `crypto.randomUUID` et le service
+     * Le chiffrement n'est pas qu'une précaution : le navigateur réserve au
+     * contexte sécurisé la géolocalisation, `crypto.randomUUID` et le service
      * worker. Sans HTTPS, l'application est inutilisable ailleurs que sur
      * localhost — depuis un téléphone du réseau local, par exemple.
      */
     tlsCertPath: string;
     tlsKeyPath: string;
     /**
-     * Durée de validité d'un tracé en cache. La voirie ne bouge pas d'un jour a
-     * l'autre : une journee évite de redemander mille fois le même trajet sans
-     * risquer de servir une géométrie obsolete.
+     * Durée de validité d'un tracé en cache. La voirie ne bouge pas d'un jour à
+     * l'autre : une journée évite de redemander mille fois le même trajet sans
+     * risquer de servir une géométrie obsolète.
      */
     routeCacheTtlMs: number;
 }
 
 /**
  * Une variable absente et une variable vide sont la même chose : `.env.example`
- * liste les clés avec une valeur vide, et les copier ne doit pas ecraser la
+ * liste les clés avec une valeur vide, et les copier ne doit pas écraser la
  * valeur par défaut par une chaîne vide.
  */
 function text(raw: string | undefined, fallback: string): string {
@@ -78,7 +76,11 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
         webRoot: text(env.WEB_ROOT, 'dist'),
         tlsCertPath: text(env.TLS_CERT_PATH, ''),
         tlsKeyPath: text(env.TLS_KEY_PATH, ''),
-        osrmBaseUrl: text(env.OSRM_BASE_URL, 'https://routing.openstreetmap.de').replace(/\/+$/, ''),
+        osrmUrls: {
+            foot: text(env.OSRM_FOOT_URL, 'https://routing.openstreetmap.de/routed-foot').replace(/\/+$/, ''),
+            bike: text(env.OSRM_BIKE_URL, 'https://routing.openstreetmap.de/routed-bike').replace(/\/+$/, ''),
+            car: text(env.OSRM_CAR_URL, 'https://routing.openstreetmap.de/routed-car').replace(/\/+$/, ''),
+        },
         routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
     };
 }
