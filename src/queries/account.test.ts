@@ -156,7 +156,7 @@ describe('session', () => {
     expect(await fresh.fetchQuery(sessionQuery)).toBeNull();
   });
 
-  it('la deconnexion revoque la session et vide le compte', () => {
+  it('la deconnexion revoque la session et vide le compte', async () => {
     openSession(client, session({ plannedTrips: [futureTrip()] }));
     client.setQueryData(['account', 'plannedTrips'], [futureTrip()]);
     const observations: number[] = [];
@@ -167,7 +167,7 @@ describe('session', () => {
       }
     });
 
-    logout(client);
+    await logout(client);
 
     expect(readSession(client)).toBeNull();
     expect(readAccountPart(client, 'plannedTrips')).toEqual([]);
@@ -386,7 +386,7 @@ describe('envoi au serveur', () => {
     await write(clearTripHistory);
     expect(saveError()).toBe('Requete invalide.');
 
-    logout(client);
+    await logout(client);
     openSession(client, session());
     await write((state) => saveRoute(state, 'user-1', ROUTE_INPUT));
 
