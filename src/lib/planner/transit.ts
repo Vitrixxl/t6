@@ -122,6 +122,73 @@ function interchanges(stations: GtfsStop[], first: string, second: string): Gtfs
     return stations.filter((stop) => stop.routes.includes(first) && stop.routes.includes(second));
 }
 
+function accessMeasure(measured: AccessMeasure | undefined, from: GeoPoint, to: GeoPoint): AccessMeasure {
+    if (measured) {
+        return measured;
+    }
+    const distanceKm = haversineDistanceKm(from, to);
+    return { distanceKm, durationMinutes: walkMinutes(distanceKm) };
+}
+
+function directRides(network: TransportNetwork, departure: GtfsStop, arrival: GtfsStop): TransitRide[][] {
+    return departure.routes
+        .filter((routeId) => arrival.routes.includes(routeId))
+        .map((routeId) => buildRide(network, routeId, departure, arrival))
+        .filter((ride): ride is TransitRide => ride !== null)
+        .map((ride) => [ride]);
+}
+
+function transferRides(
+    network: TransportNetwork,
+    stations: GtfsStop[],
+    departure: GtfsStop,
+    arrival: GtfsStop,
+): TransitRide[][] {
+    return departure.routes
+        .filter((firstLine) => !arrival.routes.includes(firstLine))
+        .flatMap((firstLine) => arrival.routes.flatMap((secondLine) =>
+            interchanges(stations, firstLine, secondLine).map((hub) => {
+                const first = buildRide(network, firstLine, departure, hub);
+                const second = buildRide(network, secondLine, hub, arrival);
+                return first && second ? [first, second] : null;
+            }),
+        ))
+        .filter((rides): rides is TransitRide[] => rides !== null);
+}
+
+function rideOptions(
+    network: TransportNetwork,
+    stations: GtfsStop[],
+    departure: GtfsStop,
+    arrival: GtfsStop,
+): TransitRide[][] {
+    if (departure.stop_id === arrival.stop_id) {
+        return [];
+    }
+    return [
+        ...directRides(network, departure, arrival),
+        ...transferRides(network, stations, departure, arrival),
+    ];
+}
+
+function journeyFromRides(
+    rides: TransitRide[],
+    from: GeoPoint,
+    to: GeoPoint,
+    access?: TransitAccess,
+): TransitJourney {
+    const boarding = rides[0].boarding;
+    const alighting = rides[rides.length - 1].alighting;
+    const departureAccess = accessMeasure(access?.departures.get(boarding.stop_id), from, stopToPoint(boarding));
+    const arrivalAccess = accessMeasure(access?.arrivals.get(alighting.stop_id), stopToPoint(alighting), to);
+    const transferMinutes = rides.length > 1 ? TRANSFER_PENALTY_MINUTES : 0;
+    const totalMinutes = departureAccess.durationMinutes
+        + arrivalAccess.durationMinutes
+        + rides.reduce((sum, ride) => sum + rideMinutes(ride), 0)
+        + transferMinutes;
+    return { rides, departureAccess, arrivalAccess, totalMinutes };
+}
+
 /**
  * Meilleur trajet en transport public entre deux points, ou `null` si aucune
  * ligne ne les relie en une correspondance au plus. Le critere est la duree
@@ -145,60 +212,14 @@ export function findTransitJourney(
         return null;
     }
 
-    let best: TransitJourney | null = null;
-
-    const consider = (rides: TransitRide[], extraMinutes: number) => {
-        const boarding = rides[0].boarding;
-        const alighting = rides[rides.length - 1].alighting;
-        const departureAccess = access?.departures.get(boarding.stop_id) ?? {
-            distanceKm: haversineDistanceKm(from, stopToPoint(boarding)),
-            durationMinutes: walkMinutes(haversineDistanceKm(from, stopToPoint(boarding))),
-        };
-        const arrivalAccess = access?.arrivals.get(alighting.stop_id) ?? {
-            distanceKm: haversineDistanceKm(stopToPoint(alighting), to),
-            durationMinutes: walkMinutes(haversineDistanceKm(stopToPoint(alighting), to)),
-        };
-        const totalMinutes =
-            departureAccess.durationMinutes +
-            arrivalAccess.durationMinutes +
-            rides.reduce((sum, ride) => sum + rideMinutes(ride), 0) +
-            extraMinutes;
-        if (!best || totalMinutes < best.totalMinutes) {
-            best = { rides, departureAccess, arrivalAccess, totalMinutes };
-        }
-    };
-
-    for (const departure of departures) {
-        for (const arrival of arrivals) {
-            if (departure.stop_id === arrival.stop_id) {
-                continue;
-            }
-
-            for (const line of departure.routes) {
-                if (arrival.routes.includes(line)) {
-                    const ride = buildRide(network, line, departure, arrival);
-                    if (ride) {
-                        consider([ride], 0);
-                    }
-                    continue;
-                }
-
-                // Pas de ligne commune : on cherche une station ou la ligne du depart
-                // croise une ligne desservant l'arrivee.
-                for (const secondLine of arrival.routes) {
-                    for (const hub of interchanges(stations, line, secondLine)) {
-                        const first = buildRide(network, line, departure, hub);
-                        const second = buildRide(network, secondLine, hub, arrival);
-                        if (first && second) {
-                            consider([first, second], TRANSFER_PENALTY_MINUTES);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return best;
+    const journeys = departures.flatMap((departure) => arrivals.flatMap((arrival) =>
+        rideOptions(network, stations, departure, arrival)
+            .map((rides) => journeyFromRides(rides, from, to, access)),
+    ));
+    return journeys.reduce<TransitJourney | null>(
+        (best, candidate) => !best || candidate.totalMinutes < best.totalMinutes ? candidate : best,
+        null,
+    );
 }
 
 /**

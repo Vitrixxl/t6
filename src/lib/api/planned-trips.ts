@@ -1,6 +1,10 @@
 import type { CompletedPlannedTrip, PlannedTrip } from '../../contracts';
 import { api, treatyRequest } from './client';
 
+export function fetchPlannedTrips(): Promise<PlannedTrip[]> {
+    return treatyRequest(api.trips.planned.get());
+}
+
 export function savePlannedTrip(record: PlannedTrip): Promise<PlannedTrip> {
     const { id, userId, ...body } = record;
     void userId;

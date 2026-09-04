@@ -4,7 +4,6 @@ import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
 import { errorResponse, okResponse, tripRecords } from '../../../src/contracts/index.ts';
-import { clearTripHistory } from '../services/trip-history.ts';
 
 export function tripHistoryRoutes(ctx: AppContext) {
     return new Elysia({ prefix: '/trips/history', tags: ['Historique'] })
@@ -15,8 +14,8 @@ export function tripHistoryRoutes(ctx: AppContext) {
         })
         .delete(
             '',
-            ({ userId, db }) => {
-                clearTripHistory(db, userId);
+            ({ userId, repositories }) => {
+                repositories.tripRecords.clear(userId);
                 return { ok: true };
             },
             {

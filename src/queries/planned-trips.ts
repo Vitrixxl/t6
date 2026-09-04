@@ -1,17 +1,91 @@
-// Trajets programmes : lecture, prochaines echeances, et les actions qui les
-// font changer d'etat. Chaque action est une fonction pure sur l'etat du
-// compte, exportee pour etre testee, et un hook qui l'ecrit.
+// Trajets programmes : lecture de la ressource et commandes qui la modifient.
+// Chaque succes applique uniquement la reponse du serveur au cache concerne.
+import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import type { AccountState, CompletedPlannedTrip } from '../contracts';
-import type { PlannedTrip } from '../types';
+import type { PlannedTrip, TripRecord } from '../types';
 import { recordTrip } from '../lib/carbon';
-import { completePlannedTrip, deletePlannedTrip, savePlannedTrip } from '../lib/api';
-import { createPlannedTrip, plannedTripToRecord, removePlanned, setPlannedStatus, upcomingTrips, upsertPlanned, type TripSource } from '../lib/trips';
-import { useAccountMutation, useAccountPart, type AccountMutation } from './account';
-import { useUser } from './user';
+import { completePlannedTrip, deletePlannedTrip, fetchPlannedTrips, savePlannedTrip } from '../lib/api/planned-trips';
+import { createPlannedTrip, removePlanned, upcomingTrips, upsertPlanned, type TripSource } from '../lib/trips';
+import { mutationKeys, queryKeys } from './keys';
+import { readSession } from './session';
+
+const EMPTY_PLANNED_TRIPS: PlannedTrip[] = [];
+
+export function readPlannedTrips(client: QueryClient): PlannedTrip[] {
+    return client.getQueryData<PlannedTrip[]>(queryKeys.plannedTrips)
+        ?? readSession(client)?.state.plannedTrips
+        ?? EMPTY_PLANNED_TRIPS;
+}
+
+export function plannedTripsQuery(client: QueryClient) {
+    return queryOptions({
+        queryKey: queryKeys.plannedTrips,
+        queryFn: fetchPlannedTrips,
+        initialData: () => readSession(client)?.state.plannedTrips ?? EMPTY_PLANNED_TRIPS,
+        initialDataUpdatedAt: () => client.getQueryState(queryKeys.session)?.dataUpdatedAt,
+        staleTime: 60_000,
+    });
+}
+
+function updatePlannedTrips(client: QueryClient, update: (trips: PlannedTrip[]) => PlannedTrip[]): void {
+    client.setQueryData(queryKeys.plannedTrips, update(readPlannedTrips(client)));
+}
+
+function reloadPlannedTrips(client: QueryClient): Promise<void> {
+    return client.invalidateQueries({ queryKey: queryKeys.plannedTrips }).then(() => undefined);
+}
+
+export function savePlannedTripOptions(client: QueryClient) {
+    return mutationOptions({
+        mutationKey: mutationKeys.plannedSave,
+        scope: { id: 'account' },
+        mutationFn: savePlannedTrip,
+        onMutate: () => client.cancelQueries({ queryKey: queryKeys.plannedTrips }),
+        onSuccess: (saved) => updatePlannedTrips(client, (trips) => upsertPlanned(trips, saved)),
+        onError: () => reloadPlannedTrips(client),
+        gcTime: Infinity,
+    });
+}
+
+export function completePlannedTripOptions(client: QueryClient) {
+    return mutationOptions({
+        mutationKey: mutationKeys.plannedComplete,
+        scope: { id: 'account' },
+        mutationFn: (trip: PlannedTrip) => completePlannedTrip(trip.id),
+        onMutate: () => Promise.all([
+            client.cancelQueries({ queryKey: queryKeys.plannedTrips }),
+            client.cancelQueries({ queryKey: queryKeys.tripRecords }),
+        ]),
+        onSuccess: ({ plannedTrip, tripRecord }) => {
+            updatePlannedTrips(client, (trips) => upsertPlanned(trips, plannedTrip));
+            const currentRecords = client.getQueryData<TripRecord[]>(queryKeys.tripRecords)
+                ?? readSession(client)?.state.tripRecords
+                ?? [];
+            client.setQueryData(queryKeys.tripRecords, recordTrip(currentRecords, tripRecord));
+        },
+        onError: () => Promise.all([
+            reloadPlannedTrips(client),
+            client.invalidateQueries({ queryKey: queryKeys.tripRecords }),
+        ]),
+        gcTime: Infinity,
+    });
+}
+
+export function deletePlannedTripOptions(client: QueryClient) {
+    return mutationOptions({
+        mutationKey: mutationKeys.plannedDelete,
+        scope: { id: 'account' },
+        mutationFn: (trip: PlannedTrip) => deletePlannedTrip(trip.id),
+        onMutate: () => client.cancelQueries({ queryKey: queryKeys.plannedTrips }),
+        onSuccess: (_result, trip) => updatePlannedTrips(client, (trips) => removePlanned(trips, trip.id)),
+        onError: () => reloadPlannedTrips(client),
+        gcTime: Infinity,
+    });
+}
 
 export function usePlannedTrips(): PlannedTrip[] {
-    return useAccountPart('plannedTrips');
+    const client = useQueryClient();
+    return useQuery(plannedTripsQuery(client)).data;
 }
 
 export function useUpcomingTrips(): PlannedTrip[] {
@@ -19,78 +93,34 @@ export function useUpcomingTrips(): PlannedTrip[] {
     return useMemo(() => upcomingTrips(planned), [planned]);
 }
 
-export function planTrip(state: AccountState, userId: string, source: TripSource, scheduledFor: Date): Partial<AccountState> {
-    return { plannedTrips: upsertPlanned(state.plannedTrips, createPlannedTrip(userId, source, scheduledFor)) };
-}
-
-/**
- * Un trajet fait alimente l'historique carbone : c'est la seule transition
- * qui sort du domaine planification, d'ou deux parties remplacees.
- */
-export function completeTrip(state: AccountState, trip: PlannedTrip): Partial<AccountState> {
-    const plannedTrips = setPlannedStatus(state.plannedTrips, trip.id, 'done');
-    const done = plannedTrips.find((item) => item.id === trip.id);
-    return {
-        plannedTrips,
-        tripRecords: done ? recordTrip(state.tripRecords, plannedTripToRecord(done)) : state.tripRecords,
-    };
-}
-
-export function cancelTrip(state: AccountState, trip: PlannedTrip): Partial<AccountState> {
-    return { plannedTrips: setPlannedStatus(state.plannedTrips, trip.id, 'cancelled') };
-}
-
-export function removeTrip(state: AccountState, trip: PlannedTrip): Partial<AccountState> {
-    return { plannedTrips: removePlanned(state.plannedTrips, trip.id) };
-}
-
-export const plannedTripSaveMutation = {
-    key: 'planned-save',
-    parts: ['plannedTrips'],
-    mutationFn: savePlannedTrip,
-    optimistic: (state, trip) => ({ plannedTrips: upsertPlanned(state.plannedTrips, trip) }),
-    reconcile: (state, trip) => ({ plannedTrips: upsertPlanned(state.plannedTrips, trip) }),
-} satisfies AccountMutation<PlannedTrip, PlannedTrip>;
-
-export const plannedTripCompletionMutation = {
-    key: 'planned-complete',
-    parts: ['plannedTrips', 'tripRecords'],
-    mutationFn: (trip) => completePlannedTrip(trip.id),
-    optimistic: (state, trip) => completeTrip(state, trip),
-    reconcile: (state, completed) => ({
-        plannedTrips: upsertPlanned(state.plannedTrips, completed.plannedTrip),
-        tripRecords: recordTrip(state.tripRecords, completed.tripRecord),
-    }),
-} satisfies AccountMutation<PlannedTrip, CompletedPlannedTrip>;
-
-export const plannedTripDeleteMutation = {
-    key: 'planned-delete',
-    parts: ['plannedTrips'],
-    mutationFn: (trip) => deletePlannedTrip(trip.id),
-    optimistic: (state, trip) => removeTrip(state, trip),
-    reconcile: (state, _result, trip) => removeTrip(state, trip),
-} satisfies AccountMutation<PlannedTrip, void>;
-
 export function usePlanTrip(): (source: TripSource, scheduledFor: Date) => void {
-    const user = useUser();
-    const save = useAccountMutation(plannedTripSaveMutation);
-    return useCallback(
-        (source: TripSource, scheduledFor: Date) => save(createPlannedTrip(user.id, source, scheduledFor)),
-        [save, user.id],
-    );
+    const client = useQueryClient();
+    const userId = readSession(client)?.user.id;
+    const save = useMutation(savePlannedTripOptions(client));
+    return useCallback((source: TripSource, scheduledFor: Date) => {
+        if (userId) {
+            save.mutate(createPlannedTrip(userId, source, scheduledFor));
+        }
+    }, [save, userId]);
 }
 
 export function useMarkTripDone(): (trip: PlannedTrip) => void {
-    const complete = useAccountMutation(plannedTripCompletionMutation);
-    return useCallback((trip: PlannedTrip) => complete(trip), [complete]);
+    const client = useQueryClient();
+    const complete = useMutation(completePlannedTripOptions(client));
+    return useCallback((trip: PlannedTrip) => complete.mutate(trip), [complete]);
 }
 
 export function useCancelTrip(): (trip: PlannedTrip) => void {
-    const save = useAccountMutation(plannedTripSaveMutation);
-    return useCallback((trip: PlannedTrip) => save({ ...trip, status: 'cancelled', completedAt: null }), [save]);
+    const client = useQueryClient();
+    const save = useMutation(savePlannedTripOptions(client));
+    return useCallback(
+        (trip: PlannedTrip) => save.mutate({ ...trip, status: 'cancelled', completedAt: null }),
+        [save],
+    );
 }
 
 export function useRemoveTrip(): (trip: PlannedTrip) => void {
-    const remove = useAccountMutation(plannedTripDeleteMutation);
-    return useCallback((trip: PlannedTrip) => remove(trip), [remove]);
+    const client = useQueryClient();
+    const remove = useMutation(deletePlannedTripOptions(client));
+    return useCallback((trip: PlannedTrip) => remove.mutate(trip), [remove]);
 }

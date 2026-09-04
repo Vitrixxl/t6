@@ -12,7 +12,7 @@ import {
     plannedTrips,
     resourceIdParams,
 } from '../../../src/contracts/index.ts';
-import { completePlannedTrip, deletePlannedTrip, savePlannedTrip } from '../services/planned-trips.ts';
+import { completePlannedTrip, savePlannedTrip } from '../services/planned-trips.ts';
 
 export function plannedTripRoutes(ctx: AppContext) {
     return new Elysia({ prefix: '/trips/planned', tags: ['Trajets programmes'] })
@@ -48,8 +48,8 @@ export function plannedTripRoutes(ctx: AppContext) {
         )
         .delete(
             '/:id',
-            ({ userId, params, db }) => {
-                deletePlannedTrip(db, userId, params.id);
+            ({ userId, params, repositories }) => {
+                repositories.plannedTrips.deleteById(userId, params.id);
                 return { ok: true };
             },
             {

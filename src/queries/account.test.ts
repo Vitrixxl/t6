@@ -1,26 +1,27 @@
-// Cache du compte et commandes granulaires, testes sans React. Chaque cas
-// verifie la projection optimiste et la requete Eden reellement envoyee.
-import { MutationObserver, QueryObserver, type QueryClient } from '@tanstack/react-query';
+// Cache du compte et commandes granulaires, testes sans React. Chaque cas suit
+// directement la requete d'une ressource puis la reponse appliquee a son cache.
+import { MutationObserver, QueryObserver, type MutationObserverOptions, type QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from '../test/harness';
 import { DEFAULT_PROFILE, type Session } from '../contracts';
 import { summarizeCarbon } from '../lib/carbon';
 import { createPlannedTrip, createRecurringTrip, isRoutinePaused, setRecurringPaused, upcomingTrips } from '../lib/trips';
 import { createSavedRouteRecord } from '../lib/savedRoutes';
 import type { PlannedTrip, RouteOption } from '../types';
-import { accountMutationOptions, accountPartQuery, readAccountPart, readAccountState, type AccountMutation } from './account';
 import { createQueryClient } from './client';
 import { mutationKeys } from './keys';
 import {
-    plannedTripCompletionMutation,
-    plannedTripDeleteMutation,
-    plannedTripSaveMutation,
+    completePlannedTripOptions,
+    deletePlannedTripOptions,
+    plannedTripsQuery,
+    readPlannedTrips,
+    savePlannedTripOptions,
 } from './planned-trips';
-import { profileSaveMutation } from './profile';
-import { recurringTripDeleteMutation, recurringTripSaveMutation } from './recurring-trips';
+import { profileQuery, saveProfileOptions } from './profile';
+import { deleteRecurringTripOptions, readRecurringTrips, saveRecurringTripOptions } from './recurring-trips';
 import { saveErrorFrom } from './save-error';
-import { savedRouteDeleteMutation, savedRouteSaveMutation } from './saved-routes';
+import { deleteSavedRouteOptions, readSavedRoutes, saveSavedRouteOptions, savedRoutesQuery } from './saved-routes';
 import { deleteAccountOptions, logout, openSession, readSession, sessionQuery } from './session';
-import { tripHistoryClearMutation } from './trip-records';
+import { clearTripHistoryOptions, readTripRecords } from './trip-records';
 
 const SOURCE = {
     label: 'Domicile -> Travail',
@@ -155,8 +156,8 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 
-function write<Variables, Result>(command: AccountMutation<Variables, Result>, variables: Variables): Promise<void> {
-    return new MutationObserver(client, accountMutationOptions(client, command))
+function write<Result, Variables, Context>(options: MutationObserverOptions<Result, Error, Variables, Context>, variables: Variables): Promise<void> {
+    return new MutationObserver(client, options)
         .mutate(variables)
         .then(() => undefined, () => undefined);
 }
@@ -177,8 +178,8 @@ describe('session', () => {
         openSession(client, session({ plannedTrips: [trip] }));
 
         expect(readSession(client)?.user.email).toBe('a@b.fr');
-        expect(new QueryObserver(client, accountPartQuery(client, 'plannedTrips')).getCurrentResult().data).toEqual([trip]);
-        expect(readAccountState(client).plannedTrips).toEqual([trip]);
+        expect(new QueryObserver(client, plannedTripsQuery(client)).getCurrentResult().data).toEqual([trip]);
+        expect(readPlannedTrips(client)).toEqual([trip]);
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 
@@ -198,7 +199,7 @@ describe('session', () => {
         await logout(client);
 
         expect(readSession(client)).toBeNull();
-        expect(readAccountPart(client, 'plannedTrips')).toEqual([]);
+        expect(readPlannedTrips(client)).toEqual([]);
         expect(String(fetchSpy.mock.calls.at(-1)?.[0])).toContain('/api/auth/logout');
     });
 
@@ -220,9 +221,9 @@ describe('commandes granulaires', () => {
 
     it('envoie un seul trajet programme, sans id ni proprietaire dans le corps', async () => {
         const trip = futureTrip();
-        await write(plannedTripSaveMutation, trip);
+        await write(savePlannedTripOptions(client), trip);
 
-        expect(upcomingTrips(readAccountPart(client, 'plannedTrips'))).toHaveLength(1);
+        expect(upcomingTrips(readPlannedTrips(client))).toHaveLength(1);
         const [request] = sentRequests(fetchSpy);
         expect(request.path).toBe(`/api/trips/planned/${trip.id}`);
         expect(request.body).not.toHaveProperty('id');
@@ -233,12 +234,13 @@ describe('commandes granulaires', () => {
         const trip = futureTrip();
         openSession(client, session({ plannedTrips: [trip] }));
 
-        await write(plannedTripCompletionMutation, trip);
+        await write(completePlannedTripOptions(client), trip);
 
-        const state = readAccountState(client);
-        expect(state.plannedTrips[0].status).toBe('done');
-        expect(state.tripRecords).toHaveLength(1);
-        expect(summarizeCarbon(state.tripRecords, [], state.profile.carbonGoalGramsPerWeek).totalSavedGrams).toBe(336);
+        const plannedTrips = readPlannedTrips(client);
+        const tripRecords = readTripRecords(client);
+        expect(plannedTrips[0].status).toBe('done');
+        expect(tripRecords).toHaveLength(1);
+        expect(summarizeCarbon(tripRecords, [], DEFAULT_PROFILE.carbonGoalGramsPerWeek).totalSavedGrams).toBe(336);
         expect(sentRequests(fetchSpy)).toEqual([
             { path: `/api/trips/planned/${trip.id}/completion`, method: 'PUT', body: null },
         ]);
@@ -249,11 +251,11 @@ describe('commandes granulaires', () => {
         openSession(client, session({ plannedTrips: [trip] }));
         const cancelled = { ...trip, status: 'cancelled' as const, completedAt: null };
 
-        const saving = write(plannedTripSaveMutation, cancelled);
-        expect(readAccountPart(client, 'plannedTrips')[0].status).toBe('cancelled');
-        const deleting = write(plannedTripDeleteMutation, cancelled);
-        expect(readAccountPart(client, 'plannedTrips')).toHaveLength(0);
+        const saving = write(savePlannedTripOptions(client), cancelled);
+        const deleting = write(deletePlannedTripOptions(client), cancelled);
         await Promise.all([saving, deleting]);
+
+        expect(readPlannedTrips(client)).toHaveLength(0);
 
         const requests = sentRequests(fetchSpy);
         expect(requests.map(({ method }) => method)).toEqual(['PUT', 'DELETE']);
@@ -263,13 +265,13 @@ describe('commandes granulaires', () => {
 
     it('cree, met en pause puis supprime une routine seule', async () => {
         const routine = createRecurringTrip('user-1', SOURCE, EVERY_DAY);
-        await write(recurringTripSaveMutation, routine);
+        await write(saveRecurringTripOptions(client), routine);
         const paused = setRecurringPaused([routine], routine.id, true)[0] ?? routine;
-        await write(recurringTripSaveMutation, paused);
-        expect(isRoutinePaused(readAccountPart(client, 'recurringTrips')[0])).toBe(true);
-        await write(recurringTripDeleteMutation, paused);
+        await write(saveRecurringTripOptions(client), paused);
+        expect(isRoutinePaused(readRecurringTrips(client)[0])).toBe(true);
+        await write(deleteRecurringTripOptions(client), paused);
 
-        expect(readAccountPart(client, 'recurringTrips')).toHaveLength(0);
+        expect(readRecurringTrips(client)).toHaveLength(0);
         expect(sentRequests(fetchSpy).map(({ path }) => path)).toEqual([
             `/api/trips/recurring/${routine.id}`,
             `/api/trips/recurring/${routine.id}`,
@@ -279,20 +281,20 @@ describe('commandes granulaires', () => {
 
     it('enregistre sans doublon puis supprime un itineraire', async () => {
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
-        await write(savedRouteSaveMutation, record);
-        await write(savedRouteSaveMutation, record);
-        expect(readAccountPart(client, 'savedRoutes')).toHaveLength(1);
+        await write(saveSavedRouteOptions(client), record);
+        await write(saveSavedRouteOptions(client), record);
+        expect(readSavedRoutes(client)).toHaveLength(1);
 
-        await write(savedRouteDeleteMutation, record.id);
-        expect(readAccountPart(client, 'savedRoutes')).toHaveLength(0);
+        await write(deleteSavedRouteOptions(client), record.id);
+        expect(readSavedRoutes(client)).toHaveLength(0);
     });
 
     it('envoie le profil seul et efface l historique par DELETE explicite', async () => {
         const profile = { ...DEFAULT_PROFILE, displayName: 'Nadia', maxWalkMinutes: 45 };
-        await write(profileSaveMutation, profile);
-        await write(tripHistoryClearMutation, undefined);
+        await write(saveProfileOptions(client), profile);
+        await write(clearTripHistoryOptions(client), undefined);
 
-        expect(readAccountPart(client, 'profile').displayName).toBe('Nadia');
+        expect(client.getQueryData(profileQuery(client).queryKey)?.displayName).toBe('Nadia');
         expect(sentRequests(fetchSpy).map(({ path, method }) => `${method} ${path}`)).toEqual([
             'PUT /api/me/profile',
             'DELETE /api/trips/history',
@@ -307,25 +309,25 @@ describe('refus et rafales', () => {
 
     it('signale un refus puis l efface au prochain succes', async () => {
         fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
-        await write(tripHistoryClearMutation, undefined);
+        await write(clearTripHistoryOptions(client), undefined);
         expect(saveError()).toBe('Requete invalide.');
 
-        await write(tripHistoryClearMutation, undefined);
+        await write(clearTripHistoryOptions(client), undefined);
         expect(saveError()).toBe('');
     });
 
     it('relit uniquement la vue concernee apres un serveur injoignable', async () => {
-        const observer = new QueryObserver(client, accountPartQuery(client, 'savedRoutes'));
+        const observer = new QueryObserver(client, savedRoutesQuery(client));
         const unsubscribe = observer.subscribe(() => undefined);
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
         fetchSpy.mockImplementation((_url, init) =>
             init?.method === 'PUT' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(jsonResponse([])),
         );
 
-        await write(savedRouteSaveMutation, record);
+        await write(saveSavedRouteOptions(client), record);
 
         expect(saveError()).toContain('injoignable');
-        expect(readAccountPart(client, 'savedRoutes')).toHaveLength(0);
+        expect(readSavedRoutes(client)).toHaveLength(0);
         const reads = fetchSpy.mock.calls.filter(([, init]) => init?.method !== 'PUT');
         expect(reads.map(([url]) => String(url))).toEqual(['/api/saved-routes']);
         unsubscribe();
@@ -336,9 +338,9 @@ describe('refus et rafales', () => {
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
 
         await Promise.all([
-            write(plannedTripSaveMutation, trip),
-            write(savedRouteSaveMutation, record),
-            write(profileSaveMutation, { ...DEFAULT_PROFILE, displayName: 'Final' }),
+            write(savePlannedTripOptions(client), trip),
+            write(saveSavedRouteOptions(client), record),
+            write(saveProfileOptions(client), { ...DEFAULT_PROFILE, displayName: 'Final' }),
         ]);
 
         const requests = sentRequests(fetchSpy);
@@ -354,7 +356,7 @@ describe('refus et rafales', () => {
         fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
 
-        await Promise.all([write(tripHistoryClearMutation, undefined), write(savedRouteSaveMutation, record)]);
+        await Promise.all([write(clearTripHistoryOptions(client), undefined), write(saveSavedRouteOptions(client), record)]);
 
         expect(sentRequests(fetchSpy).map(({ path }) => path)).toEqual(['/api/trips/history', `/api/saved-routes/${record.id}`]);
         expect(saveError()).toBe('');

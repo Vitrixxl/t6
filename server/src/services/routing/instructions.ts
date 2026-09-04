@@ -6,6 +6,26 @@
 import type { RouteInstruction } from '../../../../src/types.ts';
 import type { OsrmStep } from './osrm.ts';
 
+const MANEUVER_LABEL: Partial<Record<string, string>> = {
+    depart: 'Partir',
+    'new name': 'Continuer',
+    merge: "S'inserer",
+    'on ramp': 'Prendre la bretelle',
+    'off ramp': 'Sortir',
+};
+
+const INSTRUCTION_KIND: Partial<Record<string, RouteInstruction['kind']>> = {
+    roundabout: 'roundabout',
+    rotary: 'roundabout',
+    depart: 'depart',
+    arrive: 'arrive',
+    turn: 'turn',
+    'new name': 'turn',
+    merge: 'turn',
+    'on ramp': 'turn',
+    'off ramp': 'turn',
+};
+
 export function buildInstructions(steps: OsrmStep[]): RouteInstruction[] {
     return steps
         .filter((step) => step.distance > 8)
@@ -22,30 +42,13 @@ export function formatManeuver(step: OsrmStep): string {
     const { type, modifier, exit } = step.maneuver;
     const road = step.name ? ` sur ${step.name}` : '';
 
-    if (type === 'depart') {
-        return `Partir${road}`;
-    }
     if (type === 'arrive') {
         return 'Arriver a destination';
     }
     if (type === 'roundabout' || type === 'rotary') {
         return `Prendre la ${formatOrdinal(exit ?? 1)} sortie${road}`;
     }
-    if (type === 'new name') {
-        return `Continuer${road}`;
-    }
-    if (type === 'merge') {
-        return `S'inserer${road}`;
-    }
-    if (type === 'on ramp') {
-        return `Prendre la bretelle${road}`;
-    }
-    if (type === 'off ramp') {
-        return `Sortir${road}`;
-    }
-
-    const turn = formatModifier(modifier);
-    return `${turn}${road}`;
+    return `${MANEUVER_LABEL[type] ?? formatModifier(modifier)}${road}`;
 }
 
 export function formatModifier(modifier?: string): string {
@@ -77,9 +80,5 @@ export function formatOrdinal(value: number): string {
 }
 
 export function instructionKind(type: string): RouteInstruction['kind'] {
-    if (type === 'roundabout' || type === 'rotary') return 'roundabout';
-    if (type === 'depart') return 'depart';
-    if (type === 'arrive') return 'arrive';
-    if (type === 'turn' || type === 'new name' || type === 'merge' || type === 'on ramp' || type === 'off ramp') return 'turn';
-    return 'continue';
+    return INSTRUCTION_KIND[type] ?? 'continue';
 }

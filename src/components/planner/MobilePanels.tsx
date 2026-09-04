@@ -1,6 +1,5 @@
 // Module planification - restitution mobile : feuille d'options, composeur de
 // modes et actions de planification.
-import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { useSetAtom } from 'jotai';
 import { CalendarClock, CalendarPlus, Check, Route, UserRound, X } from 'lucide-react';
 import { useActivitySummary } from '../../queries';
@@ -10,8 +9,9 @@ import type { GeoPoint, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 import { formatCarbonComparisonCompact } from '../../lib/carbon-comparison';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
-import { Metric, MODE_ICON, shiftMobileSheetLevel, MOBILE_SHEET_HEIGHT, type MobileSheetLevel } from '../app/shared';
+import { Metric, MODE_ICON } from '../app/shared';
 import { RouteSteps } from './RouteSteps';
+import { useMobileSheet } from './useMobileSheet';
 
 export function MobileTripPanel({
     destination,
@@ -37,81 +37,11 @@ export function MobileTripPanel({
         onOpenProfile: () => void;
         onClose: () => void;
     }) {
-    const upcomingCount = useActivitySummary().upcomingCount;
-    const openHub = useSetAtom(openHubAtom);
-    const onOpenHub = () => openHub('upcoming');
-    const [sheetLevel, setSheetLevel] = useState<MobileSheetLevel>('mid');
-    const dragStartY = useRef<number | null>(null);
-    const dragMoved = useRef(false);
-    const sheetSizing = MOBILE_SHEET_HEIGHT[sheetLevel];
-
-
-    const moveSheet = (direction: -1 | 1) => {
-        setSheetLevel((current) => shiftMobileSheetLevel(current, direction));
-    };
-
-    const handleSheetPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-        dragStartY.current = event.clientY;
-        dragMoved.current = false;
-        event.currentTarget.setPointerCapture(event.pointerId);
-    };
-
-    const handleSheetPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-        if (dragStartY.current === null) {
-            return;
-        }
-        if (Math.abs(event.clientY - dragStartY.current) > 8) {
-            dragMoved.current = true;
-        }
-    };
-
-    const handleSheetPointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
-        const startY = dragStartY.current;
-        dragStartY.current = null;
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-        if (startY === null) {
-            return;
-        }
-
-        const deltaY = event.clientY - startY;
-        if (Math.abs(deltaY) > 36) {
-            moveSheet(deltaY < 0 ? 1 : -1);
-            return;
-        }
-
-        if (!dragMoved.current) {
-            moveSheet(sheetLevel === 'expanded' ? -1 : 1);
-        }
-    };
-
-    const handleSheetPointerCancel = (event: ReactPointerEvent<HTMLButtonElement>) => {
-        dragStartY.current = null;
-        dragMoved.current = false;
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-            event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-    };
-
-    const handleSheetKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-        if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            moveSheet(1);
-        }
-        if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            moveSheet(-1);
-        }
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            moveSheet(sheetLevel === 'expanded' ? -1 : 1);
-        }
-    };
+    const sheet = useMobileSheet();
 
     return (
         <section
-            className={`absolute inset-x-0 bottom-0 z-30 overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl transition-[max-height] duration-300 ease-in-out ${sheetSizing.shell}`}
+            className={`absolute inset-x-0 bottom-0 z-30 overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl transition-[max-height] duration-300 ease-in-out ${sheet.sizing.shell}`}
             data-tour="routes"
         >
             <div className="flex h-7 items-center justify-center">
@@ -120,67 +50,18 @@ export function MobileTripPanel({
                     className="flex h-7 w-24 touch-none cursor-grab items-center justify-center rounded-full active:cursor-grabbing"
                     aria-label="Monter ou baisser le panneau trajets"
                     data-testid="mobile-trip-sheet-handle"
-                    onPointerDown={handleSheetPointerDown}
-                    onPointerMove={handleSheetPointerMove}
-                    onPointerUp={handleSheetPointerUp}
-                    onPointerCancel={handleSheetPointerCancel}
-                    onKeyDown={handleSheetKeyDown}
+                    {...sheet.handle}
                 >
                     <span className="h-1.5 w-12 rounded-full bg-muted-foreground/25" aria-hidden="true" />
                 </button>
             </div>
-            <div className={`${sheetSizing.content} overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
-                <div className="flex items-center justify-between gap-3 px-4 py-3">
-                    <div className="min-w-0">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itineraire</p>
-                        <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Ou vas-tu ?'}</h1>
-                        <p
-                            className={`truncate text-[11px] font-medium ${routingStatus === 'unavailable' ? 'text-destructive' : 'text-muted-foreground'
-                                }`}
-                        >
-                            {ROUTING_STATUS_LABEL[routingStatus]}
-                        </p>
-                    </div>
-                    {/* La feuille recouvre la barre d'actions du bas : sans ces deux
-              boutons, le profil et les trajets deviendraient inatteignables des
-              qu'un itineraire est demande. */}
-                    <div className="flex shrink-0 items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onOpenHub}
-                            aria-label="Mes trajets"
-                            className="relative size-[44px] rounded-xl bg-white p-0"
-                        >
-                            <CalendarClock className="size-5" aria-hidden="true" />
-                            {upcomingCount > 0 ? (
-                                <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground">
-                                    {Math.min(upcomingCount, 9)}
-                                </span>
-                            ) : null}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onOpenProfile}
-                            aria-label="Ouvrir le profil"
-                            className="size-[44px] rounded-xl bg-white p-0"
-                        >
-                            <UserRound className="size-5" aria-hidden="true" />
-                        </Button>
-                        {/* Sortir de l'itineraire sans passer par l'effacement des champs :
-                fermer est le geste attendu quand on a fini de regarder. */}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            aria-label="Fermer l'itineraire"
-                            className="size-[44px] rounded-xl bg-white p-0"
-                        >
-                            <X className="size-5" aria-hidden="true" />
-                        </Button>
-                    </div>
-                </div>
+            <div className={`${sheet.sizing.content} overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}>
+                <MobileTripHeader
+                    destination={destination}
+                    routingStatus={routingStatus}
+                    onOpenProfile={onOpenProfile}
+                    onClose={onClose}
+                />
 
                 {coverageWarning ? (
                     <div className="px-4 pb-3">
@@ -188,45 +69,134 @@ export function MobileTripPanel({
                     </div>
                 ) : null}
 
-                {routes.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 px-4 pb-3">
-                        {routes.slice(0, 4).map((routeOption) => (
-                            <MobileRouteTab
-                                key={routeOption.id}
-                                routeOption={routeOption}
-                                selected={routeOption.id === selectedRoute?.id}
-                                onSelect={() => onSelectRoute(routeOption.id)}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="px-4 pb-3">
-                        <div className="rounded-xl border border-border bg-background/80 px-3 py-3 text-sm font-medium text-muted-foreground">
-                            Aucun trajet pour cette combinaison.
-                        </div>
-                    </div>
-                )}
-
-                {selectedRoute ? (
-                    <div className="grid grid-cols-[1.2fr_0.8fr] gap-2 px-4 pb-3">
-                        <Button type="button" size="sm" onClick={() => onPlanRoute(selectedRoute)}>
-                            <CalendarPlus className="size-4" aria-hidden="true" />
-                            Planifier
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" className="bg-white" onClick={() => onSaveRoute(selectedRoute)}>
-                            {selectedRoute.id === savedRouteId ? <Check className="size-4" aria-hidden="true" /> : <Route className="size-4" aria-hidden="true" />}
-                            {selectedRoute.id === savedRouteId ? 'Enregistre' : 'Enregistrer'}
-                        </Button>
-                    </div>
-                ) : null}
-
-                {selectedRoute ? (
-                    <div className="px-4 pb-3">
-                        <MobileSelectedRouteCard routeOption={selectedRoute} />
-                    </div>
-                ) : null}
+                <MobileRouteChoices routes={routes} selectedRoute={selectedRoute} onSelectRoute={onSelectRoute} />
+                <MobileRouteSelection
+                    routeOption={selectedRoute}
+                    savedRouteId={savedRouteId}
+                    onSaveRoute={onSaveRoute}
+                    onPlanRoute={onPlanRoute}
+                />
             </div>
         </section>
+    );
+}
+
+function MobileTripHeader({
+    destination,
+    routingStatus,
+    onOpenProfile,
+    onClose,
+}: {
+    destination: GeoPoint | null;
+    routingStatus: RoutingStatus;
+    onOpenProfile: () => void;
+    onClose: () => void;
+}) {
+    const upcomingCount = useActivitySummary().upcomingCount;
+    const openHub = useSetAtom(openHubAtom);
+
+    return (
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itineraire</p>
+                <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Ou vas-tu ?'}</h1>
+                <p className={`truncate text-[11px] font-medium ${routingStatus === 'unavailable' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {ROUTING_STATUS_LABEL[routingStatus]}
+                </p>
+            </div>
+            {/* La feuille recouvre la barre d'actions du bas : ces boutons gardent
+                le profil et les trajets accessibles pendant la consultation. */}
+            <div className="flex shrink-0 items-center gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => openHub('upcoming')}
+                    aria-label="Mes trajets"
+                    className="relative size-[44px] rounded-xl bg-white p-0"
+                >
+                    <CalendarClock className="size-5" aria-hidden="true" />
+                    {upcomingCount > 0 ? (
+                        <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground">
+                            {Math.min(upcomingCount, 9)}
+                        </span>
+                    ) : null}
+                </Button>
+                <Button type="button" variant="outline" onClick={onOpenProfile} aria-label="Ouvrir le profil" className="size-[44px] rounded-xl bg-white p-0">
+                    <UserRound className="size-5" aria-hidden="true" />
+                </Button>
+                <Button type="button" variant="outline" onClick={onClose} aria-label="Fermer l'itineraire" className="size-[44px] rounded-xl bg-white p-0">
+                    <X className="size-5" aria-hidden="true" />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+function MobileRouteChoices({
+    routes,
+    selectedRoute,
+    onSelectRoute,
+}: {
+    routes: RouteOption[];
+    selectedRoute: RouteOption | null;
+    onSelectRoute: (id: string) => void;
+}) {
+    if (routes.length === 0) {
+        return (
+            <div className="px-4 pb-3">
+                <div className="rounded-xl border border-border bg-background/80 px-3 py-3 text-sm font-medium text-muted-foreground">
+                    Aucun trajet pour cette combinaison.
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-2 gap-2 px-4 pb-3">
+            {routes.slice(0, 4).map((routeOption) => (
+                <MobileRouteTab
+                    key={routeOption.id}
+                    routeOption={routeOption}
+                    selected={routeOption.id === selectedRoute?.id}
+                    onSelect={() => onSelectRoute(routeOption.id)}
+                />
+            ))}
+        </div>
+    );
+}
+
+function MobileRouteSelection({
+    routeOption,
+    savedRouteId,
+    onSaveRoute,
+    onPlanRoute,
+}: {
+    routeOption: RouteOption | null;
+    savedRouteId: string;
+    onSaveRoute: (routeOption: RouteOption) => void;
+    onPlanRoute: (routeOption: RouteOption) => void;
+}) {
+    if (!routeOption) {
+        return null;
+    }
+    const saved = routeOption.id === savedRouteId;
+
+    return (
+        <>
+            <div className="grid grid-cols-[1.2fr_0.8fr] gap-2 px-4 pb-3">
+                <Button type="button" size="sm" onClick={() => onPlanRoute(routeOption)}>
+                    <CalendarPlus className="size-4" aria-hidden="true" />
+                    Planifier
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="bg-white" onClick={() => onSaveRoute(routeOption)}>
+                    {saved ? <Check className="size-4" aria-hidden="true" /> : <Route className="size-4" aria-hidden="true" />}
+                    {saved ? 'Enregistre' : 'Enregistrer'}
+                </Button>
+            </div>
+            <div className="px-4 pb-3">
+                <MobileSelectedRouteCard routeOption={routeOption} />
+            </div>
+        </>
     );
 }
 

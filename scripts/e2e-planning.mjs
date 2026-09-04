@@ -132,6 +132,9 @@ text = await bodyText();
 if (!/planificateur de trajets/i.test(text)) {
     failures.push("le planificateur ne s'ouvre pas apres la planification");
 }
+if (!(await page.getByRole('button', { name: 'Modifier les objectifs', exact: true }).count())) {
+    failures.push("l'action des objectifs n'indique pas explicitement ce qu'elle modifie");
+}
 const hasUpcoming = await page.getByRole('button', { name: /^fait$/i }).count();
 if (!hasUpcoming) {
     failures.push('aucune occurrence "a venir" avec action Fait');

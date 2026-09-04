@@ -1,12 +1,11 @@
-// Itineraires enregistres : lecture, enregistrement d'une option calculee,
-// retrait.
+// Itineraires enregistres : lecture, ajout et suppression par identifiant.
+import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import type { AccountState } from '../contracts';
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';
-import { deleteSavedRoute as deleteSavedRouteRequest, saveSavedRoute } from '../lib/api';
+import { deleteSavedRoute, fetchSavedRoutes, saveSavedRoute } from '../lib/api/saved-routes';
 import { addSavedRoute, createSavedRouteRecord, removeSavedRoute } from '../lib/savedRoutes';
-import { useAccountMutation, useAccountPart, type AccountMutation } from './account';
-import { useUser } from './user';
+import { mutationKeys, queryKeys } from './keys';
+import { readSession } from './session';
 
 export interface SaveRouteInput {
     option: RouteOption;
@@ -14,45 +13,74 @@ export interface SaveRouteInput {
     destination: GeoPoint;
 }
 
+const EMPTY_SAVED_ROUTES: SavedRouteRecord[] = [];
+
+export function readSavedRoutes(client: QueryClient): SavedRouteRecord[] {
+    return client.getQueryData<SavedRouteRecord[]>(queryKeys.savedRoutes)
+        ?? readSession(client)?.state.savedRoutes
+        ?? EMPTY_SAVED_ROUTES;
+}
+
+export function savedRoutesQuery(client: QueryClient) {
+    return queryOptions({
+        queryKey: queryKeys.savedRoutes,
+        queryFn: fetchSavedRoutes,
+        initialData: () => readSession(client)?.state.savedRoutes ?? EMPTY_SAVED_ROUTES,
+        initialDataUpdatedAt: () => client.getQueryState(queryKeys.session)?.dataUpdatedAt,
+        staleTime: 60_000,
+    });
+}
+
+function updateSavedRoutes(client: QueryClient, update: (routes: SavedRouteRecord[]) => SavedRouteRecord[]): void {
+    client.setQueryData(queryKeys.savedRoutes, update(readSavedRoutes(client)));
+}
+
+function reloadSavedRoutes(client: QueryClient): Promise<void> {
+    return client.invalidateQueries({ queryKey: queryKeys.savedRoutes }).then(() => undefined);
+}
+
+export function saveSavedRouteOptions(client: QueryClient) {
+    return mutationOptions({
+        mutationKey: mutationKeys.savedRouteSave,
+        scope: { id: 'account' },
+        mutationFn: saveSavedRoute,
+        onMutate: () => client.cancelQueries({ queryKey: queryKeys.savedRoutes }),
+        onSuccess: (saved) => updateSavedRoutes(client, (routes) => addSavedRoute(routes, saved)),
+        onError: () => reloadSavedRoutes(client),
+        gcTime: Infinity,
+    });
+}
+
+export function deleteSavedRouteOptions(client: QueryClient) {
+    return mutationOptions({
+        mutationKey: mutationKeys.savedRouteDelete,
+        scope: { id: 'account' },
+        mutationFn: deleteSavedRoute,
+        onMutate: () => client.cancelQueries({ queryKey: queryKeys.savedRoutes }),
+        onSuccess: (_result, id) => updateSavedRoutes(client, (routes) => removeSavedRoute(routes, id)),
+        onError: () => reloadSavedRoutes(client),
+        gcTime: Infinity,
+    });
+}
+
 export function useSavedRoutes(): SavedRouteRecord[] {
-    return useAccountPart('savedRoutes');
+    const client = useQueryClient();
+    return useQuery(savedRoutesQuery(client)).data;
 }
-
-export function saveRoute(state: AccountState, userId: string, input: SaveRouteInput): Partial<AccountState> {
-    const record = createSavedRouteRecord(userId, input.origin, input.destination, input.option);
-    return { savedRoutes: addSavedRoute(state.savedRoutes, record) };
-}
-
-export function deleteSavedRoute(state: AccountState, recordId: string): Partial<AccountState> {
-    return { savedRoutes: removeSavedRoute(state.savedRoutes, recordId) };
-}
-
-export const savedRouteSaveMutation = {
-    key: 'saved-route-save',
-    parts: ['savedRoutes'],
-    mutationFn: saveSavedRoute,
-    optimistic: (state, record) => ({ savedRoutes: addSavedRoute(state.savedRoutes, record) }),
-    reconcile: (state, record) => ({ savedRoutes: addSavedRoute(state.savedRoutes, record) }),
-} satisfies AccountMutation<SavedRouteRecord, SavedRouteRecord>;
-
-export const savedRouteDeleteMutation = {
-    key: 'saved-route-delete',
-    parts: ['savedRoutes'],
-    mutationFn: deleteSavedRouteRequest,
-    optimistic: (state, recordId) => deleteSavedRoute(state, recordId),
-    reconcile: (state, _result, recordId) => deleteSavedRoute(state, recordId),
-} satisfies AccountMutation<string, void>;
 
 export function useSaveRoute(): (input: SaveRouteInput) => void {
-    const user = useUser();
-    const save = useAccountMutation(savedRouteSaveMutation);
-    return useCallback(
-        (input: SaveRouteInput) => save(createSavedRouteRecord(user.id, input.origin, input.destination, input.option)),
-        [save, user.id],
-    );
+    const client = useQueryClient();
+    const userId = readSession(client)?.user.id;
+    const save = useMutation(saveSavedRouteOptions(client));
+    return useCallback((input: SaveRouteInput) => {
+        if (userId) {
+            save.mutate(createSavedRouteRecord(userId, input.origin, input.destination, input.option));
+        }
+    }, [save, userId]);
 }
 
 export function useDeleteSavedRoute(): (recordId: string) => void {
-    const remove = useAccountMutation(savedRouteDeleteMutation);
-    return useCallback((recordId: string) => remove(recordId), [remove]);
+    const client = useQueryClient();
+    const remove = useMutation(deleteSavedRouteOptions(client));
+    return useCallback((recordId: string) => remove.mutate(recordId), [remove]);
 }

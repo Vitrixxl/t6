@@ -5,6 +5,7 @@
 // il ne doit pas peser visuellement), les mobilites actives en vert, le
 // transport public en bleu — la meme couleur que les arrets sur la carte.
 import type { MobilityMode, RouteLeg } from '../../types';
+import type { PropertyValueSpecification } from 'maplibre-gl';
 
 export const LEG_COLOR: Record<MobilityMode, string> = {
     walk: '#475569',
@@ -24,7 +25,7 @@ export function legColor(leg: RouteLeg): string {
 }
 
 /** Epaisseur du trait, plus marquee au zoom rue qu'en vue metropole. */
-export const legWidthExpression = ['interpolate', ['linear'], ['zoom'], 11, 5, 15, 9] as const;
+export const legWidthExpression: PropertyValueSpecification<number> = ['interpolate', ['linear'], ['zoom'], 11, 5, 15, 9];
 
 // `line-dasharray` n'accepte pas d'expression liee aux donnees dans MapLibre :
 // impossible de pointiller uniquement la marche depuis une seule couche. D'ou

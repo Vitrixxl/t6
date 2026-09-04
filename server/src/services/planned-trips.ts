@@ -29,10 +29,6 @@ export function savePlannedTrip(db: Db, trip: PlannedTrip): PlannedTrip | null {
     });
 }
 
-export function deletePlannedTrip(db: Db, userId: string, id: string): void {
-    createRepositories(db).plannedTrips.deleteById(userId, id);
-}
-
 export function completePlannedTrip(db: Db, userId: string, id: string, now = new Date()): CompletedPlannedTrip | null {
     return db.transaction((tx) => {
         const repositories = createRepositories(tx);

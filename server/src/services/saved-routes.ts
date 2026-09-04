@@ -12,7 +12,3 @@ export function saveSavedRoute(db: Db, record: SavedRouteRecord): SavedRouteReco
         return repository.findById(record.userId, record.id);
     });
 }
-
-export function deleteSavedRoute(db: Db, userId: string, id: string): void {
-    createRepositories(db).savedRoutes.deleteById(userId, id);
-}

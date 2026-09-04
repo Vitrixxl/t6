@@ -1,19 +1,10 @@
 // Module planification - recherche : saisie depart/arrivee, geocodage BAN + Photon.
-import { useEffect, useState } from 'react';
-import { ArrowUpDown, Building2, Landmark, LocateFixed, MapPin, PanelLeftClose, PanelLeftOpen, Search, TrainFront } from 'lucide-react';
+import { ArrowUpDown, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import type { GeoPoint } from '../../types';
-import { searchPlaces, type PlaceKind, type PlaceSearchResult } from '../../lib/transport';
-
-const PLACE_KIND_ICON: Record<PlaceKind, typeof MapPin> = {
-    Quartier: Landmark,
-    Ville: Building2,
-    Gare: TrainFront,
-    Rue: MapPin,
-    Adresse: MapPin,
-    Lieu: Landmark,
-};
+import { PlaceSearchResults } from './PlaceSearchResults';
+import { usePlaceSearch } from './usePlaceSearch';
 
 export function CommandSearchBar({
     leftRailOpen,
@@ -184,72 +175,13 @@ export function PlaceSearchBox({
         className?: string;
         compact?: boolean;
     }) {
-    const [query, setQuery] = useState(value?.label ?? '');
-    const [results, setResults] = useState<PlaceSearchResult[]>([]);
-    const [open, setOpen] = useState(false);
-    const [status, setStatus] = useState('');
-
-    useEffect(() => {
-        setQuery(value?.label ?? '');
-    }, [value]);
-
-    useEffect(() => {
-        const trimmedQuery = query.trim();
-        if (!open || trimmedQuery.length < 2 || trimmedQuery === value?.label) {
-            setResults([]);
-            setStatus('');
-            return;
-        }
-
-        const controller = new AbortController();
-        const timeout = window.setTimeout(() => {
-            setStatus('Recherche en cours');
-            searchPlaces(trimmedQuery, searchOrigin ?? undefined, controller.signal)
-                .then((items) => {
-                    setResults(items);
-                    setStatus(items.length > 0 ? '' : 'Aucun resultat dans la metropole de Lyon');
-                })
-                .catch(() => {
-                    setResults([]);
-                    setStatus('Recherche indisponible');
-                });
-        }, 220);
-
-        return () => {
-            window.clearTimeout(timeout);
-            controller.abort();
-        };
-    }, [open, query, searchOrigin, value?.label]);
-
-    const handleSelect = (result: PlaceSearchResult) => {
-        onSelect({
-            label: result.label,
-            lat: result.lat,
-            lon: result.lon
-        });
-        setQuery(result.label);
-        setOpen(false);
-    };
-
-    const handleCurrentPositionSelect = async () => {
-        const gpsPoint = currentPosition ?? (await onCurrentPositionRequest());
-        if (!gpsPoint) {
-            setStatus('GPS indisponible');
-            setOpen(true);
-            return;
-        }
-
-        const nextPoint = {
-            ...gpsPoint,
-            label: 'Ma position'
-        };
-        onSelect(nextPoint);
-        setQuery(nextPoint.label);
-        setOpen(false);
-    };
-
-    const showCurrentPositionOption = open;
-    const showDropdown = open && (showCurrentPositionOption || results.length > 0 || status);
+    const search = usePlaceSearch({
+        searchOrigin,
+        value,
+        currentPosition,
+        requestCurrentPosition: onCurrentPositionRequest,
+        onSelect,
+    });
 
     return (
         <div className={`relative ${className ?? ''}`}>
@@ -260,66 +192,29 @@ export function PlaceSearchBox({
                 <Search className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${compact ? 'size-3.5' : 'size-4'}`} aria-hidden="true" />
                 <Input
                     id={inputId}
-                    value={query}
-                    onFocus={() => setOpen(true)}
+                    value={search.query}
+                    onFocus={() => search.setOpen(true)}
                     onBlur={() => {
-                        setOpen(false);
-                        setQuery(value?.label ?? '');
+                        search.setOpen(false);
+                        search.setQuery(value?.label ?? '');
                     }}
                     onChange={(event) => {
-                        setQuery(event.target.value);
-                        setOpen(true);
+                        search.setQuery(event.target.value);
+                        search.setOpen(true);
                     }}
                     placeholder={placeholder}
                     className={`${compact ? 'h-9 text-[0.95rem]' : 'h-10'} rounded-lg border-0 bg-transparent pl-9 shadow-none focus-visible:bg-background/60 focus-visible:ring-0`}
                     autoComplete="off"
                 />
             </div>
-            {showDropdown ? (
-                <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[90] max-h-[min(52dvh,24rem)] overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-float">
-                    {showCurrentPositionOption ? (
-                        <button
-                            type="button"
-                            className="flex w-full items-start gap-3 border-b border-border px-3 py-2 text-left hover:bg-accent"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => {
-                                void handleCurrentPositionSelect();
-                            }}
-                        >
-                            <LocateFixed className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                            <span className="min-w-0">
-                                <strong className="block truncate text-sm">Ma position</strong>
-                                <span className="block truncate text-xs text-muted-foreground">
-                                    {currentPosition ? `GPS actif${currentPosition.accuracyMeters ? ` - ${Math.round(currentPosition.accuracyMeters)} m` : ''}` : 'Utiliser la position GPS'}
-                                </span>
-                            </span>
-                        </button>
-                    ) : null}
-                    {results.map((result) => {
-                        const KindIcon = PLACE_KIND_ICON[result.kind] ?? MapPin;
-                        return (
-                            <button
-                                key={result.id}
-                                type="button"
-                                className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-accent"
-                                onMouseDown={(event) => event.preventDefault()}
-                                onClick={() => handleSelect(result)}
-                            >
-                                <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                                    <KindIcon className="size-3.5" aria-hidden="true" />
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                    <strong className="block truncate text-sm">{result.label}</strong>
-                                    <span className="block truncate text-xs text-muted-foreground">{result.context || 'Metropole de Lyon'}</span>
-                                </span>
-                                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                                    {result.kind}
-                                </span>
-                            </button>
-                        );
-                    })}
-                    {results.length === 0 && status ? <p className="px-3 py-2 text-sm text-muted-foreground">{status}</p> : null}
-                </div>
+            {search.open ? (
+                <PlaceSearchResults
+                    currentPosition={currentPosition}
+                    results={search.results}
+                    status={search.status}
+                    onCurrentPosition={() => void search.selectCurrentPosition()}
+                    onSelect={search.selectResult}
+                />
             ) : null}
         </div>
     );

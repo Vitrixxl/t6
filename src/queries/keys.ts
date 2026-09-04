@@ -2,13 +2,16 @@
 // qu'une lecture et une invalidation designent la meme donnee par deux
 // chaines differentes.
 import type { GeoPoint, MobilityProfile } from '../types';
-import type { AccountPart } from '../lib/api';
 
 export const queryKeys = {
     session: ['session'],
-    /** Prefixe de toutes les parties du compte : invalider ici les touche toutes. */
+    /** Prefixe commun, utilise uniquement pour purger le compte a la deconnexion. */
     account: ['account'],
-    accountPart: <P extends AccountPart>(part: P) => ['account', part],
+    profile: ['account', 'profile'],
+    tripRecords: ['account', 'tripRecords'],
+    plannedTrips: ['account', 'plannedTrips'],
+    recurringTrips: ['account', 'recurringTrips'],
+    savedRoutes: ['account', 'savedRoutes'],
     transportNetwork: ['transport-network'],
     // Les extremites et le profil determinent les options calculees, donc leur
     // mesure ; le libelle d'un point n'y change rien.
@@ -22,6 +25,14 @@ export const queryKeys = {
 export const mutationKeys = {
     /** Prefixe de tout ce qui ecrit le compte : c'est ce que la banniere d'erreur observe. */
     account: ['account'],
-    accountWrite: ['account', 'write'],
     deleteAccount: ['account', 'delete'],
+    profileSave: ['account', 'profile-save'],
+    plannedSave: ['account', 'planned-save'],
+    plannedComplete: ['account', 'planned-complete'],
+    plannedDelete: ['account', 'planned-delete'],
+    recurringSave: ['account', 'recurring-save'],
+    recurringDelete: ['account', 'recurring-delete'],
+    savedRouteSave: ['account', 'saved-route-save'],
+    savedRouteDelete: ['account', 'saved-route-delete'],
+    historyClear: ['account', 'history-clear'],
 } as const;

@@ -11,7 +11,7 @@ import {
     savedRouteInput,
     savedRoutes,
 } from '../../../src/contracts/index.ts';
-import { deleteSavedRoute, saveSavedRoute } from '../services/saved-routes.ts';
+import { saveSavedRoute } from '../services/saved-routes.ts';
 
 export function savedRouteRoutes(ctx: AppContext) {
     return new Elysia({ prefix: '/saved-routes', tags: ['Itineraires enregistres'] })
@@ -35,8 +35,8 @@ export function savedRouteRoutes(ctx: AppContext) {
         )
         .delete(
             '/:id',
-            ({ userId, params, db }) => {
-                deleteSavedRoute(db, userId, params.id);
+            ({ userId, params, repositories }) => {
+                repositories.savedRoutes.deleteById(userId, params.id);
                 return { ok: true };
             },
             {

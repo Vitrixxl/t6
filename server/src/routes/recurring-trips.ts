@@ -11,7 +11,7 @@ import {
     recurringTrips,
     resourceIdParams,
 } from '../../../src/contracts/index.ts';
-import { deleteRecurringTrip, saveRecurringTrip } from '../services/recurring-trips.ts';
+import { saveRecurringTrip } from '../services/recurring-trips.ts';
 
 export function recurringTripRoutes(ctx: AppContext) {
     return new Elysia({ prefix: '/trips/recurring', tags: ['Routines'] })
@@ -35,8 +35,8 @@ export function recurringTripRoutes(ctx: AppContext) {
         )
         .delete(
             '/:id',
-            ({ userId, params, db }) => {
-                deleteRecurringTrip(db, userId, params.id);
+            ({ userId, params, repositories }) => {
+                repositories.recurringTrips.deleteById(userId, params.id);
                 return { ok: true };
             },
             {

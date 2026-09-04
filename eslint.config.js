@@ -60,6 +60,10 @@ export default [
             // Babel retire les annotations avant l'analyse des portees. TypeScript
             // reste l'autorite pour les symboles inutilises et les types implicites.
             'no-unused-vars': 'off',
+            // Ces deux gardes empechent qu'un nouveau flux redevienne une suite
+            // d'embranchements imbriques difficile a presenter en revue.
+            complexity: ['error', 10],
+            'max-depth': ['error', 3],
             'no-restricted-syntax': [
                 'error',
                 {

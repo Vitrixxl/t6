@@ -2,9 +2,22 @@
 //
 // Le serveur authentifie et detient l'etat. Le navigateur ne garde qu'un
 // cookie httpOnly ; l'etat du compte lui est rendu a chaque ouverture de
-// session (voir account.ts).
+// session, puis amorce les requetes de chaque ressource.
 import type { Credentials, Registration, Session } from '../../contracts';
 import { api, treatyRequest } from './client';
+import { ApiError, ApiUnavailableError } from './errors';
+
+/** Reprend la session portee par le cookie, sans transformer une absence en erreur d'ecran. */
+export async function restoreSession(): Promise<Session | null> {
+    try {
+        return await treatyRequest(api.auth.session.get());
+    } catch (error) {
+        if (error instanceof ApiUnavailableError || (error instanceof ApiError && error.status === 401)) {
+            return null;
+        }
+        throw error;
+    }
+}
 
 export async function registerUser(input: Registration): Promise<Session> {
     return treatyRequest(api.auth.register.post({

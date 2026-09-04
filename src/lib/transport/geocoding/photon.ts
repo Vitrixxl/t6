@@ -5,14 +5,30 @@ import { withTimeout } from '../http';
 import { inMetroBbox, METRO_BBOX } from './area';
 import type { PhotonFeature, PhotonResponse, PlaceKind, PlaceSearchResult } from './types';
 
+const KIND_BY_OSM_VALUE: Partial<Record<string, PlaceKind>> = {
+    station: 'Gare',
+    halt: 'Gare',
+    suburb: 'Quartier',
+    neighbourhood: 'Quartier',
+    quarter: 'Quartier',
+    borough: 'Quartier',
+    city: 'Ville',
+    town: 'Ville',
+    village: 'Ville',
+};
+
+const KIND_BY_TYPE: Partial<Record<string, PlaceKind>> = {
+    district: 'Quartier',
+    city: 'Ville',
+    street: 'Rue',
+    house: 'Adresse',
+};
+
 export function photonKind(properties: PhotonFeature['properties']): PlaceKind {
     const osmValue = properties.osm_value ?? '';
-    if (properties.osm_key === 'railway' || osmValue === 'station' || osmValue === 'halt') return 'Gare';
-    if (properties.type === 'district' || ['suburb', 'neighbourhood', 'quarter', 'borough'].includes(osmValue)) return 'Quartier';
-    if (properties.type === 'city' || ['city', 'town', 'village'].includes(osmValue)) return 'Ville';
-    if (properties.type === 'street') return 'Rue';
-    if (properties.type === 'house') return 'Adresse';
-    return 'Lieu';
+    return properties.osm_key === 'railway'
+        ? 'Gare'
+        : KIND_BY_OSM_VALUE[osmValue] ?? KIND_BY_TYPE[properties.type ?? ''] ?? 'Lieu';
 }
 
 export async function searchPhoton(query: string, proximity: Pick<GeoPoint, 'lat' | 'lon'>, signal?: AbortSignal): Promise<PlaceSearchResult[]> {

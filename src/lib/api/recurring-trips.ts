@@ -1,6 +1,10 @@
 import type { RecurringTrip } from '../../contracts';
 import { api, resourceBody, treatyRequest } from './client';
 
+export function fetchRecurringTrips(): Promise<RecurringTrip[]> {
+    return treatyRequest(api.trips.recurring.get());
+}
+
 export function saveRecurringTrip(record: RecurringTrip): Promise<RecurringTrip> {
     return treatyRequest(api.trips.recurring({ id: record.id }).put(resourceBody(record)));
 }

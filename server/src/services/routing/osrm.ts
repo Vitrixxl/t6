@@ -86,6 +86,18 @@ export interface RouteMeasure {
     durationSeconds: number;
 }
 
+function routeMeasure(distanceMeters: number | null | undefined, durationSeconds: number | null | undefined): RouteMeasure | null {
+    const valid = distanceMeters !== null
+        && durationSeconds !== null
+        && distanceMeters !== undefined
+        && durationSeconds !== undefined
+        && Number.isFinite(distanceMeters)
+        && Number.isFinite(durationSeconds)
+        && distanceMeters >= 0
+        && durationSeconds >= 0;
+    return valid ? { distanceMeters, durationSeconds } : null;
+}
+
 /**
  * Chemin du service pour un mode. Les noms suivent la convention des instances
  * OSRM (`/routed-<profil>/route/v1/<profil>/`), celle qu'utilisent aussi bien
@@ -184,23 +196,10 @@ export async function fetchUpstreamMatrix(
         }
 
         return origins.map((_, originIndex) =>
-            destinations.map((__, destinationIndex) => {
-                const distanceMeters = payload.distances[originIndex]?.[destinationIndex];
-                const durationSeconds = payload.durations[originIndex]?.[destinationIndex];
-                if (
-                    distanceMeters === null ||
-                    durationSeconds === null ||
-                    distanceMeters === undefined ||
-                    durationSeconds === undefined ||
-                    !Number.isFinite(distanceMeters) ||
-                    !Number.isFinite(durationSeconds) ||
-                    distanceMeters < 0 ||
-                    durationSeconds < 0
-                ) {
-                    return null;
-                }
-                return { distanceMeters, durationSeconds };
-            }),
+            destinations.map((__, destinationIndex) => routeMeasure(
+                payload.distances[originIndex]?.[destinationIndex],
+                payload.durations[originIndex]?.[destinationIndex],
+            )),
         );
     } catch {
         return null;

@@ -14,7 +14,3 @@ export function saveRecurringTrip(db: Db, trip: RecurringTrip): RecurringTrip | 
         return repository.findById(trip.userId, trip.id);
     });
 }
-
-export function deleteRecurringTrip(db: Db, userId: string, id: string): void {
-    createRepositories(db).recurringTrips.deleteById(userId, id);
-}

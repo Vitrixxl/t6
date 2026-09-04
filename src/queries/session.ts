@@ -3,10 +3,11 @@
 //
 // La session est la seule requete qui ne se relit jamais d'elle-meme : la
 // connexion et la deconnexion l'ecrivent directement dans le cache, et ce
-// qu'elle rend a l'ouverture amorce les parties du compte (account.ts).
+// qu'elle rend a l'ouverture amorce chaque ressource du compte.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { deleteAccount, loginUser, logoutUser, registerUser, restoreSession, type Session } from '../lib/api';
+import type { Session } from '../contracts';
+import { deleteAccount, loginUser, logoutUser, registerUser, restoreSession } from '../lib/api/auth';
 import { mutationKeys, queryKeys } from './keys';
 
 export const sessionQuery = queryOptions({

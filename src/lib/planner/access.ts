@@ -77,22 +77,10 @@ async function routedStation(
     if (!matrix) {
         return null;
     }
-
-    let best: StationAccess | null = null;
-    for (let index = 0; index < candidates.length; index += 1) {
-        const cell = direction === 'from-point' ? matrix[0]?.[index] : matrix[index]?.[0];
-        if (!cell) {
-            continue;
-        }
-        const access = asAccessMeasure(cell);
-        if (
-            access.distanceKm <= MAX_STATION_ACCESS_KM &&
-            (!best || access.durationMinutes < best.measure.durationMinutes)
-        ) {
-            best = { station: candidates[index], measure: access };
-        }
-    }
-    return best;
+    const readMeasure = direction === 'from-point'
+        ? (index: number) => matrix[0]?.[index]
+        : (index: number) => matrix[index]?.[0];
+    return stationAccess(candidates, readMeasure);
 }
 
 function stationAccess(
@@ -235,6 +223,49 @@ function buildJourney(
     return findTransitJourney(network, from, destination, requireAccessible, access);
 }
 
+function availableStations(network: TransportNetwork) {
+    const stations = network.sharedMobility.data.stations;
+    return {
+        bikePickups: stations.filter(
+            (station) => station.kind === 'velov' && station.is_installed && station.is_renting && station.bikes_available > 0,
+        ),
+        bikeDropoffs: stations.filter(
+            (station) => station.kind === 'velov' && station.is_installed && station.is_returning,
+        ),
+        scooters: stations.filter(
+            (station) => station.kind === 'scooter' && station.is_renting && station.scooters_available > 0,
+        ),
+    };
+}
+
+function bikeFeeder(vehicle: StationAccess | null, journey: TransitJourney | null, dropoff: StationAccess | null): FeederAccess | null {
+    return vehicle && journey && dropoff ? { vehicle, journey, dropoff } : null;
+}
+
+function scooterFeeder(vehicle: StationAccess | null, journey: TransitJourney | null): FeederAccess | null {
+    return vehicle && journey ? { vehicle, journey, dropoff: null } : null;
+}
+
+function accessPlan(input: {
+    bikePickup: StationAccess | null;
+    bikeDropoff: StationAccess | null;
+    scooter: StationAccess | null;
+    transit: TransitJourney | null;
+    bikeJourney: TransitJourney | null;
+    transitBikeDropoff: StationAccess | null;
+    scooterJourney: TransitJourney | null;
+}): RouteAccessPlan {
+    return {
+        bike: input.bikePickup && input.bikeDropoff
+            ? { pickup: input.bikePickup, dropoff: input.bikeDropoff }
+            : null,
+        scooter: input.scooter,
+        transit: input.transit,
+        bikeTransit: bikeFeeder(input.bikePickup, input.bikeJourney, input.transitBikeDropoff),
+        scooterTransit: scooterFeeder(input.scooter, input.scooterJourney),
+    };
+}
+
 /**
  * Plan de repli pour les tests purs du moteur. Le parcours utilisateur appelle
  * `prepareRoutedAccessPlan` et ne prend donc aucune decision sur ces estimations.
@@ -246,16 +277,7 @@ export function estimateRouteAccessPlan(request: {
     requireAccessible: boolean;
 }): RouteAccessPlan {
     const { origin, destination, network, requireAccessible } = request;
-    const stations = network.sharedMobility.data.stations;
-    const bikePickups = stations.filter(
-        (station) => station.kind === 'velov' && station.is_installed && station.is_renting && station.bikes_available > 0,
-    );
-    const bikeDropoffs = stations.filter(
-        (station) => station.kind === 'velov' && station.is_installed && station.is_returning,
-    );
-    const scooters = stations.filter(
-        (station) => station.kind === 'scooter' && station.is_renting && station.scooters_available > 0,
-    );
+    const { bikePickups, bikeDropoffs, scooters } = availableStations(network);
     const bikePickup = estimatedStation(bikePickups, origin);
     const bikeDropoff = estimatedStation(bikeDropoffs, destination);
     const scooter = estimatedStation(scooters, origin);
@@ -270,16 +292,15 @@ export function estimateRouteAccessPlan(request: {
         ? findTransitJourney(network, stationToPoint(scooter.station), destination, requireAccessible)
         : null;
 
-    return {
-        bike: bikePickup && bikeDropoff ? { pickup: bikePickup, dropoff: bikeDropoff } : null,
+    return accessPlan({
+        bikePickup,
+        bikeDropoff,
         scooter,
         transit,
-        bikeTransit:
-            bikePickup && bikeJourney && transitBikeDropoff
-                ? { vehicle: bikePickup, journey: bikeJourney, dropoff: transitBikeDropoff }
-                : null,
-        scooterTransit: scooter && scooterJourney ? { vehicle: scooter, journey: scooterJourney, dropoff: null } : null,
-    };
+        bikeJourney,
+        transitBikeDropoff,
+        scooterJourney,
+    });
 }
 
 export async function prepareRoutedAccessPlan(
@@ -292,16 +313,7 @@ export async function prepareRoutedAccessPlan(
     measure: RouteMatrixMeasurer,
 ): Promise<RouteAccessPlan> {
     const { origin, destination, network, requireAccessible } = request;
-    const stations = network.sharedMobility.data.stations;
-    const bikePickups = stations.filter(
-        (station) => station.kind === 'velov' && station.is_installed && station.is_renting && station.bikes_available > 0,
-    );
-    const bikeDropoffs = stations.filter(
-        (station) => station.kind === 'velov' && station.is_installed && station.is_returning,
-    );
-    const scooters = stations.filter(
-        (station) => station.kind === 'scooter' && station.is_renting && station.scooters_available > 0,
-    );
+    const { bikePickups, bikeDropoffs, scooters } = availableStations(network);
 
     const { bikePickup, bikeDropoff, scooter, transitDepartures, transitArrivals } = await routedWalkingAccess(
         network,
@@ -351,14 +363,13 @@ export async function prepareRoutedAccessPlan(
         )
         : null;
 
-    return {
-        bike: bikePickup && bikeDropoff ? { pickup: bikePickup, dropoff: bikeDropoff } : null,
+    return accessPlan({
+        bikePickup,
+        bikeDropoff,
         scooter,
         transit,
-        bikeTransit:
-            bikePickup && bikeJourney && transitBikeDropoff
-                ? { vehicle: bikePickup, journey: bikeJourney, dropoff: transitBikeDropoff }
-                : null,
-        scooterTransit: scooter && scooterJourney ? { vehicle: scooter, journey: scooterJourney, dropoff: null } : null,
-    };
+        bikeJourney,
+        transitBikeDropoff,
+        scooterJourney,
+    });
 }
