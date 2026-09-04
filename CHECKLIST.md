@@ -72,11 +72,11 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 ## 7. Integration d'APIs reelles (mise a jour finale)
 
 - [x] Geocodage live: api-adresse.data.gouv.fr (BAN).
-- [x] Routage live: OSRM routing.openstreetmap.de (profils foot/bike/driving) avec instructions traduites.
+- [x] Routage live: OSRM routing.openstreetmap.de (profils foot/bike ; trottinette sur bike), matrice de choix des acces puis traces et instructions traduites.
 - [x] GBFS live Velo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
 - [x] GTFS statique reel TCL/SYTRAL (ODbL) integre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 2435 arrets et 13 lignes structurantes avec leur desserte et leur trace reel (metropole entiere, rayon 16 km).
-- [x] Planificateur: trajets programmes a une date, routines recurrentes (aller-retour, pause/reprise), statuts fait/annule, objectifs hebdomadaires et mensuels avec progression.
+- [x] Planificateur: trajets programmes a une date, routines recurrentes (aller-retour, pause/reprise), statuts fait/annule, objectifs d'economie CO2 hebdomadaire et mensuel independants avec progression.
 - [x] Recherche geocodee double source (BAN adresses + Photon quartiers/gares/lieux), typee et bornee a la metropole (dept 69).
 - [x] Onboarding spotlight 11 etapes (auto premiere visite, relance via bouton « ? »).
 - [x] Meteo live Open-Meteo injectee dans le scoring (pluie/vent).
@@ -99,7 +99,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levee.
 - [x] theme-color aligne (index.html/manifest), scripts npm e2e/screens exposes, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, economie chiffree, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 64 tests unitaires verts (7 fichiers), lint 0 erreur, build OK sans avertissement, scenario E2E planification bloquant vert (5/5 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans), banc de performance execute ; audits rejoues en CI, chiffres du dossier extraits automatiquement du build (output/metrics/).
+- [x] 160 tests verts (17 fichiers), lint 0 erreur, build OK, scenario E2E planification bloquant vert (7/7 assertions), audit axe-core 0 violation WCAG 2.1 A/AA (4 ecrans) ; chiffres du dossier extraits automatiquement du build (`output/metrics/`).
 
 ## 9. Preuves concretes
 
@@ -108,13 +108,13 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - F2 planificateur multimodal + geolocalisation temps reel: `src/lib/routePlanner.ts`, `src/App.tsx` (`MobilityMapApp`, `navigator.geolocation.watchPosition`).
 - Carte mobile-first: `src/components/UrbanMap.tsx`, MapLibre GL, route selectionnee, alternatives, position utilisateur, destination, arrets GTFS et stations partagees.
 - UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `select.tsx`, `src/styles.css`.
-- APIs reelles: `src/lib/externalApis.ts` pour `api-adresse.data.gouv.fr` et OSRM public; fallback local explicite pour transport GTFS/GBFS sans endpoint operateur.
+- APIs reelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM uniquement derriere `/api/route-matrix` et `/api/route`, avec cache SQLite partage et aucune geometrie inventee.
 - F3 integration transport: `src/lib/transportApi.ts`, `public/data/gtfs-feed.json`, `public/data/shared-mobility.json`.
-- Option carbone: `src/lib/carbon.ts`, `src/App.tsx` (`CarbonDashboard`).
+- Option carbone: `src/lib/carbon.ts`, `src/components/planner/trips/TripGoalsCard.tsx`, `src/components/profile/ProfilePanels.tsx` (objectifs hebdomadaire et mensuel independants).
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectee).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et controlees en planche-contact et pleine page.
-- Verification terminal finale: `bun run check` OK (`eslint .`, 64 tests Vitest, `tsc -b && vite build`), `bun run audit:a11y` OK (0 violation), `bun run e2e` OK, `bun run bench:perf` OK, puis `bun run generate:pdf` OK.
+- Verification terminal finale: `bun run check` OK (`eslint .`, TypeScript 7 strict, 160 tests, `Bun.build`), `bun run audit:a11y` OK (0 violation sur 4 ecrans) et `bun run e2e` OK (7/7).
 
 ## 10. Backend (ajout post-audit)
 
@@ -128,11 +128,15 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Cloisonnement des donnees : toute requete est filtree par l'utilisateur de la session (test dedie : un compte ne voit jamais les trajets d'un autre).
 - [x] Enumeration de comptes bloquee : message unique et verification de mot de passe a vide sur email inconnu.
 - [x] Etat du compte : rendu a la connexion, tenu dans le cache React Query, une route par collection en lecture et en remplacement (`GET`/`PUT /api/trips/*`, `/api/saved-routes`, `/api/me/profile` : chaque liste remplacee seule, en transaction, bornee par le contrat ; relue apres un refus).
+- [x] Tous les appels du front vers l'API UrbanFlow passent par Eden Treaty et sont inferes depuis l'arbre Elysia ; aucun type HTTP duplique.
+- [x] Profil : objectifs d'economie de CO2 hebdomadaire et mensuel configurables independamment, valides par zod, persistes par `PUT /api/me/profile` et visibles dans le planificateur.
+- [x] Points d'acces Velo'v, trottinette et transport classes par duree OSRM sur huit candidats bornes ; test de regression sur l'obstacle pieton.
+- [x] Correspondance entre deux lignes rendue comme etape a pied de 4 min, sans trace interieur invente en l'absence de `pathways.txt`.
 - [x] Une seule origine : l'API sert le client, pas de mode sans serveur  ; une ecriture refusee par le reseau est signalee a l'utilisateur.
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17).
 - [x] Documentation OpenAPI generee a partir des schemas des routes (`/api/doc`), donc impossible a desynchroniser du code.
 - [x] Tests d'integration API via `app.handle` (base :memory:) et tests client sur les operations pures (trajets, routines, carbone, profil) ; suite complete sous `bun test`.
-- [x] Verification bout en bout en navigateur : inscription depuis l'interface -> ligne SQLite avec empreinte scrypt -> session restauree apres rechargement par cookie httpOnly, zero erreur de page.
+- [x] Verification bout en bout en navigateur : connexion, calcul d'options, planification, marquage fait, persistance et deconnexion, 7/7 assertions.
 
 ## 11. Architecture de fichiers (revue de code)
 
@@ -143,15 +147,16 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Module d'authentification : appels API, cache de session, normalisation du profil.
 - [x] Carte eclatee (composant, popups avec echappement HTML, sources) et type `LayerState` dedoublonne.
 - [x] Geolocalisation et calcul d'itineraires extraits en hooks testables.
-- [x] Aucun fichier de plus de 450 lignes ; verification apres chaque etape par lint, typage, tests et scenario E2E 5/5.
+- [x] Decoupage par responsabilite plutot que par seuil arbitraire de lignes ; verification par lint, typage, tests et scenario E2E 7/7.
 
 ## 12. Chaine d'outillage unifiee sous Bun
 
 - [x] Gestionnaire de paquets : `bun install`, `bun.lock` seul lockfile versionne (package-lock.json retire).
 - [x] API : `bun server/src/index.ts`, sans etape de compilation ni dependance native.
-- [x] Serveur de developpement et build Vite forces sur le runtime Bun (`bun --bun vite`).
-- [x] Tests client : Vitest execute sous Bun (`bun --bun vitest run`), 72 tests verts.
-- [x] Tests d'API : `bun test server`, 27 tests verts.
+- [x] Serveur de developpement et build du client executes par Bun (`bun scripts/dev.ts`, `Bun.build`).
+- [x] TypeScript 7 conserve ; `tsc` strict controle types et symboles inutilises, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
+- [x] Tests client / metier : `bun test src`, 118 tests verts.
+- [x] Tests d'API : `bun test server`, 42 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) executes par Bun.
-- [x] Verifications rejouees apres bascule : `bun run check` complet, E2E 5/5, audit axe-core 0 violation sur 4 ecrans.
+- [x] Verifications rejouees apres bascule : `bun run check` complet (160 tests), E2E 7/7, audit axe-core 0 violation sur 4 ecrans.
 - [x] Limite assumee : l'ingestion GTFS et la generation du dossier restent en Python, faute d'equivalent JavaScript.
