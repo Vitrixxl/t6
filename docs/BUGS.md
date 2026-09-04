@@ -1132,8 +1132,9 @@ libellé « indisponible » débordait des colonnes trop étroites à 320 px.
 
 **Commit** : [34ee6e1 — options complètes et panneau mobile](https://github.com/Vitrixxl/t6/commit/34ee6e1).
 
-**Où le montrer** : `src/components/planner/MobileSheetControls.tsx`,
-`useMobileSheet.ts` et `MobilePanels.tsx` ; `scripts/e2e-planning.mjs`.
+**Évolution** : ce premier correctif a été remplacé par la hauteur automatique
+demandée ensuite (B42). Les contrôles et leur hook ont été supprimés. Le rendu
+courant se montre dans `src/components/planner/MobilePanels.tsx`.
 
 **Test du correctif** : le scénario `bun run e2e` contrôle les trois hauteurs
 réelles et les cibles tactiles à 320 et 390 px. Il vérifie les commandes après
@@ -1292,3 +1293,63 @@ coupure Internet. Captures relues : `tmp/screenshots/offline-*.png`.
 exercés dans Chromium ; **faible** pour la lisibilité et l’annonce effective
 par un lecteur d’écran. Le signal du navigateur ne mesure pas la disponibilité
 réelle d’Internet ou du serveur, notamment sur un réseau local sans accès extérieur.
+
+## B41 — Seule la marche restait proposée après un échec de matrice
+
+**Symptôme observé** : la recherche entre la rue Mazenod et la rue Cuvier ne
+proposait plus que la marche ; `POST /api/route-matrix` répondait 503.
+
+**Cause racine** : le conteneur utilisait les URL OSRM publiques par défaut.
+Le service amont a répondu 429 avec « Bandwidth limit exceeded » : chaque
+cellule de matrice compte dans le quota, donc la cadence d’une requête HTTP par
+seconde ne suffit pas. La matrice piétonne croisée calculait aussi les trajets
+entre stations, inutilisés. Sans accès mesurés, le moteur écartait les modes
+partagés et les transports ; seul le trajet direct restait calculable.
+Le script local bloquait en outre sur `/opt/bike.lua`, absent de l’image OSRM.
+
+**Correctif** : préparation et branchement des trois moteurs OSRM locaux sur
+le réseau Docker de l’application. Deux matrices en étoile mesurent seulement
+les accès depuis le départ et vers l’arrivée (36 cellules au lieu de 345 sur
+la recherche reproduite). Le prétraitement vélo utilise `bicycle.lua`.
+Aucun tracé ni mesure de repli n’est inventé. La disponibilité des véhicules
+et la desserte restent nécessaires pour proposer les six familles.
+
+**Commit** : [7a7d72a — routage local et panneau automatique](https://github.com/Vitrixxl/t6/commit/7a7d72a).
+
+**Où le montrer** : `src/lib/planner/access.ts`, `infra/osrm-prepare.sh`,
+`infra/compose.yml` et les variables OSRM du conteneur.
+
+**Test du correctif** : `src/lib/planner/access.test.ts` vérifie la forme des
+matrices et le choix de la station la plus rapide. Dans Chromium mobile, la
+recherche vers le 111 rue Cuvier renvoie six options, toutes les matrices en
+200, sans erreur MapLibre ni service worker. Le script local a préparé les
+trois profils, puis les moteurs ont servi les mesures et les géométries.
+
+**Niveau de verrouillage** : **automatisé** pour les matrices en étoile ;
+**faible** pour la configuration du déploiement et la disponibilité des sources.
+Les URL publiques ne conviennent pas à une utilisation multimodale soutenue.
+
+## B42 — Les réglages de taille compliquaient encore le panneau mobile
+
+**Symptôme observé** : les commandes Carte/Aperçu/Détails ajoutées en B36
+imposaient encore de choisir une taille pour lire le résultat.
+
+**Cause racine** : trois hauteurs fixes obligeaient l’utilisateur à régler
+le panneau alors que le besoin était de voir directement son contenu.
+
+**Correctif** : hauteur automatique, bornée à l’espace disponible sous la
+recherche ; seul le contenu long défile. L’en-tête et la fermeture restent
+accessibles. La poignée, les sélecteurs et leur hook sont supprimés.
+
+**Commit** : [7a7d72a — routage local et panneau automatique](https://github.com/Vitrixxl/t6/commit/7a7d72a).
+
+**Où le montrer** : `src/components/planner/MobilePanels.tsx`,
+`MobileTripPanel` ; `scripts/e2e-planning.mjs`.
+
+**Test du correctif** : E2E planification 9/9, hauteur sous la recherche,
+défilement et sélection à 320 et 390 px, rotation en paysage, puis planification
+et complétion persistée. Captures relues avec les six options et le détail long.
+`bun run check` : 205 tests dans 24 fichiers ; scénario hors ligne réussi.
+
+**Niveau de verrouillage** : **automatisé** pour les limites du panneau,
+le défilement et les sélections ; **faible** pour l’appréciation visuelle.
