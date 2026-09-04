@@ -6,6 +6,6 @@
 const NETWORK_TIMEOUT_MS = 8000;
 
 export function withTimeout(signal?: AbortSignal): AbortSignal {
-  const timeout = AbortSignal.timeout(NETWORK_TIMEOUT_MS);
-  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+    const timeout = AbortSignal.timeout(NETWORK_TIMEOUT_MS);
+    return signal ? AbortSignal.any([signal, timeout]) : timeout;
 }

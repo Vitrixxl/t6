@@ -23,66 +23,66 @@ import { measuredRoutesQuery, type RouteSearch } from '../../../queries';
 export type RoutingStatus = 'idle' | 'pending' | 'ready' | 'unavailable';
 
 export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
-  idle: 'En attente d\'un trajet',
-  pending: 'Calcul du trace en cours',
-  ready: 'Trace reel affiche',
-  unavailable: 'Service de routage indisponible',
+    idle: 'En attente d\'un trajet',
+    pending: 'Calcul du trace en cours',
+    ready: 'Trace reel affiche',
+    unavailable: 'Service de routage indisponible',
 };
 
 export interface RouteOptions {
-  routes: RouteOption[];
-  selectedRoute: RouteOption | null;
-  /**
-   * Segments de l'itineraire selectionne, routes individuellement pour que la
-   * carte puisse colorer chaque mode sur sa geometrie reelle.
-   */
-  selectedLegs: RouteLeg[];
-  selectedRouteId: string;
-  setSelectedRouteId: (id: string) => void;
-  routingStatus: RoutingStatus;
+    routes: RouteOption[];
+    selectedRoute: RouteOption | null;
+    /**
+     * Segments de l'itineraire selectionne, routes individuellement pour que la
+     * carte puisse colorer chaque mode sur sa geometrie reelle.
+     */
+    selectedLegs: RouteLeg[];
+    selectedRouteId: string;
+    setSelectedRouteId: (id: string) => void;
+    routingStatus: RoutingStatus;
 }
 
 const NO_ROUTES: RouteOption[] = [];
 
 export function useRouteOptions(input: {
-  origin: GeoPoint | null;
-  destination: GeoPoint | null;
-  profile: MobilityProfile;
-  network: TransportNetwork;
+    origin: GeoPoint | null;
+    destination: GeoPoint | null;
+    profile: MobilityProfile;
+    network: TransportNetwork;
 }): RouteOptions {
-  const { origin, destination, profile, network } = input;
-  const [selectedRouteId, setSelectedRouteId] = useState('');
+    const { origin, destination, profile, network } = input;
+    const [selectedRouteId, setSelectedRouteId] = useState('');
 
-  const search = useMemo<RouteSearch | null>(
-    () => (origin && destination ? { origin, destination, profile } : null),
-    [destination, origin, profile],
-  );
-  // La selection des acces et la mesure forment une seule requete : changer
-  // d'extremites l'annule, et la liste se vide pendant le nouveau calcul.
-  const measured = useQuery(measuredRoutesQuery(search, network));
-  const routes = measured.data ?? NO_ROUTES;
-  const routingStatus: RoutingStatus =
-    !search ? 'idle' : measured.isPending ? 'pending' : routes.length > 0 ? 'ready' : 'unavailable';
+    const search = useMemo<RouteSearch | null>(
+        () => (origin && destination ? { origin, destination, profile } : null),
+        [destination, origin, profile],
+    );
+    // La selection des acces et la mesure forment une seule requete : changer
+    // d'extremites l'annule, et la liste se vide pendant le nouveau calcul.
+    const measured = useQuery(measuredRoutesQuery(search, network));
+    const routes = measured.data ?? NO_ROUTES;
+    const routingStatus: RoutingStatus =
+        !search ? 'idle' : measured.isPending ? 'pending' : routes.length > 0 ? 'ready' : 'unavailable';
 
-  // La selection manuelle vaut pour la recherche en cours ; une nouvelle
-  // recherche repart de la preselection du profil, sans quoi le choix fait sur
-  // un trajet precedent se propagerait a tous les suivants.
-  const selectedRoute =
-    routes.find((routeOption) => routeOption.id === selectedRouteId) ??
-    preselectRoute(routes, profile.routePreselection);
+    // La selection manuelle vaut pour la recherche en cours ; une nouvelle
+    // recherche repart de la preselection du profil, sans quoi le choix fait sur
+    // un trajet precedent se propagerait a tous les suivants.
+    const selectedRoute =
+        routes.find((routeOption) => routeOption.id === selectedRouteId) ??
+        preselectRoute(routes, profile.routePreselection);
 
-  const selectedLegs = selectedRoute?.legs ?? [];
+    const selectedLegs = selectedRoute?.legs ?? [];
 
-  useEffect(() => {
-    setSelectedRouteId('');
-  }, [destination, origin]);
+    useEffect(() => {
+        setSelectedRouteId('');
+    }, [destination, origin]);
 
-  useEffect(() => {
-    if (!selectedRoute || selectedRoute.id === selectedRouteId) {
-      return;
-    }
-    setSelectedRouteId(selectedRoute.id);
-  }, [selectedRoute, selectedRouteId]);
+    useEffect(() => {
+        if (!selectedRoute || selectedRoute.id === selectedRouteId) {
+            return;
+        }
+        setSelectedRouteId(selectedRoute.id);
+    }, [selectedRoute, selectedRouteId]);
 
-  return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingStatus };
+    return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingStatus };
 }

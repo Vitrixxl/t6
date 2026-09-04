@@ -11,13 +11,13 @@ import { legColor } from './legStyle';
 import { midpointOfPath } from '../../lib/planner';
 
 function createLabel(text: string, color: string): HTMLElement {
-  const element = document.createElement('span');
-  element.className = 'ufm-leg-label';
-  // textContent, jamais innerHTML : le libelle vient du jeu de donnees reseau.
-  element.textContent = text;
-  // La pastille reprend la couleur officielle de la ligne, comme le trace.
-  element.style.background = color;
-  return element;
+    const element = document.createElement('span');
+    element.className = 'ufm-leg-label';
+    // textContent, jamais innerHTML : le libelle vient du jeu de donnees reseau.
+    element.textContent = text;
+    // La pastille reprend la couleur officielle de la ligne, comme le trace.
+    element.style.background = color;
+    return element;
 }
 
 /**
@@ -26,19 +26,19 @@ function createLabel(text: string, color: string): HTMLElement {
  * les libelles du precedent.
  */
 export function syncLegLabels(map: MaplibreMap, current: maplibregl.Marker[], legs: RouteLeg[]): maplibregl.Marker[] {
-  current.forEach((marker) => marker.remove());
+    current.forEach((marker) => marker.remove());
 
-  return legs
-    .filter((leg) => leg.mode === 'transit' && leg.mapLabel && leg.path.length >= 2)
-    .flatMap((leg) => {
-      const point = midpointOfPath(leg.path);
-      if (!point) {
-        return [];
-      }
-      return [
-        new maplibregl.Marker({ element: createLabel(leg.mapLabel as string, legColor(leg)) })
-          .setLngLat([point.lon, point.lat])
-          .addTo(map),
-      ];
-    });
+    return legs
+        .filter((leg) => leg.mode === 'transit' && leg.mapLabel && leg.path.length >= 2)
+        .flatMap((leg) => {
+            const point = midpointOfPath(leg.path);
+            if (!point) {
+                return [];
+            }
+            return [
+                new maplibregl.Marker({ element: createLabel(leg.mapLabel as string, legColor(leg)) })
+                    .setLngLat([point.lon, point.lat])
+                    .addTo(map),
+            ];
+        });
 }

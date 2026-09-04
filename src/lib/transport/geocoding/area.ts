@@ -6,5 +6,5 @@ export const SEARCH_DEPARTMENT = '69';
 export const METRO_BBOX = { minLon: 4.62, minLat: 45.55, maxLon: 5.08, maxLat: 45.94 };
 
 export function inMetroBbox(lon: number, lat: number): boolean {
-  return lon >= METRO_BBOX.minLon && lon <= METRO_BBOX.maxLon && lat >= METRO_BBOX.minLat && lat <= METRO_BBOX.maxLat;
+    return lon >= METRO_BBOX.minLon && lon <= METRO_BBOX.maxLon && lat >= METRO_BBOX.minLat && lat <= METRO_BBOX.maxLat;
 }

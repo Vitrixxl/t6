@@ -10,6 +10,6 @@
 
 /** Lundi 00:00 de la semaine calendaire contenant `now`, en heure locale. */
 export function startOfWeek(now: Date): Date {
-  const mondayOffset = (now.getDay() + 6) % 7;
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayOffset);
+    const mondayOffset = (now.getDay() + 6) % 7;
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayOffset);
 }

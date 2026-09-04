@@ -8,10 +8,10 @@ import { createHash, randomBytes } from 'node:crypto';
 
 /** Jeton de session opaque (256 bits d'entropie), transmis au client une seule fois. */
 export function createSessionToken(): string {
-  return randomBytes(32).toString('base64url');
+    return randomBytes(32).toString('base64url');
 }
 
 /** Seule l'empreinte du jeton est persistee, jamais le jeton lui-meme. */
 export function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
+    return createHash('sha256').update(token).digest('hex');
 }

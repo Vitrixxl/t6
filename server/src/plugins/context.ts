@@ -14,17 +14,17 @@ import { createRepositories } from '../repositories/index.ts';
  * SQLite. Les autres plugins recoivent l'instance construite en argument.
  */
 export function context(config: ServerConfig) {
-  const db = openDatabase(config.databasePath);
-  const repositories = createRepositories(db);
+    const db = openDatabase(config.databasePath);
+    const repositories = createRepositories(db);
 
-  return new Elysia({ name: 'context' })
-    .decorate('config', config)
-    .decorate('db', db)
-    .decorate('repositories', repositories)
-    .onStop(() => {
-      db.$client.close();
-    })
-    .as('global');
+    return new Elysia({ name: 'context' })
+        .decorate('config', config)
+        .decorate('db', db)
+        .decorate('repositories', repositories)
+        .onStop(() => {
+            db.$client.close();
+        })
+        .as('global');
 }
 
 export type AppContext = ReturnType<typeof context>;

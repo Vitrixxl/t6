@@ -14,8 +14,8 @@ const OUTPUT = 'output/metrics/build.json';
 const assets = readdirSync(ASSETS_DIR);
 const document = readFileSync('dist/index.html', 'utf8');
 const referenced = (extension) => {
-  const match = document.match(new RegExp(`/assets/([\\w.-]+\\${extension})`));
-  return match?.[1];
+    const match = document.match(new RegExp(`/assets/([\\w.-]+\\${extension})`));
+    return match?.[1];
 };
 
 // Le point d'entree et la feuille de style sont ceux que le document charge.
@@ -24,25 +24,25 @@ const css = referenced('.css');
 // Le fragment differe est le plus gros des autres : c'est celui dont le poids
 // merite d'etre suivi, quel que soit le module qui l'a fait naitre.
 const maplibre = assets
-  .filter((name) => name.endsWith('.js') && name !== entry)
-  .sort((a, b) => statSync(`${ASSETS_DIR}/${b}`).size - statSync(`${ASSETS_DIR}/${a}`).size)[0];
+    .filter((name) => name.endsWith('.js') && name !== entry)
+    .sort((a, b) => statSync(`${ASSETS_DIR}/${b}`).size - statSync(`${ASSETS_DIR}/${a}`).size)[0];
 if (!entry || !maplibre || !css) {
-  console.error('Artefacts introuvables dans dist/assets : lancer `bun run build` d\'abord.');
-  process.exit(1);
+    console.error('Artefacts introuvables dans dist/assets : lancer `bun run build` d\'abord.');
+    process.exit(1);
 }
 
 const kb = (bytes) => Math.round((bytes / 1000) * 100) / 100;
 const measure = (name) => {
-  const content = readFileSync(`${ASSETS_DIR}/${name}`);
-  return { file: name, rawKb: kb(content.length), gzipKb: kb(gzipSync(content).length) };
+    const content = readFileSync(`${ASSETS_DIR}/${name}`);
+    return { file: name, rawKb: kb(content.length), gzipKb: kb(gzipSync(content).length) };
 };
 
 const metrics = {
-  generatedAt: new Date().toISOString(),
-  builtAt: statSync(`${ASSETS_DIR}/${entry}`).mtime.toISOString(),
-  entry: measure(entry),
-  maplibre: measure(maplibre),
-  css: measure(css),
+    generatedAt: new Date().toISOString(),
+    builtAt: statSync(`${ASSETS_DIR}/${entry}`).mtime.toISOString(),
+    entry: measure(entry),
+    maplibre: measure(maplibre),
+    css: measure(css),
 };
 
 mkdirSync('output/metrics', { recursive: true });

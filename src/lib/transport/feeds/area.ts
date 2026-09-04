@@ -5,11 +5,11 @@ export const METRO_RADIUS_KM = 16;
 export const STATION_RADIUS_KM = METRO_RADIUS_KM;
 
 export function distanceToCenterKm(lat: number, lon: number): number {
-  const earthRadiusKm = 6371;
-  const dLat = ((lat - CITY_CENTER.lat) * Math.PI) / 180;
-  const dLon = ((lon - CITY_CENTER.lon) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((CITY_CENTER.lat * Math.PI) / 180) * Math.cos((lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return 2 * earthRadiusKm * Math.asin(Math.sqrt(a));
+    const earthRadiusKm = 6371;
+    const dLat = ((lat - CITY_CENTER.lat) * Math.PI) / 180;
+    const dLon = ((lon - CITY_CENTER.lon) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((CITY_CENTER.lat * Math.PI) / 180) * Math.cos((lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    return 2 * earthRadiusKm * Math.asin(Math.sqrt(a));
 }

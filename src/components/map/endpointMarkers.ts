@@ -14,14 +14,14 @@ import type { GeoPoint } from '../../types';
 export type EndpointRole = 'origin' | 'destination';
 
 const ROLE_LABEL: Record<EndpointRole, string> = {
-  origin: 'Depart',
-  destination: 'Arrivee',
+    origin: 'Depart',
+    destination: 'Arrivee',
 };
 
 /** Epingle en goutte : la pointe marque la coordonnee exacte. */
 function pinSvg(role: EndpointRole): string {
-  const fill = role === 'origin' ? '#0e6b4e' : '#dc2626';
-  return `
+    const fill = role === 'origin' ? '#0e6b4e' : '#dc2626';
+    return `
     <svg width="30" height="40" viewBox="0 0 30 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path d="M15 39C15 39 28 24.5 28 14.5C28 7.04 22.18 1 15 1C7.82 1 2 7.04 2 14.5C2 24.5 15 39 15 39Z"
             fill="${fill}" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
@@ -31,20 +31,20 @@ function pinSvg(role: EndpointRole): string {
 }
 
 function createEndpoint(role: EndpointRole, point: GeoPoint): HTMLElement {
-  const container = document.createElement('div');
-  container.className = `ufm-endpoint ufm-endpoint-${role}`;
+    const container = document.createElement('div');
+    container.className = `ufm-endpoint ufm-endpoint-${role}`;
 
-  const pin = document.createElement('span');
-  pin.className = 'ufm-endpoint-pin';
-  pin.innerHTML = pinSvg(role);
+    const pin = document.createElement('span');
+    pin.className = 'ufm-endpoint-pin';
+    pin.innerHTML = pinSvg(role);
 
-  const label = document.createElement('span');
-  label.className = 'ufm-endpoint-label';
-  // textContent, jamais innerHTML : le libelle vient d'un geocodeur tiers.
-  label.textContent = `${ROLE_LABEL[role]} · ${point.label}`;
+    const label = document.createElement('span');
+    label.className = 'ufm-endpoint-label';
+    // textContent, jamais innerHTML : le libelle vient d'un geocodeur tiers.
+    label.textContent = `${ROLE_LABEL[role]} · ${point.label}`;
 
-  container.append(label, pin);
-  return container;
+    container.append(label, pin);
+    return container;
 }
 
 /**
@@ -53,24 +53,24 @@ function createEndpoint(role: EndpointRole, point: GeoPoint): HTMLElement {
  * epingles precedentes.
  */
 export function syncEndpointMarkers(
-  map: MaplibreMap,
-  current: maplibregl.Marker[],
-  origin: GeoPoint | null,
-  destination: GeoPoint | null,
+    map: MaplibreMap,
+    current: maplibregl.Marker[],
+    origin: GeoPoint | null,
+    destination: GeoPoint | null,
 ): maplibregl.Marker[] {
-  current.forEach((marker) => marker.remove());
+    current.forEach((marker) => marker.remove());
 
-  const entries: [EndpointRole, GeoPoint][] = [];
-  if (origin) {
-    entries.push(['origin', origin]);
-  }
-  if (destination) {
-    entries.push(['destination', destination]);
-  }
+    const entries: [EndpointRole, GeoPoint][] = [];
+    if (origin) {
+        entries.push(['origin', origin]);
+    }
+    if (destination) {
+        entries.push(['destination', destination]);
+    }
 
-  return entries.map(([role, point]) =>
-    new maplibregl.Marker({ element: createEndpoint(role, point), anchor: 'bottom' })
-      .setLngLat([point.lon, point.lat])
-      .addTo(map),
-  );
+    return entries.map(([role, point]) =>
+        new maplibregl.Marker({ element: createEndpoint(role, point), anchor: 'bottom' })
+            .setLngLat([point.lon, point.lat])
+            .addTo(map),
+    );
 }

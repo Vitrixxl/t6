@@ -7,10 +7,10 @@
 import type { MobilityMode, RouteLeg } from '../../types';
 
 export const LEG_COLOR: Record<MobilityMode, string> = {
-  walk: '#475569',
-  bike: '#16a34a',
-  scooter: '#16a34a',
-  transit: '#2563eb',
+    walk: '#475569',
+    bike: '#16a34a',
+    scooter: '#16a34a',
+    transit: '#2563eb',
 };
 
 /**
@@ -20,7 +20,7 @@ export const LEG_COLOR: Record<MobilityMode, string> = {
  * lui demander de traduire notre code couleur en celui du reseau.
  */
 export function legColor(leg: RouteLeg): string {
-  return leg.mapColor ?? LEG_COLOR[leg.mode];
+    return leg.mapColor ?? LEG_COLOR[leg.mode];
 }
 
 /** Epaisseur du trait, plus marquee au zoom rue qu'en vue metropole. */

@@ -22,29 +22,29 @@ export const ACCOUNT_PARTS: readonly AccountPart[] = ['profile', 'tripRecords', 
  * serveur, l'ecran de connexion prend le relais.
  */
 export async function restoreSession(): Promise<Session | null> {
-  try {
-    return await treatyRequest(api.auth.session.get());
-  } catch (error) {
-    if (error instanceof ApiUnavailableError || (error instanceof ApiError && error.status === 401)) {
-      return null;
+    try {
+        return await treatyRequest(api.auth.session.get());
+    } catch (error) {
+        if (error instanceof ApiUnavailableError || (error instanceof ApiError && error.status === 401)) {
+            return null;
+        }
+        throw error;
     }
-    throw error;
-  }
 }
 
 /** Lit une partie telle que le serveur la tient. */
 export function fetchAccountPart<P extends AccountPart>(part: P): Promise<AccountState[P]>;
 export function fetchAccountPart(part: AccountPart): Promise<AccountState[AccountPart]> {
-  switch (part) {
-    case 'profile':
-      return treatyRequest(api.me.profile.get());
-    case 'tripRecords':
-      return treatyRequest(api.trips.history.get());
-    case 'plannedTrips':
-      return treatyRequest(api.trips.planned.get());
-    case 'recurringTrips':
-      return treatyRequest(api.trips.recurring.get());
-    case 'savedRoutes':
-      return treatyRequest(api['saved-routes'].get());
-  }
+    switch (part) {
+        case 'profile':
+            return treatyRequest(api.me.profile.get());
+        case 'tripRecords':
+            return treatyRequest(api.trips.history.get());
+        case 'plannedTrips':
+            return treatyRequest(api.trips.planned.get());
+        case 'recurringTrips':
+            return treatyRequest(api.trips.recurring.get());
+        case 'savedRoutes':
+            return treatyRequest(api['saved-routes'].get());
+    }
 }

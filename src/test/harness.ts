@@ -15,32 +15,32 @@ export { afterEach, beforeEach, describe, expect, it };
 const stubbed = new Map<string, unknown>();
 
 export const vi = {
-  fn: mock,
-  spyOn,
+    fn: mock,
+    spyOn,
 
-  /**
-   * Remplace une valeur globale en gardant l'ancienne. `bun:test` n'a pas
-   * d'equivalent : la restauration doit etre explicite, d'ou la table.
-   */
-  stubGlobal(name: string, value: unknown) {
-    if (!stubbed.has(name)) {
-      stubbed.set(name, (globalThis as Record<string, unknown>)[name]);
-    }
-    (globalThis as Record<string, unknown>)[name] = value;
-  },
+    /**
+     * Remplace une valeur globale en gardant l'ancienne. `bun:test` n'a pas
+     * d'equivalent : la restauration doit etre explicite, d'ou la table.
+     */
+    stubGlobal(name: string, value: unknown) {
+        if (!stubbed.has(name)) {
+            stubbed.set(name, (globalThis as Record<string, unknown>)[name]);
+        }
+        (globalThis as Record<string, unknown>)[name] = value;
+    },
 
-  unstubAllGlobals() {
-    for (const [name, original] of stubbed) {
-      if (original === undefined) {
-        delete (globalThis as Record<string, unknown>)[name];
-      } else {
-        (globalThis as Record<string, unknown>)[name] = original;
-      }
-    }
-    stubbed.clear();
-  },
+    unstubAllGlobals() {
+        for (const [name, original] of stubbed) {
+            if (original === undefined) {
+                delete (globalThis as Record<string, unknown>)[name];
+            } else {
+                (globalThis as Record<string, unknown>)[name] = original;
+            }
+        }
+        stubbed.clear();
+    },
 
-  restoreAllMocks() {
-    mock.restore();
-  },
+    restoreAllMocks() {
+        mock.restore();
+    },
 };

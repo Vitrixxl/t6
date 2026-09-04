@@ -3,16 +3,16 @@
 const FETCH_TIMEOUT_MS = 8000;
 
 export async function fetchJson<T>(url: string, fetcher: typeof fetch = fetch): Promise<T> {
-  const response = await fetcher(url, {
-    headers: {
-      Accept: 'application/json',
-    },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
+    const response = await fetcher(url, {
+        headers: {
+            Accept: 'application/json',
+        },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
 
-  if (!response.ok) {
-    throw new Error(`Flux indisponible: ${url} (${response.status})`);
-  }
+    if (!response.ok) {
+        throw new Error(`Flux indisponible: ${url} (${response.status})`);
+    }
 
-  return response.json() as Promise<T>;
+    return response.json() as Promise<T>;
 }

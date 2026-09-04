@@ -5,48 +5,48 @@ import { deleteAccount, loginUser, logoutUser } from './auth';
 const USER: SessionUser = { id: 'user-1', email: 'a@b.fr', displayName: 'Test', profile: DEFAULT_PROFILE };
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
 afterEach(() => {
-  vi.restoreAllMocks();
+    vi.restoreAllMocks();
 });
 
 describe('session', () => {
-  it('la connexion rend le compte et son etat tels que le serveur les envoie', async () => {
-    const state = { profile: DEFAULT_PROFILE, tripRecords: [], plannedTrips: [], recurringTrips: [], savedRoutes: [] };
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ user: USER, state }));
+    it('la connexion rend le compte et son etat tels que le serveur les envoie', async () => {
+        const state = { profile: DEFAULT_PROFILE, tripRecords: [], plannedTrips: [], recurringTrips: [], savedRoutes: [] };
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ user: USER, state }));
 
-    const session = await loginUser({ email: ' a@b.fr ', password: 'UrbanFlow2026!' });
+        const session = await loginUser({ email: ' a@b.fr ', password: 'UrbanFlow2026!' });
 
-    expect(session.user.id).toBe('user-1');
-    expect(session.state.plannedTrips).toEqual([]);
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain('/api/auth/login');
-    expect(JSON.parse(String(init.body))).toMatchObject({ email: 'a@b.fr' });
-  });
+        expect(session.user.id).toBe('user-1');
+        expect(session.state.plannedTrips).toEqual([]);
+        const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+        expect(url).toContain('/api/auth/login');
+        expect(JSON.parse(String(init.body))).toMatchObject({ email: 'a@b.fr' });
+    });
 
-  it('une connexion refusee remonte le message du serveur', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Identifiants invalides.' }, 401));
+    it('une connexion refusee remonte le message du serveur', async () => {
+        vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Identifiants invalides.' }, 401));
 
-    await expect(loginUser({ email: 'a@b.fr', password: 'faux' })).rejects.toThrow('Identifiants invalides.');
-  });
+        await expect(loginUser({ email: 'a@b.fr', password: 'faux' })).rejects.toThrow('Identifiants invalides.');
+    });
 
-  it('la deconnexion revoque la session cote serveur', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
+    it('la deconnexion revoque la session cote serveur', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
 
-    await logoutUser();
+        await logoutUser();
 
-    expect(String(fetchSpy.mock.calls[0]?.[0])).toContain('/api/auth/logout');
-  });
+        expect(String(fetchSpy.mock.calls[0]?.[0])).toContain('/api/auth/logout');
+    });
 
-  it("l'effacement du compte passe par le serveur, qui supprime en cascade (RGPD art. 17)", async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
+    it("l'effacement du compte passe par le serveur, qui supprime en cascade (RGPD art. 17)", async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
 
-    await deleteAccount();
+        await deleteAccount();
 
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain('/api/me');
-    expect(init.method).toBe('DELETE');
-  });
+        const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+        expect(url).toContain('/api/me');
+        expect(init.method).toBe('DELETE');
+    });
 });

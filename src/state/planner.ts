@@ -11,9 +11,9 @@ export const planSourceAtom = atom<TripSource | null>(null);
 export const tripsHubAtom = atom<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
 
 export const openHubAtom = atom(null, (_get, set, tab: TripsHubTab = 'upcoming') => {
-  set(tripsHubAtom, { open: true, tab });
+    set(tripsHubAtom, { open: true, tab });
 });
 
 export const closeHubAtom = atom(null, (get, set) => {
-  set(tripsHubAtom, { ...get(tripsHubAtom), open: false });
+    set(tripsHubAtom, { ...get(tripsHubAtom), open: false });
 });

@@ -7,11 +7,11 @@ import { plannedTrips, recurringTrips, savedRoutes, tripRecords } from './collec
 import { mobilityProfile } from './profile';
 
 export const accountState = z.object({
-  profile: mobilityProfile,
-  tripRecords,
-  plannedTrips,
-  recurringTrips,
-  savedRoutes,
+    profile: mobilityProfile,
+    tripRecords,
+    plannedTrips,
+    recurringTrips,
+    savedRoutes,
 });
 export type AccountState = z.infer<typeof accountState>;
 
@@ -21,11 +21,11 @@ export type Session = z.infer<typeof session>;
 
 /** Export RGPD (art. 20) : l'etat complet, augmente des donnees de compte. */
 export const accountExport = accountState.extend({
-  exportedAt: z.string(),
-  account: z.object({
-    id: z.string(),
-    email: z.string(),
-    displayName: z.string(),
-    createdAt: z.string(),
-  }),
+    exportedAt: z.string(),
+    account: z.object({
+        id: z.string(),
+        email: z.string(),
+        displayName: z.string(),
+        createdAt: z.string(),
+    }),
 });

@@ -16,16 +16,16 @@ import { watch } from 'node:fs';
 const children: ChildProcess[] = [];
 
 function run(command: string, args: string[], env: Record<string, string> = {}): ChildProcess {
-  const child = spawn(command, args, { stdio: 'inherit', env: { ...process.env, ...env } });
-  children.push(child);
-  return child;
+    const child = spawn(command, args, { stdio: 'inherit', env: { ...process.env, ...env } });
+    children.push(child);
+    return child;
 }
 
 async function build() {
-  const started = performance.now();
-  const child = Bun.spawn(['bun', 'scripts/build.ts'], { env: { ...process.env, NODE_ENV: 'development' }, stdout: 'inherit', stderr: 'inherit' });
-  await child.exited;
-  console.log(`[web] reconstruit en ${Math.round(performance.now() - started)} ms`);
+    const started = performance.now();
+    const child = Bun.spawn(['bun', 'scripts/build.ts'], { env: { ...process.env, NODE_ENV: 'development' }, stdout: 'inherit', stderr: 'inherit' });
+    await child.exited;
+    console.log(`[web] reconstruit en ${Math.round(performance.now() - started)} ms`);
 }
 
 await build();
@@ -35,16 +35,16 @@ run('bun', ['--watch', 'server/src/index.ts'], { API_HOST: '0.0.0.0' });
 // se calme avant de reconstruire, sinon chaque sauvegarde lance trois builds.
 let pending: ReturnType<typeof setTimeout> | undefined;
 for (const directory of ['src', 'index.html']) {
-  watch(directory, { recursive: true }, () => {
-    clearTimeout(pending);
-    pending = setTimeout(() => void build(), 120);
-  });
+    watch(directory, { recursive: true }, () => {
+        clearTimeout(pending);
+        pending = setTimeout(() => void build(), 120);
+    });
 }
 
 function shutdown() {
-  for (const child of children) {
-    if (!child.killed) child.kill('SIGTERM');
-  }
-  process.exit(0);
+    for (const child of children) {
+        if (!child.killed) child.kill('SIGTERM');
+    }
+    process.exit(0);
 }
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, shutdown);

@@ -15,21 +15,21 @@ import { createTripRecordRepository } from './trip-records.ts';
 import { createUserRepository } from './users.ts';
 
 export function createRepositories(db: Executor) {
-  const tripRecords = createTripRecordRepository(db);
-  const plannedTrips = createPlannedTripRepository(db);
-  const recurringTrips = createRecurringTripRepository(db);
-  const savedRoutes = createSavedRouteRepository(db);
+    const tripRecords = createTripRecordRepository(db);
+    const plannedTrips = createPlannedTripRepository(db);
+    const recurringTrips = createRecurringTripRepository(db);
+    const savedRoutes = createSavedRouteRepository(db);
 
-  return {
-    users: createUserRepository(db),
-    routeCache: createRouteCacheRepository(db),
-    sessions: createSessionRepository(db),
-    tripRecords,
-    plannedTrips,
-    recurringTrips,
-    savedRoutes,
-    state: createStateReader({ tripRecords, plannedTrips, recurringTrips, savedRoutes }),
-  };
+    return {
+        users: createUserRepository(db),
+        routeCache: createRouteCacheRepository(db),
+        sessions: createSessionRepository(db),
+        tripRecords,
+        plannedTrips,
+        recurringTrips,
+        savedRoutes,
+        state: createStateReader({ tripRecords, plannedTrips, recurringTrips, savedRoutes }),
+    };
 }
 
 export type Repositories = ReturnType<typeof createRepositories>;

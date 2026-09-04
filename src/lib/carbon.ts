@@ -17,35 +17,35 @@ import { startOfWeek } from './week';
  * ecrans annoncent le meme chiffre.
  */
 export function summarizeCarbon(
-  allRecords: TripRecord[],
-  recurring: RecurringTrip[],
-  weeklyGoalGrams: number,
-  now: Date = new Date(),
+    allRecords: TripRecord[],
+    recurring: RecurringTrip[],
+    weeklyGoalGrams: number,
+    now: Date = new Date(),
 ): CarbonSummary {
-  const weekFloor = startOfWeek(now);
-  const records = allRecords.filter((record) => new Date(record.createdAt).getTime() >= weekFloor.getTime());
-  const routines = sumRoutines(recurring, weekFloor, now);
-  const totalDistanceKm = round(records.reduce((sum, record) => sum + record.distanceKm, 0) + routines.distanceKm, 2);
-  const totalCarbonGrams = Math.round(records.reduce((sum, record) => sum + record.carbonGrams, 0) + routines.carbonGrams);
-  const totalSavedGrams = Math.round(
-    records.reduce((sum, record) => sum + (record.carbonSavedGrams ?? 0), 0) + routines.carbonSavedGrams,
-  );
+    const weekFloor = startOfWeek(now);
+    const records = allRecords.filter((record) => new Date(record.createdAt).getTime() >= weekFloor.getTime());
+    const routines = sumRoutines(recurring, weekFloor, now);
+    const totalDistanceKm = round(records.reduce((sum, record) => sum + record.distanceKm, 0) + routines.distanceKm, 2);
+    const totalCarbonGrams = Math.round(records.reduce((sum, record) => sum + record.carbonGrams, 0) + routines.carbonGrams);
+    const totalSavedGrams = Math.round(
+        records.reduce((sum, record) => sum + (record.carbonSavedGrams ?? 0), 0) + routines.carbonSavedGrams,
+    );
 
-  return {
-    trips: records.length + routines.trips,
-    totalDistanceKm,
-    totalCarbonGrams,
-    totalSavedGrams,
-    goalUsagePercent: weeklyGoalGrams > 0 ? Math.min(Math.round((totalCarbonGrams / weeklyGoalGrams) * 100), 999) : 0,
-  };
+    return {
+        trips: records.length + routines.trips,
+        totalDistanceKm,
+        totalCarbonGrams,
+        totalSavedGrams,
+        goalUsagePercent: weeklyGoalGrams > 0 ? Math.min(Math.round((totalCarbonGrams / weeklyGoalGrams) * 100), 999) : 0,
+    };
 }
 
 /** Ajoute un trajet realise en tete de l'historique, borne aux plus recents. */
 export function recordTrip(records: TripRecord[], record: TripRecord): TripRecord[] {
-  return [record, ...records.filter((item) => item.id !== record.id)].slice(0, TRIP_HISTORY_LIMIT);
+    return [record, ...records.filter((item) => item.id !== record.id)].slice(0, TRIP_HISTORY_LIMIT);
 }
 
 function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
+    const factor = 10 ** decimals;
+    return Math.round(value * factor) / factor;
 }

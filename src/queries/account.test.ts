@@ -11,9 +11,9 @@ import { accountMutationOptions, accountPartQuery, readAccountPart, readAccountS
 import { createQueryClient } from './client';
 import { mutationKeys } from './keys';
 import {
-  plannedTripCompletionMutation,
-  plannedTripDeleteMutation,
-  plannedTripSaveMutation,
+    plannedTripCompletionMutation,
+    plannedTripDeleteMutation,
+    plannedTripSaveMutation,
 } from './planned-trips';
 import { profileSaveMutation } from './profile';
 import { recurringTripDeleteMutation, recurringTripSaveMutation } from './recurring-trips';
@@ -23,340 +23,340 @@ import { deleteAccountOptions, logout, openSession, readSession, sessionQuery } 
 import { tripHistoryClearMutation } from './trip-records';
 
 const SOURCE = {
-  label: 'Domicile -> Travail',
-  origin: { label: 'Bellecour', lat: 45.7578, lon: 4.832 },
-  destination: { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 },
-  modes: ['walk', 'transit'] as Array<'walk' | 'transit'>,
-  distanceKm: 2.4,
-  durationMinutes: 14,
-  carbonGrams: 96,
-  carbonSavedGrams: 336,
+    label: 'Domicile -> Travail',
+    origin: { label: 'Bellecour', lat: 45.7578, lon: 4.832 },
+    destination: { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 },
+    modes: ['walk', 'transit'] as Array<'walk' | 'transit'>,
+    distanceKm: 2.4,
+    durationMinutes: 14,
+    carbonGrams: 96,
+    carbonSavedGrams: 336,
 };
 
 const OPTION: RouteOption = {
-  id: 'bike',
-  title: 'Velo',
-  summary: '',
-  modes: ['walk', 'bike'],
-  legs: [],
-  path: [],
-  distanceKm: 2.4,
-  durationMinutes: 12,
-  carbonGrams: 10,
-  carbonSavedGrams: 420,
-  carbonReference: { distanceKm: 3, carbonGrams: 426, factorVersion: 'test-car-factor' },
-  reliabilityScore: 86,
-  score: 84,
-  accessible: true,
-  warnings: [],
-  instructions: [],
+    id: 'bike',
+    title: 'Velo',
+    summary: '',
+    modes: ['walk', 'bike'],
+    legs: [],
+    path: [],
+    distanceKm: 2.4,
+    durationMinutes: 12,
+    carbonGrams: 10,
+    carbonSavedGrams: 420,
+    carbonReference: { distanceKm: 3, carbonGrams: 426, factorVersion: 'test-car-factor' },
+    reliabilityScore: 86,
+    score: 84,
+    accessible: true,
+    warnings: [],
+    instructions: [],
 };
 
 const EVERY_DAY = { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], departureTime: '23:59', returnTime: null };
 
 function session(overrides: Partial<Session['state']> = {}): Session {
-  return {
-    user: { id: 'user-1', email: 'a@b.fr', displayName: 'Citoyen', profile: DEFAULT_PROFILE },
-    state: { profile: DEFAULT_PROFILE, tripRecords: [], plannedTrips: [], recurringTrips: [], savedRoutes: [], ...overrides },
-  };
+    return {
+        user: { id: 'user-1', email: 'a@b.fr', displayName: 'Citoyen', profile: DEFAULT_PROFILE },
+        state: { profile: DEFAULT_PROFILE, tripRecords: [], plannedTrips: [], recurringTrips: [], savedRoutes: [], ...overrides },
+    };
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
 type FetchHandler = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 type FetchMock = ReturnType<typeof vi.fn<FetchHandler>>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function parsedBody(init?: RequestInit): Record<string, unknown> {
-  const value: unknown = JSON.parse(String(init?.body));
-  if (!isRecord(value)) {
-    throw new Error('Le faux serveur attend un objet JSON.');
-  }
-  return value;
+    const value: unknown = JSON.parse(String(init?.body));
+    if (!isRecord(value)) {
+        throw new Error('Le faux serveur attend un objet JSON.');
+    }
+    return value;
 }
 
 function lastPathPart(url: string): string {
-  return decodeURIComponent(url.split('/').at(-1) ?? '');
+    return decodeURIComponent(url.split('/').at(-1) ?? '');
 }
 
 /** Faux serveur granulaire : le PUT rend seulement la ressource adressee. */
 const resourceServer: FetchHandler = (input, init) => {
-  const url = String(input);
-  const method = init?.method ?? 'GET';
-  if (method === 'DELETE') {
-    return Promise.resolve(jsonResponse({ ok: true }));
-  }
-  if (method !== 'PUT') {
-    return Promise.resolve(jsonResponse([]));
-  }
-  if (url.endsWith('/api/me/profile')) {
-    return Promise.resolve(jsonResponse(parsedBody(init)));
-  }
-  if (url.endsWith('/completion')) {
-    const id = decodeURIComponent(url.split('/').at(-2) ?? '');
-    const completedAt = '2026-09-02T07:00:00.000Z';
-    const plannedTrip = { ...futureTrip(), id, status: 'done', completedAt };
-    return Promise.resolve(
-      jsonResponse({
-        plannedTrip,
-        tripRecord: {
-          id: `trip:${id}`,
-          userId: 'user-1',
-          routeTitle: plannedTrip.label,
-          modes: plannedTrip.modes,
-          distanceKm: plannedTrip.distanceKm,
-          durationMinutes: plannedTrip.durationMinutes,
-          carbonGrams: plannedTrip.carbonGrams,
-          carbonSavedGrams: plannedTrip.carbonSavedGrams,
-          createdAt: completedAt,
-        },
-      }),
-    );
-  }
-  return Promise.resolve(jsonResponse({ id: lastPathPart(url), userId: 'user-1', ...parsedBody(init) }));
+    const url = String(input);
+    const method = init?.method ?? 'GET';
+    if (method === 'DELETE') {
+        return Promise.resolve(jsonResponse({ ok: true }));
+    }
+    if (method !== 'PUT') {
+        return Promise.resolve(jsonResponse([]));
+    }
+    if (url.endsWith('/api/me/profile')) {
+        return Promise.resolve(jsonResponse(parsedBody(init)));
+    }
+    if (url.endsWith('/completion')) {
+        const id = decodeURIComponent(url.split('/').at(-2) ?? '');
+        const completedAt = '2026-09-02T07:00:00.000Z';
+        const plannedTrip = { ...futureTrip(), id, status: 'done', completedAt };
+        return Promise.resolve(
+            jsonResponse({
+                plannedTrip,
+                tripRecord: {
+                    id: `trip:${id}`,
+                    userId: 'user-1',
+                    routeTitle: plannedTrip.label,
+                    modes: plannedTrip.modes,
+                    distanceKm: plannedTrip.distanceKm,
+                    durationMinutes: plannedTrip.durationMinutes,
+                    carbonGrams: plannedTrip.carbonGrams,
+                    carbonSavedGrams: plannedTrip.carbonSavedGrams,
+                    createdAt: completedAt,
+                },
+            }),
+        );
+    }
+    return Promise.resolve(jsonResponse({ id: lastPathPart(url), userId: 'user-1', ...parsedBody(init) }));
 };
 
 interface SentRequest {
-  path: string;
-  method: string;
-  body: Record<string, unknown> | null;
+    path: string;
+    method: string;
+    body: Record<string, unknown> | null;
 }
 
 function sentRequests(spy: FetchMock): SentRequest[] {
-  return spy.mock.calls
-    .filter(([, init]) => init?.method === 'PUT' || init?.method === 'DELETE')
-    .map(([url, init]) => ({
-      path: String(url),
-      method: init?.method ?? 'GET',
-      body: init?.body ? parsedBody(init) : null,
-    }));
+    return spy.mock.calls
+        .filter(([, init]) => init?.method === 'PUT' || init?.method === 'DELETE')
+        .map(([url, init]) => ({
+            path: String(url),
+            method: init?.method ?? 'GET',
+            body: init?.body ? parsedBody(init) : null,
+        }));
 }
 
 function futureTrip(): PlannedTrip {
-  return createPlannedTrip('user-1', SOURCE, new Date(Date.now() + 3_600_000));
+    return createPlannedTrip('user-1', SOURCE, new Date(Date.now() + 3_600_000));
 }
 
 let client: QueryClient;
 let fetchSpy: FetchMock;
 
 beforeEach(() => {
-  client = createQueryClient();
-  fetchSpy = vi.fn(resourceServer);
-  vi.stubGlobal('fetch', fetchSpy);
+    client = createQueryClient();
+    fetchSpy = vi.fn(resourceServer);
+    vi.stubGlobal('fetch', fetchSpy);
 });
 
 afterEach(() => {
-  client.clear();
-  vi.unstubAllGlobals();
+    client.clear();
+    vi.unstubAllGlobals();
 });
 
 function write<Variables, Result>(command: AccountMutation<Variables, Result>, variables: Variables): Promise<void> {
-  return new MutationObserver(client, accountMutationOptions(client, command))
-    .mutate(variables)
-    .then(() => undefined, () => undefined);
+    return new MutationObserver(client, accountMutationOptions(client, command))
+        .mutate(variables)
+        .then(() => undefined, () => undefined);
 }
 
 function saveError(): string {
-  return saveErrorFrom(
-    client.getMutationCache().findAll({ mutationKey: mutationKeys.account }).map((mutation) => ({
-      status: mutation.state.status,
-      message: mutation.state.error?.message ?? '',
-      submittedAt: mutation.state.submittedAt,
-    })),
-  );
+    return saveErrorFrom(
+        client.getMutationCache().findAll({ mutationKey: mutationKeys.account }).map((mutation) => ({
+            status: mutation.state.status,
+            message: mutation.state.error?.message ?? '',
+            submittedAt: mutation.state.submittedAt,
+        })),
+    );
 }
 
 describe('session', () => {
-  it('amorce chaque partie sans relire ni envoyer', () => {
-    const trip = futureTrip();
-    openSession(client, session({ plannedTrips: [trip] }));
+    it('amorce chaque partie sans relire ni envoyer', () => {
+        const trip = futureTrip();
+        openSession(client, session({ plannedTrips: [trip] }));
 
-    expect(readSession(client)?.user.email).toBe('a@b.fr');
-    expect(new QueryObserver(client, accountPartQuery(client, 'plannedTrips')).getCurrentResult().data).toEqual([trip]);
-    expect(readAccountState(client).plannedTrips).toEqual([trip]);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
+        expect(readSession(client)?.user.email).toBe('a@b.fr');
+        expect(new QueryObserver(client, accountPartQuery(client, 'plannedTrips')).getCurrentResult().data).toEqual([trip]);
+        expect(readAccountState(client).plannedTrips).toEqual([trip]);
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
 
-  it('reprend une session et rend null sans session valide', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse(session()));
-    expect((await client.fetchQuery(sessionQuery))?.user.id).toBe('user-1');
+    it('reprend une session et rend null sans session valide', async () => {
+        fetchSpy.mockResolvedValueOnce(jsonResponse(session()));
+        expect((await client.fetchQuery(sessionQuery))?.user.id).toBe('user-1');
 
-    const fresh = createQueryClient();
-    fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Session expiree.' }, 401));
-    expect(await fresh.fetchQuery(sessionQuery)).toBeNull();
-  });
+        const fresh = createQueryClient();
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Session expiree.' }, 401));
+        expect(await fresh.fetchQuery(sessionQuery)).toBeNull();
+    });
 
-  it('revoque la session et vide le compte a la deconnexion', async () => {
-    openSession(client, session({ plannedTrips: [futureTrip()] }));
-    client.setQueryData(['account', 'plannedTrips'], [futureTrip()]);
+    it('revoque la session et vide le compte a la deconnexion', async () => {
+        openSession(client, session({ plannedTrips: [futureTrip()] }));
+        client.setQueryData(['account', 'plannedTrips'], [futureTrip()]);
 
-    await logout(client);
+        await logout(client);
 
-    expect(readSession(client)).toBeNull();
-    expect(readAccountPart(client, 'plannedTrips')).toEqual([]);
-    expect(String(fetchSpy.mock.calls.at(-1)?.[0])).toContain('/api/auth/logout');
-  });
+        expect(readSession(client)).toBeNull();
+        expect(readAccountPart(client, 'plannedTrips')).toEqual([]);
+        expect(String(fetchSpy.mock.calls.at(-1)?.[0])).toContain('/api/auth/logout');
+    });
 
-  it('garde la session si l effacement du compte echoue', async () => {
-    openSession(client, session());
-    fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Serveur indisponible.' }, 500));
+    it('garde la session si l effacement du compte echoue', async () => {
+        openSession(client, session());
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Serveur indisponible.' }, 500));
 
-    await new MutationObserver(client, deleteAccountOptions(client)).mutate().catch(() => undefined);
+        await new MutationObserver(client, deleteAccountOptions(client)).mutate().catch(() => undefined);
 
-    expect(readSession(client)).not.toBeNull();
-    expect(saveError()).toBe('Serveur indisponible.');
-  });
+        expect(readSession(client)).not.toBeNull();
+        expect(saveError()).toBe('Serveur indisponible.');
+    });
 });
 
 describe('commandes granulaires', () => {
-  beforeEach(() => {
-    openSession(client, session());
-  });
+    beforeEach(() => {
+        openSession(client, session());
+    });
 
-  it('envoie un seul trajet programme, sans id ni proprietaire dans le corps', async () => {
-    const trip = futureTrip();
-    await write(plannedTripSaveMutation, trip);
+    it('envoie un seul trajet programme, sans id ni proprietaire dans le corps', async () => {
+        const trip = futureTrip();
+        await write(plannedTripSaveMutation, trip);
 
-    expect(upcomingTrips(readAccountPart(client, 'plannedTrips'))).toHaveLength(1);
-    const [request] = sentRequests(fetchSpy);
-    expect(request.path).toBe(`/api/trips/planned/${trip.id}`);
-    expect(request.body).not.toHaveProperty('id');
-    expect(request.body).not.toHaveProperty('userId');
-  });
+        expect(upcomingTrips(readAccountPart(client, 'plannedTrips'))).toHaveLength(1);
+        const [request] = sentRequests(fetchSpy);
+        expect(request.path).toBe(`/api/trips/planned/${trip.id}`);
+        expect(request.body).not.toHaveProperty('id');
+        expect(request.body).not.toHaveProperty('userId');
+    });
 
-  it('termine un trajet par un seul endpoint et reconcilie les deux vues', async () => {
-    const trip = futureTrip();
-    openSession(client, session({ plannedTrips: [trip] }));
+    it('termine un trajet par un seul endpoint et reconcilie les deux vues', async () => {
+        const trip = futureTrip();
+        openSession(client, session({ plannedTrips: [trip] }));
 
-    await write(plannedTripCompletionMutation, trip);
+        await write(plannedTripCompletionMutation, trip);
 
-    const state = readAccountState(client);
-    expect(state.plannedTrips[0].status).toBe('done');
-    expect(state.tripRecords).toHaveLength(1);
-    expect(summarizeCarbon(state.tripRecords, [], state.profile.carbonGoalGramsPerWeek).totalSavedGrams).toBe(336);
-    expect(sentRequests(fetchSpy)).toEqual([
-      { path: `/api/trips/planned/${trip.id}/completion`, method: 'PUT', body: null },
-    ]);
-  });
+        const state = readAccountState(client);
+        expect(state.plannedTrips[0].status).toBe('done');
+        expect(state.tripRecords).toHaveLength(1);
+        expect(summarizeCarbon(state.tripRecords, [], state.profile.carbonGoalGramsPerWeek).totalSavedGrams).toBe(336);
+        expect(sentRequests(fetchSpy)).toEqual([
+            { path: `/api/trips/planned/${trip.id}/completion`, method: 'PUT', body: null },
+        ]);
+    });
 
-  it('annule puis supprime sans jamais envoyer la collection', async () => {
-    const trip = futureTrip();
-    openSession(client, session({ plannedTrips: [trip] }));
-    const cancelled = { ...trip, status: 'cancelled' as const, completedAt: null };
+    it('annule puis supprime sans jamais envoyer la collection', async () => {
+        const trip = futureTrip();
+        openSession(client, session({ plannedTrips: [trip] }));
+        const cancelled = { ...trip, status: 'cancelled' as const, completedAt: null };
 
-    const saving = write(plannedTripSaveMutation, cancelled);
-    expect(readAccountPart(client, 'plannedTrips')[0].status).toBe('cancelled');
-    const deleting = write(plannedTripDeleteMutation, cancelled);
-    expect(readAccountPart(client, 'plannedTrips')).toHaveLength(0);
-    await Promise.all([saving, deleting]);
+        const saving = write(plannedTripSaveMutation, cancelled);
+        expect(readAccountPart(client, 'plannedTrips')[0].status).toBe('cancelled');
+        const deleting = write(plannedTripDeleteMutation, cancelled);
+        expect(readAccountPart(client, 'plannedTrips')).toHaveLength(0);
+        await Promise.all([saving, deleting]);
 
-    const requests = sentRequests(fetchSpy);
-    expect(requests.map(({ method }) => method)).toEqual(['PUT', 'DELETE']);
-    expect(requests.map(({ path }) => path).every((path) => path.endsWith(`/${trip.id}`))).toBe(true);
-    expect(requests[0].body).not.toBeArray();
-  });
+        const requests = sentRequests(fetchSpy);
+        expect(requests.map(({ method }) => method)).toEqual(['PUT', 'DELETE']);
+        expect(requests.map(({ path }) => path).every((path) => path.endsWith(`/${trip.id}`))).toBe(true);
+        expect(requests[0].body).not.toBeArray();
+    });
 
-  it('cree, met en pause puis supprime une routine seule', async () => {
-    const routine = createRecurringTrip('user-1', SOURCE, EVERY_DAY);
-    await write(recurringTripSaveMutation, routine);
-    const paused = setRecurringPaused([routine], routine.id, true)[0] ?? routine;
-    await write(recurringTripSaveMutation, paused);
-    expect(isRoutinePaused(readAccountPart(client, 'recurringTrips')[0])).toBe(true);
-    await write(recurringTripDeleteMutation, paused);
+    it('cree, met en pause puis supprime une routine seule', async () => {
+        const routine = createRecurringTrip('user-1', SOURCE, EVERY_DAY);
+        await write(recurringTripSaveMutation, routine);
+        const paused = setRecurringPaused([routine], routine.id, true)[0] ?? routine;
+        await write(recurringTripSaveMutation, paused);
+        expect(isRoutinePaused(readAccountPart(client, 'recurringTrips')[0])).toBe(true);
+        await write(recurringTripDeleteMutation, paused);
 
-    expect(readAccountPart(client, 'recurringTrips')).toHaveLength(0);
-    expect(sentRequests(fetchSpy).map(({ path }) => path)).toEqual([
-      `/api/trips/recurring/${routine.id}`,
-      `/api/trips/recurring/${routine.id}`,
-      `/api/trips/recurring/${routine.id}`,
-    ]);
-  });
+        expect(readAccountPart(client, 'recurringTrips')).toHaveLength(0);
+        expect(sentRequests(fetchSpy).map(({ path }) => path)).toEqual([
+            `/api/trips/recurring/${routine.id}`,
+            `/api/trips/recurring/${routine.id}`,
+            `/api/trips/recurring/${routine.id}`,
+        ]);
+    });
 
-  it('enregistre sans doublon puis supprime un itineraire', async () => {
-    const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
-    await write(savedRouteSaveMutation, record);
-    await write(savedRouteSaveMutation, record);
-    expect(readAccountPart(client, 'savedRoutes')).toHaveLength(1);
+    it('enregistre sans doublon puis supprime un itineraire', async () => {
+        const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
+        await write(savedRouteSaveMutation, record);
+        await write(savedRouteSaveMutation, record);
+        expect(readAccountPart(client, 'savedRoutes')).toHaveLength(1);
 
-    await write(savedRouteDeleteMutation, record.id);
-    expect(readAccountPart(client, 'savedRoutes')).toHaveLength(0);
-  });
+        await write(savedRouteDeleteMutation, record.id);
+        expect(readAccountPart(client, 'savedRoutes')).toHaveLength(0);
+    });
 
-  it('envoie le profil seul et efface l historique par DELETE explicite', async () => {
-    const profile = { ...DEFAULT_PROFILE, displayName: 'Nadia', maxWalkMinutes: 45 };
-    await write(profileSaveMutation, profile);
-    await write(tripHistoryClearMutation, undefined);
+    it('envoie le profil seul et efface l historique par DELETE explicite', async () => {
+        const profile = { ...DEFAULT_PROFILE, displayName: 'Nadia', maxWalkMinutes: 45 };
+        await write(profileSaveMutation, profile);
+        await write(tripHistoryClearMutation, undefined);
 
-    expect(readAccountPart(client, 'profile').displayName).toBe('Nadia');
-    expect(sentRequests(fetchSpy).map(({ path, method }) => `${method} ${path}`)).toEqual([
-      'PUT /api/me/profile',
-      'DELETE /api/trips/history',
-    ]);
-  });
+        expect(readAccountPart(client, 'profile').displayName).toBe('Nadia');
+        expect(sentRequests(fetchSpy).map(({ path, method }) => `${method} ${path}`)).toEqual([
+            'PUT /api/me/profile',
+            'DELETE /api/trips/history',
+        ]);
+    });
 });
 
 describe('refus et rafales', () => {
-  beforeEach(() => {
-    openSession(client, session());
-  });
+    beforeEach(() => {
+        openSession(client, session());
+    });
 
-  it('signale un refus puis l efface au prochain succes', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
-    await write(tripHistoryClearMutation, undefined);
-    expect(saveError()).toBe('Requete invalide.');
+    it('signale un refus puis l efface au prochain succes', async () => {
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
+        await write(tripHistoryClearMutation, undefined);
+        expect(saveError()).toBe('Requete invalide.');
 
-    await write(tripHistoryClearMutation, undefined);
-    expect(saveError()).toBe('');
-  });
+        await write(tripHistoryClearMutation, undefined);
+        expect(saveError()).toBe('');
+    });
 
-  it('relit uniquement la vue concernee apres un serveur injoignable', async () => {
-    const observer = new QueryObserver(client, accountPartQuery(client, 'savedRoutes'));
-    const unsubscribe = observer.subscribe(() => undefined);
-    const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
-    fetchSpy.mockImplementation((_url, init) =>
-      init?.method === 'PUT' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(jsonResponse([])),
-    );
+    it('relit uniquement la vue concernee apres un serveur injoignable', async () => {
+        const observer = new QueryObserver(client, accountPartQuery(client, 'savedRoutes'));
+        const unsubscribe = observer.subscribe(() => undefined);
+        const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
+        fetchSpy.mockImplementation((_url, init) =>
+            init?.method === 'PUT' ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve(jsonResponse([])),
+        );
 
-    await write(savedRouteSaveMutation, record);
+        await write(savedRouteSaveMutation, record);
 
-    expect(saveError()).toContain('injoignable');
-    expect(readAccountPart(client, 'savedRoutes')).toHaveLength(0);
-    const reads = fetchSpy.mock.calls.filter(([, init]) => init?.method !== 'PUT');
-    expect(reads.map(([url]) => String(url))).toEqual(['/api/saved-routes']);
-    unsubscribe();
-  });
+        expect(saveError()).toContain('injoignable');
+        expect(readAccountPart(client, 'savedRoutes')).toHaveLength(0);
+        const reads = fetchSpy.mock.calls.filter(([, init]) => init?.method !== 'PUT');
+        expect(reads.map(([url]) => String(url))).toEqual(['/api/saved-routes']);
+        unsubscribe();
+    });
 
-  it('serialise des commandes differentes sans melanger leurs corps', async () => {
-    const trip = futureTrip();
-    const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
+    it('serialise des commandes differentes sans melanger leurs corps', async () => {
+        const trip = futureTrip();
+        const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
 
-    await Promise.all([
-      write(plannedTripSaveMutation, trip),
-      write(savedRouteSaveMutation, record),
-      write(profileSaveMutation, { ...DEFAULT_PROFILE, displayName: 'Final' }),
-    ]);
+        await Promise.all([
+            write(plannedTripSaveMutation, trip),
+            write(savedRouteSaveMutation, record),
+            write(profileSaveMutation, { ...DEFAULT_PROFILE, displayName: 'Final' }),
+        ]);
 
-    const requests = sentRequests(fetchSpy);
-    expect(requests.map(({ path }) => path)).toEqual([
-      `/api/trips/planned/${trip.id}`,
-      `/api/saved-routes/${record.id}`,
-      '/api/me/profile',
-    ]);
-    expect(requests.every(({ body }) => !Array.isArray(body))).toBe(true);
-  });
+        const requests = sentRequests(fetchSpy);
+        expect(requests.map(({ path }) => path)).toEqual([
+            `/api/trips/planned/${trip.id}`,
+            `/api/saved-routes/${record.id}`,
+            '/api/me/profile',
+        ]);
+        expect(requests.every(({ body }) => !Array.isArray(body))).toBe(true);
+    });
 
-  it('poursuit la rafale apres un refus et garde le dernier succes visible', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
-    const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
+    it('poursuit la rafale apres un refus et garde le dernier succes visible', async () => {
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
+        const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
 
-    await Promise.all([write(tripHistoryClearMutation, undefined), write(savedRouteSaveMutation, record)]);
+        await Promise.all([write(tripHistoryClearMutation, undefined), write(savedRouteSaveMutation, record)]);
 
-    expect(sentRequests(fetchSpy).map(({ path }) => path)).toEqual(['/api/trips/history', `/api/saved-routes/${record.id}`]);
-    expect(saveError()).toBe('');
-  });
+        expect(sentRequests(fetchSpy).map(({ path }) => path)).toEqual(['/api/trips/history', `/api/saved-routes/${record.id}`]);
+        expect(saveError()).toBe('');
+    });
 });

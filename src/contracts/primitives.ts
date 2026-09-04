@@ -26,10 +26,10 @@ export const carbonGrams = z.number().min(0).max(10_000_000);
 export const carbonSavedGrams = z.number().min(-10_000_000).max(10_000_000).nullable();
 
 export const geoPoint = z.object({
-  lat: z.number().min(-90).max(90),
-  lon: z.number().min(-180).max(180),
-  label,
-  accuracyMeters: z.number().min(0).max(100_000).optional(),
+    lat: z.number().min(-90).max(90),
+    lon: z.number().min(-180).max(180),
+    label,
+    accuracyMeters: z.number().min(0).max(100_000).optional(),
 });
 export type GeoPoint = z.infer<typeof geoPoint>;
 
@@ -38,21 +38,21 @@ export const okResponse = z.object({ ok: z.boolean() });
 
 /** Origine, destination et mesures : le socle commun a tout deplacement. */
 export const journeyShape = {
-  origin: geoPoint,
-  destination: geoPoint,
-  modes,
-  distanceKm,
-  durationMinutes,
-  carbonGrams,
-  carbonSavedGrams,
+    origin: geoPoint,
+    destination: geoPoint,
+    modes,
+    distanceKm,
+    durationMinutes,
+    carbonGrams,
+    carbonSavedGrams,
 };
 
 /** Un trajet planifie porte en plus son intitule libre. Un itineraire
  *  sauvegarde, lui, porte le titre de l'itineraire calcule (routeTitle) : les
  *  deux formes sont donc distinctes, et ne se melangent pas. */
 export const tripShape = {
-  label,
-  ...journeyShape,
+    label,
+    ...journeyShape,
 };
 
 /** Un enregistrement porte son proprietaire, que le serveur deduit de la

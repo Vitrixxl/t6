@@ -3,12 +3,12 @@
 export { describePoint, searchPlaces, type PlaceKind, type PlaceSearchResult } from './geocoding';
 export { enhanceLegsWithLiveRouting, fetchRouteMatrix, hasCompleteGeometry } from './routing';
 export {
-  CITY_CENTER,
-  METRO_RADIUS_KM,
-  fetchJson,
-  getFeedFreshness,
-  loadTransportNetwork,
-  mapDottVehicles,
-  mergeVelovStations,
-  weatherFromOpenMeteo,
+    CITY_CENTER,
+    METRO_RADIUS_KM,
+    fetchJson,
+    getFeedFreshness,
+    loadTransportNetwork,
+    mapDottVehicles,
+    mergeVelovStations,
+    weatherFromOpenMeteo,
 } from './feeds';

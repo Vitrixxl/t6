@@ -22,22 +22,22 @@ export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 export type Executor = Db | Tx;
 
 export function openDatabase(databasePath: string): Db {
-  if (databasePath !== ':memory:') {
-    mkdirSync(dirname(databasePath), { recursive: true });
-  }
-  const sqlite = new Database(databasePath, { create: true });
-  // Reglages de connexion, pas de schema : ils sont poses a chaque ouverture.
-  // Sans foreign_keys, les suppressions en cascade (RGPD art. 17) ne se
-  // declencheraient pas.
-  sqlite.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+    if (databasePath !== ':memory:') {
+        mkdirSync(dirname(databasePath), { recursive: true });
+    }
+    const sqlite = new Database(databasePath, { create: true });
+    // Reglages de connexion, pas de schema : ils sont poses a chaque ouverture.
+    // Sans foreign_keys, les suppressions en cascade (RGPD art. 17) ne se
+    // declencheraient pas.
+    sqlite.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
 
-  const db = drizzle(sqlite, { schema });
-  // Applique les migrations manquantes : une nouvelle instance (poste de dev,
-  // preproduction, production, base :memory: des tests) se provisionne toute
-  // seule au demarrage, et une instance existante ne rejoue que ce qu'elle
-  // n'a pas encore.
-  migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
-  return db;
+    const db = drizzle(sqlite, { schema });
+    // Applique les migrations manquantes : une nouvelle instance (poste de dev,
+    // preproduction, production, base :memory: des tests) se provisionne toute
+    // seule au demarrage, et une instance existante ne rejoue que ce qu'elle
+    // n'a pas encore.
+    migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+    return db;
 }
 
 export { schema };

@@ -7,31 +7,31 @@ const ORIGIN = { latitude: 45.7578, longitude: 4.832 };
 // La destination est resolue via la BAN (meme geocodeur que l'application).
 const DEST_QUERY = 'Rue de la Part-Dieu Lyon';
 const banResponse = await fetch(
-  `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(DEST_QUERY)}&limit=1&autocomplete=1&lat=${ORIGIN.latitude}&lon=${ORIGIN.longitude}`,
+    `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(DEST_QUERY)}&limit=1&autocomplete=1&lat=${ORIGIN.latitude}&lon=${ORIGIN.longitude}`,
 ).then((res) => res.json());
 const destFeature = banResponse.features?.[0];
 if (!destFeature) {
-  console.log('ECHEC: geocodage BAN de la destination impossible');
-  process.exit(1);
+    console.log('ECHEC: geocodage BAN de la destination impossible');
+    process.exit(1);
 }
 const DEST_LABEL = destFeature.properties.label;
 
 const CHROME_BIN =
-  process.env.CHROME_BIN || process.env.CHROMIUM_PATH || '/usr/sbin/chromium';
+    process.env.CHROME_BIN || process.env.CHROMIUM_PATH || '/usr/sbin/chromium';
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4000';
 
 const browser = await chromium.launch({
-  executablePath: CHROME_BIN,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--force-device-scale-factor=2'],
+    executablePath: CHROME_BIN,
+    args: ['--no-sandbox', '--disable-dev-shm-usage', '--force-device-scale-factor=2'],
 });
 const context = await browser.newContext({
-  viewport: { width: 390, height: 844 },
-  deviceScaleFactor: 2,
-  isMobile: true,
-  hasTouch: true,
-  locale: 'fr-FR',
-  geolocation: ORIGIN,
-  permissions: ['geolocation'],
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    locale: 'fr-FR',
+    geolocation: ORIGIN,
+    permissions: ['geolocation'],
 });
 const page = await context.newPage();
 page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
@@ -52,32 +52,32 @@ await page.waitForTimeout(4000);
 // limite de debit atteinte laissait donc l'ecran de connexion en place et les
 // echecs suivants pointaient les mauvais coupables. La carte doit etre la.
 if (!(await page.locator('#mobile-destination-search').count())) {
-  const message = await page.locator('body').innerText();
-  const reason = /Trop de requetes/i.test(message)
-    ? 'limite de debit atteinte sur /api/auth (10 tentatives par minute)'
-    : 'identifiants refuses ou API injoignable';
-  console.log(`ECHEC: connexion impossible - ${reason}`);
-  console.log('Relancer "bun run seed:demo" puis patienter une minute si la limite est en cause.');
-  await page.screenshot({ path: 'tmp/screenshots/plan-fail-login.png' });
-  process.exit(1);
+    const message = await page.locator('body').innerText();
+    const reason = /Trop de requetes/i.test(message)
+        ? 'limite de debit atteinte sur /api/auth (10 tentatives par minute)'
+        : 'identifiants refuses ou API injoignable';
+    console.log(`ECHEC: connexion impossible - ${reason}`);
+    console.log('Relancer "bun run seed:demo" puis patienter une minute si la limite est en cause.');
+    await page.screenshot({ path: 'tmp/screenshots/plan-fail-login.png' });
+    process.exit(1);
 }
 log('login OK');
 
 // Le tutoriel se lance a la premiere visite : on le passe pour derouler le scenario.
 const skipTutorial = page.getByRole('button', { name: /passer le tutoriel/i });
 if (await skipTutorial.count()) {
-  await skipTutorial.first().click();
-  await page.waitForTimeout(600);
-  log('tutoriel passe');
+    await skipTutorial.first().click();
+    await page.waitForTimeout(600);
+    log('tutoriel passe');
 }
 
 // 2. Le depart est la position courante, sans aucune action : la barre ne
 // demande qu'une destination tant qu'aucune n'est choisie.
 const originValue = await page.inputValue('#mobile-destination-search').catch(() => null);
 if (originValue === null) {
-  console.log('ECHEC: champ de recherche unique introuvable');
-  await page.screenshot({ path: 'tmp/screenshots/plan-fail-search.png' });
-  process.exit(1);
+    console.log('ECHEC: champ de recherche unique introuvable');
+    await page.screenshot({ path: 'tmp/screenshots/plan-fail-search.png' });
+    process.exit(1);
 }
 log('barre de recherche en mode destination seule');
 
@@ -87,16 +87,16 @@ await page.fill('#mobile-destination-search', DEST_QUERY);
 await page.waitForTimeout(2500);
 const destButton = page.getByRole('button', { name: DEST_LABEL }).first();
 if (!(await destButton.count())) {
-  console.log(`ECHEC: resultat de recherche "${DEST_LABEL}" introuvable`);
-  await page.screenshot({ path: 'tmp/screenshots/plan-fail-dest.png' });
-  process.exit(1);
+    console.log(`ECHEC: resultat de recherche "${DEST_LABEL}" introuvable`);
+    await page.screenshot({ path: 'tmp/screenshots/plan-fail-dest.png' });
+    process.exit(1);
 }
 await destButton.click();
 // Le routage reel peut depasser huit secondes quand l'instance publique est
 // chargee. On attend l'etat fonctionnel plutot qu'un delai arbitraire.
 await page.getByRole('button', { name: /^planifier$/i }).first().waitFor({
-  state: 'visible',
-  timeout: 30000,
+    state: 'visible',
+    timeout: 30000,
 });
 log('destination definie, options calculees');
 
@@ -104,7 +104,7 @@ log('destination definie, options calculees');
 // porter la position courante sans que l'utilisateur l'ait designee.
 const originAfter = await page.inputValue('#mobile-origin-search').catch(() => '');
 if (!originAfter) {
-  failures.push('le depart n\'est pas prerempli avec la position courante');
+    failures.push('le depart n\'est pas prerempli avec la position courante');
 }
 log(`depart implicite : "${originAfter}"`);
 
@@ -112,7 +112,7 @@ log(`depart implicite : "${originAfter}"`);
 const bodyText = async () => page.locator('body').innerText();
 let text = await bodyText();
 if (!/min - [\d.,]+ km/i.test(text)) {
-  failures.push("aucune option d'itineraire affichee apres la recherche");
+    failures.push("aucune option d'itineraire affichee apres la recherche");
 }
 await page.screenshot({ path: 'tmp/screenshots/plan-options.png' });
 
@@ -121,7 +121,7 @@ await page.getByRole('button', { name: /^planifier$/i }).first().click();
 await page.waitForTimeout(800);
 const planDialogVisible = await page.locator('text=/planifier ce trajet/i').count();
 if (!planDialogVisible) {
-  failures.push('la fenetre "Planifier ce trajet" ne s\'ouvre pas');
+    failures.push('la fenetre "Planifier ce trajet" ne s\'ouvre pas');
 }
 await page.screenshot({ path: 'tmp/screenshots/plan-dialog.png' });
 await page.getByRole('button', { name: /^planifier$/i }).last().click();
@@ -130,11 +130,11 @@ await page.waitForTimeout(1200);
 // 6. Le hub s'ouvre sur "A venir" avec l'occurrence planifiee
 text = await bodyText();
 if (!/planificateur de trajets/i.test(text)) {
-  failures.push("le planificateur ne s'ouvre pas apres la planification");
+    failures.push("le planificateur ne s'ouvre pas apres la planification");
 }
 const hasUpcoming = await page.getByRole('button', { name: /^fait$/i }).count();
 if (!hasUpcoming) {
-  failures.push('aucune occurrence "a venir" avec action Fait');
+    failures.push('aucune occurrence "a venir" avec action Fait');
 }
 await page.screenshot({ path: 'tmp/screenshots/plan-upcoming.png' });
 
@@ -143,17 +143,17 @@ await page.screenshot({ path: 'tmp/screenshots/plan-upcoming.png' });
 // de pres. Le serveur termine le trajet et cree son historique dans la meme
 // transaction ; le navigateur n'envoie aucune collection.
 const stateSync = page
-  .waitForResponse((response) => response.url().endsWith('/completion') && response.request().method() === 'PUT', {
-    timeout: 10000,
-  })
-  .then((response) => response.status())
-  .catch(() => null);
+    .waitForResponse((response) => response.url().endsWith('/completion') && response.request().method() === 'PUT', {
+        timeout: 10000,
+    })
+    .then((response) => response.status())
+    .catch(() => null);
 await page.getByRole('button', { name: /^fait$/i }).first().click();
 await page.waitForTimeout(1200);
 text = await bodyText();
 const doneCountMatch = /Fait \/ semaine\s*\n?\s*(\d+)/i.exec(text);
 if (!doneCountMatch || Number(doneCountMatch[1]) < 1) {
-  failures.push('le compteur "Fait / semaine" ne s\'incremente pas apres le marquage');
+    failures.push('le compteur "Fait / semaine" ne s\'incremente pas apres le marquage');
 }
 await page.screenshot({ path: 'tmp/screenshots/plan-done.png' });
 log('trajet marque fait, stats mises a jour');
@@ -164,10 +164,10 @@ const syncStatus = await stateSync;
 if (syncStatus !== 200) {
     failures.push(`la completion n'est pas enregistree par le serveur (reponse : ${syncStatus ?? 'aucune'})`);
 } else {
-  const remote = await page.evaluate(() => fetch('/api/state').then((response) => response.json()));
-  if (!remote.tripRecords?.length || !remote.plannedTrips?.length) {
-    failures.push("l'etat serveur ne contient pas le trajet planifie et realise");
-  }
+    const remote = await page.evaluate(() => fetch('/api/state').then((response) => response.json()));
+    if (!remote.tripRecords?.length || !remote.plannedTrips?.length) {
+        failures.push("l'etat serveur ne contient pas le trajet planifie et realise");
+    }
 }
 log('completion enregistree sur le serveur');
 
@@ -184,17 +184,17 @@ await page.waitForTimeout(300);
 const logoutResponse = page.waitForResponse((response) => response.url().endsWith('/api/auth/logout'), { timeout: 10000 });
 await page.getByRole('button', { name: /^se deconnecter$/i }).click();
 if ((await logoutResponse).status() !== 200) {
-  failures.push('la requete de deconnexion echoue');
+    failures.push('la requete de deconnexion echoue');
 }
 await page.waitForTimeout(300);
 const stateAfterLogout = await page.evaluate(() => fetch('/api/state').then((response) => response.status));
 if (stateAfterLogout !== 401) {
-  failures.push(`apres deconnexion, /api/state repond encore ${stateAfterLogout} au navigateur`);
+    failures.push(`apres deconnexion, /api/state repond encore ${stateAfterLogout} au navigateur`);
 }
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);
 if (!(await page.locator('#auth-email').count())) {
-  failures.push('apres deconnexion et rechargement, la session reapparait');
+    failures.push('apres deconnexion et rechargement, la session reapparait');
 }
 log('deconnexion : session morte pour le navigateur et le serveur');
 
@@ -204,17 +204,17 @@ await browser.close();
 const { mkdirSync, writeFileSync } = await import('node:fs');
 mkdirSync('output/metrics', { recursive: true });
 writeFileSync(
-  'output/metrics/e2e.json',
-  JSON.stringify(
-    { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 7, failures, passed: failures.length === 0 },
-    null,
-    2,
-  ) + '\n',
+    'output/metrics/e2e.json',
+    JSON.stringify(
+        { generatedAt: new Date().toISOString(), scenario: 'planification', assertions: 7, failures, passed: failures.length === 0 },
+        null,
+        2,
+    ) + '\n',
 );
 
 if (failures.length > 0) {
-  console.log(`ECHEC E2E (${failures.length} assertion(s)):`);
-  for (const failure of failures) console.log('  - ' + failure);
-  process.exit(1);
+    console.log(`ECHEC E2E (${failures.length} assertion(s)):`);
+    for (const failure of failures) console.log('  - ' + failure);
+    process.exit(1);
 }
 console.log('TEST TERMINE - 7/7 assertions passees');

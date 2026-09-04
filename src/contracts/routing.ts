@@ -28,31 +28,31 @@ export type RoutableMode = z.infer<typeof routableMode>;
  * OpenAPI, elle, decrit bien une chaine.
  */
 const coordinatePair = z.preprocess(
-  (value) => (Array.isArray(value) ? value.join(',') : value),
-  z.string().regex(/^-?\d{1,3}(\.\d+)?,-?\d{1,2}(\.\d+)?$/).max(48),
+    (value) => (Array.isArray(value) ? value.join(',') : value),
+    z.string().regex(/^-?\d{1,3}(\.\d+)?,-?\d{1,2}(\.\d+)?$/).max(48),
 );
 
 export const routeQuery = z.object({
-  mode: routableMode,
-  from: coordinatePair,
-  to: coordinatePair,
+    mode: routableMode,
+    from: coordinatePair,
+    to: coordinatePair,
 });
 
 export const routeInstruction = z.object({
-  text: z.string(),
-  distanceMeters: z.number().min(0),
-  detail: z.string().optional(),
-  kind: z.enum(['turn', 'roundabout', 'depart', 'arrive', 'transfer', 'continue']),
+    text: z.string(),
+    distanceMeters: z.number().min(0),
+    detail: z.string().optional(),
+    kind: z.enum(['turn', 'roundabout', 'depart', 'arrive', 'transfer', 'continue']),
 });
 export type RouteInstruction = z.infer<typeof routeInstruction>;
 
 export const routeGeometry = z.object({
-  path: z.array(z.tuple([z.number(), z.number()])),
-  distanceMeters: z.number().min(0),
-  durationSeconds: z.number().min(0),
-  instructions: z.array(routeInstruction),
-  /** D'ou vient la reponse : utile en revue, et pour mesurer le cache. */
-  source: z.enum(['cache', 'upstream']),
+    path: z.array(z.tuple([z.number(), z.number()])),
+    distanceMeters: z.number().min(0),
+    durationSeconds: z.number().min(0),
+    instructions: z.array(routeInstruction),
+    /** D'ou vient la reponse : utile en revue, et pour mesurer le cache. */
+    source: z.enum(['cache', 'upstream']),
 });
 export type RouteGeometry = z.infer<typeof routeGeometry>;
 
@@ -64,20 +64,20 @@ export type RouteGeometry = z.infer<typeof routeGeometry>;
 const routeMatrixPoints = z.array(geoPoint.pick({ lat: true, lon: true })).min(1).max(32);
 
 export const routeMatrixRequest = z.object({
-  mode: routableMode,
-  origins: routeMatrixPoints,
-  destinations: routeMatrixPoints,
+    mode: routableMode,
+    origins: routeMatrixPoints,
+    destinations: routeMatrixPoints,
 });
 export type RouteMatrixRequest = z.infer<typeof routeMatrixRequest>;
 
 export const routeMeasure = z.object({
-  distanceMeters: z.number().min(0),
-  durationSeconds: z.number().min(0),
-  source: z.enum(['cache', 'upstream']),
+    distanceMeters: z.number().min(0),
+    durationSeconds: z.number().min(0),
+    source: z.enum(['cache', 'upstream']),
 });
 export type RouteMeasure = z.infer<typeof routeMeasure>;
 
 export const routeMatrix = z.object({
-  measures: z.array(z.array(routeMeasure.nullable())),
+    measures: z.array(z.array(routeMeasure.nullable())),
 });
 export type RouteMatrix = z.infer<typeof routeMatrix>;

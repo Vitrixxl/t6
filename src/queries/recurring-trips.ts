@@ -12,64 +12,64 @@ import { useAccountMutation, useAccountPart, type AccountMutation } from './acco
 import { useUser } from './user';
 
 export interface RoutineSchedule {
-  daysOfWeek: number[];
-  departureTime: string;
-  returnTime: string | null;
+    daysOfWeek: number[];
+    departureTime: string;
+    returnTime: string | null;
 }
 
 export function useRecurringTrips(): RecurringTrip[] {
-  return useAccountPart('recurringTrips');
+    return useAccountPart('recurringTrips');
 }
 
 export function createRoutine(state: AccountState, userId: string, source: TripSource, schedule: RoutineSchedule): Partial<AccountState> {
-  return { recurringTrips: upsertRecurring(state.recurringTrips, createRecurringTrip(userId, source, schedule)) };
+    return { recurringTrips: upsertRecurring(state.recurringTrips, createRecurringTrip(userId, source, schedule)) };
 }
 
 export function toggleRoutinePaused(state: AccountState, routine: RecurringTrip): Partial<AccountState> {
-  return { recurringTrips: setRecurringPaused(state.recurringTrips, routine.id, !isRoutinePaused(routine)) };
+    return { recurringTrips: setRecurringPaused(state.recurringTrips, routine.id, !isRoutinePaused(routine)) };
 }
 
 export function removeRoutine(state: AccountState, routine: RecurringTrip): Partial<AccountState> {
-  return { recurringTrips: removeRecurring(state.recurringTrips, routine.id) };
+    return { recurringTrips: removeRecurring(state.recurringTrips, routine.id) };
 }
 
 export const recurringTripSaveMutation = {
-  key: 'recurring-save',
-  parts: ['recurringTrips'],
-  mutationFn: saveRecurringTrip,
-  optimistic: (state, routine) => ({ recurringTrips: upsertRecurring(state.recurringTrips, routine) }),
-  reconcile: (state, routine) => ({ recurringTrips: upsertRecurring(state.recurringTrips, routine) }),
+    key: 'recurring-save',
+    parts: ['recurringTrips'],
+    mutationFn: saveRecurringTrip,
+    optimistic: (state, routine) => ({ recurringTrips: upsertRecurring(state.recurringTrips, routine) }),
+    reconcile: (state, routine) => ({ recurringTrips: upsertRecurring(state.recurringTrips, routine) }),
 } satisfies AccountMutation<RecurringTrip, RecurringTrip>;
 
 export const recurringTripDeleteMutation = {
-  key: 'recurring-delete',
-  parts: ['recurringTrips'],
-  mutationFn: (routine) => deleteRecurringTrip(routine.id),
-  optimistic: (state, routine) => removeRoutine(state, routine),
-  reconcile: (state, _result, routine) => removeRoutine(state, routine),
+    key: 'recurring-delete',
+    parts: ['recurringTrips'],
+    mutationFn: (routine) => deleteRecurringTrip(routine.id),
+    optimistic: (state, routine) => removeRoutine(state, routine),
+    reconcile: (state, _result, routine) => removeRoutine(state, routine),
 } satisfies AccountMutation<RecurringTrip, void>;
 
 export function useCreateRoutine(): (source: TripSource, schedule: RoutineSchedule) => void {
-  const user = useUser();
-  const save = useAccountMutation(recurringTripSaveMutation);
-  return useCallback(
-    (source: TripSource, schedule: RoutineSchedule) => save(createRecurringTrip(user.id, source, schedule)),
-    [save, user.id],
-  );
+    const user = useUser();
+    const save = useAccountMutation(recurringTripSaveMutation);
+    return useCallback(
+        (source: TripSource, schedule: RoutineSchedule) => save(createRecurringTrip(user.id, source, schedule)),
+        [save, user.id],
+    );
 }
 
 export function useToggleRoutinePaused(): (routine: RecurringTrip) => void {
-  const save = useAccountMutation(recurringTripSaveMutation);
-  return useCallback(
-    (routine: RecurringTrip) => {
-      const updated = setRecurringPaused([routine], routine.id, !isRoutinePaused(routine))[0] ?? routine;
-      save(updated);
-    },
-    [save],
-  );
+    const save = useAccountMutation(recurringTripSaveMutation);
+    return useCallback(
+        (routine: RecurringTrip) => {
+            const updated = setRecurringPaused([routine], routine.id, !isRoutinePaused(routine))[0] ?? routine;
+            save(updated);
+        },
+        [save],
+    );
 }
 
 export function useRemoveRoutine(): (routine: RecurringTrip) => void {
-  const remove = useAccountMutation(recurringTripDeleteMutation);
-  return useCallback((routine: RecurringTrip) => remove(routine), [remove]);
+    const remove = useAccountMutation(recurringTripDeleteMutation);
+    return useCallback((routine: RecurringTrip) => remove(routine), [remove]);
 }

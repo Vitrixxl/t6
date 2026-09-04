@@ -5,14 +5,14 @@ import { loadTransportNetwork } from '../lib/transport';
 import { queryKeys } from './keys';
 
 export const transportNetworkQuery = queryOptions({
-  queryKey: queryKeys.transportNetwork,
-  queryFn: () => loadTransportNetwork(),
-  staleTime: Infinity,
-  gcTime: Infinity,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
+    queryKey: queryKeys.transportNetwork,
+    queryFn: () => loadTransportNetwork(),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
 });
 
 export function useTransportNetwork() {
-  return useQuery(transportNetworkQuery);
+    return useQuery(transportNetworkQuery);
 }
