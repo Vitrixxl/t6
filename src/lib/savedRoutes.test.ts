@@ -17,6 +17,7 @@ const option: RouteOption = {
   durationMinutes: 12,
   carbonGrams: 10,
   carbonSavedGrams: 420,
+  carbonReference: { distanceKm: 3, carbonGrams: 426, factorVersion: 'test-car-factor' },
   reliabilityScore: 86,
   score: 84,
   accessible: true,

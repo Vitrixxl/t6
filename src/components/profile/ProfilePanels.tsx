@@ -224,7 +224,7 @@ export function ProfilePanel() {
           <FieldError message={errors.carbonGoalGramsPerWeek?.message} />
         </label>
         <fieldset className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3">
-          <legend className="px-1 text-sm font-semibold">Objectifs d&apos;economie de CO2</legend>
+          <legend className="px-1 text-sm font-semibold">Objectifs d&apos;economie de CO₂e</legend>
           <p className="text-xs leading-5 text-muted-foreground">
             Ces deux objectifs sont independants du budget carbone et servent a mesurer les emissions evitees par tes trajets.
           </p>

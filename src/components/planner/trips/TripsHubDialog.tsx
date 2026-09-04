@@ -102,7 +102,7 @@ export function TripsHubDialog({
         <div className="grid max-h-[calc(100dvh-14rem)] gap-3 overflow-y-auto px-5 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Metric label="Fait / semaine" value={String(summary.doneThisWeek)} compact />
-            <Metric label="CO2 evite / sem." value={`${summary.savedThisWeekGrams} g`} compact />
+            <Metric label="CO₂e évité / sem." value={`${summary.savedThisWeekGrams} gCO₂e`} compact />
             <Metric label="A venir" value={String(summary.upcomingCount)} compact />
             <Metric label="Recurrents actifs" value={String(summary.recurringActiveCount)} compact />
           </div>

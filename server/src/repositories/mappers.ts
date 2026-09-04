@@ -24,7 +24,7 @@ interface MeasureRow {
   distanceKm: number;
   durationMinutes: number;
   carbonGrams: number;
-  carbonSavedGrams: number;
+  carbonSavedGrams: number | null;
 }
 
 interface Endpoints {

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Prepare les donnees OSRM pour le calcul d'itineraires local.
 #
-# A lancer une fois. Deux jeux de donnees sont produits, un par profil :
-# pieton et velo n'ont pas les memes regles sur les memes rues (sens uniques,
-# escaliers, zones pietonnes) et ne peuvent donc pas partager un index. La
-# trottinette utilise le profil velo ; aucun trajet voiture n'est propose.
+# A lancer une fois. Trois jeux de donnees sont produits, un par profil :
+# pieton, velo et voiture n'ont pas les memes regles sur les memes rues (sens
+# uniques, escaliers, zones pietonnes) et ne peuvent donc pas partager un
+# index. La trottinette utilise le profil velo ; la voiture reste une reference
+# carbone invisible et n'est jamais proposee.
 #
 # Prerequis : docker. `osmium` est facultatif : s'il est installe,
 # la region est decoupee autour de Lyon, ce qui divise par dix le temps de
@@ -45,7 +46,7 @@ fi
 
 # `mld` est l'algorithme adapte a un graphe qui tient en memoire : pretraitement
 # rapide, et requetes en microsecondes une fois le service demarre.
-for profile in foot bike; do
+for profile in foot bike car; do
   echo
   echo "=== Profil $profile ==="
   cp "$SOURCE" "$DATA_DIR/lyon-$profile.osm.pbf"

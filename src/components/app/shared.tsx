@@ -110,7 +110,7 @@ export function RouteChip({ routeOption, selected, onClick }: { routeOption: Rou
           <span className="truncate">{routeOption.title}</span>
         </strong>
         <span className="block truncate text-xs text-muted-foreground">
-          {routeOption.distanceKm.toFixed(1)} km - {routeOption.carbonGrams} g CO2
+          {routeOption.distanceKm.toFixed(1)} km - {routeOption.carbonGrams} gCO₂e
         </span>
       </span>
     </button>
@@ -173,4 +173,3 @@ export function Metric({ label, value, compact = false }: { label: string; value
     </dl>
   );
 }
-

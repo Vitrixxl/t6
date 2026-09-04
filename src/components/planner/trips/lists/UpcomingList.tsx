@@ -2,6 +2,7 @@
 import { CalendarClock, Check, Leaf, Trash2, X } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { PlannedTrip } from '../../../../types';
+import { formatCarbonComparison } from '../../../../lib/carbon-comparison';
 import { EmptyState, ModeIconRow, OriginDestination, TripStatusDot } from '../atoms';
 import { formatScheduleLabel } from '../format';
 
@@ -44,7 +45,8 @@ export function UpcomingList({
                 {trip.durationMinutes} min · {trip.distanceKm.toFixed(1)} km
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
-                <Leaf className="size-3" aria-hidden="true" />-{trip.carbonSavedGrams} g CO2
+                <Leaf className="size-3" aria-hidden="true" />
+                {formatCarbonComparison(trip.carbonSavedGrams)}
               </span>
               <ModeIconRow trip={trip} />
             </div>

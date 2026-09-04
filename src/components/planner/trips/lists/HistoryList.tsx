@@ -1,6 +1,7 @@
 // Trajets faits ou annules : lecture seule.
 import { Check, Leaf } from 'lucide-react';
 import type { PlannedTrip } from '../../../../types';
+import { formatCarbonComparison } from '../../../../lib/carbon-comparison';
 import { EmptyState, OriginDestination } from '../atoms';
 import { formatScheduleLabel } from '../format';
 
@@ -28,7 +29,8 @@ export function HistoryList({ trips }: { trips: PlannedTrip[] }) {
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-              <Leaf className="size-3" aria-hidden="true" />-{trip.carbonSavedGrams} g
+              <Leaf className="size-3" aria-hidden="true" />
+              {formatCarbonComparison(trip.carbonSavedGrams)}
             </span>
             <span className="font-mono text-[11px] text-muted-foreground">{trip.distanceKm.toFixed(1)} km</span>
           </div>

@@ -134,7 +134,7 @@ export function TripGoalsCard() {
             error={errors.weeklyTripsGoal?.message}
           />
           <GoalRow
-            label="CO2 evite"
+            label="CO₂e évité"
             value={summary.savedThisWeekGrams}
             goal={effectiveWeeklySavedGoal}
             unit="g"
@@ -146,7 +146,7 @@ export function TripGoalsCard() {
           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-primary">Ce mois-ci</p>
           <GoalRow label="Trajets faits" value={summary.doneThisMonth} goal={effectiveTripsGoal * 4} unit="trajets" />
           <GoalRow
-            label="CO2 evite"
+            label="CO₂e évité"
             value={summary.savedThisMonthGrams}
             goal={effectiveMonthlySavedGoal}
             unit="g"
@@ -157,7 +157,7 @@ export function TripGoalsCard() {
       </div>
       {editing ? (
         <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
-          L'objectif de trajets mensuel est derive de l'objectif hebdomadaire (x 4). Les objectifs CO2 sont independants.
+          L'objectif de trajets mensuel est derive de l'objectif hebdomadaire (x 4). Les objectifs CO₂e sont independants.
         </p>
       ) : null}
     </form>

@@ -213,4 +213,28 @@ describe('POST /api/route-matrix', () => {
     expect(upstream.calls()).toBe(0);
     api.close();
   });
+
+  it('mesure la reference voiture avec driving et la ressort du cache partage', async () => {
+    const upstream = stubUpstream((url) => {
+      expect(url).toContain('/routed-car/table/v1/driving/');
+      return new Response(
+        JSON.stringify({ code: 'Ok', distances: [[3000]], durations: [[600]] }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    const api = createTestApi();
+    const carBody = {
+      mode: 'car',
+      origins: [body.origins[0]],
+      destinations: [body.destinations[0]],
+    };
+
+    const first = await json<MatrixBody>(await callMatrix(api, carBody));
+    const second = await json<MatrixBody>(await callMatrix(api, carBody));
+
+    expect(first.measures[0]?.[0]?.distanceMeters).toBe(3000);
+    expect(second.measures[0]?.[0]?.source).toBe('cache');
+    expect(upstream.calls()).toBe(1);
+    api.close();
+  });
 });

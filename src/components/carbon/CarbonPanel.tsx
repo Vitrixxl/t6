@@ -7,6 +7,7 @@
 import { Button } from '../ui/button';
 import { useCarbonSummary, useClearTripHistory, useProfile, useTripRecords } from '../../queries';
 import { Metric } from '../app/shared';
+import { formatCarbonComparison, formatCarbonFootprint } from '../../lib/carbon-comparison';
 
 export function CarbonPanel() {
   const profile = useProfile();
@@ -28,14 +29,14 @@ export function CarbonPanel() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Metric label="Trajets cette semaine" value={String(summary.trips)} />
-          <Metric label="CO2 evite cette semaine" value={`${summary.totalSavedGrams} g`} />
+          <Metric label="Comparaison voiture / semaine" value={formatCarbonComparison(summary.totalSavedGrams)} />
         </div>
         {records.length > 0 ? (
           <ul className="grid gap-2 text-sm" aria-label="Derniers trajets enregistres">
             {records.slice(0, 3).map((record) => (
               <li key={record.id} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
                 <span>{record.routeTitle}</span>
-                <strong>{record.carbonGrams} g</strong>
+                <strong>{formatCarbonFootprint(record.carbonGrams)}</strong>
               </li>
             ))}
           </ul>

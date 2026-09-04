@@ -76,6 +76,17 @@ describe('remplacement d une collection', () => {
     expect(apres[0].status).toBe('done');
   });
 
+  it('persiste une comparaison voiture indisponible comme null', async () => {
+    const cookie = await api.register('comparaison-indisponible@lyon.fr');
+    const response = await api.putCollection(cookie, '/api/trips/planned', [
+      { ...OCCURRENCE, carbonSavedGrams: null },
+    ]);
+
+    expect(response.status).toBe(200);
+    const [saved] = await json<Array<{ carbonSavedGrams: number | null }>>(response);
+    expect(saved.carbonSavedGrams).toBeNull();
+  });
+
   it('rejette la collection entiere si une ligne est invalide (atomicite)', async () => {
     const cookie = await api.register('atomique@lyon.fr');
 

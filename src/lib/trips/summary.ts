@@ -36,7 +36,7 @@ export function summarizeTripActivity(
   const routinesTotal = sumRoutines(recurring, BEGINNING_OF_TIME, now);
   const routinesThisWeek = sumRoutines(recurring, weekFloor, now);
   const routinesThisMonth = sumRoutines(recurring, monthFloor, now);
-  const saved = (trips: PlannedTrip[]) => trips.reduce((sum, trip) => sum + trip.carbonSavedGrams, 0);
+  const saved = (trips: PlannedTrip[]) => trips.reduce((sum, trip) => sum + (trip.carbonSavedGrams ?? 0), 0);
 
   return {
     doneTotal: done.length + routinesTotal.trips,

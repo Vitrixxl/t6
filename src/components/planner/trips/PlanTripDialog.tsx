@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '../../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { WEEKDAY_LABELS } from '../../../lib/trips';
+import { formatCarbonComparison } from '../../../lib/carbon-comparison';
 import { planSourceAtom } from '../../../state';
 import { OriginDestination } from './atoms';
 import { FULL_DAY_FORMAT, toTimeInputValue } from './format';
@@ -82,7 +83,7 @@ export function PlanTripDialog() {
               <h3 className="truncate text-sm font-semibold">{source.label}</h3>
               <OriginDestination origin={source.origin.label} destination={source.destination.label} />
               <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">
-                {source.durationMinutes} min · {source.distanceKm.toFixed(1)} km · -{source.carbonSavedGrams} g CO2
+                {source.durationMinutes} min · {source.distanceKm.toFixed(1)} km · {formatCarbonComparison(source.carbonSavedGrams)}
               </p>
             </div>
 

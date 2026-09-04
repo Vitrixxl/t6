@@ -28,7 +28,7 @@ export function summarizeCarbon(
   const totalDistanceKm = round(records.reduce((sum, record) => sum + record.distanceKm, 0) + routines.distanceKm, 2);
   const totalCarbonGrams = Math.round(records.reduce((sum, record) => sum + record.carbonGrams, 0) + routines.carbonGrams);
   const totalSavedGrams = Math.round(
-    records.reduce((sum, record) => sum + record.carbonSavedGrams, 0) + routines.carbonSavedGrams,
+    records.reduce((sum, record) => sum + (record.carbonSavedGrams ?? 0), 0) + routines.carbonSavedGrams,
   );
 
   return {
