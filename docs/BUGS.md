@@ -1249,3 +1249,46 @@ Les états de compte issus de la copie migrée passent le contrat `accountState`
 déploiement (recette Docker ponctuelle) ; les règles de migration et de compte
 restent couvertes par la suite API. Validation courante : 205 tests verts
 (141 client/métier, 64 API) dans 24 fichiers ; lint, typage, build et E2E 9/9 verts.
+
+
+---
+
+## B40 — Une coupure Internet ne précisait pas les fonctionnalités indisponibles
+
+**Symptôme observé** : couper le réseau sur l’écran de connexion ou de carte
+ne faisait apparaître aucun avertissement global. La page de secours annonçait
+que l’application restait disponible ; les données de transport de secours
+étaient étiquetées « Mode hors ligne », même lors d’une simple panne de flux.
+
+**Cause racine** : aucun composant commun ne suivait la connexion du navigateur.
+Les messages dépendaient d’une requête échouée ou du choix d’une source de données,
+sans expliciter la dépendance des recherches et des modifications à Internet.
+
+**Correctif** : `OfflineBanner`, monté dans `App` avant `AppContent`, utilise
+`useOnlineStatus` et les événements `online`/`offline`. Le message demandé apparaît
+sur mobile et bureau, y compris pendant le chargement et l’authentification,
+puis disparaît au retour réseau. Une région `status` persistante annonce les
+changements sans déplacer le focus. Le bandeau occupe sa propre place au-dessus
+du contenu. La page de secours et le libellé des disponibilités sont alignés.
+Une erreur API seule ne déclenche pas l’avertissement hors ligne.
+
+**Commit** : [c35a007 — signaler la perte de connexion](https://github.com/Vitrixxl/t6/commit/c35a007af2f76a41d1ada1ec06e2117ebb3dad99).
+
+**Où le montrer** : `src/App.tsx`, `src/components/app/OfflineBanner.tsx`,
+`src/components/app/hooks/useOnlineStatus.ts`, `public/offline.html`,
+`src/components/layout/Shell.tsx` et `scripts/e2e-offline.mjs`.
+
+**Test du correctif** : `bun run e2e:offline` a échoué avant la correction
+sur l’absence du bandeau après une coupure réelle de Chromium à 320 px.
+Après correction, il vérifie le texte, la place réservée, l’apparition et le
+retrait sur les écrans de connexion et de carte à 320, 390 et 1280 px, ainsi
+que la carte en paysage 844 × 390. Il recharge le socle en cache hors ligne
+(service worker de production actif) et distingue une réponse API 503 d’une
+coupure Internet. Captures relues : `tmp/screenshots/offline-*.png`.
+`bun run check` passe : 205 tests, 24 fichiers, lint, typage et build verts.
+`bun run e2e` passe ses 9 assertions jusqu’à la complétion et la déconnexion.
+
+**Niveau de verrouillage** : **automatisé** pour les transitions et les cas
+exercés dans Chromium ; **faible** pour la lisibilité et l’annonce effective
+par un lecteur d’écran. Le signal du navigateur ne mesure pas la disponibilité
+réelle d’Internet ou du serveur, notamment sur un réseau local sans accès extérieur.
