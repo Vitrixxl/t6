@@ -163,7 +163,7 @@ export function LayerPanel({
                 </div>
             ) : (
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    Mode hors ligne: fallback local GBFS/GTFS actif, date: {getFeedFreshness(network.sharedMobility)}.
+                    Disponibilités en direct indisponibles : données de secours du {getFeedFreshness(network.sharedMobility)}.
                 </div>
             )}
         </div>

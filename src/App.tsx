@@ -2,8 +2,9 @@ import { useSession, useTransportNetwork } from './queries';
 import { Card, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { MobilityMapApp } from './components/app/MobilityMapApp';
+import { OfflineBanner } from './components/app/OfflineBanner';
 
-function App() {
+function AppContent() {
     const session = useSession();
     const network = useTransportNetwork();
 
@@ -12,7 +13,7 @@ function App() {
     // clignoter chez un utilisateur déjà authentifie.
     if (session.isPending || (session.data && !network.data)) {
         return (
-            <main className="grid min-h-dvh place-items-center bg-background p-4">
+            <main className="grid min-h-full place-items-center bg-background p-4">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <CardTitle>Chargement UrbanFlow</CardTitle>
@@ -33,6 +34,17 @@ function App() {
 
     // La clé remet l'interface a zéro quand un autre compte se connecte.
     return <MobilityMapApp key={session.data.user.id} network={network.data} />;
+}
+
+function App() {
+    return (
+        <div className="flex h-full flex-col">
+            <OfflineBanner />
+            <div className="min-h-0 flex-1 overflow-auto">
+                <AppContent />
+            </div>
+        </div>
+    );
 }
 
 export default App;

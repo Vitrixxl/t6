@@ -204,6 +204,13 @@ réécrit aucun trajet. Une écriture refusée se dit à l'utilisateur, elle ne 
 masque pas : seule la vue concernée est relue depuis son GET, l'écran revient à
 ce que le serveur tient, et l'action est à rejouer.
 
+**La perte de connexion se dit sur tous les écrans.** Le bandeau global suit
+le signal `online`/`offline` du navigateur et rappelle qu’Internet est nécessaire
+aux recherches et aux modifications. Le retour réseau le retire ; il ne garantit
+pas que l’API répond. Les données de transport de secours et les erreurs serveur
+ne doivent pas être présentées comme une coupure Internet. Vérifier les transitions
+et le rechargement hors ligne avec `bun run e2e:offline` sur le build de production.
+
 **Les récurrences ne se cochent pas.** Le hub sépare Une fois, Récurrents,
 Historique et Enregistrés. Une récurrence compte ses passages échus dans son
 fuseau enregistré, sur ses périodes d’activité. L’historique permet d’annuler

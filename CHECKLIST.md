@@ -43,6 +43,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 ## 5. Contraintes techniques et reglementaires
 
 - [x] C1 - PWA: manifest, service worker et application installable.
+- [x] C10 - Bandeau hors ligne commun au chargement, à la connexion et à la carte, mobile et bureau ; retour réseau et panne serveur distincte vérifiés par `bun run e2e:offline`.
 - [x] C2 - Responsive/UX: interface utilisable mobile et desktop.
 - [x] C2 - Interface mobile-first inspirée d'Urbaninator avec carte plein écran, panneaux flottants et bottom sheet mobile.
 - [x] C2 - Mode shell inspire d'Urbaninator: rail gauche docke, carte centrale encadrée, barre recherche fusionnée au shell, rail détail droit.

@@ -104,7 +104,7 @@ export function AuthScreen() {
     const [mode, setMode] = useState<'login' | 'register'>('login');
 
     return (
-        <main className="grid min-h-dvh place-items-center bg-[radial-gradient(circle_at_18%_12%,oklch(0.93_0.05_130/0.65),transparent_42%),radial-gradient(circle_at_85%_90%,oklch(0.9_0.17_122/0.28),transparent_38%),linear-gradient(160deg,oklch(0.976_0.008_95),oklch(0.955_0.018_110))] p-4">
+        <main className="grid min-h-full place-items-center bg-[radial-gradient(circle_at_18%_12%,oklch(0.93_0.05_130/0.65),transparent_42%),radial-gradient(circle_at_85%_90%,oklch(0.9_0.17_122/0.28),transparent_38%),linear-gradient(160deg,oklch(0.976_0.008_95),oklch(0.955_0.018_110))] p-4">
             <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-float backdrop-blur-xl md:grid-cols-[1.05fr_1fr]">
                 <section
                     aria-label="Présentation UrbanFlow"

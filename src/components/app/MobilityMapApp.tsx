@@ -183,7 +183,7 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
     };
 
     return (
-        <main className="relative h-dvh w-screen overflow-hidden bg-[var(--shell)] text-foreground">
+        <main className="relative h-full w-full overflow-hidden bg-[var(--shell)] text-foreground">
             {desktop ? (
                 <DesktopMobilityLayout
                     map={map}

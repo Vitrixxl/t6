@@ -19,8 +19,17 @@ l'historique. Les envois sont sérialisés. Pas de cache local persistant : les 
 (`src/queries/`) le temps de la session, et une écriture refusée est signalée à l'utilisateur, la vue concernée
 étant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
 socle et des flux transport par le service worker, états de chargement explicites, erreurs réseau propres.
+Un bandeau commun aux écrans de chargement, de connexion et de carte signale la
+perte de connexion détectée par le navigateur, sur mobile et bureau. Il précise
+qu’Internet est nécessaire pour rechercher des itinéraires et enregistrer des
+modifications, et disparaît au retour du réseau. Ce signal ne prouve pas que
+l’API est disponible : les erreurs serveur restent distinctes. Le recours aux
+données de transport de secours n’est pas présenté comme une coupure Internet.
+Vérification navigateur sur le build de production : `bun run e2e:offline`
+(compte de démonstration requis, mêmes variables que `bun run e2e`).
 
-Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
+Il n’y a pas de mode métier sans serveur : le service worker peut restituer
+des ressources déjà chargées, mais il ne met jamais les réponses de l’API en cache.
 
 ## Planificateur et annulations
 
