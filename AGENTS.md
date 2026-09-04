@@ -93,6 +93,11 @@ verrouille faiblement, et cela se dit.
 
 ## Chaîne d'outillage
 
+Les corrections d'accents concernent les textes destinés à être lus, jamais
+les identifiants techniques : commandes, noms de scripts, chemins, clés JSON,
+variables d'environnement et paramètres HTTP gardent leur orthographe exacte.
+Un libellé affiché peut dire « démo » ; la commande reste `bun run seed:demo`.
+
 Toute la chaîne tourne sous **Bun**, sans exception : exécution, regroupement,
 tests, serveur. Pas de `npm`, pas de `node`, pas de bundler tiers. Un outil de
 plus doit se justifier par un besoin que Bun ne couvre pas.

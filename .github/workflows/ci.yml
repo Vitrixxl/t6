@@ -64,7 +64,7 @@ jobs:
             curl -sf http://127.0.0.1:4000/api/health > /dev/null && break
             sleep 1
           done
-          bun run seed:démo
+          bun run seed:demo
 
       - name: Audit accessibilité axe-core (WCAG 2.1 A/AA, bloquant)
         run: bun run audit:a11y

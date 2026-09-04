@@ -114,7 +114,7 @@ if (!(await page.locator('#mobile-destination-search').count())) {
         ? 'limite de débit atteinte sur /api/auth (10 tentatives par minute)'
         : 'identifiants refuses ou API injoignable';
     console.log(`ÉCHEC: connexion impossible - ${reason}`);
-    console.log('Relancer "bun run seed:démo" puis patienter une minute si la limite est en cause.');
+    console.log('Relancer "bun run seed:demo" puis patienter une minute si la limite est en cause.');
     await page.screenshot({ path: 'tmp/screenshots/plan-fail-login.png' });
     process.exit(1);
 }
