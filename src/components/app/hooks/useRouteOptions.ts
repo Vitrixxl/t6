@@ -11,7 +11,7 @@
 // surcout est absorbe par le cache partage de l'API.
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { GeoPoint, MobilityProfile, RouteLeg, RouteOption, TransportNetwork } from '../../../types';
+import type { GeoPoint, MobilityProfile, RouteOption, TransportNetwork } from '../../../types';
 import { preselectRoute } from '../../../lib/planner';
 import { measuredRoutesQuery, type RouteSearch } from '../../../queries';
 
@@ -32,11 +32,6 @@ export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
 export interface RouteOptions {
     routes: RouteOption[];
     selectedRoute: RouteOption | null;
-    /**
-     * Segments de l'itineraire selectionne, routes individuellement pour que la
-     * carte puisse colorer chaque mode sur sa geometrie reelle.
-     */
-    selectedLegs: RouteLeg[];
     selectedRouteId: string;
     setSelectedRouteId: (id: string) => void;
     routingStatus: RoutingStatus;
@@ -71,8 +66,6 @@ export function useRouteOptions(input: {
         routes.find((routeOption) => routeOption.id === selectedRouteId) ??
         preselectRoute(routes, profile.routePreselection);
 
-    const selectedLegs = selectedRoute?.legs ?? [];
-
     useEffect(() => {
         setSelectedRouteId('');
     }, [destination, origin]);
@@ -84,5 +77,5 @@ export function useRouteOptions(input: {
         setSelectedRouteId(selectedRoute.id);
     }, [selectedRoute, selectedRouteId]);
 
-    return { routes, selectedRoute, selectedLegs, selectedRouteId, setSelectedRouteId, routingStatus };
+    return { routes, selectedRoute, selectedRouteId, setSelectedRouteId, routingStatus };
 }

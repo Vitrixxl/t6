@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
-import type { GeoPoint, RouteLeg, RouteOption, TransportNetwork } from '../../types';
+import type { GeoPoint, RouteOption, TransportNetwork } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 import type { LayerState } from '../app/shared';
 import type { FeatureCollection } from './geojson';
@@ -19,6 +19,7 @@ import { IS_DEV } from '../../env';
  * sert d'abord a savoir ce qu'on a autour de soi.
  */
 const FOCUS_ZOOM = 16;
+const NO_LEGS: RouteOption['legs'] = [];
 
 /**
  * Deux points sont au meme endroit en dessous du metre. Comparer les nombres
@@ -54,7 +55,6 @@ export function UrbanMap({
     destination,
     routes,
     selectedRoute,
-    selectedLegs,
     network,
     layers,
     navigationPoint,
@@ -65,8 +65,6 @@ export function UrbanMap({
     destination: GeoPoint | null;
     routes: RouteOption[];
     selectedRoute: RouteOption | null;
-    /** Segments de l'itineraire selectionne, avec leur geometrie reelle. */
-    selectedLegs?: RouteLeg[];
     network: TransportNetwork;
     layers: LayerState;
     /** Position GPS de l'utilisateur ("Ma position"), affichee comme repere. */
@@ -92,6 +90,7 @@ export function UrbanMap({
     // Centre initial: le depart s'il existe deja, sinon le centre de la metropole.
     const initialCenterRef = useRef<Pick<GeoPoint, 'lat' | 'lon'>>(origin ?? { lat: 45.758, lon: 4.845 });
     const [loaded, setLoaded] = useState(false);
+    const selectedLegs = selectedRoute?.legs ?? NO_LEGS;
 
     // Le trajet selectionne est dessine par ses segments (couches `legs`), avec
     // une geometrie routee mode par mode. L'inclure ici aussi superposerait deux
@@ -126,7 +125,7 @@ export function UrbanMap({
             type: 'FeatureCollection',
             // Un segment sans geometrie ne produit aucune entite : la carte reste
             // vide pour lui plutot que d'afficher une ligne inventee (B14).
-            features: (selectedLegs ?? []).filter((leg) => leg.path.length >= 2).map((leg) => ({
+            features: selectedLegs.filter((leg) => leg.path.length >= 2).map((leg) => ({
                 type: 'Feature' as const,
                 properties: { mode: leg.mode, label: leg.mapLabel ?? '', color: legColor(leg) },
                 geometry: {
@@ -487,7 +486,7 @@ export function UrbanMap({
         if (!map || !loaded) {
             return;
         }
-        legLabelsRef.current = syncLegLabels(map, legLabelsRef.current, selectedLegs ?? []);
+        legLabelsRef.current = syncLegLabels(map, legLabelsRef.current, selectedLegs);
     }, [loaded, selectedLegs]);
 
     // Recentrage sur demande explicite. Declare apres le cadrage d'itineraire :
