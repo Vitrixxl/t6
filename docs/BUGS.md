@@ -471,7 +471,7 @@ survivre cette valeur au composant ni a la prochaine connexion.
 **Ou le voir** : `src/queries/session.ts` (`closeSession`),
 `src/queries/user.ts` (`useUser`)
 
-**Commit** : renseigne apres creation du commit de migration React Query.
+**Commit** : [`65d2e5b`](https://github.com/Vitrixxl/t6/commit/65d2e5b)
 
 ### Tester et valider le correctif
 
