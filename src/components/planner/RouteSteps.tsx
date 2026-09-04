@@ -47,11 +47,13 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
             ) : null}
             {title}
           </strong>
-          {/* Distance et duree ensemble : quand les deux extremites portent le
-              meme nom — sortie de station et adresse voisine — la duree seule
-              ne dit pas de quoi il s'agit. */}
+          {/* Une correspondance interne n'a pas de distance fiable dans le
+              GTFS. Afficher "0 m" ferait passer une absence de donnee pour
+              une mesure ; sa duree estimee suffit. */}
           <span className="shrink-0 font-mono text-[0.68rem] text-muted-foreground">
-            {formatDistance(leg.distanceKm)} &middot; {leg.durationMinutes} min
+            {leg.transfer ? `${leg.durationMinutes} min` : (
+              <>{formatDistance(leg.distanceKm)} &middot; {leg.durationMinutes} min</>
+            )}
           </span>
         </div>
         <p className="mt-0.5 truncate text-[0.72rem] leading-4 text-muted-foreground">

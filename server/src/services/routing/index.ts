@@ -10,10 +10,11 @@
 //     protege la source et vaut aussi comme mesure d'eco-conception ;
 //   - l'URL du calculateur devient une variable de configuration : basculer sur
 //     une instance auto-hebergee ne touche pas une ligne de code client.
-import type { MobilityMode } from '../../../../src/types.ts';
+import { routeGeometry as routeGeometryContract, routeMeasure as routeMeasureContract } from '../../../../src/contracts/index.ts';
+import type { RoutableMode } from '../../../../src/types.ts';
 import type { ServerConfig } from '../../config/index.ts';
-import type { RouteCacheRepository } from '../../repositories/route-cache.ts';
-import { fetchUpstreamRoute, type RouteGeometry } from './osrm.ts';
+import type { CachedRoute, RouteCacheRepository } from '../../repositories/route-cache.ts';
+import { fetchUpstreamMatrix, fetchUpstreamRoute, type RouteGeometry, type RouteMeasure } from './osrm.ts';
 
 /**
  * Precision de la cle de cache, en decimales de degre. Cinq decimales valent
@@ -25,9 +26,22 @@ export interface RoutingResult extends RouteGeometry {
     source: 'cache' | 'upstream';
 }
 
-function cacheKey(mode: MobilityMode, from: Coordinates, to: Coordinates): string {
+export interface RoutingMeasure extends RouteMeasure {
+    source: 'cache' | 'upstream';
+}
+
+export interface RoutingMatrixResult {
+    measures: Array<Array<RoutingMeasure | null>>;
+}
+
+function cacheKey(mode: RoutableMode, from: Coordinates, to: Coordinates): string {
     const round = (value: number) => value.toFixed(KEY_PRECISION);
     return `${mode}:${round(from.lat)},${round(from.lon)}:${round(to.lat)},${round(to.lon)}`;
+}
+
+/** Les mesures sans geometrie partagent la table, sous un espace de cles distinct. */
+function measureCacheKey(mode: RoutableMode, from: Coordinates, to: Coordinates): string {
+    return `measure:${cacheKey(mode, from, to)}`;
 }
 
 export interface Coordinates {
@@ -35,13 +49,60 @@ export interface Coordinates {
     lon: number;
 }
 
+function parseJson(payload: string): unknown {
+    try {
+        return JSON.parse(payload) as unknown;
+    } catch {
+        return null;
+    }
+}
+
+function cachedGeometry(row: CachedRoute | null): RoutingResult | null {
+    if (!row) {
+        return null;
+    }
+    const parsed = routeGeometryContract.omit({ source: true }).safeParse(parseJson(row.payload));
+    return parsed.success ? { ...parsed.data, source: 'cache' } : null;
+}
+
+function cachedMeasure(row: CachedRoute | null): RouteMeasure | null {
+    if (!row) {
+        return null;
+    }
+    const parsed = routeMeasureContract.omit({ source: true }).safeParse(parseJson(row.payload));
+    return parsed.success ? parsed.data : null;
+}
+
+function findMeasure(cache: RouteCacheRepository, mode: RoutableMode, from: Coordinates, to: Coordinates) {
+    const geometryRow = cache.find(cacheKey(mode, from, to));
+    const geometry = cachedGeometry(geometryRow);
+    const measureRow = cache.find(measureCacheKey(mode, from, to));
+    const measure = cachedMeasure(measureRow);
+    const fromGeometry = geometryRow && geometry
+        ? {
+            measure: { distanceMeters: geometry.distanceMeters, durationSeconds: geometry.durationSeconds },
+            ageMs: geometryRow.ageMs,
+        }
+        : null;
+    const fromMatrix = measureRow && measure ? { measure, ageMs: measureRow.ageMs } : null;
+
+    if (!fromGeometry) {
+        return fromMatrix;
+    }
+    if (!fromMatrix) {
+        return fromGeometry;
+    }
+    return fromGeometry.ageMs <= fromMatrix.ageMs ? fromGeometry : fromMatrix;
+}
+
 export function createRoutingService(config: ServerConfig, cache: RouteCacheRepository) {
     return {
-        async route(mode: MobilityMode, from: Coordinates, to: Coordinates): Promise<RoutingResult | null> {
+        async route(mode: RoutableMode, from: Coordinates, to: Coordinates): Promise<RoutingResult | null> {
             const key = cacheKey(mode, from, to);
-            const cached = cache.find(key);
-            if (cached && cached.ageMs < config.routeCacheTtlMs) {
-                return { ...(JSON.parse(cached.payload) as RouteGeometry), source: 'cache' };
+            const row = cache.find(key);
+            const cached = cachedGeometry(row);
+            if (cached && row && row.ageMs < config.routeCacheTtlMs) {
+                return cached;
             }
 
             const geometry = await fetchUpstreamRoute(config.osrmBaseUrl, mode, from, to);
@@ -50,7 +111,7 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
                 // reponse : la voirie n'a pas change, et l'alternative serait une carte
                 // vide. C'est le seul cas ou l'on sert une donnee perimee.
                 if (cached) {
-                    return { ...(JSON.parse(cached.payload) as RouteGeometry), source: 'cache' };
+                    return cached;
                 }
                 return null;
             }
@@ -58,6 +119,47 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
             cache.save(key, mode, JSON.stringify(geometry));
             cache.purgeOlderThan(config.routeCacheTtlMs);
             return { ...geometry, source: 'upstream' };
+        },
+
+        async matrix(
+            mode: RoutableMode,
+            origins: Coordinates[],
+            destinations: Coordinates[],
+        ): Promise<RoutingMatrixResult | null> {
+            const known = origins.map((from) => destinations.map((to) => findMeasure(cache, mode, from, to)));
+            const allFresh = known.every((row) => row.every((entry) => entry && entry.ageMs < config.routeCacheTtlMs));
+            if (allFresh) {
+                return {
+                    measures: known.map((row) =>
+                        row.map((entry): RoutingMeasure | null => entry ? { ...entry.measure, source: 'cache' } : null),
+                    ),
+                };
+            }
+
+            const upstream = await fetchUpstreamMatrix(config.osrmBaseUrl, mode, origins, destinations);
+            if (!upstream) {
+                const measures = known.map((row) =>
+                    row.map((entry): RoutingMeasure | null => entry ? { ...entry.measure, source: 'cache' } : null),
+                );
+                return measures.some((row) => row.some(Boolean)) ? { measures } : null;
+            }
+
+            const measures = upstream.map((row, originIndex) =>
+                row.map((measure, destinationIndex): RoutingMeasure | null => {
+                    if (measure) {
+                        cache.save(
+                            measureCacheKey(mode, origins[originIndex], destinations[destinationIndex]),
+                            mode,
+                            JSON.stringify(measure),
+                        );
+                        return { ...measure, source: 'upstream' };
+                    }
+                    const fallback = known[originIndex]?.[destinationIndex];
+                    return fallback ? { ...fallback.measure, source: 'cache' } : null;
+                }),
+            );
+            cache.purgeOlderThan(config.routeCacheTtlMs);
+            return { measures };
         },
     };
 }

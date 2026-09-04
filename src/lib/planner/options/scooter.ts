@@ -1,9 +1,14 @@
 // Generateur d'option : scooter.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
-import { haversineDistanceKm, nearestStation, stationToPoint, withinServiceArea } from '../geo';
+import type { RouteAccessPlan } from '../access';
+import { stationToPoint, withinServiceArea } from '../geo';
 import { buildOption, createLeg } from '../legs';
 
-export function createScooterOption({ origin, destination, profile, network }: RouteRequest, directKm: number): RouteOption | null {
+export function createScooterOption(
+  { origin, destination, profile }: RouteRequest,
+  directKm: number,
+  access: RouteAccessPlan['scooter'],
+): RouteOption | null {
   // La disponibilite au depart ne suffit pas : sans borne a l'arrivee, une
   // trottinette libre a 200 m suffisait a proposer n'importe quelle distance,
   // Lyon-Paris compris (B17).
@@ -11,14 +16,10 @@ export function createScooterOption({ origin, destination, profile, network }: R
     return null;
   }
 
-  const station = nearestStation(
-    network.sharedMobility.data.stations.filter((item) => item.is_renting && item.scooters_available > 0),
-    origin,
-  );
-
-  if (!station) {
+  if (!access) {
     return null;
   }
+  const station = access.station;
 
   const legs: RouteLeg[] = [
     createLeg({
@@ -27,7 +28,7 @@ export function createScooterOption({ origin, destination, profile, network }: R
       title: 'Rejoindre une trottinette',
       from: origin,
       to: stationToPoint(station),
-      distanceKm: haversineDistanceKm(origin, stationToPoint(station)),
+      distanceKm: access.measure.distanceKm,
       accessible: true,
     }),
     {

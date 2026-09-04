@@ -65,7 +65,7 @@ export function RouteDetailPanel({
   onSave: () => void;
   onPlan: () => void;
 }) {
-  const visibleLegs = routeOption.legs.filter((leg) => leg.distanceKm >= 0.05 || leg.mode !== 'walk');
+  const visibleLegs = routeOption.legs.filter((leg) => leg.transfer || leg.distanceKm >= 0.05 || leg.mode !== 'walk');
 
   return (
     <section className="overflow-hidden rounded-xl border border-primary/80 bg-muted/20">

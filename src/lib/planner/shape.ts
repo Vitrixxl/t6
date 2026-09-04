@@ -61,8 +61,8 @@ function projectOnShape(shape: [number, number][], target: Pick<GeoPoint, 'lat' 
 
 /**
  * Portion de trace reliant deux stations, extremites comprises. Renvoie `null`
- * si l'une des deux n'est pas sur ce trace : l'appelant se rabat alors sur une
- * geometrie approchee, plutot que d'afficher un detour inexistant.
+ * si l'une des deux n'est pas sur ce trace : l'appelant ecarte cette desserte
+ * plutot que d'afficher une geometrie inventee.
  */
 export function sliceShape(shape: [number, number][], from: GtfsStop, to: GtfsStop): GeoPoint[] | null {
   if (shape.length < 2) {

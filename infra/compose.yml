@@ -11,7 +11,7 @@
 #   docker compose -f infra/compose.yml up -d
 #
 # Le calculateur exige un prealable : ./infra/osrm-prepare.sh, qui telecharge
-# les donnees et construit les trois index. Sans lui, les services osrm-*
+# les donnees et construit les deux index. Sans lui, les services osrm-*
 # demarrent puis s'arretent faute de jeu de donnees.
 services:
   app:
@@ -37,14 +37,14 @@ services:
 
   # OSRM ne sait servir qu'un profil a la fois : les regles de circulation
   # different selon le mode sur une meme rue, et elles sont gravees dans l'index
-  # au pretraitement. D'ou trois moteurs, regroupes derriere une facade qui
+  # au pretraitement. D'ou deux moteurs, regroupes derriere une facade qui
   # reproduit les chemins de l'instance publique.
   osrm:
     image: docker.io/library/caddy:2-alpine
     command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     volumes:
       - ./osrm-proxy.Caddyfile:/etc/caddy/Caddyfile:ro
-    depends_on: [osrm-foot, osrm-bike, osrm-car]
+    depends_on: [osrm-foot, osrm-bike]
     restart: unless-stopped
 
   osrm-foot:
@@ -57,13 +57,6 @@ services:
   osrm-bike:
     image: ghcr.io/project-osrm/osrm-backend:latest
     command: osrm-routed --algorithm mld /data/lyon-bike.osrm
-    volumes:
-      - ./osrm-data:/data
-    restart: unless-stopped
-
-  osrm-car:
-    image: ghcr.io/project-osrm/osrm-backend:latest
-    command: osrm-routed --algorithm mld /data/lyon-car.osrm
     volumes:
       - ./osrm-data:/data
     restart: unless-stopped

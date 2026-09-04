@@ -1,6 +1,11 @@
 // Contrat de la route de calcul d'itineraire.
 import { z } from 'zod';
-import { mobilityMode } from './primitives';
+import { geoPoint } from './primitives';
+
+/** Modes qui empruntent la voirie et peuvent donc etre mesures par OSRM. */
+export const ROUTABLE_MODES = ['walk', 'bike', 'scooter'] as const;
+export const routableMode = z.enum(ROUTABLE_MODES);
+export type RoutableMode = z.infer<typeof routableMode>;
 
 /**
  * Les coordonnees arrivent en chaine dans la requete (`?from=4.83,45.75`) :
@@ -26,7 +31,7 @@ const coordinatePair = z.preprocess(
 );
 
 export const routeQuery = z.object({
-  mode: mobilityMode,
+  mode: routableMode,
   from: coordinatePair,
   to: coordinatePair,
 });
@@ -48,3 +53,29 @@ export const routeGeometry = z.object({
   source: z.enum(['cache', 'upstream']),
 });
 export type RouteGeometry = z.infer<typeof routeGeometry>;
+
+/**
+ * Une matrice borne les appels necessaires pour classer quelques points d'acces
+ * par temps reel. Chaque categorie garde huit candidats ; une requete agrege
+ * plusieurs categories, d'ou un maximum de trente-deux points par axe.
+ */
+const routeMatrixPoints = z.array(geoPoint.pick({ lat: true, lon: true })).min(1).max(32);
+
+export const routeMatrixRequest = z.object({
+  mode: routableMode,
+  origins: routeMatrixPoints,
+  destinations: routeMatrixPoints,
+});
+export type RouteMatrixRequest = z.infer<typeof routeMatrixRequest>;
+
+export const routeMeasure = z.object({
+  distanceMeters: z.number().min(0),
+  durationSeconds: z.number().min(0),
+  source: z.enum(['cache', 'upstream']),
+});
+export type RouteMeasure = z.infer<typeof routeMeasure>;
+
+export const routeMatrix = z.object({
+  measures: z.array(z.array(routeMeasure.nullable())),
+});
+export type RouteMatrix = z.infer<typeof routeMatrix>;

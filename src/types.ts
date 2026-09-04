@@ -13,7 +13,10 @@ export type {
   PlannedTripStatus,
   RecurringTrip,
   RouteInstruction,
+  RouteMatrix,
+  RouteMeasure,
   RoutePreselection,
+  RoutableMode,
   RoutinePeriod,
   SavedRouteRecord,
   SessionUser,
@@ -127,6 +130,8 @@ export interface TransportNetwork {
 export interface RouteLeg {
   id: string;
   mode: MobilityMode;
+  /** Correspondance pietonne interne : temps estime, mais aucun trace invente sans donnees de station. */
+  transfer?: boolean;
   title: string;
   /**
    * Libelle court ecrit sur le trace de la carte : le nom exact de la ligne

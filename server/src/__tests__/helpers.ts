@@ -4,6 +4,7 @@
 // ephemere : pas de port, pas de reseau, pas de fichier a nettoyer. La suite
 // reste rejouable en CI et sur n'importe quel poste.
 import { createApp } from '../app.ts';
+import type { ServerConfig } from '../config/index.ts';
 import { resetRateLimits } from '../plugins/rate-limit.ts';
 
 const BASE = 'http://localhost';
@@ -28,8 +29,14 @@ export interface CallOptions {
   cookie?: string;
 }
 
-export function createTestApi(): TestApi {
-  const app = createApp({ databasePath: ':memory:' });
+export function createTestApi(overrides: Partial<ServerConfig> = {}): TestApi {
+  const app = createApp({
+    databasePath: ':memory:',
+    // Le faux calculateur des tests ne doit pas subir la temporisation reservee
+    // au service public, meme si fetch est remplace juste apres par le test.
+    osrmBaseUrl: 'https://osrm.test',
+    ...overrides,
+  });
   // Les compteurs de debit sont partages par le processus : on repart de zero
   // pour que l'ordre des tests n'ait aucune influence.
   resetRateLimits();

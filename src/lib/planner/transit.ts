@@ -18,7 +18,7 @@ import { createLeg } from './legs';
 import { pathLengthKm, sliceShape } from './shape';
 
 /** Distance de rabattement a pied acceptee vers une station, en kilometres. */
-const MAX_ACCESS_KM = 1.2;
+export const MAX_TRANSIT_ACCESS_KM = 1.2;
 
 /**
  * Nombre de stations candidates retenues de chaque cote. La plus proche n'est
@@ -43,8 +43,21 @@ export interface TransitRide {
 
 export interface TransitJourney {
   rides: TransitRide[];
+  departureAccess: AccessMeasure;
+  arrivalAccess: AccessMeasure;
   /** Duree estimee de bout en bout, marche de rabattement comprise. */
   totalMinutes: number;
+}
+
+export interface AccessMeasure {
+  distanceKm: number;
+  durationMinutes: number;
+}
+
+/** Mesures reelles des acces aux stations candidates, indexees par arret. */
+export interface TransitAccess {
+  departures: ReadonlyMap<string, AccessMeasure>;
+  arrivals: ReadonlyMap<string, AccessMeasure>;
 }
 
 /** Seules les stations desservies par une ligne structurante sont exploitables. */
@@ -57,10 +70,15 @@ function servedStations(network: TransportNetwork, requireAccessible: boolean): 
 function nearestCandidates(stations: GtfsStop[], point: GeoPoint): GtfsStop[] {
   return stations
     .map((stop) => ({ stop, distanceKm: haversineDistanceKm(stopToPoint(stop), point) }))
-    .filter((entry) => entry.distanceKm <= MAX_ACCESS_KM)
+    .filter((entry) => entry.distanceKm <= MAX_TRANSIT_ACCESS_KM)
     .sort((a, b) => a.distanceKm - b.distanceKm)
     .slice(0, MAX_CANDIDATES)
     .map((entry) => entry.stop);
+}
+
+/** Filtre geographique borne avant le classement des acces par OSRM. */
+export function transitCandidates(network: TransportNetwork, point: GeoPoint, requireAccessible: boolean): GtfsStop[] {
+  return nearestCandidates(servedStations(network, requireAccessible), point);
 }
 
 function walkMinutes(distanceKm: number): number {
@@ -73,10 +91,13 @@ function buildRide(network: TransportNetwork, routeId: string, boarding: GtfsSto
     return null;
   }
 
-  // Repli assume : si la station n'est pas sur le trace publie (antenne, sens
-  // inverse decale), on relie les deux stations en direct. Le segment reste
-  // moins precis, jamais faux au point de partir ailleurs.
-  const path = sliceShape(route.shape, boarding, alighting) ?? [stopToPoint(boarding), stopToPoint(alighting)];
+  // Une ligne droite entre deux stations ressemble a un trajet reel alors
+  // qu'elle peut traverser des batiments. Sans portion officielle exploitable,
+  // cette desserte n'est donc pas proposee (B14).
+  const path = sliceShape(route.shape, boarding, alighting);
+  if (!path) {
+    return null;
+  }
   const trip = network.gtfs.trips.find((item) => item.route_id === routeId);
   const headway = trip ? trip.headway_minutes : 10;
   const delay = trip ? trip.realtime_delay_minutes : 0;
@@ -110,10 +131,15 @@ export function findTransitJourney(
   from: GeoPoint,
   to: GeoPoint,
   requireAccessible: boolean,
+  access?: TransitAccess,
 ): TransitJourney | null {
   const stations = servedStations(network, requireAccessible);
-  const departures = nearestCandidates(stations, from);
-  const arrivals = nearestCandidates(stations, to);
+  const departures = access
+    ? stations.filter((stop) => access.departures.has(stop.stop_id))
+    : nearestCandidates(stations, from);
+  const arrivals = access
+    ? stations.filter((stop) => access.arrivals.has(stop.stop_id))
+    : nearestCandidates(stations, to);
   if (departures.length === 0 || arrivals.length === 0) {
     return null;
   }
@@ -123,13 +149,21 @@ export function findTransitJourney(
   const consider = (rides: TransitRide[], extraMinutes: number) => {
     const boarding = rides[0].boarding;
     const alighting = rides[rides.length - 1].alighting;
+    const departureAccess = access?.departures.get(boarding.stop_id) ?? {
+      distanceKm: haversineDistanceKm(from, stopToPoint(boarding)),
+      durationMinutes: walkMinutes(haversineDistanceKm(from, stopToPoint(boarding))),
+    };
+    const arrivalAccess = access?.arrivals.get(alighting.stop_id) ?? {
+      distanceKm: haversineDistanceKm(stopToPoint(alighting), to),
+      durationMinutes: walkMinutes(haversineDistanceKm(stopToPoint(alighting), to)),
+    };
     const totalMinutes =
-      walkMinutes(haversineDistanceKm(from, stopToPoint(boarding))) +
-      walkMinutes(haversineDistanceKm(stopToPoint(alighting), to)) +
+      departureAccess.durationMinutes +
+      arrivalAccess.durationMinutes +
       rides.reduce((sum, ride) => sum + rideMinutes(ride), 0) +
       extraMinutes;
     if (!best || totalMinutes < best.totalMinutes) {
-      best = { rides, totalMinutes };
+      best = { rides, departureAccess, arrivalAccess, totalMinutes };
     }
   };
 
@@ -173,10 +207,26 @@ export function findTransitJourney(
  * dependre du generateur qui l'appelle.
  */
 export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg[] {
-  return journey.rides.map((ride, index) => {
+  return journey.rides.flatMap((ride, index) => {
     const label = routeLabel(ride.route);
-    const transferMinutes = index > 0 ? TRANSFER_PENALTY_MINUTES : 0;
-    return {
+    const previous = journey.rides[index - 1];
+    const transfer: RouteLeg[] = previous
+      ? [{
+          ...createLeg({
+            id: `${idPrefix}-transfer-${index}`,
+            mode: 'walk',
+            title: 'Correspondance a pied',
+            from: { ...stopToPoint(previous.alighting), label: `Quai ${routeLabel(previous.route)}` },
+            to: { ...stopToPoint(ride.boarding), label: `Quai ${label}` },
+            distanceKm: 0,
+            accessible: previous.alighting.wheelchair_boarding === 1 && ride.boarding.wheelchair_boarding === 1,
+            estimate: { overheadMinutes: TRANSFER_PENALTY_MINUTES },
+          }),
+          transfer: true,
+          detail: `Correspondance dans ${ride.boarding.stop_name}, ${TRANSFER_PENALTY_MINUTES} min estimees. Le trace interieur n'est pas publie par le GTFS.`,
+        }]
+      : [];
+    const transitLeg = {
       ...createLeg({
         id: `${idPrefix}-ride-${index}`,
         mode: 'transit',
@@ -188,16 +238,14 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
         // Seule geometrie reelle disponible sans appel reseau : le trace
         // publie de la ligne, deja decoupe entre les deux stations.
         path: ride.path,
-        // L'attente a quai et la correspondance ne sont pas du temps de
-        // parcours : elles ne doivent pas suivre la distance.
-        estimate: { overheadMinutes: ride.waitMinutes + transferMinutes },
+        // L'attente a quai n'est pas du temps de parcours : elle ne doit pas
+        // suivre la distance. La correspondance est un segment separe.
+        estimate: { overheadMinutes: ride.waitMinutes },
       }),
       mapLabel: label,
       mapColor: `#${ride.route.route_color}`,
-      detail:
-        index > 0
-          ? `Correspondance a ${ride.boarding.stop_name}, puis ${label} (attente ${ride.waitMinutes} min).`
-          : `${label} au depart de ${ride.boarding.stop_name}, attente estimee ${ride.waitMinutes} min.`,
+      detail: `${label} au depart de ${ride.boarding.stop_name}, attente estimee ${ride.waitMinutes} min.`,
     };
+    return [...transfer, transitLeg];
   });
 }

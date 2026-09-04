@@ -15,6 +15,14 @@ interface RouteBody {
   source: 'cache' | 'upstream';
 }
 
+interface MatrixBody {
+  measures: Array<Array<{
+    distanceMeters: number;
+    durationSeconds: number;
+    source: 'cache' | 'upstream';
+  } | null>>;
+}
+
 const OSRM_PAYLOAD = {
   code: 'Ok',
   routes: [
@@ -34,11 +42,11 @@ const OSRM_PAYLOAD = {
 };
 
 /** Remplace le calculateur et compte les appels reellement sortis. */
-function stubUpstream(response: () => Response): { calls: () => number } {
+function stubUpstream(response: (url: string) => Response): { calls: () => number } {
   let calls = 0;
-  globalThis.fetch = (async () => {
+  globalThis.fetch = (async (input: Parameters<typeof globalThis.fetch>[0]) => {
     calls += 1;
-    return response();
+    return response(String(input));
   }) as unknown as typeof fetch;
   return { calls: () => calls };
 }
@@ -142,6 +150,67 @@ describe('GET /api/route', () => {
     const api = createTestApi();
 
     expect((await api.call('/api/route?mode=helicoptere&from=4.83,45.75&to=4.85,45.76')).status).toBe(422);
+    api.close();
+  });
+});
+
+describe('POST /api/route-matrix', () => {
+  const body = {
+    mode: 'walk',
+    origins: [{ lat: 45.7578, lon: 4.832 }],
+    destinations: [
+      { lat: 45.7606, lon: 4.8594 },
+      { lat: 45.761, lon: 4.86 },
+    ],
+  };
+
+  const callMatrix = (api: ReturnType<typeof createTestApi>, input: typeof body = body) =>
+    api.call('/api/route-matrix', {
+      method: 'POST',
+      body: input,
+    });
+
+  it('mesure tous les acces en une requete OSRM puis partage le cache', async () => {
+    const upstream = stubUpstream((url) => {
+      expect(url).toContain('/routed-foot/table/v1/foot/');
+      expect(url).toContain('annotations=distance%2Cduration');
+      return new Response(
+        JSON.stringify({
+          code: 'Ok',
+          distances: [[1200, 1450]],
+          durations: [[840, 960]],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      );
+    });
+    const api = createTestApi();
+
+    const firstResponse = await callMatrix(api);
+    const secondResponse = await callMatrix(api);
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    const first = await json<MatrixBody>(firstResponse);
+    const second = await json<MatrixBody>(secondResponse);
+
+    expect(first.measures[0]?.[0]).toEqual({
+      distanceMeters: 1200,
+      durationSeconds: 840,
+      source: 'upstream',
+    });
+    expect(second.measures[0]?.[1]?.source).toBe('cache');
+    expect(upstream.calls()).toBe(1);
+    api.close();
+  });
+
+  it('borne la matrice agregee a trente-deux points par axe', async () => {
+    const upstream = stubUpstream(() => okResponse());
+    const api = createTestApi();
+    const tooMany = Array.from({ length: 33 }, (_, index) => ({ lat: 45.75, lon: 4.84 + index / 1000 }));
+
+    const response = await callMatrix(api, { ...body, destinations: tooMany });
+
+    expect(response.status).toBe(422);
+    expect(upstream.calls()).toBe(0);
     api.close();
   });
 });

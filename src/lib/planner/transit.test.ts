@@ -1,12 +1,6 @@
-// Tests du moteur de transport public.
-//
-// Ils verrouillent le correctif B12 : avant, la station de montee etait l'arret
-// le plus proche quel qu'il soit (un arret de bus, le plus souvent) et la ligne
-// affichee etait celle au passage le plus frequent du reseau, sans rapport avec
-// le trajet. Les deux premiers cas ci-dessous echouent si cela revient.
 import { describe, expect, it } from '../../test/harness';
-import type { GtfsStop, TransportNetwork } from '../../types';
-import { findTransitJourney } from './transit';
+import type { GtfsRoute, GtfsStop, TransportNetwork } from '../../types';
+import { findTransitJourney, transitLegs, type TransitJourney } from './transit';
 import { midpointOfPath, pathLengthKm, sliceShape } from './shape';
 
 function stop(id: string, name: string, lat: number, lon: number, routes: string[]): GtfsStop {
@@ -33,11 +27,7 @@ const network: TransportNetwork = {
         route_type: 1,
         route_color: 'E8308A',
         route_text_color: 'FFFFFF',
-        shape: [
-          [4.84, 45.74],
-          [4.84, 45.76],
-          [4.84, 45.78],
-        ],
+        shape: [[4.84, 45.74], [4.84, 45.76], [4.84, 45.78]],
       },
       {
         route_id: 'est',
@@ -46,11 +36,7 @@ const network: TransportNetwork = {
         route_type: 0,
         route_color: '004F9F',
         route_text_color: 'FFFFFF',
-        shape: [
-          [4.84, 45.76],
-          [4.86, 45.76],
-          [4.88, 45.76],
-        ],
+        shape: [[4.84, 45.76], [4.86, 45.76], [4.88, 45.76]],
       },
     ],
     trips: [
@@ -62,11 +48,10 @@ const network: TransportNetwork = {
   sharedMobility: { last_updated: 0, ttl: 60, version: '3.0', data: { stations: [] } },
 };
 
-const at = (stopRecord: GtfsStop) => ({ label: stopRecord.stop_name, lat: stopRecord.stop_lat, lon: stopRecord.stop_lon });
+const at = (record: GtfsStop) => ({ label: record.stop_name, lat: record.stop_lat, lon: record.stop_lon });
 
 describe('findTransitJourney', () => {
   it('ne fait jamais monter a un arret qu aucune ligne ne dessert', () => {
-    // Le depart est a 10 m de l'arret de bus et a 2 km de la station Sud.
     const journey = findTransitJourney(network, { label: 'Depart', lat: 45.7402, lon: 4.8402 }, at(NORD), false);
     expect(journey?.rides[0].boarding.stop_id).toBe('sud');
   });
@@ -86,7 +71,6 @@ describe('findTransitJourney', () => {
 
   it('suit le trace de la ligne, pas la ligne droite entre les stations', () => {
     const journey = findTransitJourney(network, at(SUD), at(NORD), false);
-    // Le trace passe par le point intermediaire de Hub : trois points, pas deux.
     expect(journey?.rides[0].path.length).toBeGreaterThan(2);
   });
 
@@ -97,18 +81,17 @@ describe('findTransitJourney', () => {
   it('ecarte les stations non accessibles pour un profil PMR', () => {
     const inaccessible: TransportNetwork = {
       ...network,
-      gtfs: { ...network.gtfs, stops: network.gtfs.stops.map((item) => ({ ...item, wheelchair_boarding: 2 as const })) },
+      gtfs: {
+        ...network.gtfs,
+        stops: network.gtfs.stops.map((item): GtfsStop => ({ ...item, wheelchair_boarding: 2 })),
+      },
     };
     expect(findTransitJourney(inaccessible, at(SUD), at(NORD), true)).toBeNull();
   });
 });
 
 describe('sliceShape', () => {
-  const shape: [number, number][] = [
-    [4.84, 45.74],
-    [4.84, 45.76],
-    [4.84, 45.78],
-  ];
+  const shape: [number, number][] = [[4.84, 45.74], [4.84, 45.76], [4.84, 45.78]];
 
   it('extrait la portion entre deux stations', () => {
     const path = sliceShape(shape, SUD, HUB);
@@ -139,17 +122,11 @@ describe('pathLengthKm', () => {
 });
 
 describe('midpointOfPath', () => {
-  const at = (lat: number, lon: number) => ({ label: 'p', lat, lon });
+  const point = (lat: number, lon: number) => ({ label: 'p', lat, lon });
 
-  // Verrouille le placement de l'etiquette de ligne. Elle etait posee au point
-  // median de la liste : les sommets d'un trace publie etant denses dans les
-  // courbes et rares sur les lignes droites, elle se retrouvait collee a une
-  // extremite, par-dessus le repere de depart.
   it('mesure le milieu en longueur, pas en nombre de points', () => {
-    // Neuf points serres sur les premieres dizaines de metres, puis 11 km droits.
-    const dense = Array.from({ length: 9 }, (_, index) => at(45.75 + index * 0.0001, 4.85));
-    const path = [...dense, at(45.85, 4.85)];
-
+    const dense = Array.from({ length: 9 }, (_, index) => point(45.75 + index * 0.0001, 4.85));
+    const path = [...dense, point(45.85, 4.85)];
     const middle = midpointOfPath(path);
     const medianIndexPoint = path[Math.floor(path.length / 2)];
 
@@ -158,11 +135,87 @@ describe('midpointOfPath', () => {
   });
 
   it('tombe au centre d un trace regulier', () => {
-    expect(midpointOfPath([at(45.75, 4.85), at(45.76, 4.85), at(45.77, 4.85)])?.lat).toBeCloseTo(45.76, 4);
+    expect(midpointOfPath([point(45.75, 4.85), point(45.76, 4.85), point(45.77, 4.85)])?.lat).toBeCloseTo(45.76, 4);
   });
 
   it('rend le point unique d un trace degenere, et rien sur un trace vide', () => {
-    expect(midpointOfPath([at(45.75, 4.85)])?.lat).toBe(45.75);
+    expect(midpointOfPath([point(45.75, 4.85)])?.lat).toBe(45.75);
     expect(midpointOfPath([])).toBeNull();
+  });
+});
+
+const interchange: GtfsStop = {
+  stop_id: 'charpennes',
+  stop_name: 'Charpennes Charles Hernu',
+  stop_lat: 45.7707,
+  stop_lon: 4.8631,
+  wheelchair_boarding: 1,
+  routes: ['metro-a', 'metro-b'],
+};
+
+const routeA: GtfsRoute = {
+  route_id: 'metro-a',
+  route_short_name: 'A',
+  route_long_name: 'Metro A',
+  route_type: 1,
+  route_color: 'EE3898',
+  route_text_color: 'FFFFFF',
+  shape: [],
+};
+
+const routeB: GtfsRoute = {
+  route_id: 'metro-b',
+  route_short_name: 'B',
+  route_long_name: 'Metro B',
+  route_type: 1,
+  route_color: '0074C8',
+  route_text_color: 'FFFFFF',
+  shape: [],
+};
+
+describe('transitLegs', () => {
+  it('materialise la correspondance entre deux lignes comme une etape a pied', () => {
+    const journey: TransitJourney = {
+      rides: [
+        {
+          route: routeA,
+          boarding: { ...interchange, stop_id: 'republique', stop_name: 'Republique Villeurbanne', routes: ['metro-a'] },
+          alighting: interchange,
+          path: [
+            { label: 'Republique Villeurbanne', lat: 45.7668, lon: 4.8721 },
+            { label: interchange.stop_name, lat: interchange.stop_lat, lon: interchange.stop_lon },
+          ],
+          distanceKm: 1.2,
+          waitMinutes: 2,
+        },
+        {
+          route: routeB,
+          boarding: interchange,
+          alighting: { ...interchange, stop_id: 'guichard', stop_name: 'Place Guichard', routes: ['metro-b'] },
+          path: [
+            { label: interchange.stop_name, lat: interchange.stop_lat, lon: interchange.stop_lon },
+            { label: 'Place Guichard', lat: 45.7595, lon: 4.8476 },
+          ],
+          distanceKm: 1.8,
+          waitMinutes: 2,
+        },
+      ],
+      departureAccess: { distanceKm: 0.2, durationMinutes: 3 },
+      arrivalAccess: { distanceKm: 0.3, durationMinutes: 4 },
+      totalMinutes: 20,
+    };
+
+    const legs = transitLegs(journey, 'transit');
+
+    expect(legs.map((leg) => leg.mode)).toEqual(['transit', 'walk', 'transit']);
+    expect(legs[1]).toMatchObject({
+      title: 'Correspondance a pied',
+      from: 'Quai Metro A',
+      to: 'Quai Metro B',
+      durationMinutes: 4,
+      distanceKm: 0,
+      path: [],
+      transfer: true,
+    });
   });
 });
