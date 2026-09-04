@@ -866,3 +866,50 @@ termine ensuite la planification, la complétion et la déconnexion en 8/8.
 
 **Niveau de verrouillage** : **automatisé** (E2E écrit et observé rouge avant
 le correctif, puis vert ; captures mobiles de contrôle).
+
+---
+
+## B30 — Les textes français perdaient leurs accents
+
+**Criticité** : mineur — défaut rédactionnel visible dans les écrans, les
+messages de l’API et les supports présentés au jury.
+
+### Identifier la source
+
+**Symptôme** : l’interface affichait notamment « Velo », « Enregistre »,
+« Ou vas-tu ? » et « CO₂e evite ». Les commentaires et les descriptions
+OpenAPI reprenaient le même français sans accents.
+
+**Cause racine** : une ancienne consigne imposait l’ASCII dans les commentaires
+et les messages Git. Cette habitude s’était propagée aux textes du produit,
+alors que les fichiers et les pages étaient déjà encodés en UTF-8.
+
+### Corriger
+
+Les textes d’interface, les messages d’erreur, les commentaires et les documents
+maintenus utilisent les accents français. `AGENTS.md` demande désormais de les
+conserver. Les identifiants, paramètres HTTP, chemins et migrations historiques
+gardent leur orthographe technique ; le dossier PDF gelé reste inchangé.
+
+**Où le voir** : `src/components/tutorial/TutorialOverlay.tsx`,
+`src/components/profile/ProfilePanels.tsx`, `src/components/planner/SearchPanels.tsx`,
+`server/src/services/routing/instructions.ts`, `AGENTS.md`.
+
+**Commit** : [`3f7fa7a`](https://github.com/Vitrixxl/t6/commit/3f7fa7a)
+
+### Tester et valider le correctif
+
+`bun run check` passe avec 170 tests. Les sélecteurs du scénario navigateur
+suivent les nouveaux libellés : tutoriel, recherche, planification, complétion
+et déconnexion passent en 8/8. L’audit axe-core ne relève aucune violation sur
+ses quatre écrans. Une lecture dans le navigateur confirme les accents sur
+l’authentification et le profil ; les captures du parcours mobile couvrent le
+tutoriel, les options et la planification.
+
+La validation a aussi détecté une substitution indue dans le paramètre OSRM
+`geometries`. Elle a été corrigée avant livraison et le test de routage existant
+vérifie désormais explicitement sa valeur `geojson`.
+
+**Niveau de verrouillage** : **faible** pour la qualité rédactionnelle globale
+(relecture et recette visuelle). Les assertions E2E et le contrat de l’appel
+OSRM sont automatisés, mais ils ne constituent pas un correcteur orthographique.
