@@ -98,7 +98,10 @@ describe('prepareRoutedAccessPlan', () => {
             },
         );
 
-        expect(calls).toEqual([{ mode: 'walk', origins: 2, destinations: 3 }]);
+        expect(calls).toEqual([
+            { mode: 'walk', origins: 1, destinations: 2 },
+            { mode: 'walk', origins: 1, destinations: 1 },
+        ]);
         expect(access.bike?.pickup.station.station_id).toBe('rapide');
         expect(access.bike?.pickup.measure.durationMinutes).toBeCloseTo(110 / 60, 5);
 

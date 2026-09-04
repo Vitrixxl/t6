@@ -43,9 +43,9 @@ contrat partagé. La disponibilité des engins, la desserte et les mesures réel
 déterminent toujours les options calculables.
 
 Les durées longues se lisent en heures et minutes (`63 min` → `1h03`), dans les
-options, les étapes et les trajets. Sur mobile, **Carte**, **Aperçu** et **Détails**
-règlent directement la hauteur du panneau ; ces commandes restent visibles
-pendant le défilement. La poignée accepte aussi le glissement et le clavier.
+options, les étapes et les trajets. Sur mobile, le panneau prend automatiquement
+la hauteur de son contenu, dans l’espace disponible sous la recherche. Le contenu
+long défile ; l’en-tête et la fermeture restent accessibles. Aucun réglage de taille.
 
 Le hub comporte quatre onglets : **Une fois**, **Récurrents**, **Historique** et
 **Enregistrés**. Les trajets ponctuels futurs se marquent « Fait » ; les ponctuels
@@ -141,7 +141,7 @@ Chaque flux a un fallback local (`public/data/`) signalé dans l'UI.
 Le navigateur n'appelle jamais le calculateur directement. Une recherche se déroule en quatre temps :
 
 1. Haversine ne garde que huit stations ou arrêts proches, afin de borner le coût.
-2. `POST /api/route-matrix` demande à OSRM la durée routable vers chacun d'eux ; le moteur choisit donc l'accès le plus rapide à pied ou à vélo, pas le point géométriquement le plus proche. En parallèle, une matrice voiture `1 x 1` mesure la référence carbone entre les deux extrémités.
+2. Deux matrices piétonnes en étoile via `POST /api/route-matrix` mesurent les accès depuis le départ et vers l’arrivée, sans croiser les stations entre elles ; le moteur choisit donc l'accès le plus rapide à pied ou à vélo, pas le point géométriquement le plus proche. En parallèle, une matrice voiture `1 x 1` mesure la référence carbone entre les deux extrémités.
 3. Le moteur assemble les options, puis `GET /api/route` mesure et trace chaque segment de voirie avant affichage.
 4. Quand toutes les options portent leurs mesures réelles, la même référence voiture leur est appliquée, puis elles sont affichées.
 
@@ -195,7 +195,13 @@ au-dessus ou au-dessous du contrôle vise pour ne pas le masquer.
 
 Sans configuration, la source est l'instance publique de démonstration d'OpenStreetMap. Elle dépanne, mais elle n'a **aucun engagement de service et limite par adresse IP** — une session de test un peu active suffit à la déclencher (cf. `docs/BUGS.md`, B13).
 
-Pour supprimer toute dépendance tierce à l'exécution, héberger OSRM localement :
+Le calcul multimodal doit utiliser les moteurs OSRM locaux. Le service public
+compte chaque cellule de matrice dans son quota : espacer les requêtes HTTP
+d’une seconde ne suffit pas. Une réponse amont 429 devient un 503 de l’API et
+peut retirer les modes dont les accès ne sont plus mesurables (B41). Les URL
+publiques par défaut conviennent uniquement aux essais ponctuels de routage.
+
+Pour héberger le routage localement (les flux GBFS et le géocodage restent externes) :
 
 ```bash
 ./infra/osrm-prepare.sh                      # télécharge et prétraite les 3 profils (une fois)

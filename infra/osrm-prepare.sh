@@ -49,8 +49,12 @@ fi
 for profile in foot bike car; do
   echo
   echo "=== Profil $profile ==="
+  lua_profile="$profile"
+  if [ "$profile" = bike ]; then
+    lua_profile=bicycle
+  fi
   cp "$SOURCE" "$DATA_DIR/lyon-$profile.osm.pbf"
-  for step in "osrm-extract -p /opt/$profile.lua /data/lyon-$profile.osm.pbf" \
+  for step in "osrm-extract -p /opt/$lua_profile.lua /data/lyon-$profile.osm.pbf" \
               "osrm-partition /data/lyon-$profile.osrm" \
               "osrm-customize /data/lyon-$profile.osrm"; do
     # shellcheck disable=SC2086

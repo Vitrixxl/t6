@@ -134,7 +134,8 @@ assumé. La génération du dossier PDF est gelée par la règle ci-dessus.
 Les moteurs OSRM sont appelés directement depuis l'API : `OSRM_FOOT_URL`,
 `OSRM_BIKE_URL` et `OSRM_CAR_URL`, avec préfixe public éventuel dans chaque URL.
 Compose fournit les noms des trois services internes, sans Caddy ni port OSRM
-publié. La trottinette partage le moteur vélo ; la voiture reste une référence.
+publié. Le parcours multimodal utilise ces moteurs : le quota public compte
+chaque cellule de matrice et ne supporte pas ce volume (B41). La trottinette partage le moteur vélo ; la voiture reste une référence.
 
 Un fichier, une raison de changer. Ce n'est pas un seuil de lignes : un fichier
 long mais cohésif reste préférable à trois fichiers qui se renvoient la balle.
@@ -184,8 +185,9 @@ présélection, pas à masquer des options. Il n’y a plus de plafond de marche
 dans le profil ni de pénalité associée. Les contraintes de disponibilité,
 de desserte et de mesure réelle restent celles du moteur. Les durées sont
 formatées par `src/lib/duration.ts` : `63 min` se lit `1h03`.
-Le panneau mobile propose trois tailles explicites (Carte, Aperçu, Détails),
-avec des commandes accessibles même lorsque son contenu défile.
+Le panneau mobile prend la hauteur de son contenu, limitée à l’espace sous la
+recherche. Son contenu long défile ; l’en-tête et la fermeture restent accessibles.
+Aucune poignée ni commande ne règle sa taille.
 Le cadrage de carte utilise les dimensions du canvas : les marges doivent
 laisser une zone de dessin positive, même en paysage ou après redimensionnement.
 

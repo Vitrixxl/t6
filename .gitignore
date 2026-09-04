@@ -35,3 +35,6 @@ yarn.lock
 
 # Worktrees git crees par les sessions d agents : d autres branches, jamais ce depot.
 .claude/worktrees/
+
+# Extraits OSM et index OSRM préparés localement.
+infra/osrm-data/

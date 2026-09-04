@@ -18,7 +18,8 @@ let nextPublicRequestAt = 0;
 /**
  * L'instance publique refuse les rafales (HTTP 429). Les appels de plusieurs
  * options partagent donc une cadence au niveau du serveur. Une instance locale
- * n'est pas ralentie ; son intérêt est précisément d'absorber la charge.
+ * n'est pas ralentie ; elle est nécessaire au parcours multimodal : le service
+ * public compte chaque cellule de matrice, pas seulement les appels HTTP (B41).
  */
 async function waitForPublicSlot(baseUrl: string): Promise<void> {
     if (new URL(baseUrl).hostname !== PUBLIC_OSRM_HOST) {

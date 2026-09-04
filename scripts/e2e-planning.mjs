@@ -64,49 +64,27 @@ function overlapArea(a, b) {
 
 async function testMobileSheet() {
     const sheet = page.locator('[data-tour="routes"]:visible');
-    const controls = page.getByRole('group', { name: 'Taille du panneau trajets' });
-    const sizes = [
-        { name: 'Réduire le panneau : carte', level: 'collapsed', ratio: 0.30 },
-        { name: 'Taille moyenne du panneau : aperçu', level: 'mid', ratio: 0.54 },
-        { name: 'Agrandir le panneau : détails', level: 'expanded', ratio: 0.82 },
-    ];
+    const content = page.getByTestId('mobile-route-content');
     for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 844 });
-        for (const size of sizes) {
-            const button = controls.getByRole('button', { name: size.name });
-            await button.click();
-            await page.waitForTimeout(350);
-            const box = await sheet.boundingBox();
-            if (await sheet.getAttribute('data-sheet-level') !== size.level || !box || Math.abs(box.height - 844 * size.ratio) > 2) {
-                failures.push(`panneau ${width}px : taille ${size.level} incorrecte`);
-            }
-            const buttonBox = await button.boundingBox();
-            if (!buttonBox || buttonBox.height < 44 || buttonBox.width < 44) {
-                failures.push(`panneau ${width}px : cible tactile trop petite`);
-            }
+        const box = await sheet.boundingBox();
+        const search = await page.locator('[data-tour="mobile-search"]:visible').boundingBox();
+        if (!box || !search || box.y < search.y + search.height || box.y + box.height > 845) {
+            failures.push(`panneau ${width}px : le contenu dépasse l’écran ou masque la recherche`);
         }
-        const content = sheet.locator('[id]').first();
+        const dimensions = await content.evaluate((element) => ({
+            height: element.clientHeight,
+            content: element.scrollHeight,
+            overflow: getComputedStyle(element).overflowY,
+        }));
+        if (dimensions.content > dimensions.height && dimensions.overflow !== 'auto') {
+            failures.push(`panneau ${width}px : contenu long inaccessible`);
+        }
         await content.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-        await controls.getByRole('button', { name: sizes[0].name }).click();
-        await controls.getByRole('button', { name: sizes[2].name }).click();
+        await page.getByRole('button', { name: "Fermer l'itinéraire", exact: true }).waitFor({ state: 'visible' });
         await content.evaluate((element) => { element.scrollTop = 0; });
-        await page.waitForTimeout(350);
-        await page.screenshot({ path: `tmp/screenshots/routes-expanded-${width}.png` });
+        await page.screenshot({ path: `tmp/screenshots/routes-auto-${width}.png` });
     }
-    const handle = page.getByTestId('mobile-trip-sheet-handle');
-    await handle.focus();
-    await page.keyboard.press('ArrowDown');
-    if (await sheet.getAttribute('data-sheet-level') !== 'mid') failures.push('panneau : réduction au clavier impossible');
-    await page.keyboard.press('Enter');
-    if (await sheet.getAttribute('data-sheet-level') !== 'expanded') failures.push('panneau : agrandissement au clavier impossible');
-    await page.waitForTimeout(350);
-    const grip = await handle.boundingBox();
-    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 + 80, { steps: 8 });
-    await page.mouse.up();
-    if (await sheet.getAttribute('data-sheet-level') !== 'mid') failures.push('panneau : glissement vers le bas incorrect');
-    await controls.getByRole('button', { name: sizes[2].name }).click();
     const choices = page.getByRole('group', { name: 'Options d’itinéraire', exact: true }).getByRole('button');
     for (const choice of await choices.all()) {
         await choice.click();
@@ -119,7 +97,7 @@ async function testMobileSheet() {
     await page.waitForTimeout(800);
     await page.screenshot({ path: 'tmp/screenshots/routes-landscape.png' });
     await page.setViewportSize({ width: 390, height: 844 });
-    log('panneau mobile : tailles, défilement, clavier, glissement, sélection et rotation vérifiés');
+    log('panneau mobile : hauteur automatique, défilement, sélection et rotation vérifiés');
 }
 
 async function testMobileTutorial() {

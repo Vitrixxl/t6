@@ -177,6 +177,6 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Tests métier, API et cache : recalcul, idempotence, pauses, isolement des comptes, fuseaux et refus visibles.
 - [x] Vérification navigateur du hub avec `bun run e2e:trips` : quatre onglets, cinq largeurs et persistance après rechargement.
 
-- [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, six options mobiles sans troncature et tailles Carte/Aperçu/Détails accessibles par boutons, glissement et clavier. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.
+- [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, six options mobiles sans troncature et hauteur automatique du panneau, avec défilement du contenu long et fermeture toujours accessible. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.
 
 - [x] B37–B39 : cadrage borné à la taille du canvas avec rotation E2E ; certificat local reconnu comme certificat serveur par Chromium ; image Docker contenant les contrats et règles partagées, démarrée après migration d’une copie de la base.

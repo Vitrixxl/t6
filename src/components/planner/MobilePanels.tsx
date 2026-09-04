@@ -1,7 +1,6 @@
 // Options, étapes et actions de planification du panneau mobile.
 import { formatDuration } from '../../lib/duration';
 import { useSetAtom } from 'jotai';
-import { useId } from 'react';
 import { CalendarClock, CalendarPlus, Check, Route, UserRound, X } from 'lucide-react';
 import { useActivitySummary } from '../../queries';
 import { openHubAtom } from '../../state';
@@ -12,8 +11,6 @@ import { formatCarbonComparisonCompact } from '../../lib/carbon-comparison';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 import { Metric, MODE_ICON } from '../app/shared';
 import { RouteSteps } from './RouteSteps';
-import { useMobileSheet } from './useMobileSheet';
-import { MobileSheetControls } from './MobileSheetControls';
 
 export function MobileTripPanel({
     destination,
@@ -39,24 +36,19 @@ export function MobileTripPanel({
         onOpenProfile: () => void;
         onClose: () => void;
     }) {
-    const sheet = useMobileSheet();
-    const contentId = useId();
-
     return (
         <section
-            className={`absolute inset-x-0 bottom-0 z-30 flex flex-col overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl transition-[height] duration-300 ease-in-out motion-reduce:transition-none ${sheet.height}`}
+            className="absolute inset-x-0 bottom-0 z-30 flex h-auto max-h-[calc(100%-8.5rem)] flex-col overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl"
             data-tour="routes"
-            data-sheet-level={sheet.level}
         >
-            <MobileSheetControls sheet={sheet} contentId={contentId} />
-            <div id={contentId} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                <MobileTripHeader
-                    destination={destination}
-                    routingStatus={routingStatus}
-                    onOpenProfile={onOpenProfile}
-                    onClose={onClose}
-                />
+            <MobileTripHeader
+                destination={destination}
+                routingStatus={routingStatus}
+                onOpenProfile={onOpenProfile}
+                onClose={onClose}
+            />
 
+            <div data-testid="mobile-route-content" className="min-h-0 overflow-y-auto overscroll-contain">
                 {coverageWarning ? (
                     <div className="px-4 pb-3">
                         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">{coverageWarning}</p>
@@ -90,7 +82,7 @@ function MobileTripHeader({
     const openHub = useSetAtom(openHubAtom);
 
     return (
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itinéraire</p>
                 <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Où vas-tu ?'}</h1>

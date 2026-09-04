@@ -119,7 +119,11 @@ function stopAccesses(
     return result;
 }
 
-/** Tous les accès piétons initiaux tiennent dans une seule matrice OSRM. */
+/**
+ * Deux matrices en étoile mesurent uniquement les accès utilisés : depuis le
+ * départ et vers l’arrivée. Croiser les stations entre elles ne sert à aucune
+ * option et multiplie inutilement le travail demandé au calculateur.
+ */
 async function routedWalkingAccess(
     network: TransportNetwork,
     origin: GeoPoint,
@@ -135,36 +139,28 @@ async function routedWalkingAccess(
     const scooterCandidates = stationCandidates(scooters, origin);
     const departureCandidates = transitCandidates(network, origin, requireAccessible);
     const arrivalCandidates = transitCandidates(network, destination, requireAccessible);
-    const origins = [origin, ...dropoffCandidates.map(stationToPoint), ...arrivalCandidates.map(stopToPoint)];
+    const origins = [...dropoffCandidates.map(stationToPoint), ...arrivalCandidates.map(stopToPoint)];
     const destinations = [
         ...pickupCandidates.map(stationToPoint),
         ...scooterCandidates.map(stationToPoint),
         ...departureCandidates.map(stopToPoint),
-        destination,
     ];
-    const matrix = await measure('walk', origins, destinations);
-    if (!matrix) {
-        return {
-            bikePickup: null,
-            bikeDropoff: null,
-            scooter: null,
-            transitDepartures: new Map<string, AccessMeasure>(),
-            transitArrivals: new Map<string, AccessMeasure>(),
-        };
-    }
+    const [departures, arrivals] = await Promise.all([
+        destinations.length > 0 ? measure('walk', [origin], destinations) : null,
+        origins.length > 0 ? measure('walk', origins, [destination]) : null,
+    ]);
 
     const scooterOffset = pickupCandidates.length;
     const departureOffset = scooterOffset + scooterCandidates.length;
-    const destinationIndex = destinations.length - 1;
-    const arrivalOriginOffset = 1 + dropoffCandidates.length;
+    const arrivalOriginOffset = dropoffCandidates.length;
     return {
-        bikePickup: stationAccess(pickupCandidates, (index) => matrix[0]?.[index]),
-        bikeDropoff: stationAccess(dropoffCandidates, (index) => matrix[index + 1]?.[destinationIndex]),
-        scooter: stationAccess(scooterCandidates, (index) => matrix[0]?.[scooterOffset + index]),
-        transitDepartures: stopAccesses(departureCandidates, (index) => matrix[0]?.[departureOffset + index]),
+        bikePickup: stationAccess(pickupCandidates, (index) => departures?.[0]?.[index]),
+        bikeDropoff: stationAccess(dropoffCandidates, (index) => arrivals?.[index]?.[0]),
+        scooter: stationAccess(scooterCandidates, (index) => departures?.[0]?.[scooterOffset + index]),
+        transitDepartures: stopAccesses(departureCandidates, (index) => departures?.[0]?.[departureOffset + index]),
         transitArrivals: stopAccesses(
             arrivalCandidates,
-            (index) => matrix[arrivalOriginOffset + index]?.[destinationIndex],
+            (index) => arrivals?.[arrivalOriginOffset + index]?.[0],
         ),
     };
 }
