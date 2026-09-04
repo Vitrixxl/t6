@@ -1043,3 +1043,106 @@ compte **199 tests verts** (136 client/métier, 63 API), toujours dans 21 fichie
 
 **Niveau de verrouillage** : **automatisé** pour les règles, la persistance et
 les parcours contrôlés ; **faible** pour les détails purement visuels.
+
+---
+
+## B34 — Un trajet de plus d’une heure s’affichait « 63 min »
+
+**Symptôme observé** : sur le trajet vers le 26 rue de Gerland, le choix à pied
+annonçait « 63 min », y compris dans sa fiche et ses étapes.
+
+**Cause racine** : les vues concaténaient directement la durée numérique avec
+« min » ; aucun format partagé ne convertissait les durées longues en heures.
+
+**Correctif** : `formatDuration` arrondit les minutes puis affiche `1h03` dès
+une heure. Les choix mobile et bureau, détails, étapes, planification et listes
+de trajets utilisent ce format. Les contrats conservent les minutes numériques.
+
+**Commit** : [34ee6e1 — options complètes et panneau mobile](https://github.com/Vitrixxl/t6/commit/34ee6e1).
+
+**Où le montrer** : `src/lib/duration.ts`,
+`src/components/planner/{MobilePanels,RoutePanels,RouteSteps}.tsx` ; capture
+`tmp/screenshots/routes-gerland-390.png`.
+
+**Test du correctif** : `src/lib/duration.test.ts` couvre 0, 33, 59, 59,5, 60,
+63, 120 et 125 minutes. `MobilePanels.test.tsx` exige `1h03` et refuse `63 min`
+dans le rendu des choix. Recette Chromium du trajet signalé : `1h03` dans le
+choix, la durée et l’étape à pied.
+
+**Niveau de verrouillage** : **automatisé** pour le format et le rendu des
+choix ; **faible** pour la vérification visuelle des autres écrans.
+
+---
+
+## B35 — Le choix mobile pouvait masquer des options calculées
+
+**Symptôme observé** : certaines alternatives manquaient au choix mobile,
+alors que le moteur sait produire six familles. Le réglage « Marche max »
+laissait également apparaître un trajet à pied dépassant la valeur choisie.
+
+**Cause racine** : `MobileRouteChoices` tronquait la liste à quatre entrées
+avec `slice(0, 4)`. Indépendamment, la marche maximale ajoutait un avertissement
+et une pénalité au score ; son libellé laissait entendre un plafond d’exclusion.
+
+**Correctif** : toutes les options calculables sont rendues et sélectionnables.
+Le réglage de marche, son avertissement et sa pénalité sont retirés du profil,
+du contrat partagé, du formulaire et du score. `toUserRow` applique le contrat
+courant aux profils JSON historiques avant les lectures et exports ; aucune
+migration de structure n’est nécessaire. L’OpenAPI générée ne porte plus ce
+champ. Les contraintes de disponibilité, desserte, PMR et mesure réelle restent
+appliquées ; les préférences influencent le classement et la présélection.
+
+**Commit** : [34ee6e1 — options complètes et panneau mobile](https://github.com/Vitrixxl/t6/commit/34ee6e1).
+
+**Où le montrer** : `src/components/planner/MobilePanels.tsx`,
+`src/contracts/profile.ts`, `src/lib/planner/scoring.ts`,
+`server/src/repositories/mappers.ts` et `src/components/profile/ProfilePanels.tsx`.
+
+**Test du correctif** : `MobilePanels.test.tsx` rend six choix, dont le dernier
+sélectionné ; le test échouerait avec la troncature précédente. Le test métier
+conserve une marche de plus d’une heure sans avertissement. Les tests du contrat
+et de l’API relisent un ancien profil sans exposer le champ retiré. Vérification
+de l’OpenAPI servie : aucun `maxWalkMinutes`. Recette Chromium complémentaire
+sur six options de test, à 320 et 390 px : chaque bouton sélectionne son option
+(captures `tmp/screenshots/routes-six-*.png`, données de présentation simulées).
+
+**Niveau de verrouillage** : **automatisé** pour la liste, le contrat, l’API et
+la marche longue ; **faible** pour la lisibilité vérifiée sur captures.
+
+---
+
+## B36 — La taille du panneau mobile était difficile à régler
+
+**Symptôme observé** : il était difficile de comprendre comment agrandir ou
+réduire le panneau de résultats, notamment au toucher.
+
+**Cause racine** : une petite poignée muette portait seule les interactions.
+Les hauteurs maximales du panneau et de son contenu étaient calculées séparément,
+sans réserver correctement l’espace de la poignée et de la zone sûre du téléphone.
+La poignée traitait les événements pointeur et clavier sans clic natif.
+
+**Correctif** : trois boutons nommés Carte, Aperçu et Détails choisissent
+respectivement 30 %, 54 % et 82 % de la hauteur visible. Les commandes d’au moins
+44 px restent hors du contenu défilant. Une colonne flex répartit la hauteur
+entre commandes, contenu et zone sûre. Le glissement reste disponible ; le clic
+natif couvre aussi les activations clavier et lecteur d’écran, sans double
+changement après un glissement. Le mouvement respecte la préférence de réduction
+des animations. Les quatre mesures du détail passent sur deux colonnes : le
+libellé « indisponible » débordait des colonnes trop étroites à 320 px.
+
+**Commit** : [34ee6e1 — options complètes et panneau mobile](https://github.com/Vitrixxl/t6/commit/34ee6e1).
+
+**Où le montrer** : `src/components/planner/MobileSheetControls.tsx`,
+`useMobileSheet.ts` et `MobilePanels.tsx` ; `scripts/e2e-planning.mjs`.
+
+**Test du correctif** : le scénario `bun run e2e` contrôle les trois hauteurs
+réelles et les cibles tactiles à 320 et 390 px. Il vérifie les commandes après
+défilement, les flèches et Entrée au clavier, le glissement vers le bas et la
+sélection des options, puis planifie et termine le trajet. Les captures du
+panneau agrandi et réduit sont relues. Vérification complète : 203 tests verts
+(139 client/métier, 64 API) dans 23 fichiers, lint et typage strict verts, build
+produit, planification 9/9 et parcours historique/annulations verts.
+
+**Niveau de verrouillage** : **automatisé** pour les hauteurs, les cibles et
+les interactions exercées par l’E2E ; **faible** pour l’appréciation visuelle,
+les gestes et appareils non parcourus et le lecteur d’écran réel.
