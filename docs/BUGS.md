@@ -1146,3 +1146,106 @@ produit, planification 9/9 et parcours historique/annulations verts.
 **Niveau de verrouillage** : **automatisé** pour les hauteurs, les cibles et
 les interactions exercées par l’E2E ; **faible** pour l’appréciation visuelle,
 les gestes et appareils non parcourus et le lecteur d’écran réel.
+
+---
+
+## B37 — MapLibre ne pouvait pas cadrer le trajet sur un petit écran
+
+**Symptôme observé** : la console affichait « Map cannot fit within canvas with
+the given bounds, padding, and/or offset. » lors du cadrage de l’itinéraire.
+
+**Cause racine** : les marges mobiles fixes réservaient 140 px en haut et
+300 px en bas, indépendamment de la hauteur réelle du canvas. En paysage sur
+844 × 390 px, elles dépassaient la surface disponible. Un changement de taille
+sans nouvelle sélection ne recalculait pas non plus le cadrage.
+
+**Correctif** : `routeViewportPadding` conserve au moins un tiers de hauteur
+et la moitié de largeur pour le trajet. `UrbanMap` calcule ses marges depuis
+le conteneur, ignore les dimensions nulles et recadre après un redimensionnement.
+
+**Commit** : [98b373f — cadrage et image Docker](https://github.com/Vitrixxl/t6/commit/98b373f).
+
+**Où le montrer** : `src/components/map/viewport.ts`, `UrbanMap.tsx` et
+`scripts/e2e-planning.mjs`.
+
+**Test du correctif** : deux tests couvrent les marges habituelles, le paysage,
+les canvas réduits et le cas 1 × 1 px. Le parcours E2E tourne l’écran à
+844 × 390, sélectionne une option et échoue si la console émet cet avertissement.
+La même rotation a été vérifiée dans Chromium sur l’image Docker reconstruite,
+sans erreur de cadrage. Capture : `tmp/screenshots/container-map-landscape.png`.
+
+**Niveau de verrouillage** : **automatisé** pour les marges et le parcours de
+rotation ; **faible** pour l’appréciation visuelle des cadrages non parcourus.
+
+---
+
+## B38 — Le certificat local empêchait l’activation du service worker
+
+**Symptôme observé** : la page HTTPS s’ouvrait, mais Chromium refusait
+`/sw.js` avec une `SecurityError` et « An SSL certificate error occurred ».
+
+**Cause racine** : le conteneur présentait un certificat auto-signé absent de
+la base de confiance du navigateur. Accepter l’avertissement de navigation ne
+rendait pas le certificat fiable pour l’enregistrement du service worker.
+
+**Correctif** : import du certificat public de ce serveur local dans la base
+NSS du compte Linux, avec les attributs `P,,` (certificat serveur de confiance,
+sans lui donner le rôle d’autorité). Procédure documentée dans le README selon
+la documentation officielle Chromium. Ni la vérification TLS ni le service
+worker ne sont désactivés ; aucune clé privée n’entre dans le dépôt.
+
+**Commit** : [98b373f — cadrage et image Docker](https://github.com/Vitrixxl/t6/commit/98b373f).
+
+**Où le montrer** : `README.md`, section « Certificat local et service worker »,
+et panneau Application / Service workers de Chromium sur `https://localhost:4000`.
+
+**Test du correctif** : lancement d’un nouveau Chromium sans option d’ignorance
+des erreurs TLS ; navigation HTTPS puis enregistrement de `/sw.js` : état
+`activated`, aucune erreur SSL. Contrôle répété après mise à jour du conteneur.
+La confiance reste locale au poste ; un autre appareil doit reconnaître son
+certificat. Une fenêtre déjà ouverte peut nécessiter un redémarrage du navigateur.
+
+**Niveau de verrouillage** : **faible** : correction d’environnement vérifiée
+ponctuellement, non installée automatiquement par le dépôt et propre au poste.
+
+---
+
+## B39 — L’image Docker n’embarquait plus les modules partagés requis par l’API
+
+**Symptôme observé** : le conteneur consulté sur le port 4000 servait toujours
+l’ancienne interface, limitée à quatre choix. En préparant sa reconstruction,
+le Dockerfile ne copiait que `src/types.ts` alors que le serveur courant charge
+les contrats et les règles calendaires depuis `src/`.
+
+**Cause racine** : la liste de fichiers copiés dans l’image d’exécution n’avait
+pas suivi les dépendances partagées introduites dans l’API. Une modification de
+`main` local ne remplace pas une image déjà démarrée.
+
+**Correctif** : copie explicite des contrats et des modules `calendar.ts` et
+`routines.ts` dans l’image. Les worktrees locaux sont exclus du contexte Docker.
+Construction et démarrage d’un conteneur candidat sur une copie de la base,
+puis remplacement du conteneur `urbanflow` avec les mêmes volumes `/data` et
+`/certs`. L’ancien conteneur arrêté et deux sauvegardes SQLite cohérentes sont
+conservés pour la reprise.
+
+Les migrations existantes adoptent la base et gardent le compte, les sessions,
+la routine et l’historique. Les huit anciennes occurrences planifiées de la
+routine disparaissent conformément à la migration 0002 : leurs passages sont
+désormais calculés à la lecture. Le trajet ponctuel est conservé.
+
+**Commit** : [98b373f — cadrage et image Docker](https://github.com/Vitrixxl/t6/commit/98b373f).
+
+**Où le montrer** : `infra/api.Dockerfile`, `.dockerignore`, `README.md` et
+`server/drizzle/0002_routines-a-la-volee.sql`.
+
+**Test du correctif** : `docker build -f infra/api.Dockerfile` réussit. Dans un
+conteneur jetable, retirer les contrats reproduit « Cannot find module
+'../../../src/contracts/index.ts' ». L’image complète démarre, applique les
+migrations et sert `/api/health`. Chromium affiche les nouvelles commandes de
+panneau, active le service worker et passe du portrait au paysage sans erreur.
+Les états de compte issus de la copie migrée passent le contrat `accountState`.
+
+**Niveau de verrouillage** : **faible** pour la composition de l’image et le
+déploiement (recette Docker ponctuelle) ; les règles de migration et de compte
+restent couvertes par la suite API. Validation courante : 205 tests verts
+(141 client/métier, 64 API) dans 24 fichiers ; lint, typage, build et E2E 9/9 verts.
