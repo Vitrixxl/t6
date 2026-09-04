@@ -106,7 +106,7 @@ const network: TransportNetwork = {
 };
 
 describe('planRoutes', () => {
-    it('returns multimodal options ordered by score', () => {
+    it('propose les options multimodales par durée croissante', () => {
         const routes = planRoutes({
             origin: LANDMARKS[0],
             destination: LANDMARKS[1],
@@ -115,7 +115,8 @@ describe('planRoutes', () => {
         });
 
         expect(routes.length).toBeGreaterThanOrEqual(3);
-        expect(routes[0].score).toBeGreaterThanOrEqual(routes[1].score);
+        const durations = routes.map((route) => route.durationMinutes);
+        expect(durations).toEqual([...durations].sort((a, b) => a - b));
         expect(routes.some((route) => route.modes.includes('transit'))).toBe(true);
         expect(routes.some((route) => route.modes.includes('bike'))).toBe(true);
     });
@@ -508,12 +509,21 @@ describe('measureRoutes', () => {
         expect(measured).toHaveLength(0);
     });
 
-    it('reclasse sur les mesures réelles et non sur l’estimation', async () => {
-        const measured = await measureRoutes(routes, DEFAULT_PROFILE, doubler);
-        const scores = measured.map((option) => option.score);
+    it('reclasse par durée réelle même quand la mesure inverse les estimations', async () => {
+        const initiallySlowest = routes[routes.length - 1];
+        const candidates = routes.map((route) => route === initiallySlowest ? { ...route, reliabilityScore: 0 } : route);
+        const measured = await measureRoutes(candidates, DEFAULT_PROFILE, async (legs) =>
+            legs.map((leg, index) => ({
+                ...leg,
+                durationMinutes: index === 0 ? (legs === initiallySlowest.legs ? 1 : 100) : 0,
+                path: [leg.fromPoint, leg.toPoint],
+            })),
+        );
+        const durations = measured.map((option) => option.durationMinutes);
 
-        expect(scores).toEqual([...scores].sort((a, b) => b - a));
-        // Les durées ont double : les scores ne peuvent pas être restes identiques.
-        expect(scores).not.toEqual(routes.map((option) => option.score));
+        expect(durations).toEqual([...durations].sort((a, b) => a - b));
+        expect(measured[0].id).toBe(initiallySlowest.id);
+        expect(measured[0].durationMinutes).toBe(1);
+        expect(measured[0].score).toBeLessThan(Math.max(...measured.map((route) => route.score)));
     });
 });

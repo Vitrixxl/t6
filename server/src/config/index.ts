@@ -18,8 +18,8 @@ export interface ServerConfig {
     trustProxy: boolean;
     /**
      * Une adresse par moteur, avec le préfixe éventuel de l'hébergeur.
-     * Par défaut, l'instance publique limite les appels par IP (B13).
-     * Docker fournit les trois adresses internes, sans proxy intermédiaire.
+     * Par défaut, les noms des services Docker désignent les moteurs locaux.
+     * Hors conteneur, configurer leurs adresses loopback (voir README).
      */
     osrmUrls: { foot: string; bike: string; car: string };
     /**
@@ -77,9 +77,9 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
         tlsCertPath: text(env.TLS_CERT_PATH, ''),
         tlsKeyPath: text(env.TLS_KEY_PATH, ''),
         osrmUrls: {
-            foot: text(env.OSRM_FOOT_URL, 'https://routing.openstreetmap.de/routed-foot').replace(/\/+$/, ''),
-            bike: text(env.OSRM_BIKE_URL, 'https://routing.openstreetmap.de/routed-bike').replace(/\/+$/, ''),
-            car: text(env.OSRM_CAR_URL, 'https://routing.openstreetmap.de/routed-car').replace(/\/+$/, ''),
+            foot: text(env.OSRM_FOOT_URL, 'http://osrm-foot:5000').replace(/\/+$/, ''),
+            bike: text(env.OSRM_BIKE_URL, 'http://osrm-bike:5000').replace(/\/+$/, ''),
+            car: text(env.OSRM_CAR_URL, 'http://osrm-car:5000').replace(/\/+$/, ''),
         },
         routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
     };

@@ -95,7 +95,7 @@ describe('adresses des moteurs OSRM', () => {
             expect(new URL(calls[0]).searchParams.get('geometries')).toBe('geojson');
         });
 
-        it(`conserve le préfixe public pour ${mode}`, async () => {
+        it(`utilise le moteur local par défaut pour ${mode}`, async () => {
             const calls: string[] = [];
             stubUpstream((url) => {
                 calls.push(url);
@@ -103,7 +103,7 @@ describe('adresses des moteurs OSRM', () => {
             });
             const point = { lon: 4.832, lat: 45.7578 };
             expect(await fetchUpstreamRoute(loadConfig({}).osrmUrls, mode, point, point)).not.toBeNull();
-            expect(calls[0]).toStartWith(`https://routing.openstreetmap.de/routed-${engine}/route/v1/${profile}/`);
+            expect(calls[0]).toStartWith(`http://osrm-${engine}:5000/route/v1/${profile}/`);
         });
     }
 });
@@ -138,7 +138,9 @@ describe('GET /api/route', () => {
     });
 
     it('répond 503 quand le calculateur ne répond pas et qu’aucun tracé n’est connu', async () => {
-        stubUpstream(() => {
+        const urls: string[] = [];
+        const upstream = stubUpstream((url) => {
+            urls.push(url);
             throw new Error('service injoignable');
         });
         const api = createTestApi();
@@ -146,6 +148,8 @@ describe('GET /api/route', () => {
         const response = await api.call(PATH);
 
         expect(response.status).toBe(503);
+        expect(upstream.calls()).toBe(1);
+        expect(urls[0]).toStartWith('http://osrm-bike:5000/');
         expect((await json<ErrorBody>(response)).error).toContain('calculateur');
         api.close();
     });

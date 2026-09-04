@@ -1,5 +1,5 @@
 // Moteur d'itinéraires : produit les options multimodales candidates, puis les
-// classe selon le profil de l'utilisateur.
+// classe de la plus rapide à la plus lente.
 //
 // Chaque mode à son générateur dans options/ ; ce fichier ne fait que les
 // appeler et trier le résultat. Ajouter un mode revient donc a ajouter un
@@ -40,11 +40,11 @@ export function planRoutes(
 
 /**
  * Note et classe les options. Extrait de `planRoutes` parce que le classement
- * doit être refait après mesure : le score dépend de la durée et du carbone,
- * qui changent quand la voirie remplace le vol d'oiseau.
+ * doit être refait après mesure : les durées réelles déterminent l’ordre
+ * affiché. Le score du profil reste une information associée à chaque option.
  */
 export function rankRoutes(routes: RouteOption[], profile: MobilityProfile): RouteOption[] {
-    return routes.map((option) => scoreOption(option, profile)).sort((a, b) => b.score - a.score);
+    return routes.map((option) => scoreOption(option, profile)).sort((a, b) => a.durationMinutes - b.durationMinutes);
 }
 
 /**

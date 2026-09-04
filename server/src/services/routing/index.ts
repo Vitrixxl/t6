@@ -1,15 +1,8 @@
 // Service de routage : cache partagé devant le calculateur d'itinéraires.
 //
-// Trois raisons de passer par l'API plutôt que d'appeler le calculateur depuis
-// le navigateur :
-//
-//   - le quota d'une instance publique se compte par adresse IP, pas par
-//     utilisateur : mille navigateurs derrière la même sortie réseau épuisent
-//     le même quota, et rien ne le mutualise (B13) ;
-//   - un cache partagé sert le même trajet à tous sans le recalculer, ce qui
-//     protège la source et vaut aussi comme mesure d'éco-conception ;
-//   - chaque moteur possède une URL configurable : passer aux trois moteurs
-//     auto-hébergés ne touche pas une ligne de code client.
+// L’API mutualise les mesures et tracés des moteurs locaux dans le cache SQLite.
+// Les trois profils gardent des adresses distinctes ; aucun appel ne bascule
+// vers un service public en cas de panne.
 import { routeGeometry as routeGeometryContract, routeMeasure as routeMeasureContract } from '../../../../src/contracts/index.ts';
 import type { RoutableMode } from '../../../../src/types.ts';
 import type { ServerConfig } from '../../config/index.ts';

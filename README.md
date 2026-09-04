@@ -36,7 +36,8 @@ des ressources déjà chargées, mais il ne met jamais les réponses de l’API 
 Toutes les options calculables sont proposées sur mobile et sur bureau, jusqu’aux
 six familles du moteur (marche, vélo, trottinette, transport public et les deux
 rabattements vers le transport public). La liste mobile n’est jamais tronquée.
-Les préférences influencent le classement et la présélection ; aucun plafond de
+Les options sont triées par durée croissante après mesure réelle. Les préférences
+influencent leur score et la présélection ; aucun plafond de
 marche n’est configurable ni appliqué. Les anciens profils restent lisibles et
 leur champ retiré n’est plus exposé par l’API ni son OpenAPI, générée depuis le
 contrat partagé. La disponibilité des engins, la desserte et les mesures réelles
@@ -143,7 +144,7 @@ Le navigateur n'appelle jamais le calculateur directement. Une recherche se dér
 1. Haversine ne garde que huit stations ou arrêts proches, afin de borner le coût.
 2. Deux matrices piétonnes en étoile via `POST /api/route-matrix` mesurent les accès depuis le départ et vers l’arrivée, sans croiser les stations entre elles ; le moteur choisit donc l'accès le plus rapide à pied ou à vélo, pas le point géométriquement le plus proche. En parallèle, une matrice voiture `1 x 1` mesure la référence carbone entre les deux extrémités.
 3. Le moteur assemble les options, puis `GET /api/route` mesure et trace chaque segment de voirie avant affichage.
-4. Quand toutes les options portent leurs mesures réelles, la même référence voiture leur est appliquée, puis elles sont affichées.
+4. Quand toutes les options portent leurs mesures réelles, la même référence voiture leur est appliquée, puis elles sont affichées de la plus rapide à la plus lente.
 
 Les deux routes utilisent le même cache SQLite partagé entre tous les clients. Une mesure de matrice peut réutiliser un tracé déjà connu, et inversement le cache évite de redemander les mêmes couples de points à OSRM. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopie dans le front.
 
@@ -193,13 +194,8 @@ montre successivement la recherche, la carte, le GPS, les disponibilités a
 proximité, les couches, les trajets/objectifs et le profil. Sa bulle se place
 au-dessus ou au-dessous du contrôle vise pour ne pas le masquer.
 
-Sans configuration, la source est l'instance publique de démonstration d'OpenStreetMap. Elle dépanne, mais elle n'a **aucun engagement de service et limite par adresse IP** — une session de test un peu active suffit à la déclencher (cf. `docs/BUGS.md`, B13).
-
-Le calcul multimodal doit utiliser les moteurs OSRM locaux. Le service public
-compte chaque cellule de matrice dans son quota : espacer les requêtes HTTP
-d’une seconde ne suffit pas. Une réponse amont 429 devient un 503 de l’API et
-peut retirer les modes dont les accès ne sont plus mesurables (B41). Les URL
-publiques par défaut conviennent uniquement aux essais ponctuels de routage.
+Le routage utilise uniquement les trois moteurs OSRM locaux. Il n’y a ni URL
+publique par défaut, ni bascule vers un hébergeur externe en cas de panne.
 
 Pour héberger le routage localement (les flux GBFS et le géocodage restent externes) :
 
@@ -218,7 +214,11 @@ OSRM_BIKE_URL=http://127.0.0.1:5002
 OSRM_CAR_URL=http://127.0.0.1:5003
 ```
 
-Chaque variable absente ou vide utilise son profil public par défaut : `https://routing.openstreetmap.de/routed-foot`, `/routed-bike` ou `/routed-car`. Le préfixe public appartient à l'URL configurée ; le serveur ajoute uniquement `/route/v1/<profil>/` ou `/table/v1/<profil>/`. Les appels publics partagent toujours la limitation de débit. Une panne ne déclenche pas de bascule vers un autre hébergeur : le cache connu reste utilisable, sinon l'API répond 503.
+Chaque variable absente ou vide utilise son service Docker local :
+`http://osrm-foot:5000`, `http://osrm-bike:5000` ou `http://osrm-car:5000`.
+En cas de panne, une mesure réelle déjà en cache reste utilisable ; sinon
+l’API répond 503. Aucune file ni limitation de débit propre à un service public
+n’est conservée.
 
 Migration : remplacer l'ancienne variable `OSRM_BASE_URL` par ces trois variables. Après mise à jour d'une pile existante, `docker compose -f infra/compose.yml up -d --build --remove-orphans` retire aussi l'ancien conteneur Caddy.
 

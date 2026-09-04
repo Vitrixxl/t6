@@ -62,6 +62,18 @@ function overlapArea(a, b) {
     return width * height;
 }
 
+async function checkRouteOrder(buttons) {
+    const labels = await buttons.allTextContents();
+    const durations = labels.map((label) => {
+        const match = label.match(/(\d+)h(\d{2})|(\d+) min/);
+        if (!match) throw new Error(`Durée absente : ${label}`);
+        return match[3] ? Number(match[3]) : Number(match[1]) * 60 + Number(match[2]);
+    });
+    if (durations.some((duration, index) => index > 0 && duration < durations[index - 1])) {
+        failures.push(`options non triées par durée : ${durations.join(', ')}`);
+    }
+}
+
 async function testMobileSheet() {
     const sheet = page.locator('[data-tour="routes"]:visible');
     const content = page.getByTestId('mobile-route-content');
@@ -86,6 +98,7 @@ async function testMobileSheet() {
         await page.screenshot({ path: `tmp/screenshots/routes-auto-${width}.png` });
     }
     const choices = page.getByRole('group', { name: 'Options d’itinéraire', exact: true }).getByRole('button');
+    await checkRouteOrder(choices);
     for (const choice of await choices.all()) {
         await choice.click();
         if (await choice.getAttribute('aria-pressed') !== 'true') failures.push('option mobile impossible à sélectionner');
@@ -97,7 +110,13 @@ async function testMobileSheet() {
     await page.waitForTimeout(800);
     await page.screenshot({ path: 'tmp/screenshots/routes-landscape.png' });
     await page.setViewportSize({ width: 390, height: 844 });
-    log('panneau mobile : hauteur automatique, défilement, sélection et rotation vérifiés');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const desktopChoices = page.locator('[data-tour="routes"]:visible').getByRole('button');
+    await desktopChoices.first().waitFor();
+    await checkRouteOrder(desktopChoices);
+    await page.screenshot({ path: 'tmp/screenshots/routes-sorted-desktop.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    log('panneau mobile : hauteur automatique, défilement, sélection, rotation et tri mobile/bureau vérifiés');
 }
 
 async function testMobileTutorial() {
@@ -197,8 +216,7 @@ if (!(await destButton.count())) {
     process.exit(1);
 }
 await destButton.click();
-// Le routage réel peut depasser huit secondes quand l'instance publique est
-// chargée. On attend l'état fonctionnel plutôt qu'un délai arbitraire.
+// Attendre la fin du calcul et du chargement des flux, sans délai arbitraire.
 await page.getByRole('button', { name: /^planifier$/i }).first().waitFor({
     state: 'visible',
     timeout: 30000,

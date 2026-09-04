@@ -132,10 +132,11 @@ assumé. La génération du dossier PDF est gelée par la règle ci-dessus.
 ## Architecture
 
 Les moteurs OSRM sont appelés directement depuis l'API : `OSRM_FOOT_URL`,
-`OSRM_BIKE_URL` et `OSRM_CAR_URL`, avec préfixe public éventuel dans chaque URL.
+`OSRM_BIKE_URL` et `OSRM_CAR_URL`, avec une adresse configurable pour chaque moteur local.
 Compose fournit les noms des trois services internes, sans Caddy ni port OSRM
-publié. Le parcours multimodal utilise ces moteurs : le quota public compte
-chaque cellule de matrice et ne supporte pas ce volume (B41). La trottinette partage le moteur vélo ; la voiture reste une référence.
+publié. Ces moteurs locaux sont les seules sources de routage : aucun défaut
+public, aucune bascule externe ni file de quota public. En cas de panne, seules
+les mesures réelles du cache peuvent être réutilisées ; sinon l’API répond 503. La trottinette partage le moteur vélo ; la voiture reste une référence.
 
 Un fichier, une raison de changer. Ce n'est pas un seuil de lignes : un fichier
 long mais cohésif reste préférable à trois fichiers qui se renvoient la balle.
@@ -180,8 +181,8 @@ les types ni les bornes.
 ## Règles de fond
 
 **Toutes les options calculables sont proposées, sur mobile comme sur bureau.**
-Ne jamais tronquer leur liste. Les préférences servent au classement et à la
-présélection, pas à masquer des options. Il n’y a plus de plafond de marche
+Ne jamais tronquer leur liste. Les options sont triées par durée réelle croissante. Les préférences influencent
+le score et la présélection, pas l’ordre ni la visibilité des options. Il n’y a plus de plafond de marche
 dans le profil ni de pénalité associée. Les contraintes de disponibilité,
 de desserte et de mesure réelle restent celles du moteur. Les durées sont
 formatées par `src/lib/duration.ts` : `63 min` se lit `1h03`.

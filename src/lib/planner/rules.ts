@@ -14,12 +14,8 @@ export function visibleLegs(option: RouteOption): RouteLeg[] {
 /**
  * Option retenue par défaut à l'ouverture des résultats.
  *
- * Le classement du moteur repose sur un score composite — fiabilité, carbone,
- * préférences — qui reste l'ordre d'affichage. Mais là question posee en
- * ouvrant une recherche est presque toujours « laquelle est la plus rapide »,
- * et l'utilisateur qui préfère un mode précis à une raison qui ne se déduit
- * d'aucun score. La présélection répond donc à l'une ou l'autre, sans toucher
- * ni à l'ordre ni au contenu de la liste.
+ * La liste est triée par durée croissante. La présélection peut retenir un mode
+ * préféré sans modifier cet ordre ni masquer les autres options.
  */
 export function preselectRoute(routes: RouteOption[], preselection: RoutePreselection = 'fastest'): RouteOption | null {
     if (routes.length === 0) {

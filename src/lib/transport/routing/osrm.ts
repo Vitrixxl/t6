@@ -1,11 +1,8 @@
 // Tracé de voirie, demande a notre propre API.
 //
-// Le navigateur n'appelle plus le calculateur d'itinéraires directement. Le
-// quota d'une instance publique se compte par adresse IP : chaque client
-// consommait le même quota sans que rien ne soit mutualise, et une session de
-// test un peu active suffisait a couper le service pour tout le monde (B13).
-// L'API interpose un cache partagé et rend un contrat fini — tracé, distance,
-// durée, instructions — que le client n'a plus qu'a consommer.
+// Le navigateur demande ses tracés à l’API, qui appelle les moteurs locaux et
+// partage leur cache entre utilisateurs. Le contrat contient la géométrie, la
+// distance, la durée et les instructions nécessaires à l’affichage.
 import type { GeoPoint, RouteInstruction, RouteMeasure, RoutableMode } from '../../../types';
 import { api, treatyRequest } from '../../api/client';
 import { withTimeout } from '../http';

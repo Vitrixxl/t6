@@ -10,35 +10,7 @@ import type { GeoPoint, RouteInstruction, RoutableMode } from '../../../../src/t
 import { buildInstructions } from './instructions.ts';
 
 const UPSTREAM_TIMEOUT_MS = 8_000;
-const PUBLIC_OSRM_HOST = 'routing.openstreetmap.de';
-const PUBLIC_OSRM_INTERVAL_MS = 1_100;
-let publicRequestQueue: Promise<void> = Promise.resolve();
-let nextPublicRequestAt = 0;
-
-/**
- * L'instance publique refuse les rafales (HTTP 429). Les appels de plusieurs
- * options partagent donc une cadence au niveau du serveur. Une instance locale
- * n'est pas ralentie ; elle est nécessaire au parcours multimodal : le service
- * public compte chaque cellule de matrice, pas seulement les appels HTTP (B41).
- */
-async function waitForPublicSlot(baseUrl: string): Promise<void> {
-    if (new URL(baseUrl).hostname !== PUBLIC_OSRM_HOST) {
-        return;
-    }
-
-    const turn = publicRequestQueue.then(async () => {
-        const delay = Math.max(nextPublicRequestAt - Date.now(), 0);
-        if (delay > 0) {
-            await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-        nextPublicRequestAt = Date.now() + PUBLIC_OSRM_INTERVAL_MS;
-    });
-    publicRequestQueue = turn.catch(() => undefined);
-    await turn;
-}
-
 async function requestOsrm(url: string): Promise<Response> {
-    await waitForPublicSlot(url);
     return fetch(url, {
         headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
@@ -114,7 +86,7 @@ function profile(mode: RoutableMode): 'foot' | 'bike' | 'driving' {
     return 'bike';
 }
 
-/** Chaque adresse inclut le préfixe éventuel de l'hébergeur public. */
+/** Chaque adresse désigne un moteur local. */
 function serviceUrl(urls: ServerConfig['osrmUrls'], mode: RoutableMode, service: 'route' | 'table'): string {
     const name = profile(mode);
     const baseUrl = mode === 'car' ? urls.car : name === 'foot' ? urls.foot : urls.bike;

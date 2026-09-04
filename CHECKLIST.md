@@ -73,7 +73,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 ## 7. Intégration d'APIs réelles (mise à jour finale)
 
 - [x] Geocodage live: api-adresse.data.gouv.fr (BAN).
-- [x] Routage live: OSRM routing.openstreetmap.de (profils foot/bike/driving ; trottinette sur bike, voiture uniquement comme référence invisible), matrice de choix des accès puis traces et instructions traduites.
+- [x] Routage local : OSRM (profils foot/bike/driving ; trottinette sur bike, voiture uniquement comme référence invisible), matrice de choix des accès puis tracés et instructions traduites. Aucun recours à une API publique.
 - [x] GBFS live Vélo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
 - [x] GTFS statique réel TCL/SYTRAL (ODbL) intègre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 2435 arrêts et 13 lignes structurantes avec leur desserte et leur tracé réel (métropole entière, rayon 16 km).
@@ -181,3 +181,5 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 - [x] B37–B39 : cadrage borné à la taille du canvas avec rotation E2E ; certificat local reconnu comme certificat serveur par Chromium ; image Docker contenant les contrats et règles partagées, démarrée après migration d’une copie de la base.
 - [x] B41–B42 : moteurs OSRM locaux, profil vélo `bicycle.lua`, accès piétons en étoile ; six options vérifiées vers Cuvier. Panneau mobile de hauteur automatique sous la recherche, sans commandes de taille ; E2E planification 9/9 et scénario hors ligne réussis.
+
+- [x] B43 : options triées par durée réelle croissante sur mobile et bureau, même si les mesures inversent les estimations. OSRM exclusivement local, adresses par défaut et panne sans bascule vérifiées.
