@@ -1,4 +1,4 @@
-// Module profil : preferences de mobilite, objectifs carbone et compte.
+// Module profil : préférences de mobilité, objectifs carbone et compte.
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -46,7 +46,7 @@ export function ProfileDrawer({
         <Drawer open={open} onOpenChange={onOpenChange}>
             <DrawerContent className="mx-auto w-[calc(100%-1.5rem)] max-w-[1400px] overflow-hidden bg-[var(--shell)] p-0 sm:w-[calc(100%-3rem)]">
                 <DrawerHeader className="items-center border-b border-border px-6 pb-4 pt-3 text-center sm:text-center">
-                    <DrawerTitle className="font-display">Profil et preferences</DrawerTitle>
+                    <DrawerTitle className="font-display">Profil et préférences</DrawerTitle>
                     <DrawerDescription className="truncate">{user.email}</DrawerDescription>
                 </DrawerHeader>
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-8">
@@ -65,7 +65,7 @@ export function ProfileDrawer({
                                 </span>
                             </div>
                             <p className="text-xs leading-5 text-muted-foreground">
-                                Preferences utilisees pour calculer les itineraires, filtrer les options PMR et suivre tes objectifs carbone.
+                                Préférences utilisées pour calculer les itinéraires, filtrer les options PMR et suivre tes objectifs carbone.
                             </p>
                             <Button type="button" variant="outline" className="w-full justify-center" onClick={onStartTutorial}>
                                 <CircleHelp className="size-4" aria-hidden="true" />
@@ -74,7 +74,7 @@ export function ProfileDrawer({
                             <div className="grid gap-2 sm:grid-cols-2">
                                 <Button type="button" variant="outline" className="w-full justify-center" onClick={() => setConfirming('logout')}>
                                     <LogOut className="size-4" aria-hidden="true" />
-                                    Deconnexion
+                                    Déconnexion
                                 </Button>
                                 <Button type="button" variant="destructive" className="w-full justify-center" onClick={() => setConfirming('delete')}>
                                     <Trash2 className="size-4" aria-hidden="true" />
@@ -95,9 +95,9 @@ export function ProfileDrawer({
             <ConfirmDialog
                 open={confirming === 'logout'}
                 onOpenChange={(next) => setConfirming(next ? 'logout' : null)}
-                title="Se deconnecter ?"
-                description="Tes trajets et tes preferences restent enregistres sur ton compte. Tu les retrouveras a la prochaine connexion."
-                confirmLabel="Se deconnecter"
+                title="Se déconnecter ?"
+                description="Tes trajets et tes préférences restent enregistrés sur ton compte. Tu les retrouveras à la prochaine connexion."
+                confirmLabel="Se déconnecter"
                 onConfirm={onLogout}
             />
 
@@ -105,7 +105,7 @@ export function ProfileDrawer({
                 open={confirming === 'delete'}
                 onOpenChange={(next) => setConfirming(next ? 'delete' : null)}
                 title="Supprimer le compte ?"
-                description="Le compte, les trajets, les routines et les itineraires enregistres sont effaces definitivement. Cette action est irreversible."
+                description="Le compte, les trajets, les routines et les itinéraires enregistrés sont effaces definitivement. Cette action est irreversible."
                 confirmLabel="Supprimer le compte"
                 destructive
                 onConfirm={onDeleteAccount}
@@ -118,7 +118,7 @@ export function ProfilePanel() {
     const user = useUser();
     const updateProfile = useUpdateProfile();
     // Le formulaire valide avec le contrat que l'API applique : ce qui passe ici
-    // n'est jamais refuse a l'envoi. `values` le rattache au profil courant.
+    // n'est jamais refusé à l'envoi. `values` le rattache au profil courant.
     const form = useForm<MobilityProfile>({
         resolver: zodResolver(mobilityProfile),
         values: {
@@ -157,12 +157,12 @@ export function ProfilePanel() {
             </div>
             <form className="grid gap-3" noValidate onSubmit={onSubmit}>
                 <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-display-name">
-                    Nom affiche
+                    Nom affiché
                     <Input id="profile-display-name" aria-invalid={Boolean(errors.displayName)} {...form.register('displayName')} />
                     <FieldError message={errors.displayName?.message} />
                 </label>
                 <fieldset className="grid gap-2">
-                    <legend className="text-sm font-medium">Modes preferes</legend>
+                    <legend className="text-sm font-medium">Modes préférés</legend>
                     <div className="grid grid-cols-2 gap-2">
                         {MODE_OPTIONS.map((option) => {
                             const Icon = MODE_ICON[option.mode];
@@ -189,10 +189,10 @@ export function ProfilePanel() {
                     <input type="range" min="5" max="45" step="5" className="accent-primary" {...form.register('maxWalkMinutes', { valueAsNumber: true })} />
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-route-preselection">
-                    Option retenue par defaut
+                    Option retenue par défaut
                     <select
                         id="profile-route-preselection"
-                        // Hauteur en pixels : la racine du document est a 14 px, une valeur
+                        // Hauteur en pixels : la racine du document est à 14 px, une valeur
                         // en rem raterait la cible tactile de 44 px.
                         className="h-[44px] rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground"
                         {...form.register('routePreselection')}
@@ -205,7 +205,7 @@ export function ProfilePanel() {
                         ))}
                     </select>
                     <span className="text-xs font-normal text-muted-foreground">
-                        Toutes les options restent proposees : ce reglage ne decide que de celle qui s&apos;ouvre en premier. Si le
+                        Toutes les options restent proposées : ce réglage ne décide que de celle qui s&apos;ouvre en premier. Si le
                         mode choisi n&apos;existe pas sur un trajet, la plus rapide est retenue.
                     </span>
                 </label>
@@ -223,9 +223,9 @@ export function ProfilePanel() {
                     <FieldError message={errors.carbonGoalGramsPerWeek?.message} />
                 </label>
                 <fieldset className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3">
-                    <legend className="px-1 text-sm font-semibold">Objectifs d&apos;economie de CO₂e</legend>
+                    <legend className="px-1 text-sm font-semibold">Objectifs d&apos;économie de CO₂e</legend>
                     <p className="text-xs leading-5 text-muted-foreground">
-                        Ces deux objectifs sont independants du budget carbone et servent a mesurer les emissions evitees par tes trajets.
+                        Ces deux objectifs sont indépendants du budget carbone et servent à mesurer les émissions évitées par tes trajets.
                     </p>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-weekly-saved-goal">
@@ -258,7 +258,7 @@ export function ProfilePanel() {
                 </fieldset>
                 <label className="flex items-center gap-2 text-sm font-medium">
                     <input type="checkbox" className="size-4 accent-primary" {...form.register('accessibilityNeed')} />
-                    Priorite PMR
+                    Priorité PMR
                 </label>
                 <Button type="submit" size="sm">
                     {saved ? <Check className="size-4" aria-hidden="true" /> : null}

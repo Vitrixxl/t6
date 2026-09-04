@@ -1,6 +1,6 @@
-// Mesure les artefacts du build de production (dist/) et ecrit le resultat en
-// JSON. Le generateur du dossier PDF lit ce fichier : les chiffres publies sont
-// donc extraits du build reellement livre, jamais recopies a la main.
+// Mesure les artefacts du build de production (dist/) et ecrit le résultat en
+// JSON. Le générateur du dossier PDF lit ce fichier : les chiffres publies sont
+// donc extraits du build réellement livre, jamais recopies à la main.
 // Convention identique a Vite : tailles en kB decimaux (1 kB = 1000 octets).
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
@@ -8,9 +8,9 @@ import { gzipSync } from 'node:zlib';
 const ASSETS_DIR = 'dist/assets';
 const OUTPUT = 'output/metrics/build.json';
 
-// Les artefacts sont identifies par leur role et non par leur nom : celui-ci
-// depend du bundler et du point d'entree, et un motif code en dur casse
-// silencieusement des que l'un des deux change.
+// Les artefacts sont identifiés par leur rôle et non par leur nom : celui-ci
+// dépend du bundler et du point d'entrée, et un motif code en dur casse
+// silencieusement dès que l'un des deux change.
 const assets = readdirSync(ASSETS_DIR);
 const document = readFileSync('dist/index.html', 'utf8');
 const referenced = (extension) => {
@@ -18,11 +18,11 @@ const referenced = (extension) => {
     return match?.[1];
 };
 
-// Le point d'entree et la feuille de style sont ceux que le document charge.
+// Le point d'entrée et la feuille de style sont ceux que le document charge.
 const entry = referenced('.js');
 const css = referenced('.css');
 // Le fragment differe est le plus gros des autres : c'est celui dont le poids
-// merite d'etre suivi, quel que soit le module qui l'a fait naitre.
+// merite d'être suivi, quel que soit le module qui l'a fait naître.
 const maplibre = assets
     .filter((name) => name.endsWith('.js') && name !== entry)
     .sort((a, b) => statSync(`${ASSETS_DIR}/${b}`).size - statSync(`${ASSETS_DIR}/${a}`).size)[0];
@@ -48,4 +48,4 @@ const metrics = {
 mkdirSync('output/metrics', { recursive: true });
 writeFileSync(OUTPUT, JSON.stringify(metrics, null, 2) + '\n');
 console.log(OUTPUT);
-console.log(`entree ${metrics.entry.gzipKb} kB gzip | maplibre ${metrics.maplibre.gzipKb} kB gzip | css ${metrics.css.gzipKb} kB gzip`);
+console.log(`entrée ${metrics.entry.gzipKb} kB gzip | maplibre ${metrics.maplibre.gzipKb} kB gzip | css ${metrics.css.gzipKb} kB gzip`);

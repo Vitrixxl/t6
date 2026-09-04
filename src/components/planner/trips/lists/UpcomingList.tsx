@@ -1,4 +1,4 @@
-// Trajets dates a venir : marquer fait, annuler, supprimer.
+// Trajets dates à venir : marquer fait, annuler, supprimer.
 import { CalendarClock, Check, Leaf, Trash2, X } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { PlannedTrip } from '../../../../types';
@@ -21,8 +21,8 @@ export function UpcomingList({
         return (
             <EmptyState
                 icon={<CalendarClock className="size-4" aria-hidden="true" />}
-                title="Aucun trajet a venir"
-                hint="Calcule un itineraire puis « Planifier » pour le dater. Les routines, elles, comptent toutes seules : voir l'onglet Recurrents."
+                title="Aucun trajet à venir"
+                hint="Calcule un itinéraire puis « Planifier » pour le dater. Les routines, elles, comptent toutes seules : voir l'onglet Récurrents."
             />
         );
     }

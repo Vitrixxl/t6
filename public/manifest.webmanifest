@@ -1,14 +1,14 @@
 {
   "name": "UrbanFlow Mobility",
   "short_name": "UrbanFlow",
-  "description": "PWA de mobilite urbaine intelligente et durable.",
+  "description": "PWA de mobilité urbaine intelligente et durable.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#faf8f2",
   "theme_color": "#1d6b4f",
-  "categories": ["navigation", "productivity", "utilities"],
+  "catégories": ["navigation", "productivity", "utilities"],
   "icons": [
     {
       "src": "/icons/icon-192.png",

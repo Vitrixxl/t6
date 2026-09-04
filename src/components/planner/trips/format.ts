@@ -1,5 +1,5 @@
-// Formats de dates du module trajets : centralises pour rester coherents
-// partout (liste a venir, historique, formulaire de planification).
+// Formats de dates du module trajets : centralisés pour rester coherents
+// partout (liste à venir, historique, formulaire de planification).
 
 const DAY_FORMAT = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 const TIME_FORMAT = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });

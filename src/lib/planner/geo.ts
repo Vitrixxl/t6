@@ -1,10 +1,10 @@
-// Calculs spatiaux : distances et recherche du point d'acces au reseau le plus
+// Calculs spatiaux : distances et recherche du point d'accès au réseau le plus
 // proche.
 import type { GeoPoint, GtfsStop, SharedStation } from '../../types';
 import { MAX_STATION_ACCESS_KM } from './constants';
 import { distanceToCenterKm, METRO_RADIUS_KM } from '../transport/feeds/area';
 
-/** Nombre de points proches soumis au classement par temps de trajet reel. */
+/** Nombre de points proches soumis au classement par temps de trajet réel. */
 export const MAX_ACCESS_CANDIDATES = 8;
 
 export function haversineDistanceKm(a: Pick<GeoPoint, 'lat' | 'lon'>, b: Pick<GeoPoint, 'lat' | 'lon'>): number {
@@ -25,7 +25,7 @@ export function toRadians(value: number): number {
 
 /**
  * Premier filtre, volontairement geometrique : tout trajet de moins de 400 m
- * sur la voirie est aussi a moins de 400 m a vol d'oiseau. Le classement final
+ * sur la voirie est aussi à moins de 400 m’à vol d'oiseau. Le classement final
  * de ces huit candidats appartient a access.ts et repose sur OSRM.
  */
 export function stationCandidates(stations: SharedStation[], point: GeoPoint): SharedStation[] {
@@ -38,7 +38,7 @@ export function stationCandidates(stations: SharedStation[], point: GeoPoint): S
         .map(({ station }) => station);
 }
 
-// Repli deterministe des tests purs ; le parcours affiche utilise le classement OSRM.
+// Repli déterministe des tests purs ; le parcours affiche utilise le classement OSRM.
 export function nearestStation(stations: SharedStation[], point: GeoPoint): SharedStation | null {
     return stationCandidates(stations, point)[0] ?? null;
 }
@@ -60,13 +60,13 @@ export function stationToPoint(station: SharedStation): GeoPoint {
 }
 
 /**
- * Un vehicule en flotte libre se laisse ou l'on veut — mais seulement dans la
- * zone de service de l'operateur, sous peine d'immobilisation et de penalite.
+ * Un vehicule en flotte libre se laisse où l'on veut — mais seulement dans la
+ * zone de service de l'opérateur, sous peine d'immobilisation et de pénalité.
  *
- * Cette borne n'a pas d'equivalent pour le Velo'v, qui se rend a une station :
- * la contrainte de fin de trajet y est deja portee par RG3 aux deux extremites.
- * Les deux modes partages sont bornes, mais pas par la meme regle — copier
- * celle du velo sur la trottinette aurait exige une trottinette a l'arrivee,
+ * Cette borne n'a pas d'équivalent pour le Vélo'v, qui se rend à une station :
+ * la contrainte de fin de trajet y est déjà portée par RG3 aux deux extrémités.
+ * Les deux modes partagés sont bornes, mais pas par la même règle — copier
+ * celle du vélo sur la trottinette aurait exige une trottinette à l'arrivée,
  * ce qui n'a aucun sens pour une flotte libre (B17).
  */
 export function withinServiceArea(point: Pick<GeoPoint, 'lat' | 'lon'>): boolean {

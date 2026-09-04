@@ -1,4 +1,4 @@
-// Exploitation : sonde, documentation, en-tetes de securite, erreurs.
+// Exploitation : sonde, documentation, en-têtes de sécurité, erreurs.
 import { afterEach, beforeEach, expect, it } from 'bun:test';
 import { createTestApi, json, type ErrorBody, type OpenApiSpec, type TestApi } from './helpers.ts';
 
@@ -12,7 +12,7 @@ afterEach(() => {
     api.close();
 });
 
-it('expose une sonde de disponibilite', async () => {
+it('expose une sonde de disponibilité', async () => {
     const response = await api.call('/api/health');
 
     expect(response.status).toBe(200);
@@ -31,7 +31,7 @@ it('publie une documentation OpenAPI decrivant les routes', async () => {
     expect(Object.keys(spec.paths)).toContain('/api/me/profile');
 });
 
-it('pose les en-tetes de securite sur toutes les reponses', async () => {
+it('pose les en-têtes de sécurité sur toutes les réponses', async () => {
     const response = await api.call('/api/health');
 
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
@@ -46,7 +46,7 @@ it('renvoie une erreur opaque sur une route inconnue', async () => {
     expect((await json<ErrorBody>(response)).error).toBe('Ressource inconnue.');
 });
 
-it('ne publie plus de remplacement global de l historique', async () => {
+it('ne publie plus de remplacement global de l’historique', async () => {
     const cookie = await api.register('parse@lyon.fr');
     const response = await api.call('/api/trips/history', { cookie, body: undefined, method: 'PUT' });
 

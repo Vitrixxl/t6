@@ -1,5 +1,5 @@
-// Etat d'ecran du planificateur : le trajet en cours de planification et le
-// hub. Rien ici ne vient du serveur ; l'etat du compte vit dans src/queries/.
+// État d'écran du planificateur : le trajet en cours de planification et le
+// hub. Rien ici ne vient du serveur ; l'état du compte vit dans src/queries/.
 import { atom } from 'jotai';
 import type { TripSource } from '../lib/trips';
 

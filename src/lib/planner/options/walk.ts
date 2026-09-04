@@ -1,9 +1,9 @@
-// Generateur d'option : walk.
+// Générateur d'option : walk.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
 import { buildOption, createLeg } from '../legs';
 
 export function createWalkOption({ origin, destination }: RouteRequest, directKm: number): RouteOption {
-    // Facteur de voirie: un itineraire pieton reel est plus long que le vol d'oiseau.
+    // Facteur de voirie: un itinéraire piéton réel est plus long que le vol d'oiseau.
     const walkKm = directKm * 1.18;
     const legs: RouteLeg[] = [
         createLeg({
@@ -19,8 +19,8 @@ export function createWalkOption({ origin, destination }: RouteRequest, directKm
 
     return buildOption({
         id: 'walk',
-        title: 'A pied',
-        summary: 'Itineraire pieton direct, zero emission.',
+        title: 'À pied',
+        summary: 'Itinéraire piéton direct, zéro émission.',
         modes: ['walk'],
         legs,
         reliabilityScore: 92,

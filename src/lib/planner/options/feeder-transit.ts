@@ -1,10 +1,10 @@
-// Option composee : un engin partage en rabattement, puis le transport public.
+// Option composée : un engin partage en rabattement, puis le transport public.
 //
-// Velo'v et trottinette suivent exactement le meme enchainement — marche vers
-// l'engin, engin jusqu'a la station de montee, ligne(s), derniers metres a
-// pied. Seul change ce qui tient a l'engin : ou le prendre, ou l'on a le droit
-// de le laisser, combien de temps il coute a deverrouiller. Le generateur porte
-// l'enchainement, chaque mode ne decrit que sa difference.
+// Vélo'v et trottinette suivent exactement le même enchaînement — marche vers
+// l'engin, engin jusqu'à la station de montée, ligne(s), derniers mètres a
+// pied. Seul change ce qui tient à l'engin : ou le prendre, où l'on a le droit
+// de le laisser, combien de temps il coûte a déverrouiller. Le générateur porte
+// l'enchaînement, chaque mode ne décrit que sa différence.
 import type { MobilityMode, RouteLeg, RouteOption, RouteRequest, SharedStation } from '../../../types';
 import type { FeederAccess } from '../access';
 import { haversineDistanceKm, stationToPoint, stopToPoint } from '../geo';
@@ -17,9 +17,9 @@ export interface Feeder {
     mode: Extract<MobilityMode, 'bike' | 'scooter'>;
     title: string;
     detail(station: SharedStation): string;
-    /** Temps fixe de prise en main : deverrouillage, sortie de borne. */
+    /** Temps fixe de prise en main : déverrouillage, sortie de borne. */
     unlockMinutes: number;
-    /** Fiabilite par temps sec, puis sous la pluie ou avec une ligne en retard. */
+    /** Fiabilité par temps sec, puis sous la pluie ou avec une ligne en retard. */
     reliability: { clear: number; degraded: number };
 }
 
@@ -42,8 +42,8 @@ export function createFeederTransitOption(
     const feederDestination = access.dropoff ? stationToPoint(access.dropoff.station) : stopToPoint(boarding);
 
     const firstWalkKm = access.vehicle.measure.distanceKm;
-    // Estimation de tri seulement, remplacee par la mesure de la voirie avant
-    // affichage : un plancher evite qu'un rabattement quasi nul ne classe
+    // Estimation de tri seulement, remplacée par la mesure de la voirie avant
+    // affichage : un plancher évite qu'un rabattement quasi nul ne classe
     // l'option devant le transport seul.
     const feederKm = access.dropoff
         ? Math.max(haversineDistanceKm(stationToPoint(fromStation), feederDestination) * 1.2, directKm * 0.22)
@@ -92,7 +92,7 @@ export function createFeederTransitOption(
         createLeg({
             id: `${feeder.id}-walk-from-transit`,
             mode: 'walk',
-            title: 'Derniers metres',
+            title: 'Derniers mètres',
             from: stopToPoint(alighting),
             to: destination,
             distanceKm: finalWalkKm,
@@ -105,11 +105,11 @@ export function createFeederTransitOption(
     return buildOption({
         id: feeder.id,
         title: feeder.title,
-        summary: `${Vehicle} jusqu'a ${boarding.stop_name}, puis ligne ${lines}.`,
+        summary: `${Vehicle} jusqu'à ${boarding.stop_name}, puis ligne ${lines}.`,
         modes: ['walk', feeder.mode, 'transit'],
         legs,
         reliabilityScore: delayed || rainWarning ? feeder.reliability.degraded : feeder.reliability.clear,
-        // RG4 : l'engin est a l'air libre, la pluie s'applique a la portion de rabattement.
-        warnings: rainWarning && profile.avoidRain ? [`Pluie legere detectee sur la portion ${vehicle}.`] : [],
+        // RG4 : l'engin est à l'air libre, la pluie s'applique à la portion de rabattement.
+        warnings: rainWarning && profile.avoidRain ? [`Pluie légère détectée sur la portion ${vehicle}.`] : [],
     });
 }

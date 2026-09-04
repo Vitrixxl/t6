@@ -1,6 +1,6 @@
 // Forme minimale des collections GeoJSON servies aux sources MapLibre : on ne
-// decrit que ce que la carte consomme reellement, plutot que d'embarquer une
-// dependance de types GeoJSON complete.
+// décrit que ce que la carte consomme réellement, plutôt que d'embarquer une
+// dépendance de types GeoJSON complète.
 
 export type FeatureCollection = {
     type: 'FeatureCollection';

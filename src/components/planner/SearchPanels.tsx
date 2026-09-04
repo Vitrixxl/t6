@@ -1,4 +1,4 @@
-// Module planification - recherche : saisie depart/arrivee, geocodage BAN + Photon.
+// Module planification - recherche : saisie depart/arrivee, géocodage BAN + Photon.
 import { ArrowUpDown, PanelLeftClose, PanelLeftOpen, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -45,7 +45,7 @@ export function CommandSearchBar({
                     onCurrentPositionRequest={onCurrentPositionRequest}
                     onSelect={onOriginSelect}
                     inputId="desktop-origin-search"
-                    placeholder="Adresse de depart"
+                    placeholder="Adresse de départ"
                     className="min-w-0 flex-1"
                 />
                 <PlaceSearchBox
@@ -55,7 +55,7 @@ export function CommandSearchBar({
                     onCurrentPositionRequest={onCurrentPositionRequest}
                     onSelect={onDestinationSelect}
                     inputId="desktop-destination-search"
-                    placeholder="Adresse d'arrivee"
+                    placeholder="Adresse d'arrivée"
                     className="min-w-0 flex-1"
                 />
             </div>
@@ -80,12 +80,12 @@ export function MobileSearchShell({
         onCurrentPositionRequest: () => Promise<GeoPoint | null>;
     }) {
     // Deux temps. Tant qu'aucune destination n'est choisie, la barre ne pose
-    // qu'une question — ou va-t-on ? Demander un depart avant de savoir cela
-    // impose de remplir deux champs pour obtenir une reponse, alors que le
-    // depart est presque toujours la position courante.
+    // qu'une question — où va-t-on ? Demander un départ avant de savoir cela
+    // impose de remplir deux champs pour obtenir une réponse, alors que le
+    // départ est presque toujours la position courante.
     //
     // Une fois la destination choisie, les deux champs apparaissent, avec
-    // l'inversion : c'est le moment ou le trajet retour devient une intention
+    // l'inversion : c'est le moment où le trajet retour devient une intention
     // plausible, pas avant.
     const expanded = destination !== null;
 
@@ -100,7 +100,7 @@ export function MobileSearchShell({
                     onCurrentPositionRequest={onCurrentPositionRequest}
                     onSelect={onDestinationSelect}
                     inputId="mobile-destination-search"
-                    placeholder="Ou vas-tu ?"
+                    placeholder="Où vas-tu ?"
                     className="min-w-0 flex-1"
                     compact
                 />
@@ -123,7 +123,7 @@ export function MobileSearchShell({
                     onCurrentPositionRequest={onCurrentPositionRequest}
                     onSelect={onOriginSelect}
                     inputId="mobile-origin-search"
-                    placeholder="Depart"
+                    placeholder="Départ"
                     className="min-w-0"
                     compact
                 />
@@ -135,7 +135,7 @@ export function MobileSearchShell({
                     onCurrentPositionRequest={onCurrentPositionRequest}
                     onSelect={onDestinationSelect}
                     inputId="mobile-destination-search"
-                    placeholder="Arrivee"
+                    placeholder="Arrivée"
                     className="min-w-0"
                     compact
                 />
@@ -144,8 +144,8 @@ export function MobileSearchShell({
                 type="button"
                 onClick={onSwap}
                 disabled={!origin}
-                aria-label="Inverser depart et arrivee"
-                // Taille en pixels : la racine du document est a 14 px, une valeur en
+                aria-label="Inverser départ et arrivée"
+                // Taille en pixels : la racine du document est à 14 px, une valeur en
                 // rem raterait la cible tactile de 44 px.
                 className="grid size-[44px] place-items-center justify-self-end rounded-xl border border-border/80 bg-secondary text-primary shadow-soft transition-colors hover:bg-accent active:bg-muted disabled:opacity-40"
             >

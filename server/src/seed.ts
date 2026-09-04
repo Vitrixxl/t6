@@ -1,6 +1,6 @@
-// Cree (ou reinitialise) le compte de demonstration utilise pour la
-// presentation. Volontairement un script a lancer a la main : rien ne cree de
-// compte a mot de passe connu au demarrage du serveur.
+// Crée (ou reinitialise) le compte de démonstration utilise pour la
+// présentation. Volontairement un script a lancer à la main : rien ne crée de
+// compte a mot de passe connu au démarrage du serveur.
 import { loadConfig } from './config/index.ts';
 import { openDatabase } from './db/index.ts';
 import { DEFAULT_PROFILE } from '../../src/contracts/index.ts';
@@ -13,17 +13,17 @@ const DEMO_PASSWORD = Bun.env.DEMO_PASSWORD ?? 'UrbanFlow2026!';
 
 const config = loadConfig();
 if (config.isProduction && !Bun.env.DEMO_PASSWORD) {
-    console.error('En production, definir DEMO_PASSWORD plutot que le mot de passe par defaut.');
+    console.error('En production, définir DEMO_PASSWORD plutôt que le mot de passe par défaut.');
     process.exit(1);
 }
 
 const db = openDatabase(config.databasePath);
 const { users } = createRepositories(db);
 
-const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: 'Demo UrbanFlow' };
+const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: 'Démo UrbanFlow' };
 
-// Reinitialisation plutot que mise a jour : la demonstration repart toujours
-// d'un compte propre, sans trajet herite d'une session precedente.
+// Reinitialisation plutôt que mise à jour : la démonstration repart toujours
+// d'un compte propre, sans trajet hérité d'une session précédente.
 const existing = users.findByEmail(DEMO_EMAIL);
 if (existing) {
     users.delete(existing.id);
@@ -39,4 +39,4 @@ users.insert({
 });
 
 db.$client.close();
-console.log(`Compte de demonstration pret : ${DEMO_EMAIL}`);
+console.log(`Compte de démonstration prêt : ${DEMO_EMAIL}`);

@@ -1,4 +1,4 @@
-// Generateur d'option : transit.
+// Générateur d'option : transit.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
 import type { RouteAccessPlan } from '../access';
 import { stopToPoint } from '../geo';
@@ -11,7 +11,7 @@ export function createTransitOption(
 ): RouteOption | null {
     if (!journey) {
         // Aucune ligne ne relie les deux points en une correspondance au plus, ou
-        // aucune station accessible a proximite pour un profil PMR. On ne propose
+        // aucune station accessible a proximité pour un profil PMR. On ne propose
         // pas un trajet qui n'existe pas.
         return null;
     }
@@ -26,7 +26,7 @@ export function createTransitOption(
         createLeg({
             id: 'walk-to-stop',
             mode: 'walk',
-            title: 'Approche pietonne',
+            title: 'Approche piétonne',
             from: origin,
             to: stopToPoint(boarding),
             distanceKm: firstWalkKm,
@@ -36,7 +36,7 @@ export function createTransitOption(
         createLeg({
             id: 'walk-from-stop',
             mode: 'walk',
-            title: 'Derniers metres',
+            title: 'Derniers mètres',
             from: stopToPoint(alighting),
             to: destination,
             distanceKm: lastWalkKm,
@@ -51,8 +51,8 @@ export function createTransitOption(
         title: 'Transport en commun',
         summary:
             journey.rides.length > 1
-                ? `Ligne ${lines} avec une correspondance a ${journey.rides[1].boarding.stop_name}.`
-                : `Ligne ${lines} directe de ${boarding.stop_name} a ${alighting.stop_name}.`,
+                ? `Ligne ${lines} avec une correspondance à ${journey.rides[1].boarding.stop_name}.`
+                : `Ligne ${lines} directe de ${boarding.stop_name} à ${alighting.stop_name}.`,
         modes: ['walk', 'transit'],
         legs,
         reliabilityScore: delayed ? 74 : 88,

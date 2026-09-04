@@ -1,4 +1,4 @@
-// Depot des sessions. Le jeton n'est jamais stocke : seule son empreinte l'est.
+// Dépôt des sessions. Le jeton n'est jamais stocké : seule son empreinte l'est.
 import { and, eq, gt, lte } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { sessions } from '../db/schema.ts';
@@ -22,7 +22,7 @@ export function createSessionRepository(db: Executor) {
             db.delete(sessions).where(eq(sessions.tokenHash, tokenHash)).run();
         },
 
-        /** Purge des sessions expirees : la table ne croit pas indefiniment. */
+        /** Purge des sessions expirées : la table ne croit pas indefiniment. */
         purgeExpired(now: string): void {
             db.delete(sessions).where(lte(sessions.expiresAt, now)).run();
         },

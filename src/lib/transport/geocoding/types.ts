@@ -1,7 +1,7 @@
 // Contrats des deux geocodeurs interroges.
 import type { GeoPoint } from '../../../types';
 
-/** Nature du lieu, affichee dans les resultats de recherche. */
+/** Nature du lieu, affichée dans les résultats de recherche. */
 export type PlaceKind = 'Quartier' | 'Ville' | 'Gare' | 'Rue' | 'Adresse' | 'Lieu';
 
 export interface PlaceSearchResult extends GeoPoint {

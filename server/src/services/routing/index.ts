@@ -1,15 +1,15 @@
-// Service de routage : cache partage devant le calculateur d'itineraires.
+// Service de routage : cache partagé devant le calculateur d'itinéraires.
 //
-// Trois raisons de passer par l'API plutot que d'appeler le calculateur depuis
+// Trois raisons de passer par l'API plutôt que d'appeler le calculateur depuis
 // le navigateur :
 //
 //   - le quota d'une instance publique se compte par adresse IP, pas par
-//     utilisateur : mille navigateurs derriere la meme sortie reseau epuisent
-//     le meme quota, et rien ne le mutualise (B13) ;
-//   - un cache partage sert le meme trajet a tous sans le recalculer, ce qui
+//     utilisateur : mille navigateurs derrière la même sortie réseau épuisent
+//     le même quota, et rien ne le mutualise (B13) ;
+//   - un cache partagé sert le même trajet à tous sans le recalculer, ce qui
 //     protege la source et vaut aussi comme mesure d'eco-conception ;
 //   - l'URL du calculateur devient une variable de configuration : basculer sur
-//     une instance auto-hebergee ne touche pas une ligne de code client.
+//     une instance auto-hébergée ne touche pas une ligne de code client.
 import { routeGeometry as routeGeometryContract, routeMeasure as routeMeasureContract } from '../../../../src/contracts/index.ts';
 import type { RoutableMode } from '../../../../src/types.ts';
 import type { ServerConfig } from '../../config/index.ts';
@@ -17,8 +17,8 @@ import type { CachedRoute, RouteCacheRepository } from '../../repositories/route
 import { fetchUpstreamMatrix, fetchUpstreamRoute, type RouteGeometry, type RouteMeasure } from './osrm.ts';
 
 /**
- * Precision de la cle de cache, en decimales de degre. Cinq decimales valent
- * environ un metre : deux departs distants d'un metre empruntent la meme rue.
+ * Précision de la clé de cache, en décimales de degré. Cinq décimales valent
+ * environ un mètre : deux départs distants d'un mètre empruntent la même rue.
  */
 const KEY_PRECISION = 5;
 
@@ -39,7 +39,7 @@ function cacheKey(mode: RoutableMode, from: Coordinates, to: Coordinates): strin
     return `${mode}:${round(from.lat)},${round(from.lon)}:${round(to.lat)},${round(to.lon)}`;
 }
 
-/** Les mesures sans geometrie partagent la table, sous un espace de cles distinct. */
+/** Les mesures sans géométrie partagent la table, sous un espace de clés distinct. */
 function measureCacheKey(mode: RoutableMode, from: Coordinates, to: Coordinates): string {
     return `measure:${cacheKey(mode, from, to)}`;
 }
@@ -107,9 +107,9 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
 
             const geometry = await fetchUpstreamRoute(config.osrmBaseUrl, mode, from, to);
             if (!geometry) {
-                // Le calculateur ne repond pas. Une entree expiree vaut mieux qu'aucune
-                // reponse : la voirie n'a pas change, et l'alternative serait une carte
-                // vide. C'est le seul cas ou l'on sert une donnee perimee.
+                // Le calculateur ne répond pas. Une entrée expirée vaut mieux qu'aucune
+                // réponse : la voirie n'a pas change, et l'alternative serait une carte
+                // vide. C'est le seul cas où l'on sert une donnée périmée.
                 if (cached) {
                     return cached;
                 }

@@ -1,12 +1,12 @@
-// Contrats de donnees et de validation, importes par le client et par l'API.
+// Contrats de données et de validation, importes par le client et par l'API.
 //
-// C'est le pendant de src/types.ts pour tout ce qui se valide : un schema zod
-// par objet echange, et son type derive. Une modification ici casse la
-// compilation des deux cotes, c'est voulu.
+// C'est le pendant de src/types.ts pour tout ce qui se valide : un schéma zod
+// par objet echange, et son type dérive. Une modification ici casse la
+// compilation des deux côtés, c'est voulu.
 import { z } from 'zod';
 
-// Les messages par defaut de zod sont en anglais ; l'interface et l'API
-// parlent francais. La locale s'applique a tous les schemas, des deux cotes.
+// Les messages par défaut de zod sont en anglais ; l'interface et l'API
+// parlent français. La locale s'applique à tous les schémas, des deux côtés.
 z.config(z.locales.fr());
 
 export * from './primitives';

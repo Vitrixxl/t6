@@ -1,4 +1,4 @@
-// Generateur d'option : scooter + transit.
+// Générateur d'option : scooter + transit.
 import type { RouteOption, RouteRequest } from '../../../types';
 import type { RouteAccessPlan } from '../access';
 import { createFeederTransitOption, type Feeder } from './feeder-transit';
@@ -8,7 +8,7 @@ const scooterFeeder: Feeder = {
     mode: 'scooter',
     title: 'Trottinette + transport en commun',
     detail: (station) => `${station.scooters_available} trottinettes disponibles pour rejoindre la correspondance.`,
-    // Deverrouillage par l'application.
+    // Déverrouillage par l'application.
     unlockMinutes: 1,
     reliability: { clear: 84, degraded: 72 },
 };

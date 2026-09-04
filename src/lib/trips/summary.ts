@@ -1,8 +1,8 @@
-// Vues de lecture : filtres et agregats calcules a partir des trajets, sans
-// aucun effet de bord ni acces au stockage.
+// Vues de lecture : filtres et agrégats calculés à partir des trajets, sans
+// aucun effet de bord ni accès au stockage.
 //
-// Les routines n'existent pas sous forme de trajets : leurs passages deja
-// echus sont ajoutes ici, au moment de compter (voir routines.ts).
+// Les routines n'existent pas sous forme de trajets : leurs passages déjà
+// échus sont ajoutés ici, au moment de compter (voir routines.ts).
 import type { PlannedTrip, RecurringTrip, TripActivitySummary, TripRecord } from '../../types';
 import { startOfWeek } from '../week';
 import { BEGINNING_OF_TIME, isRoutinePaused, sumRoutines } from './routines';
@@ -14,7 +14,7 @@ export function upcomingTrips(trips: PlannedTrip[], now: Date = new Date(), grac
         .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 }
 
-/** Trajets faits, du plus recent au plus ancien. */
+/** Trajets faits, du plus récent au plus ancien. */
 export function completedTrips(trips: PlannedTrip[]): PlannedTrip[] {
     return trips
         .filter((trip) => trip.status === 'done')
@@ -54,7 +54,7 @@ export function summarizeTripActivity(
     };
 }
 
-/** Convertit un trajet fait en enregistrement carbone (meme forme que TripRecord). */
+/** Convertit un trajet fait en enregistrement carbone (même forme que TripRecord). */
 export function plannedTripToRecord(trip: PlannedTrip, now: Date = new Date()): TripRecord {
     return {
         id: `trip:${trip.id}`,

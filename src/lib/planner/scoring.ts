@@ -1,5 +1,5 @@
-// Modele de score. Le score part de la fiabilite de l'option, ajoute un bonus
-// par mode prefere et retranche des penalites (duree, carbone, inaccessibilite
+// Modèle de score. Le score part de la fiabilité de l'option, ajoute un bonus
+// par mode préféré et retranche des pénalités (durée, carbone, inaccessibilite
 // PMR, avertissements). Les coefficients sont testes (planner.test.ts).
 import type { MobilityProfile, RouteOption } from '../../types';
 import { totalWalkMinutes } from './rules';
@@ -19,12 +19,12 @@ export function scoreOption(option: RouteOption, profile: MobilityProfile): Rout
     const timePenalty = option.durationMinutes * w.timePenaltyPerMinute;
     const accessibilityPenalty = profile.accessibilityNeed && !option.accessible ? w.accessibilityPenalty : 0;
 
-    // RG5 : au-dela de la marche maximale du profil, un avertissement est ajoute
-    // et l'option est penalisee (1 point par minute de marche excedentaire).
+    // RG5 : au-delà de la marche maximale du profil, un avertissement est ajouté
+    // et l'option est pénalisée (1 point par minute de marche excédentaire).
     const walkMinutes = totalWalkMinutes(option);
     const walkExcess = Math.max(walkMinutes - profile.maxWalkMinutes, 0);
     const warnings = walkExcess > 0
-        ? [...option.warnings, `Marche de ${Math.round(walkMinutes)} min superieure a ta limite de ${profile.maxWalkMinutes} min.`]
+        ? [...option.warnings, `Marche de ${Math.round(walkMinutes)} min supérieure à ta limite de ${profile.maxWalkMinutes} min.`]
         : option.warnings;
     const warningPenalty = warnings.length * w.warningPenalty + walkExcess;
 

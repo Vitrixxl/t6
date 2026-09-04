@@ -1,4 +1,4 @@
-// Profil de mobilite : une ressource unique, lue et remplacee telle quelle.
+// Profil de mobilité : une ressource unique, lue et remplacée telle quelle.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { DEFAULT_PROFILE, type MobilityProfile } from '../contracts';

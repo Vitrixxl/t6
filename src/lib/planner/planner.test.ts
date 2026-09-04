@@ -14,8 +14,8 @@ const network: TransportNetwork = {
         stops: [
             { stop_id: 'A', stop_name: 'Alpha', stop_lat: 45.7578, stop_lon: 4.832, wheelchair_boarding: 1, routes: ['tram'] },
             { stop_id: 'B', stop_name: 'Beta', stop_lat: 45.7605, stop_lon: 4.8595, wheelchair_boarding: 1, routes: ['tram'] },
-            // Arret de bus : aucune ligne structurante ne le dessert, le moteur ne
-            // doit jamais y faire monter le voyageur meme s'il est le plus proche.
+            // Arrêt de bus : aucune ligne structurante ne le dessert, le moteur ne
+            // doit jamais y faire monter le voyageur même s'il est le plus proche.
             { stop_id: 'C', stop_name: 'Gamma', stop_lat: 45.7579, stop_lon: 4.8321, wheelchair_boarding: 1, routes: [] },
         ],
         routes: [
@@ -120,11 +120,11 @@ describe('planRoutes', () => {
         expect(routes.some((route) => route.modes.includes('bike'))).toBe(true);
     });
 
-    // Verrouille B14 : chaque generateur inserait un point intermediaire decale
-    // de plusieurs centaines de metres pour "arrondir" le trace. Le detour etait
-    // masque tant que le routage reel remplacait la geometrie, et reapparaissait
-    // des que le service tiers ne repondait plus.
-    it('ne fait sortir aucun segment du cadre de ses extremites', () => {
+    // Verrouille B14 : chaque générateur inserait un point intermédiaire décalé
+    // de plusieurs centaines de mètres pour "arrondir" le tracé. Le detour était
+    // masque tant que le routage réel remplaçait la géométrie, et reapparaissait
+    // dès que le service tiers ne répondait plus.
+    it('ne fait sortir aucun segment du cadre de ses extrémités', () => {
         const routes = planRoutes({
             origin: LANDMARKS[0],
             destination: LANDMARKS[1],
@@ -132,15 +132,15 @@ describe('planRoutes', () => {
             network,
         });
 
-        // Marge : le trace approche relie ses extremites en ligne droite, il ne
-        // peut donc pas depasser leur cadre. 100 m absorbent les arrondis.
+        // Marge : le tracé approche relie ses extrémités en ligne droite, il ne
+        // peut donc pas depasser leur cadre. 100 m’absorbent les arrondis.
         const toleranceDegrees = 0.001;
 
         for (const route of routes) {
-            // Les segments de transport public suivent le trace publie de la ligne,
-            // qui peut legitimement sortir du cadre de ses deux stations quand la
-            // ligne fait une courbe. L'invariant ne porte que sur les geometries
-            // approchees, celles que les generateurs fabriquent eux-memes.
+            // Les segments de transport public suivent le tracé publie de la ligne,
+            // qui peut légitimement sortir du cadre de ses deux stations quand la
+            // ligne fait une courbe. L'invariant ne porte que sur les géométries
+            // approchees, celles que les générateurs fabriquent eux-mêmes.
             for (const leg of route.legs.filter((item) => item.mode !== 'transit')) {
                 const first = leg.path[0];
                 const last = leg.path[leg.path.length - 1];
@@ -154,7 +154,7 @@ describe('planRoutes', () => {
         }
     });
 
-    it('n invente pas une ligne droite quand le trace officiel est inexploitable', () => {
+    it('n’invente pas une ligne droite quand le tracé officiel est inexploitable', () => {
         const withoutShape: TransportNetwork = {
             ...network,
             gtfs: {
@@ -193,7 +193,7 @@ describe('planRoutes', () => {
         expect(firstAccessible?.score).toBeGreaterThan(firstInaccessible?.score ?? 0);
     });
 
-    it('applique un bonus de score aux modes preferes (poids centralises)', () => {
+    it('applique un bonus de score aux modes préférés (poids centralisés)', () => {
         const base = {
             origin: LANDMARKS[0],
             destination: LANDMARKS[1],
@@ -207,11 +207,11 @@ describe('planRoutes', () => {
 
         expect(bikeNeutral).toBeDefined();
         expect(bikePreferred).toBeDefined();
-        // Le bonus par mode prefere est le coefficient centralise, pas une constante magique.
+        // Le bonus par mode préféré est le coefficient centralise, pas une constante magique.
         expect(bikePreferred!.score).toBeGreaterThanOrEqual(bikeNeutral!.score + SCORING_WEIGHTS.preferenceBonusPerMode - 1);
     });
 
-    it("RG5 : penalise et signale une option qui depasse la marche maximale du profil", () => {
+    it("RG5 : penalise et signale une option qui dépasse la marche maximale du profil", () => {
         const routes = planRoutes({
             origin: LANDMARKS[0],
             destination: LANDMARKS[1],
@@ -224,7 +224,7 @@ describe('planRoutes', () => {
         expect(overWalking!.warnings.some((warning) => /marche/i.test(warning))).toBe(true);
     });
 
-    it('RG3 : aucune option velo/trottinette si aucune station n\'est a portee de marche', () => {
+    it('RG3 : aucune option vélo/trottinette si aucune station n\'est à portée de marche', () => {
         const farStations: TransportNetwork = {
             ...network,
             sharedMobility: {
@@ -250,7 +250,7 @@ describe('planRoutes', () => {
         expect(routes.some((route) => route.modes.includes('transit'))).toBe(true);
     });
 
-    it("RG2 : aucune option transport public si aucun arret n'est accessible en profil PMR", () => {
+    it("RG2 : aucune option transport public si aucun arrêt n'est accessible en profil PMR", () => {
         const inaccessibleNetwork: TransportNetwork = {
             ...network,
             gtfs: {
@@ -268,7 +268,7 @@ describe('planRoutes', () => {
         // On n'invente pas une correspondance non conforme: pas d'option transit.
         expect(pmrRoutes.some((route) => route.modes.includes('transit'))).toBe(false);
 
-        // Sans besoin PMR, les memes arrets produisent bien une option transit.
+        // Sans besoin PMR, les mêmes arrêts produisent bien une option transit.
         const standardRoutes = planRoutes({
             origin: LANDMARKS[0],
             destination: LANDMARKS[1],
@@ -278,7 +278,7 @@ describe('planRoutes', () => {
         expect(standardRoutes.some((route) => route.modes.includes('transit'))).toBe(true);
     });
 
-    it('RG4 : la pluie ajoute un avertissement et penalise le score si la sensibilite est activee', () => {
+    it('RG4 : la pluie ajoute un avertissement et penalise le score si la sensibilite est activée', () => {
         const rainyNetwork: TransportNetwork = {
             ...network,
             gtfs: {
@@ -302,7 +302,7 @@ describe('planRoutes', () => {
     it('borne chaque score sur l\'intervalle 0-100', () => {
         const routes = planRoutes({
             origin: LANDMARKS[0],
-            destination: LANDMARKS[4], // Bellecour -> Vaise: option longue, penalites fortes
+            destination: LANDMARKS[4], // Bellecour -> Vaise: option longue, pénalités fortes
             profile: { ...DEFAULT_PROFILE, maxWalkMinutes: 5, accessibilityNeed: true },
             network,
         });
@@ -326,11 +326,11 @@ describe('planRoutes', () => {
 
         expect(transit).toBeDefined();
         const transitLeg = transit!.legs.find((leg) => leg.mode === 'transit');
-        // Le reseau de test est un tramway (route_type 0), soit 3,8 gCO2e/km.
+        // Le réseau de test est un tramway (route_type 0), soit 3,8 gCO2e/km.
         expect(transitLeg?.estimate.carbonGramsPerKm).toBe(3.8);
-        // Le moteur pur ne connait que l'empreinte de l'option. La reference
-        // voiture sera appliquee apres les mesures OSRM, jamais depuis cette
-        // distance estimee.
+        // Le moteur pur ne connaît que l'empreinte de l'option. La référence
+        // voiture sera appliquée après les mesures OSRM, jamais depuis cette
+        // distance estimée.
         for (const route of routes) {
             expect(route.carbonSavedGrams).toBeNull();
             expect(route.carbonReference).toBeNull();
@@ -340,7 +340,7 @@ describe('planRoutes', () => {
 });
 
 describe('haversineDistanceKm', () => {
-    it('retrouve la distance de reference d\'un degre de longitude a l\'equateur', () => {
+    it('retrouve la distance de référence d\'un degré de longitude a l\'équateur', () => {
         expect(haversineDistanceKm({ lat: 0, lon: 0 }, { lat: 0, lon: 1 })).toBeCloseTo(111.2, 0);
     });
 
@@ -361,7 +361,7 @@ describe('preselectRoute', () => {
         network,
     });
 
-    it('retient la plus rapide par defaut, meme si elle n est pas la mieux classee', () => {
+    it('retient la plus rapide par défaut, même si elle n’est pas la mieux classee', () => {
         const preselected = preselectRoute(routes);
         const shortest = Math.min(...routes.map((route) => route.durationMinutes));
         expect(preselected?.durationMinutes).toBe(shortest);
@@ -375,21 +375,21 @@ describe('preselectRoute', () => {
         expect(preselected?.durationMinutes).toBe(Math.min(...transitRoutes.map((route) => route.durationMinutes)));
     });
 
-    it('retombe sur la plus rapide quand le mode choisi n existe pas sur ce trajet', () => {
-        // Aucune station de trottinette a portee dans ce reseau de test.
+    it('retombe sur la plus rapide quand le mode choisi n’existe pas sur ce trajet', () => {
+        // Aucune station de trottinette à portée dans ce réseau de test.
         const preselected = preselectRoute(routes, 'scooter');
         expect(preselected?.durationMinutes).toBe(Math.min(...routes.map((route) => route.durationMinutes)));
     });
 
-    it('ne renvoie rien quand aucune option n existe', () => {
+    it('ne renvoie rien quand aucune option n’existe', () => {
         expect(preselectRoute([])).toBeNull();
     });
 });
 
 // Verrouille B17. Un vehicule partage ne peut pas mener n'importe ou : la
-// trottinette etait proposee sur des centaines de kilometres parce que seule
-// la disponibilite au depart etait verifiee.
-describe('portee des modes partages (RG3)', () => {
+// trottinette était proposée sur des centaines de kilomètres parce que seule
+// la disponibilité au départ était vérifiée.
+describe('portée des modes partagés (RG3)', () => {
     const bellecour = LANDMARKS[0];
     const horsZone = { label: 'Paris', lat: 48.8566, lon: 2.3522 };
 
@@ -400,14 +400,14 @@ describe('portee des modes partages (RG3)', () => {
         expect(optionsPour(horsZone)).not.toContain('scooter');
     });
 
-    it('conserve la trottinette a l interieur de la zone', () => {
+    it('conserve la trottinette à l’intérieur de la zone', () => {
         expect(optionsPour(LANDMARKS[1])).toContain('scooter');
     });
 
-    // Le test qui porte sur la cause racine et non sur le symptome : les deux
-    // modes partages sont bornes, meme si la borne n'est pas la meme (le Velo'v
-    // se rend a une station, la trottinette se laisse dans la zone de service).
-    it('borne les deux modes partages, sans laisser l un survivre a l autre', () => {
+    // Le test qui porte sur la cause racine et non sur le symptôme : les deux
+    // modes partagés sont bornes, même si la borne n'est pas la même (le Vélo'v
+    // se rend à une station, la trottinette se laisse dans la zone de service).
+    it('borne les deux modes partagés, sans laisser l’un survivre à l’autre', () => {
         const dehors = optionsPour(horsZone);
         expect(dehors).not.toContain('bike');
         expect(dehors).not.toContain('scooter');
@@ -416,8 +416,8 @@ describe('portee des modes partages (RG3)', () => {
     });
 });
 
-// Le rabattement vers le reseau ne se limite pas au Velo'v : une trottinette
-// en flotte libre mene aussi a la station de montee, et se laisse sur place.
+// Le rabattement vers le réseau ne se limite pas au Vélo'v : une trottinette
+// en flotte libre mene aussi à la station de montée, et se laisse sur place.
 describe('trottinette + transport en commun', () => {
     const routes = planRoutes({
         origin: LANDMARKS[0],
@@ -433,7 +433,7 @@ describe('trottinette + transport en commun', () => {
         expect(option!.legs.map((leg) => leg.mode)).toEqual(['walk', 'scooter', 'transit', 'walk']);
     });
 
-    it('partage les segments de ligne avec l option transport seul', () => {
+    it('partage les segments de ligne avec l’option transport seul', () => {
         const combined = routes.find((route) => route.id === 'scooter-transit');
         const transitOnly = routes.find((route) => route.id === 'transit');
         const rideTitles = (route: typeof routes[number]) =>
@@ -441,7 +441,7 @@ describe('trottinette + transport en commun', () => {
         expect(rideTitles(combined!)).toEqual(rideTitles(transitOnly!));
     });
 
-    it('disparait quand aucune trottinette n est disponible au depart', () => {
+    it('disparaît quand aucune trottinette n’est disponible au départ', () => {
         const sansTrottinette: TransportNetwork = {
             ...network,
             sharedMobility: {
@@ -454,19 +454,19 @@ describe('trottinette + transport en commun', () => {
         const ids = planRoutes({ origin: LANDMARKS[0], destination: LANDMARKS[1], profile: DEFAULT_PROFILE, network: sansTrottinette })
             .map((route) => route.id);
         expect(ids).not.toContain('scooter-transit');
-        // Le Velo'v, lui, reste disponible : les deux rabattements sont independants.
+        // Le Vélo'v, lui, reste disponible : les deux rabattements sont indépendants.
         expect(ids).toContain('bike-transit');
     });
 });
 
-// Verrouille B19. Seul l'itineraire selectionne est route segment par segment ;
-// sa liste d'options continuait d'afficher l'estimation a vol d'oiseau, si bien
-// que la pastille et la fiche de detail annonçaient deux chiffres pour le meme
+// Verrouille B19. Seul l'itinéraire selectionne est route segment par segment ;
+// sa liste d'options continuait d'afficher l'estimation à vol d'oiseau, si bien
+// que la pastille et la fiche de détail annonçaient deux chiffres pour le même
 // trajet — 11 min sur l'une, 21 min sur l'autre.
-// Verrouille B20. Seule l'option selectionnee etait mesuree par le service de
-// routage ; les autres restaient sur l'estimation a vol d'oiseau. Changer de
-// selection changeait donc les chiffres affiches, et comparer une duree mesuree
-// a une duree estimee n'avait aucun sens.
+// Verrouille B20. Seule l'option sélectionnée était mesurée par le service de
+// routage ; les autres restaient sur l'estimation à vol d'oiseau. Changer de
+// sélection changeait donc les chiffres affiches, et comparer une durée mesurée
+// à une durée estimée n'avait aucun sens.
 describe('measureRoutes', () => {
     const routes = planRoutes({
         origin: LANDMARKS[0],
@@ -476,8 +476,8 @@ describe('measureRoutes', () => {
     });
 
     /**
-     * Routeur de test : double chaque distance, comme le ferait la voirie reelle,
-     * et pose un trace — un vrai routeur en rend toujours un.
+     * Routeur de test : double chaque distance, comme le ferait la voirie réelle,
+     * et pose un tracé — un vrai routeur en rend toujours un.
      */
     const doubler = async (legs: typeof routes[number]['legs']) =>
         legs.map((leg) => ({
@@ -487,7 +487,7 @@ describe('measureRoutes', () => {
             path: [leg.fromPoint, leg.toPoint],
         }));
 
-    it('mesure toutes les options, sans en laisser aucune a l estimation', async () => {
+    it('mesure toutes les options, sans en laisser aucune à l’estimation', async () => {
         const measured = await measureRoutes(routes, DEFAULT_PROFILE, doubler);
 
         expect(measured).toHaveLength(routes.length);
@@ -497,9 +497,9 @@ describe('measureRoutes', () => {
         }
     });
 
-    it('ecarte une option dont un segment n a pas pu etre mesure', async () => {
-        // Un segment sans geometrie : l'option n'a pas de mesure, elle ne peut pas
-        // etre comparee aux autres et n'a donc rien a faire dans la liste.
+    it('ecarte une option dont un segment n’a pas pu être mesure', async () => {
+        // Un segment sans géométrie : l'option n'a pas de mesure, elle ne peut pas
+        // être comparée aux autres et n'a donc rien à faire dans la liste.
         const boiteux = async (legs: typeof routes[number]['legs']) =>
             legs.map((leg, index) => ({ ...leg, path: index === 0 ? [] : [leg.fromPoint, leg.toPoint] }));
 
@@ -508,12 +508,12 @@ describe('measureRoutes', () => {
         expect(measured).toHaveLength(0);
     });
 
-    it('reclasse sur les mesures reelles et non sur l estimation', async () => {
+    it('reclasse sur les mesures réelles et non sur l’estimation', async () => {
         const measured = await measureRoutes(routes, DEFAULT_PROFILE, doubler);
         const scores = measured.map((option) => option.score);
 
         expect(scores).toEqual([...scores].sort((a, b) => b - a));
-        // Les durees ont double : les scores ne peuvent pas etre restes identiques.
+        // Les durées ont double : les scores ne peuvent pas être restes identiques.
         expect(scores).not.toEqual(routes.map((option) => option.score));
     });
 });

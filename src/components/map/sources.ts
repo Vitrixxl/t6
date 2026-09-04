@@ -1,4 +1,4 @@
-// Helpers d'application : mettre a jour une source ou basculer une couche sans
+// Helpers d'application : mettre à jour une source ou basculer une couche sans
 // recreer la carte.
 import type { GeoJSONSource, Map as MaplibreMap } from 'maplibre-gl';
 import type { FeatureCollection } from './geojson';

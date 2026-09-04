@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 describe('searchPlaces', () => {
-    it('ne declenche aucun appel reseau sous 2 caracteres', async () => {
+    it('ne déclenche aucun appel réseau sous 2 caractères', async () => {
         const fetchSpy = vi.fn();
         vi.stubGlobal('fetch', fetchSpy);
 
@@ -35,7 +35,7 @@ describe('searchPlaces', () => {
         expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('mappe la reponse GeoJSON de la BAN (coordonnees lon/lat) vers des resultats types', async () => {
+    it('mappe la réponse GeoJSON de la BAN (coordonnées lon/lat) vers des résultats types', async () => {
         stubGeocoders({
             features: [
                 {
@@ -58,12 +58,12 @@ describe('searchPlaces', () => {
         });
     });
 
-    it('ecarte les resultats hors metropole de Lyon (departement 69)', async () => {
+    it('ecarte les résultats hors métropole de Lyon (departement 69)', async () => {
         stubGeocoders({
             features: [
                 {
                     type: 'Feature',
-                    properties: { id: 'ban-69', label: 'Rue de la Part-Dieu, Lyon', context: '69, Rhone, Auvergne-Rhone-Alpes', type: 'street' },
+                    properties: { id: 'ban-69', label: 'Rue de la Part-Dieu, Lyon', context: '69, Rhone, Auvergne-Rhône-Alpes', type: 'street' },
                     geometry: { type: 'Point', coordinates: [4.8594, 45.7606] },
                 },
                 {
@@ -79,7 +79,7 @@ describe('searchPlaces', () => {
         expect(results[0].id).toBe('ban-69');
     });
 
-    it('remonte les quartiers Photon en tete, types et bornes a la metropole', async () => {
+    it('remonte les quartiers Photon en tete, types et bornes à la métropole', async () => {
         stubGeocoders(
             {
                 features: [
@@ -111,7 +111,7 @@ describe('searchPlaces', () => {
         expect(results[0]).toMatchObject({ label: 'La Part-Dieu', kind: 'Quartier', source: 'photon' });
     });
 
-    it("retombe sur la BAN seule quand Photon est en echec", async () => {
+    it("retombe sur la BAN seule quand Photon est en échec", async () => {
         vi.stubGlobal(
             'fetch',
             vi.fn(async (url: RequestInfo | URL) =>
@@ -143,12 +143,12 @@ describe('searchPlaces', () => {
 
 describe('enhanceLegsWithLiveRouting', () => {
     // Un segment de voirie quelconque : ce qui est teste ici est la reprise des
-    // mesures du routage, pas le mode. Les hypotheses sont volontairement toutes
-    // non neutres, pour qu'une hypothese perdue se voie.
+    // mesures du routage, pas le mode. Les hypothèses sont volontairement toutes
+    // non neutres, pour qu'une hypothèse perdue se voie.
     const roadLeg: RouteLeg = {
         id: 'scooter-core',
         mode: 'scooter',
-        title: 'Trottinette partagee',
+        title: 'Trottinette partagée',
         from: origin.label,
         to: destination.label,
         fromPoint: origin,
@@ -163,7 +163,7 @@ describe('enhanceLegsWithLiveRouting', () => {
         estimate: { travelFactor: 1.2, overheadMinutes: 6, carbonGramsPerKm: 15 },
     };
 
-    it('reprend distance, duree et CO2 du reseau routier en gardant les hypotheses du segment', async () => {
+    it('reprend distance, durée et CO2 du réseau routier en gardant les hypothèses du segment', async () => {
         vi.stubGlobal(
             'fetch',
             vi.fn(async () =>
@@ -189,11 +189,11 @@ describe('enhanceLegsWithLiveRouting', () => {
         expect(enhanced.path).toHaveLength(2);
     });
 
-    it("laisse le segment sans geometrie quand le routage echoue, sans inventer de trace", async () => {
+    it("laisse le segment sans géométrie quand le routage echoue, sans inventer de tracé", async () => {
         vi.stubGlobal(
             'fetch',
             vi.fn(async () => {
-                throw new Error('reseau coupe');
+                throw new Error('réseau coupe');
             }),
         );
 
@@ -215,14 +215,14 @@ describe('enhanceLegsWithLiveRouting', () => {
         expect(enhanced.path).toBe(transitPath);
     });
 
-    it("n'envoie pas une correspondance interieure a OSRM et accepte son absence de trace", async () => {
+    it("n'envoie pas une correspondance intérieure à OSRM et accepte son absence de tracé", async () => {
         const stub = vi.fn(async () => jsonResponse({}));
         vi.stubGlobal('fetch', stub);
         const transfer: RouteLeg = {
             ...roadLeg,
             id: 'transfer',
             mode: 'walk',
-            title: 'Correspondance a pied',
+            title: 'Correspondance à pied',
             path: [],
             distanceKm: 0,
             durationMinutes: 4,

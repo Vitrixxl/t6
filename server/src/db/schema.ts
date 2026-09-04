@@ -1,9 +1,9 @@
-// Schema de la base, source unique pour Drizzle.
+// Schéma de la base, source unique pour Drizzle.
 //
-// Chaque table est declaree une fois ici ; drizzle-kit en derive les
-// migrations SQL (server/drizzle/) et Drizzle en derive le type des lignes.
-// Les colonnes gardent leur nom snake_case en base pour rester lisibles a un
-// DBA, et prennent un nom camelCase cote TypeScript pour coller au domaine.
+// Chaque table est déclarée une fois ici ; drizzle-kit en dérive les
+// migrations SQL (server/drizzle/) et Drizzle en dérive le type des lignes.
+// Les colonnes gardent leur nom snake_case en base pour rester lisibles à un
+// DBA, et prennent un nom camelCase côté TypeScript pour coller au domaine.
 import { desc, sql } from 'drizzle-orm';
 import { check, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { PLANNED_TRIP_STATUSES } from '../../../src/contracts/trips.ts';
@@ -14,20 +14,20 @@ export const users = sqliteTable('users', {
     email: text('email').notNull().unique(),
     displayName: text('display_name').notNull(),
     // Empreinte argon2id auto-decrite ($argon2id$v=19$m=...,t=...,p=...$...) :
-    // les parametres de cout voyagent avec l'empreinte, un durcissement futur
+    // les paramètres de coût voyagent avec l'empreinte, un durcissement futur
     // reste retro-compatible avec les comptes existants.
     passwordHash: text('password_hash').notNull(),
     createdAt: text('created_at').notNull(),
-    // Le profil de mobilite est un agregat de preferences lu et ecrit en bloc :
-    // aucune requete ne porte sur un champ isole, JSON est ici le bon grain.
-    // Le driver encode et decode : les routes ne voient jamais la chaine.
+    // Le profil de mobilité est un agregat de préférences lu et ecrit en bloc :
+    // aucune requête ne porte sur un champ isole, JSON est ici le bon grain.
+    // Le driver encode et décodé : les routes ne voient jamais la chaîne.
     profile: text('profile_json', { mode: 'json' }).$type<MobilityProfile>().notNull(),
 });
 
 export const sessions = sqliteTable(
     'sessions',
     {
-        // Seule l'empreinte SHA-256 du jeton est stockee : une fuite de la base ne
+        // Seule l'empreinte SHA-256 du jeton est stockée : une fuite de la base ne
         // permet pas de rejouer une session.
         tokenHash: text('token_hash').primaryKey(),
         userId: text('user_id')
@@ -39,8 +39,8 @@ export const sessions = sqliteTable(
     (t) => [index('idx_sessions_user').on(t.userId)],
 );
 
-/** Identite d'une ligne appartenant a un utilisateur : l'identifiant vient du
- *  client, la cle primaire est donc composee avec le proprietaire. */
+/** Identité d'une ligne appartenant à un utilisateur : l'identifiant vient du
+ *  client, la clé primaire est donc composée avec le proprietaire. */
 function ownedColumns() {
     return {
         id: text('id').notNull(),
@@ -50,17 +50,17 @@ function ownedColumns() {
     };
 }
 
-/** Mesures d'un deplacement, communes a tout ce qui en decrit un. */
+/** Mesures d'un déplacement, communes a tout ce qui en décrit un. */
 function measureColumns() {
     return {
-        // Les modes sont stockes en JSON dans une colonne texte : la liste est
+        // Les modes sont stockés en JSON dans une colonne texte : la liste est
         // courte, toujours lue en bloc, et jamais interrogee mode par mode. Une
-        // table de jointure serait ici du ceremonial sans benefice.
+        // table de jointure serait ici du cérémonial sans bénéfice.
         modes: text('modes', { mode: 'json' }).$type<MobilityMode[]>().notNull(),
         distanceKm: real('distance_km').notNull(),
         durationMinutes: real('duration_minutes').notNull(),
         carbonGrams: real('carbon_grams').notNull(),
-        // Nullable quand OSRM a mesure l'option mais pas la reference voiture.
+        // Nullable quand OSRM a mesuré l'option mais pas la référence voiture.
         carbonSavedGrams: real('carbon_saved_grams'),
     };
 }
@@ -91,8 +91,8 @@ export const tripRecords = sqliteTable(
     ],
 );
 
-// Les statuts viennent du contrat partage : la colonne, le CHECK et le
-// schema zod ne peuvent pas diverger.
+// Les statuts viennent du contrat partagé : la colonne, le CHECK et le
+// schéma zod ne peuvent pas diverger.
 export const plannedTrips = sqliteTable(
     'planned_trips',
     {
@@ -123,9 +123,9 @@ export const recurringTrips = sqliteTable(
         daysOfWeek: text('days_of_week', { mode: 'json' }).$type<number[]>().notNull(),
         departureTime: text('departure_time').notNull(),
         returnTime: text('return_time'),
-        // Periodes d'activite, lues et ecrites en bloc avec la routine : la
-        // derniere est ouverte tant qu'elle n'est pas en pause. Aucune requete ne
-        // porte sur une periode isolee, JSON est le bon grain.
+        // Périodes d'activite, lues et écrites en bloc avec la routine : la
+        // derniere est ouverte tant qu'elle n'est pas en pause. Aucune requête ne
+        // porte sur une période isolée, JSON est le bon grain.
         periods: text('periods_json', { mode: 'json' }).$type<RoutinePeriod[]>().notNull(),
         createdAt: text('created_at').notNull(),
     },
@@ -146,21 +146,21 @@ export const savedRoutes = sqliteTable(
     (t) => [primaryKey({ columns: [t.userId, t.id] })],
 );
 
-// Traces de voirie deja calcules. Le cache est partage par tous les clients :
+// Traces de voirie déjà calculés. Le cache est partagé par tous les clients :
 // une recherche frequente n'atteint la source qu'une fois, ce qui protege le
 // quota du fournisseur et rend l'application utilisable quand il refuse de
-// repondre (eco-conception, et B13).
+// répondre (eco-conception, et B13).
 //
-// La cle porte les coordonnees arrondies a cinq decimales, soit environ un
-// metre : deux departs distants d'un metre suivent la meme rue, inutile de
+// La clé porte les coordonnées arrondies a cinq décimales, soit environ un
+// mètre : deux départs distants d'un mètre suivent la même rue, inutile de
 // calculer deux fois.
 export const routeCache = sqliteTable(
     'route_cache',
     {
         cacheKey: text('cache_key').primaryKey(),
         mode: text('mode').notNull(),
-        // Blob opaque pour la couche depot : c'est le service de routage qui en
-        // connait la forme.
+        // Blob opaque pour la couche dépôt : c'est le service de routage qui en
+        // connaît la forme.
         payloadJson: text('payload_json').notNull(),
         /** Horodatage en millisecondes (Date.now()), compare au TTL. */
         createdAt: integer('created_at').notNull(),

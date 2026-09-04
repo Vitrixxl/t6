@@ -1,6 +1,6 @@
-// Depot des trajets programmes a une date. Une commande ne touche qu'une
-// ligne identifiee par (utilisateur, id) ; le depot ne recoit jamais la vue
-// complete tenue par le client.
+// Dépôt des trajets programmés à une date. Une commande ne touche qu'une
+// ligne identifiée par (utilisateur, id) ; le dépôt ne reçoit jamais la vue
+// complète tenue par le client.
 import { and, asc, desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { plannedTrips } from '../db/schema.ts';
@@ -87,7 +87,7 @@ export function createPlannedTripRepository(db: Executor) {
 
         deleteById,
 
-        /** La conservation bornee retire seulement les lignes surnumeraires. */
+        /** La conservation bornée retire seulement les lignes surnumeraires. */
         prune(userId: string): void {
             const overflow = db
                 .select({ id: plannedTrips.id })

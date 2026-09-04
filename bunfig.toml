@@ -1,11 +1,11 @@
-# Note sur le rechargement a chaud du client.
+# Note sur le rechargement à chaud du client.
 #
 # Bun sait le faire — `Bun.serve` avec des routes HTML et `development.hmr` —
-# et Elysia transmet bien ces routes : verifie, l'API et le regroupement a la
-# volee coexistent. Le blocage est ailleurs : le document reference le manifeste
-# et les icones par chemin absolu, ce qui demande un greffon de resolution, et
+# et Elysia transmet bien ces routes : vérifie, l'API et le regroupement à la
+# volée coexistent. Le blocage est ailleurs : le document référence le manifeste
+# et les icônes par chemin absolu, ce qui demande un greffon de résolution, et
 # declarer ce greffon sous `[serve.static]` fait planter Bun 1.4.0.
 #
-# Le developpement reconstruit donc le client a chaque modification, en moins
-# d'une seconde, et la page se rafraichit a la main. A reprendre quand Bun aura
+# Le développement reconstruit donc le client à chaque modification, en moins
+# d'une seconde, et la page se rafraîchit à la main. A reprendre quand Bun aura
 # corrige, ou si le document cesse de referencer des chemins absolus.

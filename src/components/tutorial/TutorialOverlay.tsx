@@ -1,7 +1,7 @@
-// Tour guide de premiere visite : chaque disposition decrit son propre
-// parcours, car les fonctions desktop et mobile n'ont ni les memes cibles ni
-// le meme espace disponible. Une cible absente est sautee, notamment quand la
-// feuille d'un itineraire remplace la barre d'actions mobile.
+// Tour guidé de première visite : chaque disposition décrit son propre
+// parcours, car les fonctions desktop et mobile n'ont ni les mêmes cibles ni
+// le même espace disponible. Une cible absente est sautée, notamment quand la
+// feuille d'un itinéraire remplace la barre d'actions mobile.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -10,7 +10,7 @@ export const TUTORIAL_DONE_KEY = 'ufm.tutorialDone.v2';
 
 interface TourStep {
     id: string;
-    /** Attribut data-tour cible ; absent → carte centree sans spotlight. */
+    /** Attribut data-tour cible ; absent → carte centrée sans spotlight. */
     target?: string;
     title: string;
     body: string;
@@ -20,66 +20,66 @@ const DESKTOP_STEPS: TourStep[] = [
     {
         id: 'welcome',
         title: 'Bienvenue sur UrbanFlow',
-        body: "Ton planificateur de mobilite urbaine : compare les options d'itineraire bas carbone, planifie tes deplacements, automatise tes routines et suis tes objectifs. Ce tour rapide te montre l'essentiel — quitte-le a tout moment avec « Passer » ou Echap.",
+        body: "Ton planificateur de mobilité urbaine : compare les options d'itinéraire bas carbone, planifie tes déplacements, automatise tes routines et suis tes objectifs. Ce tour rapide te montre l'essentiel — quitte-le à tout moment avec « Passer » ou Échap.",
     },
     {
         id: 'search',
         target: 'search',
-        title: 'Recherche depart / arrivee',
-        body: "Saisis une adresse : les suggestions viennent du geocodeur national (BAN). « Ma position » utilise le GPS comme point de depart. Des que les deux champs sont remplis, les options d'itineraire se calculent automatiquement.",
+        title: 'Recherche départ / arrivée',
+        body: "Saisis une adresse : les suggestions viennent du géocodeur national (BAN). « Ma position » utilise le GPS comme point de départ. Dès que les deux champs sont remplis, les options d'itinéraire se calculent automatiquement.",
     },
     {
         id: 'map',
         target: 'map',
         title: 'La carte',
-        body: "Les itineraires calcules s'affichent avec une couleur par option, l'option selectionnee en trait epais. En fond : arrets de transport public et stations de velos/trottinettes en temps reel.",
+        body: "Les itinéraires calculés s'affichent avec une couleur par option, l'option sélectionnée en trait épais. En fond : arrêts de transport public et stations de vélos/trottinettes en temps réel.",
     },
     {
         id: 'routes',
         target: 'routes',
         title: "Comparer les options",
-        body: "Chaque option affiche sa duree, sa distance et son empreinte en gCO₂e. La comparaison utilise le meme trajet voiture invisible pour toutes les options. Clique une option pour voir son detail.",
+        body: "Chaque option affiche sa durée, sa distance et son empreinte en gCO₂e. La comparaison utilise le même trajet voiture invisible pour toutes les options. Clique une option pour voir son détail.",
     },
     {
         id: 'route-detail',
         target: 'route-detail',
-        title: 'Detail et actions',
-        body: "Le detail d'une option liste chaque etape (marche, velo, transport...). Deux actions cles : « Planifier » pour dater le trajet ou en faire une routine, « Enregistrer » pour le garder sous la main.",
+        title: 'Détail et actions',
+        body: "Le détail d'une option liste chaque étape (marche, vélo, transport...). Deux actions clés : « Planifier » pour dater le trajet ou en faire une routine, « Enregistrer » pour le garder sous la main.",
     },
     {
         id: 'trips',
         target: 'trips',
         title: 'Mes trajets — le planificateur',
-        body: "Le coeur de l'application : tes trajets a venir (a marquer « Fait » ou a annuler), tes routines recurrentes (ex: aller-retour au travail, mise en pause possible), ton historique et tes itineraires enregistres.",
+        body: "Le cœur de l'application : tes trajets à venir (à marquer « Fait » ou à annuler), tes routines récurrentes (ex: aller-retour au travail, mise en pause possible), ton historique et tes itinéraires enregistrés.",
     },
     {
         id: 'goals',
         target: 'trips',
         title: 'Objectifs et progression',
-        body: "Dans le planificateur, fixe tes objectifs hebdomadaires et mensuels de CO₂e evite puis suis leur progression. Chaque trajet marque « Fait » alimente tes statistiques.",
+        body: "Dans le planificateur, fixe tes objectifs hebdomadaires et mensuels de CO₂e évité puis suis leur progression. Chaque trajet marqué « Fait » alimente tes statistiques.",
     },
     {
         id: 'layers',
         target: 'layers',
-        title: 'Couches temps reel',
-        body: "Active ou masque les arrets GTFS et les velos et trottinettes partages (flux GBFS live). La meteo temps reel influence aussi le score des options velo.",
+        title: 'Couches temps réel',
+        body: "Active ou masque les arrêts GTFS et les vélos et trottinettes partagés (flux GBFS live). La météo temps réel influence aussi le score des options vélo.",
     },
     {
         id: 'carbon',
         target: 'carbon',
         title: 'Suivi carbone',
-        body: "Ton budget carbone hebdomadaire et le CO₂e evite par rapport a une reference voiture mesuree, alimentes par les trajets faits. Les objectifs se reglent dans ton profil.",
+        body: "Ton budget carbone hebdomadaire et le CO₂e évité par rapport à une référence voiture mesurée, alimentés par les trajets faits. Les objectifs se règlent dans ton profil.",
     },
     {
         id: 'profile',
         target: 'profile',
-        title: 'Profil et preferences',
-        body: "Modes preferes, marche maximale, priorite PMR, budget carbone : tout influence directement le calcul et le score des itineraires.",
+        title: 'Profil et préférences',
+        body: "Modes préférés, marche maximale, priorité PMR, budget carbone : tout influence directement le calcul et le score des itinéraires.",
     },
     {
         id: 'done',
         title: "C'est tout !",
-        body: "Tu sais tout. Tu peux revoir ce tutoriel a tout moment via le bouton « ? » en bas du panneau lateral ou depuis ton profil. Bonne planification !",
+        body: "Tu sais tout. Tu peux revoir ce tutoriel à tout moment via le bouton « ? » en bas du panneau latéral ou depuis ton profil. Bonne planification !",
     },
 ];
 
@@ -87,19 +87,19 @@ const MOBILE_STEPS: TourStep[] = [
     {
         id: 'welcome',
         title: 'Bienvenue sur UrbanFlow',
-        body: "Ce tour te montre les fonctions accessibles depuis la carte mobile. Tu peux l'arreter a tout moment avec « Passer ».",
+        body: "Ce tour te montre les fonctions accessibles depuis la carte mobile. Tu peux l'arrêter à tout moment avec « Passer ».",
     },
     {
         id: 'search',
         target: 'mobile-search',
-        title: 'Recherche depart / arrivee',
-        body: "Saisis une destination : ta position sert de depart si le GPS est autorise. Tu peux ensuite afficher les deux champs pour choisir ou inverser precisement le depart et l'arrivee.",
+        title: 'Recherche départ / arrivée',
+        body: "Saisis une destination : ta position sert de départ si le GPS est autorisé. Tu peux ensuite afficher les deux champs pour choisir ou inverser précisément le départ et l'arrivée.",
     },
     {
         id: 'map',
         target: 'mobile-map',
         title: 'La carte',
-        body: "La carte affiche les mobilites disponibles et les traces reels des itineraires. Un appui long permet aussi de choisir directement un point de depart ou d'arrivee.",
+        body: "La carte affiche les mobilités disponibles et les tracés réels des itinéraires. Un appui long permet aussi de choisir directement un point de départ ou d'arrivée.",
     },
     {
         id: 'location',
@@ -111,30 +111,30 @@ const MOBILE_STEPS: TourStep[] = [
         id: 'nearby',
         target: 'mobile-nearby',
         title: 'Autour de moi',
-        body: "Ouvre les disponibilites proches : stations Velo'v, trottinettes et arrets de transport autour de ta position ou du centre de la metropole.",
+        body: "Ouvre les disponibilités proches : stations Vélo'v, trottinettes et arrêts de transport autour de ta position ou du centre de la métropole.",
     },
     {
         id: 'layers',
         target: 'mobile-layers',
-        title: 'Couches temps reel',
-        body: "Choisis ce que la carte affiche : arrets GTFS, stations Velo'v et trottinettes issues des flux de disponibilite en temps reel.",
+        title: 'Couches temps réel',
+        body: "Choisis ce que la carte affiche : arrêts GTFS, stations Vélo'v et trottinettes issues des flux de disponibilité en temps réel.",
     },
     {
         id: 'trips',
         target: 'mobile-trips',
         title: 'Trajets et objectifs',
-        body: "Retrouve ici tes trajets a venir, routines, historiques et itineraires enregistres. C'est aussi la que tu suis et modifies tes objectifs hebdomadaires et mensuels.",
+        body: "Retrouve ici tes trajets à venir, routines, historiques et itinéraires enregistrés. C'est aussi là que tu suis et modifies tes objectifs hebdomadaires et mensuels.",
     },
     {
         id: 'profile',
         target: 'mobile-profile',
-        title: 'Profil et preferences',
-        body: "Regle tes modes preferes, ta marche maximale, la priorite PMR et tes objectifs carbone. Ces preferences influencent directement les options proposees.",
+        title: 'Profil et préférences',
+        body: "Règle tes modes préférés, ta marche maximale, la priorité PMR et tes objectifs carbone. Ces préférences influencent directement les options proposées.",
     },
     {
         id: 'done',
         title: "C'est tout !",
-        body: 'Tu peux relancer ce tutoriel depuis ton profil. Choisis maintenant une destination pour comparer les itineraires et leur empreinte en gCO₂e.',
+        body: 'Tu peux relancer ce tutoriel depuis ton profil. Choisis maintenant une destination pour comparer les itinéraires et leur empreinte en gCO₂e.',
     },
 ];
 
@@ -149,8 +149,8 @@ const CARD_WIDTH = 330;
 const MARGIN = 16;
 
 function resolveTarget(name: string): Element | null {
-    // Plusieurs elements peuvent porter le meme data-tour (desktop + mobile) :
-    // on prend le premier reellement visible.
+    // Plusieurs éléments peuvent porter le même data-tour (desktop + mobile) :
+    // on prend le premier réellement visible.
     const candidates = document.querySelectorAll(`[data-tour="${name}"]`);
     for (const el of candidates) {
         const rect = el.getBoundingClientRect();
@@ -270,7 +270,7 @@ export function TutorialOverlay({ desktop, relaunchSignal = 0 }: { desktop: bool
         setActive(false);
     };
 
-    // Lancement auto a la premiere visite.
+    // Lancement auto à la première visite.
     useEffect(() => {
         try {
             if (window.localStorage.getItem(TUTORIAL_DONE_KEY)) {
@@ -296,8 +296,8 @@ export function TutorialOverlay({ desktop, relaunchSignal = 0 }: { desktop: bool
 
     // Suivi du rect cible en continu : les panneaux s'ouvrent avec des
     // animations, un simple resize listener raterait le mouvement. Interval
-    // plutot que requestAnimationFrame, qui peut etre suspendu (onglet cache,
-    // webviews embarquees) et figerait le spotlight.
+    // plutôt que requestAnimationFrame, qui peut être suspendu (onglet cache,
+    // webviews embarquées) et figerait le spotlight.
     useEffect(() => {
         if (!active) {
             return;
@@ -329,7 +329,7 @@ export function TutorialOverlay({ desktop, relaunchSignal = 0 }: { desktop: bool
         }
     }, [active, step, rect]);
 
-    // Clavier : Echap = passer, fleches / Entree = navigation.
+    // Clavier : Échap = passer, fleches / Entrée = navigation.
     useEffect(() => {
         if (!active) {
             return;
@@ -457,7 +457,7 @@ export function TutorialOverlay({ desktop, relaunchSignal = 0 }: { desktop: bool
                             variant="outline"
                             size="sm"
                             onClick={() => setStep(nextVisibleStep(steps, step, -1))}
-                            aria-label="Etape precedente"
+                            aria-label="Étape précédente"
                         >
                             <ArrowLeft className="size-3.5" aria-hidden="true" />
                         </Button>

@@ -1,9 +1,9 @@
-// Facteurs d'emission et reference contrefactuelle voiture.
+// Facteurs d'émission et référence contrefactuelle voiture.
 //
-// Une valeur carbone n'est pas une constante technique : elle depend d'un
-// perimetre et d'une source. Chaque facteur porte donc son unite, sa version et
-// la date a laquelle la source a ete consultee. Changer de millesime devient un
-// changement metier explicite, relisible dans l'historique Git.
+// Une valeur carbone n'est pas une constante technique : elle dépend d'un
+// périmètre et d'une source. Chaque facteur porte donc son unité, sa version et
+// la date a laquelle la source a été consultée. Changer de millésime devient un
+// changement métier explicite, relisible dans l'historique Git.
 import type { CarbonReference, MobilityMode, RouteMeasure, RouteOption } from '../../types';
 
 export interface EmissionFactor {
@@ -23,29 +23,29 @@ const URBANFLOW_CARBON_MODEL_URL = 'https://github.com/Vitrixxl/t6/blob/main/REA
 const CONSULTED_ON = '2026-09-04';
 
 /**
- * Facteur de la reference invisible : voiture thermique diesel, une personne.
- * La valeur est figee pour le concours afin que deux calculs faits avec des
- * versions differentes du modele restent explicables et comparables.
+ * Facteur de la référence invisible : voiture thermique diesel, une personne.
+ * La valeur est figée pour le concours afin que deux calculs faits avec des
+ * versions différentes du modèle restent explicables et comparables.
  */
 export const CAR_REFERENCE_FACTOR: EmissionFactor = {
     id: 'ademe-2025-car-diesel-average-142',
     gramsCo2ePerPassengerKm: 142,
     unit: 'gCO2e/passager-km',
     scope: 'Voiture thermique moyenne diesel, une personne',
-    source: 'ADEME Base Empreinte, modelisation transport 2025',
+    source: 'ADEME Base Empreinte, modélisation transport 2025',
     sourceUrl: ADEME_IMPACT_CO2_TRANSPORT_URL,
     modelYear: 2025,
     consultedOn: CONSULTED_ON,
 };
 
-/** Facteurs historiques des modes de voirie deja proposes par UrbanFlow. */
+/** Facteurs historiques des modes de voirie déjà proposes par UrbanFlow. */
 export const ROAD_EMISSION_FACTORS: Record<Exclude<MobilityMode, 'transit'>, EmissionFactor> = {
     walk: {
         id: 'urbanflow-2025-walk',
         gramsCo2ePerPassengerKm: 0,
         unit: 'gCO2e/passager-km',
-        scope: 'Emissions directes de la marche',
-        source: 'Hypothese de modelisation UrbanFlow 2025',
+        scope: 'Émissions directes de la marche',
+        source: 'Hypothèse de modélisation UrbanFlow 2025',
         sourceUrl: URBANFLOW_CARBON_MODEL_URL,
         modelYear: 2025,
         consultedOn: CONSULTED_ON,
@@ -54,8 +54,8 @@ export const ROAD_EMISSION_FACTORS: Record<Exclude<MobilityMode, 'transit'>, Emi
         id: 'urbanflow-2025-shared-bike',
         gramsCo2ePerPassengerKm: 4,
         unit: 'gCO2e/passager-km',
-        scope: 'Velo partage, exploitation et cycle de vie simplifies',
-        source: 'Hypothese de modelisation UrbanFlow 2025',
+        scope: 'Vélo partagé, exploitation et cycle de vie simplifiés',
+        source: 'Hypothèse de modélisation UrbanFlow 2025',
         sourceUrl: URBANFLOW_CARBON_MODEL_URL,
         modelYear: 2025,
         consultedOn: CONSULTED_ON,
@@ -64,8 +64,8 @@ export const ROAD_EMISSION_FACTORS: Record<Exclude<MobilityMode, 'transit'>, Emi
         id: 'urbanflow-2025-shared-scooter',
         gramsCo2ePerPassengerKm: 15,
         unit: 'gCO2e/passager-km',
-        scope: 'Trottinette partagee, exploitation et cycle de vie simplifies',
-        source: 'Hypothese de modelisation UrbanFlow 2025',
+        scope: 'Trottinette partagée, exploitation et cycle de vie simplifiés',
+        source: 'Hypothèse de modélisation UrbanFlow 2025',
         sourceUrl: URBANFLOW_CARBON_MODEL_URL,
         modelYear: 2025,
         consultedOn: CONSULTED_ON,
@@ -77,7 +77,7 @@ const TRANSIT_EMISSION_FACTORS: Record<0 | 1 | 7, EmissionFactor> = {
         id: 'ademe-impactco2-2025-tramway',
         gramsCo2ePerPassengerKm: 3.8,
         unit: 'gCO2e/passager-km',
-        scope: 'Tramway, par passager-kilometre',
+        scope: 'Tramway, par passager-kilomètre',
         source: 'ADEME Impact CO2, transport',
         sourceUrl: ADEME_IMPACT_CO2_TRANSPORT_URL,
         modelYear: 2025,
@@ -87,7 +87,7 @@ const TRANSIT_EMISSION_FACTORS: Record<0 | 1 | 7, EmissionFactor> = {
         id: 'ademe-impactco2-2025-metro',
         gramsCo2ePerPassengerKm: 4.2,
         unit: 'gCO2e/passager-km',
-        scope: 'Metro, par passager-kilometre',
+        scope: 'Métro, par passager-kilomètre',
         source: 'ADEME Impact CO2, transport',
         sourceUrl: ADEME_IMPACT_CO2_TRANSPORT_URL,
         modelYear: 2025,
@@ -97,12 +97,12 @@ const TRANSIT_EMISSION_FACTORS: Record<0 | 1 | 7, EmissionFactor> = {
         id: 'ademe-impactco2-2025-funicular-as-metro',
         gramsCo2ePerPassengerKm: 4.2,
         unit: 'gCO2e/passager-km',
-        scope: 'Funiculaire urbain, par passager-kilometre',
-        source: 'ADEME Impact CO2, facteur metro retenu par approximation',
+        scope: 'Funiculaire urbain, par passager-kilomètre',
+        source: 'ADEME Impact CO2, facteur métro retenu par approximation',
         sourceUrl: ADEME_IMPACT_CO2_TRANSPORT_URL,
         modelYear: 2025,
         consultedOn: CONSULTED_ON,
-        approximation: 'Aucun facteur funiculaire specifique disponible dans la source consultee.',
+        approximation: 'Aucun facteur funiculaire spécifique disponible dans la source consultée.',
     },
 };
 
@@ -111,17 +111,17 @@ export function transitEmissionFactor(routeType: number): EmissionFactor {
     if (routeType === 0 || routeType === 1 || routeType === 7) {
         return TRANSIT_EMISSION_FACTORS[routeType];
     }
-    // Garde-fou pour un feed futur : une ligne inconnue reprend le facteur metro
-    // et reste ainsi explicite, au lieu de retomber sur l'ancien 55 g generique.
+    // Garde-fou pour un feed futur : une ligne inconnue reprend le facteur métro
+    // et reste ainsi explicite, au lieu de retomber sur l'ancien 55 g générique.
     return {
         ...TRANSIT_EMISSION_FACTORS[1],
         id: 'ademe-impactco2-2025-unknown-transit-as-metro',
-        scope: `Transport GTFS route_type ${routeType}, par passager-kilometre`,
-        approximation: 'Type GTFS non documente dans le perimetre UrbanFlow, facteur metro retenu.',
+        scope: `Transport GTFS route_type ${routeType}, par passager-kilomètre`,
+        approximation: 'Type GTFS non documenté dans le périmètre UrbanFlow, facteur métro retenu.',
     };
 }
 
-/** Transforme la cellule 1 x 1 du profil voiture en reference auditable. */
+/** Transforme la cellule 1 x 1 du profil voiture en référence auditable. */
 export function createCarbonReference(measure: RouteMeasure | null): CarbonReference | null {
     if (!measure) {
         return null;
@@ -135,9 +135,9 @@ export function createCarbonReference(measure: RouteMeasure | null): CarbonRefer
 }
 
 /**
- * Applique une reference unique a toutes les options deja mesurees.
- * Une valeur negative est conservee : elle signifie que l'option emet plus que
- * le scenario voiture, information que l'interface doit assumer.
+ * Applique une référence unique à toutes les options déjà mesurées.
+ * Une valeur négative est conservée : elle signifie que l'option émet plus que
+ * le scénario voiture, information que l'interface doit assumer.
  */
 export function applyCarbonReference(
     routes: RouteOption[],

@@ -33,11 +33,11 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // L'API ne se met jamais en cache : ses reponses dependent de la session et
-    // changent a chaque action. Servie « cache d'abord », /api/state repondait
-    // encore apres la deconnexion, et /api/auth/session pouvait ressusciter la
-    // session d'un compte precedent au rechargement (B21). Le socle et les
-    // donnees statiques, eux, restent en cache pour le hors ligne.
+    // L'API ne se met jamais en cache : ses réponses dépendent de la session et
+    // changent à chaque action. Servie « cache d'abord », /api/state répondait
+    // encore après la déconnexion, et /api/auth/session pouvait ressusciter la
+    // session d'un compte précédent au rechargement (B21). Le socle et les
+    // données statiques, eux, restent en cache pour le hors ligne.
     if (new URL(event.request.url).pathname.startsWith('/api/')) {
         return;
     }

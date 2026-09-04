@@ -1,4 +1,4 @@
-// Liste des choix d'une recherche de lieu. Elle ne lance aucun appel reseau.
+// Liste des choix d'une recherche de lieu. Elle ne lance aucun appel réseau.
 import { Building2, Landmark, LocateFixed, MapPin, TrainFront } from 'lucide-react';
 import type { GeoPoint } from '../../types';
 import type { PlaceKind, PlaceSearchResult } from '../../lib/transport';
@@ -58,7 +58,7 @@ export function PlaceSearchResults({
                         </span>
                         <span className="min-w-0 flex-1">
                             <strong className="block truncate text-sm">{result.label}</strong>
-                            <span className="block truncate text-xs text-muted-foreground">{result.context || 'Metropole de Lyon'}</span>
+                            <span className="block truncate text-xs text-muted-foreground">{result.context || 'Métropole de Lyon'}</span>
                         </span>
                         <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                             {result.kind}

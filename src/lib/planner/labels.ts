@@ -1,6 +1,6 @@
-// Libelles affiches. `routeLabel` nomme la ligne exactement ("Metro B",
-// "Tram T1") : depuis l'integration de la desserte publiee, une ligne n'est
-// proposee que si elle dessert reellement les deux stations du segment.
+// Libellés affiches. `routeLabel` nomme la ligne exactement ("Métro B",
+// "Tram T1") : depuis l'intégration de la desserte publiée, une ligne n'est
+// proposée que si elle dessert réellement les deux stations du segment.
 import type { GtfsRoute, MobilityMode } from '../../types';
 
 export const MODE_LABELS: Record<MobilityMode, string> = {
@@ -12,7 +12,7 @@ export const MODE_LABELS: Record<MobilityMode, string> = {
 
 const ROUTE_KIND: Record<number, string> = {
     0: 'Tram',
-    1: 'Metro',
+    1: 'Métro',
     7: 'Funiculaire',
 };
 

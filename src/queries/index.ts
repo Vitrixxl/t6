@@ -1,6 +1,6 @@
-// Donnees servies par l'API, tenues dans le cache de requetes (React Query).
-// Une ressource par fichier : sa requete, ses actions. Les composants
-// importent d'ici ; l'etat d'ecran, lui, vit dans src/state/.
+// Données servies par l'API, tenues dans le cache de requêtes (React Query).
+// Une ressource par fichier : sa requête, ses actions. Les composants
+// importent d'ici ; l'état d'écran, lui, vit dans src/state/.
 export { createQueryClient } from './client';
 export { useDeleteAccount, useLogin, useLogout, useRegister, useSession } from './session';
 export { useUser } from './user';

@@ -1,13 +1,13 @@
-// Authentification : inscription, connexion, deconnexion, effacement.
+// Authentification : inscription, connexion, déconnexion, effacement.
 //
-// Le serveur authentifie et detient l'etat. Le navigateur ne garde qu'un
-// cookie httpOnly ; l'etat du compte lui est rendu a chaque ouverture de
-// session, puis amorce les requetes de chaque ressource.
+// Le serveur authentifie et detient l'état. Le navigateur ne garde qu'un
+// cookie httpOnly ; l'état du compte lui est rendu à chaque ouverture de
+// session, puis amorce les requêtes de chaque ressource.
 import type { Credentials, Registration, Session } from '../../contracts';
 import { api, treatyRequest } from './client';
 import { ApiError, ApiUnavailableError } from './errors';
 
-/** Reprend la session portee par le cookie, sans transformer une absence en erreur d'ecran. */
+/** Reprend la session portée par le cookie, sans transformer une absence en erreur d'écran. */
 export async function restoreSession(): Promise<Session | null> {
     try {
         return await treatyRequest(api.auth.session.get());
@@ -32,12 +32,12 @@ export async function loginUser(input: Credentials): Promise<Session> {
 }
 
 export async function logoutUser(): Promise<void> {
-    // La session est revoquee cote serveur ; un echec reseau ne doit pas
-    // empecher de quitter l'ecran, le cookie expirera de lui-meme.
+    // La session est révoquée côté serveur ; un échec réseau ne doit pas
+    // empecher de quitter l'écran, le cookie expirera de lui-même.
     await treatyRequest(api.auth.logout.post()).then(() => undefined, () => undefined);
 }
 
-/** Droit a l'effacement (RGPD art. 17) : le serveur supprime tout en cascade. */
+/** Droit à l'effacement (RGPD art. 17) : le serveur supprime tout en cascade. */
 export async function deleteAccount(): Promise<void> {
     await treatyRequest(api.me.delete());
 }

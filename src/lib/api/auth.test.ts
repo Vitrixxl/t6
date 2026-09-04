@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe('session', () => {
-    it('la connexion rend le compte et son etat tels que le serveur les envoie', async () => {
+    it('la connexion rend le compte et son état tels que le serveur les envoie', async () => {
         const state = { profile: DEFAULT_PROFILE, tripRecords: [], plannedTrips: [], recurringTrips: [], savedRoutes: [] };
         const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ user: USER, state }));
 
@@ -26,13 +26,13 @@ describe('session', () => {
         expect(JSON.parse(String(init.body))).toMatchObject({ email: 'a@b.fr' });
     });
 
-    it('une connexion refusee remonte le message du serveur', async () => {
+    it('une connexion refusée remonte le message du serveur', async () => {
         vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Identifiants invalides.' }, 401));
 
         await expect(loginUser({ email: 'a@b.fr', password: 'faux' })).rejects.toThrow('Identifiants invalides.');
     });
 
-    it('la deconnexion revoque la session cote serveur', async () => {
+    it('la déconnexion révoque la session côté serveur', async () => {
         const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
 
         await logoutUser();

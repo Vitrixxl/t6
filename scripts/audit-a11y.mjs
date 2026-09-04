@@ -1,9 +1,9 @@
-// Audit d'accessibilite automatise axe-core (WCAG 2.1 A/AA) sur le build de
-// production servi par `vite preview`. Quatre etats sont audites : l'ecran
-// d'authentification, l'ecran principal carte/planification, le hub
+// Audit d'accessibilité automatise axe-core (WCAG 2.1 A/AA) sur le build de
+// production servi par `vite preview`. Quatre états sont audités : l'écran
+// d'authentification, l'écran principal carte/planification, le hub
 // planificateur et le profil.
-// Limite assumee : axe-core ne remplace pas un audit manuel clavier + lecteur
-// d'ecran ; il detecte les violations programmatiquement verifiables.
+// Limite assumée : axe-core ne remplace pas un audit manuel clavier + lecteur
+// d'écran ; il detecte les violations programmatiquement vérifiables.
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { chromium } from 'playwright-core';
@@ -35,7 +35,7 @@ async function runAxe(label) {
         TAGS,
     );
     console.log(`\n=== ${label} ===`);
-    console.log(`regles executees: ${results.passes.length + results.violations.length + results.incomplete.length}`);
+    console.log(`règles exécutées: ${results.passes.length + results.violations.length + results.incomplete.length}`);
     console.log(`conformes: ${results.passes.length} | violations: ${results.violations.length} | a verifier manuellement: ${results.incomplete.length}`);
     for (const violation of results.violations) {
         console.log(`  [${violation.impact}] ${violation.id}: ${violation.help} (${violation.nodes.length} noeud(s))`);
@@ -50,7 +50,7 @@ let totalViolations = 0;
 
 await page.goto(BASE_URL, { waitUntil: 'networkidle' });
 await page.waitForTimeout(1200);
-totalViolations += await runAxe('Ecran authentification (mobile)');
+totalViolations += await runAxe('Écran authentification (mobile)');
 
 await page.fill('#auth-email', 'demo@urbanflow.local');
 await page.fill('#auth-password', 'UrbanFlow2026!');
@@ -61,16 +61,16 @@ if (await skipTutorial.count()) {
     await skipTutorial.first().click();
     await page.waitForTimeout(600);
 }
-totalViolations += await runAxe('Ecran principal carte + planification (mobile)');
+totalViolations += await runAxe('Écran principal carte + planification (mobile)');
 
-// Un ecran introuvable n'est pas un ecran conforme : l'audit s'arrete plutot
-// que de reduire silencieusement son perimetre. Il l'avait fait sans bruit
+// Un écran introuvable n'est pas un écran conforme : l'audit s'arrête plutôt
+// que de réduire silencieusement son périmètre. Il l'avait fait sans bruit
 // quand le bouton du planificateur a change de nom, et le total annonce ne
-// portait plus que sur trois ecrans au lieu de quatre.
+// portait plus que sur trois écrans au lieu de quatre.
 async function auditPanel(label, name) {
     const button = page.getByRole('button', { name }).first();
     if (!(await button.count())) {
-        console.log(`ECHEC: bouton "${name}" introuvable, ecran "${label}" non audite`);
+        console.log(`ÉCHEC: bouton "${name}" introuvable, écran "${label}" non audité`);
         await browser.close();
         process.exit(1);
     }
@@ -82,13 +82,13 @@ async function auditPanel(label, name) {
     return violations;
 }
 
-totalViolations += await auditPanel('Hub planificateur de trajets (mobile)', /trajets enregistres/i);
-totalViolations += await auditPanel('Panneau profil et preferences (mobile)', /ouvrir le profil/i);
+totalViolations += await auditPanel('Hub planificateur de trajets (mobile)', /trajets enregistrés/i);
+totalViolations += await auditPanel('Panneau profil et préférences (mobile)', /ouvrir le profil/i);
 
 await browser.close();
 console.log(`\nTOTAL violations WCAG 2.1 A/AA detectees par axe-core: ${totalViolations}`);
 
-// Resultats persistes pour injection automatique dans le dossier PDF.
+// Résultats persistés pour injection automatique dans le dossier PDF.
 const { mkdirSync, writeFileSync } = await import('node:fs');
 mkdirSync('output/metrics', { recursive: true });
 writeFileSync(

@@ -1,4 +1,4 @@
-// Ressource routine : la collection se lit, chaque element s'ecrit ou se
+// Ressource routine : la collection se lit, chaque élément s'ecrit ou se
 // supprime par son identifiant.
 import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
@@ -30,7 +30,7 @@ export function recurringTripRoutes(ctx: AppContext) {
                 params: resourceIdParams,
                 body: recurringTripInput,
                 response: { 200: recurringTrip, 401: errorResponse, 409: errorResponse, 422: errorResponse },
-                detail: { summary: 'Creer ou remplacer une routine (idempotent)' },
+                detail: { summary: 'Créer ou remplacer une routine (idempotent)' },
             },
         )
         .delete(

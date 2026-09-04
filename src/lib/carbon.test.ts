@@ -4,12 +4,12 @@ import type { PlannedTrip, RecurringTrip, TripRecord } from '../types';
 import { plannedTripToRecord, summarizeTripActivity } from './trips';
 
 // Les enregistrements sont produits en pratique par plannedTripToRecord
-// quand un trajet planifie est marque fait.
+// quand un trajet planifié est marqué fait.
 function makeTripRecord(userId: string, createdAt: Date = new Date()): TripRecord {
     return {
         id: crypto.randomUUID(),
         userId,
-        routeTitle: 'Velo',
+        routeTitle: 'Vélo',
         modes: ['walk', 'bike'],
         distanceKm: 5,
         durationMinutes: 22,
@@ -38,7 +38,7 @@ describe('carbon tracking', () => {
         expect(summarizeCarbon([bigTrip], [], 0).goalUsagePercent).toBe(0);
     });
 
-    it('borne l\'historique aux 50 trajets les plus recents, le dernier en tete', () => {
+    it('borne l\'historique aux 50 trajets les plus récents, le dernier en tete', () => {
         let records: TripRecord[] = [];
         for (let index = 0; index < 55; index += 1) {
             records = recordTrip(records, makeTripRecord('user-4'));
@@ -50,7 +50,7 @@ describe('carbon tracking', () => {
         expect(records[0].id).toBe(latest.id);
     });
 
-    it('ne duplique pas un trajet enregistre deux fois sous le meme identifiant', () => {
+    it('ne duplique pas un trajet enregistre deux fois sous le même identifiant', () => {
         const trip = makeTripRecord('user-5');
 
         expect(recordTrip(recordTrip([], trip), trip)).toHaveLength(1);
@@ -60,10 +60,10 @@ describe('carbon tracking', () => {
 // Verrouille B16. Le suivi affiche « X % de l'objectif hebdomadaire » : le
 // total compare a cet objectif doit donc porter sur la semaine en cours, et
 // non sur tout l'historique conserve.
-describe('summarizeCarbon — fenetre hebdomadaire', () => {
+describe('summarizeCarbon — fenêtre hebdomadaire', () => {
     const jeudi = new Date(2026, 8, 3, 12, 0);
 
-    it('ignore les trajets des semaines precedentes', () => {
+    it('ignore les trajets des semaines précédentes', () => {
         const cetteSemaine = makeTripRecord('user-1', new Date(2026, 8, 1, 8, 0));
         const semainePassee = makeTripRecord('user-1', new Date(2026, 7, 27, 8, 0));
 
@@ -73,7 +73,7 @@ describe('summarizeCarbon — fenetre hebdomadaire', () => {
         expect(summary.totalSavedGrams).toBe(880);
     });
 
-    it('repart de zero au passage du lundi', () => {
+    it('repart de zéro au passage du lundi', () => {
         const dimanche = makeTripRecord('user-1', new Date(2026, 8, 6, 20, 0));
         const lundiSuivant = new Date(2026, 8, 7, 9, 0);
 
@@ -87,22 +87,22 @@ describe('summarizeCarbon — fenetre hebdomadaire', () => {
     });
 });
 
-// Les deux ecrans qui affichent le CO2 evite de la semaine s'alimentent a des
-// sources differentes : le suivi carbone aux enregistrements, les objectifs aux
+// Les deux écrans qui affichent le CO2 évité de la semaine s'alimentent a des
+// sources différentes : le suivi carbone aux enregistrements, les objectifs aux
 // trajets planifies marques faits. Marquer un trajet fait produit pourtant les
 // deux. Ce test lie les deux calculs pour qu'ils ne puissent plus rediverger.
-describe('coherence entre le suivi carbone et les objectifs', () => {
-    it('annonce le meme CO2 evite pour la meme semaine', () => {
+describe('cohérence entre le suivi carbone et les objectifs', () => {
+    it('annonce le même CO2 évité pour la même semaine', () => {
         const jeudi = new Date(2026, 8, 3, 12, 0);
         const trajets: PlannedTrip[] = [
             makePlannedTrip('done', new Date(2026, 8, 1, 8, 0), 400),
             makePlannedTrip('done', new Date(2026, 8, 2, 8, 0), 250),
-            // Semaine precedente : ni l'un ni l'autre ne doit la compter.
+            // Semaine précédente : ni l'un ni l'autre ne doit la compter.
             makePlannedTrip('done', new Date(2026, 7, 27, 8, 0), 999),
         ];
         const records = trajets.map((trip) => plannedTripToRecord(trip, jeudi));
-        // Routine des jours ouvres, creee le lundi 31 aout a 07:00 : lundi, mardi,
-        // mercredi et jeudi matin sont deja passes, soit 4 passages de 100 g.
+        // Routine des jours ouvrés, créée le lundi 31 aout a 07:00 : lundi, mardi,
+        // mercredi et jeudi matin sont déjà passes, soit 4 passages de 100 g.
         const routines = [makeRoutine(new Date(2026, 7, 31, 7, 0), 100)];
 
         const suivi = summarizeCarbon(records, routines, 2500, jeudi);

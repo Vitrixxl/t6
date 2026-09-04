@@ -1,4 +1,4 @@
-// Generateur d'option : bike.
+// Générateur d'option : bike.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
 import type { RouteAccessPlan } from '../access';
 import { haversineDistanceKm, stationToPoint } from '../geo';
@@ -23,7 +23,7 @@ export function createBikeOption(
         createLeg({
             id: 'walk-to-bike',
             mode: 'walk',
-            title: 'Rejoindre une station velo',
+            title: 'Rejoindre une station vélo',
             from: origin,
             to: stationToPoint(fromStation),
             distanceKm: firstWalkKm,
@@ -33,15 +33,15 @@ export function createBikeOption(
             ...createLeg({
                 id: 'bike-core',
                 mode: 'bike',
-                title: 'Velo partage',
+                title: 'Vélo partagé',
                 from: stationToPoint(fromStation),
                 to: stationToPoint(toStation),
                 distanceKm: bikeKm,
                 accessible: !profile.accessibilityNeed,
-                // Deverrouillage a la borne et remise en station.
+                // Déverrouillage à la borne et remise en station.
                 estimate: { overheadMinutes: 2 },
             }),
-            detail: `${fromStation.bikes_available} velos disponibles au depart, retour autorise a destination.`,
+            detail: `${fromStation.bikes_available} vélos disponibles au départ, retour autorisé à destination.`,
         },
         createLeg({
             id: 'walk-from-bike',
@@ -56,11 +56,11 @@ export function createBikeOption(
 
     return buildOption({
         id: 'bike',
-        title: 'Velo',
-        summary: 'Velo partage selon les disponibilites des stations proches.',
+        title: 'Vélo',
+        summary: 'Vélo partagé selon les disponibilités des stations proches.',
         modes: ['walk', 'bike'],
         legs,
         reliabilityScore: rainWarning ? 71 : 86,
-        warnings: rainWarning && profile.avoidRain ? ['Pluie legere detectee, confort degrade pour le velo.'] : [],
+        warnings: rainWarning && profile.avoidRain ? ['Pluie légère détectée, confort dégradé pour le vélo.'] : [],
     });
 }

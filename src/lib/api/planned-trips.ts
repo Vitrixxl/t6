@@ -9,7 +9,7 @@ export function savePlannedTrip(record: PlannedTrip): Promise<PlannedTrip> {
     const { id, userId, ...body } = record;
     void userId;
     if (body.status === 'done' || body.completedAt !== null) {
-        throw new Error('Un trajet termine passe par la commande de completion.');
+        throw new Error('Un trajet terminé passe par la commande de complétion.');
     }
     return treatyRequest(api.trips.planned({ id }).put({ ...body, status: body.status, completedAt: null }));
 }

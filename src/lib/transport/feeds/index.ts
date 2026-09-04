@@ -1,8 +1,8 @@
-// Chargement du reseau de transport : GTFS statique du build, puis
-// enrichissements live. Chaque source est tentee independamment et retombe sur
-// le feed local en cas d'echec, de sorte qu'une source indisponible ne prive
-// jamais l'utilisateur des autres. L'origine reelle de chaque flux est
-// remontee dans `sources` et affichee dans l'interface.
+// Chargement du réseau de transport : GTFS statique du build, puis
+// enrichissements live. Chaque source est tentee indépendamment et retombe sur
+// le feed local en cas d'échec, de sorte qu'une source indisponible ne prive
+// jamais l'utilisateur des autres. L'origine réelle de chaque flux est
+// remontée dans `sources` et affichée dans l'interface.
 import type { GtfsFeed, NetworkSources, SharedMobilityFeed, TransportNetwork } from '../../../types';
 import { fetchJson } from './fetch-json';
 import { fetchLiveSharedMobility } from './gbfs';
@@ -29,7 +29,7 @@ export async function loadTransportNetwork(fetcher: typeof fetch = fetch): Promi
         gtfs.weather = weatherFromOpenMeteo(meteo.current);
         sources.weather = 'open-meteo';
     } catch {
-        // Meteo locale du feed conservee.
+        // Météo locale du feed conservée.
     }
 
     return {

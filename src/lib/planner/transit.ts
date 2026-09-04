@@ -1,15 +1,15 @@
-// Recherche d'un trajet en transport public sur la desserte reelle.
+// Recherche d'un trajet en transport public sur la desserte réelle.
 //
-// Avant, le moteur prenait l'arret le plus proche du depart, l'arret le plus
-// proche de l'arrivee, et leur collait la ligne au passage le plus frequent du
-// reseau. Rien ne garantissait qu'une ligne desserve ces deux arrets, ni meme
-// l'un des deux : l'arret le plus proche est presque toujours un arret de bus,
-// et le libelle affiche n'avait donc aucun rapport avec le trajet (B12).
+// Avant, le moteur prenait l'arrêt le plus proche du départ, l'arrêt le plus
+// proche de l'arrivée, et leur collait la ligne au passage le plus frequent du
+// réseau. Rien ne garantissait qu'une ligne desserve ces deux arrêts, ni même
+// l'un des deux : l'arrêt le plus proche est presque toujours un arrêt de bus,
+// et le libellé affiché n'avait donc aucun rapport avec le trajet (B12).
 //
-// Ici on part de la desserte publiee : on ne retient que les stations
+// Ici on part de la desserte publiée : on ne retient que les stations
 // desservies par une ligne structurante, et on ne propose un trajet que si une
-// ligne relie effectivement la montee a la descente — directement, ou par une
-// correspondance a une station commune aux deux lignes.
+// ligne relie effectivement la montée à la descente — directement, ou par une
+// correspondance à une station commune aux deux lignes.
 import type { GeoPoint, GtfsRoute, GtfsStop, RouteLeg, TransportNetwork } from '../../types';
 import { SPEED_KMH } from './constants';
 import { transitEmissionFactor } from './emissions';
@@ -18,25 +18,25 @@ import { routeLabel } from './labels';
 import { createLeg } from './legs';
 import { pathLengthKm, sliceShape } from './shape';
 
-/** Distance de rabattement a pied acceptee vers une station, en kilometres. */
+/** Distance de rabattement à pied acceptee vers une station, en kilomètres. */
 export const MAX_TRANSIT_ACCESS_KM = 1.2;
 
 /**
- * Nombre de stations candidates retenues de chaque cote. La plus proche n'est
+ * Nombre de stations candidates retenues de chaque côté. La plus proche n'est
  * pas toujours la meilleure : une station un peu plus loin peut porter la ligne
  * qui va droit au but. Huit couvre le centre dense sans faire exploser le
  * nombre de combinaisons a evaluer.
  */
 const MAX_CANDIDATES = 8;
 
-/** Penalite forfaitaire d'une correspondance, en minutes. */
+/** Pénalité forfaitaire d'une correspondance, en minutes. */
 const TRANSFER_PENALTY_MINUTES = 4;
 
 export interface TransitRide {
     route: GtfsRoute;
     boarding: GtfsStop;
     alighting: GtfsStop;
-    /** Portion du trace reel de la ligne entre les deux stations. */
+    /** Portion du tracé réel de la ligne entre les deux stations. */
     path: GeoPoint[];
     distanceKm: number;
     waitMinutes: number;
@@ -46,7 +46,7 @@ export interface TransitJourney {
     rides: TransitRide[];
     departureAccess: AccessMeasure;
     arrivalAccess: AccessMeasure;
-    /** Duree estimee de bout en bout, marche de rabattement comprise. */
+    /** Durée estimée de bout en bout, marche de rabattement comprise. */
     totalMinutes: number;
 }
 
@@ -55,7 +55,7 @@ export interface AccessMeasure {
     durationMinutes: number;
 }
 
-/** Mesures reelles des acces aux stations candidates, indexees par arret. */
+/** Mesures réelles des accès aux stations candidates, indexees par arrêt. */
 export interface TransitAccess {
     departures: ReadonlyMap<string, AccessMeasure>;
     arrivals: ReadonlyMap<string, AccessMeasure>;
@@ -77,7 +77,7 @@ function nearestCandidates(stations: GtfsStop[], point: GeoPoint): GtfsStop[] {
         .map((entry) => entry.stop);
 }
 
-/** Filtre geographique borne avant le classement des acces par OSRM. */
+/** Filtre géographique borne avant le classement des accès par OSRM. */
 export function transitCandidates(network: TransportNetwork, point: GeoPoint, requireAccessible: boolean): GtfsStop[] {
     return nearestCandidates(servedStations(network, requireAccessible), point);
 }
@@ -92,9 +92,9 @@ function buildRide(network: TransportNetwork, routeId: string, boarding: GtfsSto
         return null;
     }
 
-    // Une ligne droite entre deux stations ressemble a un trajet reel alors
+    // Une ligne droite entre deux stations ressemble à un trajet réel alors
     // qu'elle peut traverser des batiments. Sans portion officielle exploitable,
-    // cette desserte n'est donc pas proposee (B14).
+    // cette desserte n'est donc pas proposée (B14).
     const path = sliceShape(route.shape, boarding, alighting);
     if (!path) {
         return null;
@@ -117,7 +117,7 @@ function rideMinutes(ride: TransitRide): number {
     return (ride.distanceKm / SPEED_KMH.transit) * 60 + ride.waitMinutes;
 }
 
-/** Stations desservies a la fois par `first` et par `second`. */
+/** Stations desservies à la fois par `first` et par `second`. */
 function interchanges(stations: GtfsStop[], first: string, second: string): GtfsStop[] {
     return stations.filter((stop) => stop.routes.includes(first) && stop.routes.includes(second));
 }
@@ -191,7 +191,7 @@ function journeyFromRides(
 
 /**
  * Meilleur trajet en transport public entre deux points, ou `null` si aucune
- * ligne ne les relie en une correspondance au plus. Le critere est la duree
+ * ligne ne les relie en une correspondance au plus. Le critère est la durée
  * totale : marche de rabattement, attente, temps a bord, correspondance.
  */
 export function findTransitJourney(
@@ -223,10 +223,10 @@ export function findTransitJourney(
 }
 
 /**
- * Segments d'un trajet en transport public. Tous les generateurs d'options qui
- * empruntent le reseau (transport seul, velo ou trottinette + transport)
- * partagent cette construction : le libelle, la couleur et la duree d'un segment ne doivent pas
- * dependre du generateur qui l'appelle.
+ * Segments d'un trajet en transport public. Tous les générateurs d'options qui
+ * empruntent le réseau (transport seul, vélo ou trottinette + transport)
+ * partagent cette construction : le libellé, la couleur et la durée d'un segment ne doivent pas
+ * dependre du générateur qui l'appelle.
  */
 export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg[] {
     return journey.rides.flatMap((ride, index) => {
@@ -237,7 +237,7 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
                 ...createLeg({
                     id: `${idPrefix}-transfer-${index}`,
                     mode: 'walk',
-                    title: 'Correspondance a pied',
+                    title: 'Correspondance à pied',
                     from: { ...stopToPoint(previous.alighting), label: `Quai ${routeLabel(previous.route)}` },
                     to: { ...stopToPoint(ride.boarding), label: `Quai ${label}` },
                     distanceKm: 0,
@@ -245,7 +245,7 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
                     estimate: { overheadMinutes: TRANSFER_PENALTY_MINUTES },
                 }),
                 transfer: true,
-                detail: `Correspondance dans ${ride.boarding.stop_name}, ${TRANSFER_PENALTY_MINUTES} min estimees. Le trace interieur n'est pas publie par le GTFS.`,
+                detail: `Correspondance dans ${ride.boarding.stop_name}, ${TRANSFER_PENALTY_MINUTES} min estimées. Le tracé intérieur n'est pas publié par le GTFS.`,
             }]
             : [];
         const transitLeg = {
@@ -257,8 +257,8 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
                 to: stopToPoint(ride.alighting),
                 distanceKm: ride.distanceKm,
                 accessible: ride.boarding.wheelchair_boarding === 1 && ride.alighting.wheelchair_boarding === 1,
-                // Seule geometrie reelle disponible sans appel reseau : le trace
-                // publie de la ligne, deja decoupe entre les deux stations.
+                // Seule géométrie réelle disponible sans appel réseau : le tracé
+                // publie de la ligne, déjà decoupe entre les deux stations.
                 path: ride.path,
                 // L'attente a quai n'est pas du temps de parcours : elle ne doit pas
                 // suivre la distance. La correspondance est un segment separe.
@@ -269,7 +269,7 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
             }),
             mapLabel: label,
             mapColor: `#${ride.route.route_color}`,
-            detail: `${label} au depart de ${ride.boarding.stop_name}, attente estimee ${ride.waitMinutes} min.`,
+            detail: `${label} au départ de ${ride.boarding.stop_name}, attente estimée ${ride.waitMinutes} min.`,
         };
         return [...transfer, transitLeg];
     });

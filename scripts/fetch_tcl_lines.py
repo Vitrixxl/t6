@@ -1,21 +1,21 @@
-"""Complete le feed transport avec ce que notre extraction GTFS ne donne pas :
-quelle ligne dessert quel arret, et par ou passe reellement chaque ligne.
+"""Complète le feed transport avec ce que notre extraction GTFS ne donne pas :
+quelle ligne dessert quel arrêt, et par ou passe réellement chaque ligne.
 
-Le GTFS statique decrit la desserte dans `stop_times.txt`, un fichier de
-plusieurs millions de lignes qu'il faudrait agreger, et le trace dans
-`shapes.txt`. Le portail open data de la Metropole publie les deux sous une
-forme deja agregee, en acces libre (aucun jeton, licence ODbL) :
+Le GTFS statique décrit la desserte dans `stop_times.txt`, un fichier de
+plusieurs millions de lignes qu'il faudrait agréger, et le tracé dans
+`shapes.txt`. Le portail open data de la Métropole publie les deux sous une
+forme déjà agrégée, en accès libre (aucun jeton, licence ODbL) :
 
-  - `tcl_sytral.tclarret`            : arrets, avec le champ `desserte`
+  - `tcl_sytral.tclarret`            : arrêts, avec le champ `desserte`
                                        ("B:A,T1:R,C13:A") qui liste les lignes ;
-  - `tcl_sytral.tcllignemf_2_0_0`    : traces metro et funiculaire ;
+  - `tcl_sytral.tcllignemf_2_0_0`    : traces métro et funiculaire ;
   - `tcl_sytral.tcllignetram_2_0_0`  : traces tramway.
 
-Sans ces deux informations, le moteur d'itineraires ne pouvait ni choisir un
-arret reellement desservi, ni nommer la ligne a prendre, ni dessiner autre
-chose qu'une approximation routiere (cf. docs/BUGS.md, B12).
+Sans ces deux informations, le moteur d'itinéraires ne pouvait ni choisir un
+arrêt réellement desservi, ni nommer la ligne a prendre, ni dessiner autre
+chose qu'une approximation routière (cf. docs/BUGS.md, B12).
 
-Aucune dependance externe : stdlib uniquement.
+Aucune dépendance externe : stdlib uniquement.
 """
 
 from __future__ import annotations
@@ -33,24 +33,24 @@ WFS = "https://data.grandlyon.com/geoserver/sytral/ows"
 LAYER_STOPS = "sytral:tcl_sytral.tclarret"
 LAYERS_LINES = ("sytral:tcl_sytral.tcllignemf_2_0_0", "sytral:tcl_sytral.tcllignetram_2_0_0")
 
-# Meme perimetre que l'ingestion GTFS : la metropole entiere.
+# Même périmètre que l'ingestion GTFS : la métropole entière.
 CENTER_LAT = 45.7578
 CENTER_LON = 4.8320
 RADIUS_KM = 16.0
 
-# `famille_transport` du portail -> `route_type` GTFS (0 tram, 1 metro, 7 funiculaire).
+# `famille_transport` du portail -> `route_type` GTFS (0 tram, 1 métro, 7 funiculaire).
 ROUTE_TYPE_BY_FAMILY = {"MET": 1, "TRA": 0, "FUN": 7}
 HEADWAY_BY_TYPE = {1: 4, 0: 8, 7: 10}
 
-# Tolerance de simplification du trace, en metres. Les traces tramway du portail
-# comptent jusqu a 5 300 points, densifies tous les 3 m environ : a 2 m pres, le
-# trace reste fidele au zoom rue et ne pese plus que 2 % de sa taille.
+# Tolérance de simplification du tracé, en mètres. Les tracés tramway du portail
+# comptent jusqu'à 5 300 points, densifiés tous les 3 m environ : à 2 m près, le
+# tracé reste fidèle au zoom rue et ne pèse plus que 2 % de sa taille.
 SIMPLIFY_METERS = 2.0
 
-# En dessous de ce nombre de points, le trace est deja compact et on le garde
-# tel quel. Les traces metro et funiculaire tiennent en une centaine de points
+# En dessous de ce nombre de points, le tracé est déjà compact et on le garde
+# tel quel. Les tracés métro et funiculaire tiennent en une centaine de points
 # pour toute la ligne : les simplifier ne gagnerait rien et raboterait les
-# courbes entre deux stations, la ou le trace est justement lu de pres.
+# courbes entre deux stations, la ou le tracé est justement lu de près.
 SIMPLIFY_THRESHOLD_POINTS = 400
 
 
@@ -65,7 +65,7 @@ def fetch_layer(typename: str) -> list[dict]:
         }
     )
     request = urllib.request.Request(f"{WFS}?{query}", headers={"User-Agent": "urbanflow-mobility-build"})
-    print(f"Telechargement {typename}...")
+    print(f"Téléchargement {typename}...")
     with urllib.request.urlopen(request, timeout=180) as response:
         return json.loads(response.read().decode("utf-8"))["features"]
 
@@ -84,9 +84,9 @@ def served_lines(desserte: str | None) -> set[str]:
 
 
 def simplify(points: list[list[float]], tolerance_m: float) -> list[list[float]]:
-    """Douglas-Peucker. La distance point-segment est calculee en degres projetes
-    en metres : a la latitude de Lyon, un degre de longitude vaut cos(lat) fois
-    un degre de latitude, sans quoi l'erreur horizontale serait sous-estimee de
+    """Douglas-Peucker. La distance point-segment est calculée en degrés projetes
+    en mètres : à la latitude de Lyon, un degré de longitude vaut cos(lat) fois
+    un degré de latitude, sans quoi l'erreur horizontale serait sous-estimee de
     30 %."""
     if len(points) <= 2:
         return points
@@ -167,9 +167,9 @@ def build_routes(line_features: list[dict]) -> list[dict]:
 
 
 def build_stops(stop_features: list[dict], known_lines: set[str]) -> list[dict]:
-    """Un arret physique existe en plusieurs exemplaires (un par quai). On les
+    """Un arrêt physique existe en plusieurs exemplaires (un par quai). On les
     regroupe par nom : l'utilisateur raisonne en station, pas en poteau. Les
-    lignes desservies sont l'union de celles des quais regroupes."""
+    lignes desservies sont l'union de celles des quais regroupés."""
     grouped: dict[str, dict] = {}
     for feature in stop_features:
         properties = feature["properties"]
@@ -190,7 +190,7 @@ def build_stops(stop_features: list[dict], known_lines: set[str]) -> list[dict]:
                 "stop_lat": round(lat, 6),
                 "stop_lon": round(lon, 6),
                 # `pmr` du portail : quai accessible en fauteuil. 1 accessible,
-                # 2 non — la valeur 0 ("inconnu") de GTFS n'a pas d'equivalent
+                # 2 non — la valeur 0 ("inconnu") de GTFS n'a pas d'équivalent
                 # ici, l'information est toujours renseignee.
                 "wheelchair_boarding": 1 if properties.get("pmr") else 2,
                 "routes": sorted(lines),
@@ -201,7 +201,7 @@ def build_stops(stop_features: list[dict], known_lines: set[str]) -> list[dict]:
         if properties.get("pmr"):
             entry["wheelchair_boarding"] = 1
         # Une station desservie par une ligne structurante est mieux placee sur
-        # le quai de cette ligne que sur un arret de bus homonyme.
+        # le quai de cette ligne que sur un arrêt de bus homonyme.
         if lines and not entry["routes"]:
             entry["stop_lat"], entry["stop_lon"] = round(lat, 6), round(lon, 6)
 
@@ -234,8 +234,8 @@ def main() -> None:
     served = sum(1 for stop in stops if stop["routes"])
     shape_points = sum(len(route["shape"]) for route in routes)
     print(
-        f"Feed complete: {FEED} ({len(stops)} arrets dont {served} desservis par une ligne"
-        f" structurante, {len(routes)} lignes, {shape_points} points de trace)"
+        f"Feed complète: {FEED} ({len(stops)} arrêts dont {served} desservis par une ligne"
+        f" structurante, {len(routes)} lignes, {shape_points} points de tracé)"
     )
 
 

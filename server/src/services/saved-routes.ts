@@ -1,5 +1,5 @@
-// Commandes des itineraires sauvegardes. L'elagage conserve les plus recents
-// sans jamais supprimer/reinserer la collection complete.
+// Commandes des itinéraires sauvegardes. L'elagage conserve les plus récents
+// sans jamais supprimer/reinserer la collection complète.
 import type { Db } from '../db/index.ts';
 import { createRepositories } from '../repositories/index.ts';
 import type { SavedRouteRecord } from '../../../src/contracts/index.ts';

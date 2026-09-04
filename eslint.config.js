@@ -8,7 +8,7 @@ export default [
         ignores: [
             'dist',
             'node_modules',
-            // Worktrees git des sessions d'agents : ce sont d'autres branches, pas ce depot.
+            // Worktrees git des sessions d'agents : ce sont d'autres branches, pas ce dépôt.
             '.claude',
             '.venv',
             'output',
@@ -24,7 +24,7 @@ export default [
     },
     js.configs.recommended,
     {
-        // Scripts d'outillage executes par Node : leurs globales ne sont pas celles
+        // Scripts d'outillage exécutés par Node : leurs globales ne sont pas celles
         // du navigateur.
         files: ['scripts/**/*.mjs'],
         languageOptions: {
@@ -57,11 +57,11 @@ export default [
             ...reactHooks.configs.recommended.rules,
             ...jsxA11y.configs.recommended.rules,
             'no-undef': 'off',
-            // Babel retire les annotations avant l'analyse des portees. TypeScript
-            // reste l'autorite pour les symboles inutilises et les types implicites.
+            // Babel retire les annotations avant l'analyse des portées. TypeScript
+            // reste l'autorité pour les symboles inutilisés et les types implicites.
             'no-unused-vars': 'off',
             // Ces deux gardes empechent qu'un nouveau flux redevienne une suite
-            // d'embranchements imbriques difficile a presenter en revue.
+            // d'embranchements imbriques difficile a présenter en revue.
             complexity: ['error', 10],
             'max-depth': ['error', 3],
             'no-restricted-syntax': [

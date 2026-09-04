@@ -4,8 +4,8 @@ import type { GeoPoint, RouteMeasure, TransportNetwork } from '../../types';
 import { prepareRoutedAccessPlan } from './access';
 import { planRoutes } from './index';
 
-const origin: GeoPoint = { label: 'Depart', lat: 45.75, lon: 4.84 };
-const destination: GeoPoint = { label: 'Arrivee', lat: 45.755, lon: 4.845 };
+const origin: GeoPoint = { label: 'Départ', lat: 45.75, lon: 4.84 };
+const destination: GeoPoint = { label: 'Arrivée', lat: 45.755, lon: 4.845 };
 
 const network: TransportNetwork = {
     gtfs: {
@@ -32,7 +32,7 @@ const network: TransportNetwork = {
         data: {
             stations: [
                 {
-                    station_id: 'proche-bloquee',
+                    station_id: 'proche-bloquée',
                     kind: 'velov',
                     name: 'Proche mais contournee',
                     lat: 45.7501,
@@ -62,7 +62,7 @@ const network: TransportNetwork = {
                 {
                     station_id: 'arrivee',
                     kind: 'velov',
-                    name: 'Retour arrivee',
+                    name: 'Retour arrivée',
                     lat: 45.7551,
                     lon: 4.8451,
                     capacity: 20,
@@ -88,7 +88,7 @@ function routedMeasure(_from: GeoPoint, to: GeoPoint): RouteMeasure {
 }
 
 describe('prepareRoutedAccessPlan', () => {
-    it('retient la station la plus rapide a pied, pas la plus proche a vol d oiseau', async () => {
+    it('retient la station la plus rapide à pied, pas la plus proche à vol d’oiseau', async () => {
         const calls: Array<{ mode: string; origins: number; destinations: number }> = [];
         const access = await prepareRoutedAccessPlan(
             { origin, destination, network, requireAccessible: false },

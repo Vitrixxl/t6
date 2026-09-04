@@ -1,4 +1,4 @@
-// Conversions numeriques partagees par le moteur.
+// Conversions numeriques partagées par le moteur.
 
 export function minutesForDistance(distanceKm: number, speedKmh: number): number {
     return Math.max(Math.ceil((distanceKm / speedKmh) * 60), 1);

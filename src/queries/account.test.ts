@@ -1,5 +1,5 @@
 // Cache du compte et commandes granulaires, testes sans React. Chaque cas suit
-// directement la requete d'une ressource puis la reponse appliquee a son cache.
+// directement la requête d'une ressource puis la réponse appliquée à son cache.
 import { MutationObserver, QueryObserver, type MutationObserverOptions, type QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from '../test/harness';
 import { DEFAULT_PROFILE, type Session } from '../contracts';
@@ -36,7 +36,7 @@ const SOURCE = {
 
 const OPTION: RouteOption = {
     id: 'bike',
-    title: 'Velo',
+    title: 'Vélo',
     summary: '',
     modes: ['walk', 'bike'],
     legs: [],
@@ -188,11 +188,11 @@ describe('session', () => {
         expect((await client.fetchQuery(sessionQuery))?.user.id).toBe('user-1');
 
         const fresh = createQueryClient();
-        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Session expiree.' }, 401));
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Session expirée.' }, 401));
         expect(await fresh.fetchQuery(sessionQuery)).toBeNull();
     });
 
-    it('revoque la session et vide le compte a la deconnexion', async () => {
+    it('révoque la session et vide le compte à la déconnexion', async () => {
         openSession(client, session({ plannedTrips: [futureTrip()] }));
         client.setQueryData(['account', 'plannedTrips'], [futureTrip()]);
 
@@ -203,7 +203,7 @@ describe('session', () => {
         expect(String(fetchSpy.mock.calls.at(-1)?.[0])).toContain('/api/auth/logout');
     });
 
-    it('garde la session si l effacement du compte echoue', async () => {
+    it('garde la session si l’effacement du compte echoue', async () => {
         openSession(client, session());
         fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Serveur indisponible.' }, 500));
 
@@ -219,7 +219,7 @@ describe('commandes granulaires', () => {
         openSession(client, session());
     });
 
-    it('envoie un seul trajet programme, sans id ni proprietaire dans le corps', async () => {
+    it('envoie un seul trajet programmé, sans id ni proprietaire dans le corps', async () => {
         const trip = futureTrip();
         await write(savePlannedTripOptions(client), trip);
 
@@ -230,7 +230,7 @@ describe('commandes granulaires', () => {
         expect(request.body).not.toHaveProperty('userId');
     });
 
-    it('termine un trajet par un seul endpoint et reconcilie les deux vues', async () => {
+    it('termine un trajet par un seul endpoint et réconcilie les deux vues', async () => {
         const trip = futureTrip();
         openSession(client, session({ plannedTrips: [trip] }));
 
@@ -263,7 +263,7 @@ describe('commandes granulaires', () => {
         expect(requests[0].body).not.toBeArray();
     });
 
-    it('cree, met en pause puis supprime une routine seule', async () => {
+    it('crée, met en pause puis supprime une routine seule', async () => {
         const routine = createRecurringTrip('user-1', SOURCE, EVERY_DAY);
         await write(saveRecurringTripOptions(client), routine);
         const paused = setRecurringPaused([routine], routine.id, true)[0] ?? routine;
@@ -279,7 +279,7 @@ describe('commandes granulaires', () => {
         ]);
     });
 
-    it('enregistre sans doublon puis supprime un itineraire', async () => {
+    it('enregistre sans doublon puis supprime un itinéraire', async () => {
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
         await write(saveSavedRouteOptions(client), record);
         await write(saveSavedRouteOptions(client), record);
@@ -289,7 +289,7 @@ describe('commandes granulaires', () => {
         expect(readSavedRoutes(client)).toHaveLength(0);
     });
 
-    it('envoie le profil seul et efface l historique par DELETE explicite', async () => {
+    it('envoie le profil seul et efface l’historique par DELETE explicite', async () => {
         const profile = { ...DEFAULT_PROFILE, displayName: 'Nadia', maxWalkMinutes: 45 };
         await write(saveProfileOptions(client), profile);
         await write(clearTripHistoryOptions(client), undefined);
@@ -307,16 +307,16 @@ describe('refus et rafales', () => {
         openSession(client, session());
     });
 
-    it('signale un refus puis l efface au prochain succes', async () => {
-        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
+    it('signale un refus puis l’efface au prochain succès', async () => {
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requête invalide.' }, 422));
         await write(clearTripHistoryOptions(client), undefined);
-        expect(saveError()).toBe('Requete invalide.');
+        expect(saveError()).toBe('Requête invalide.');
 
         await write(clearTripHistoryOptions(client), undefined);
         expect(saveError()).toBe('');
     });
 
-    it('relit uniquement la vue concernee apres un serveur injoignable', async () => {
+    it('relit uniquement la vue concernée après un serveur injoignable', async () => {
         const observer = new QueryObserver(client, savedRoutesQuery(client));
         const unsubscribe = observer.subscribe(() => undefined);
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
@@ -333,7 +333,7 @@ describe('refus et rafales', () => {
         unsubscribe();
     });
 
-    it('serialise des commandes differentes sans melanger leurs corps', async () => {
+    it('sérialise des commandes différentes sans mélanger leurs corps', async () => {
         const trip = futureTrip();
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
 
@@ -352,8 +352,8 @@ describe('refus et rafales', () => {
         expect(requests.every(({ body }) => !Array.isArray(body))).toBe(true);
     });
 
-    it('poursuit la rafale apres un refus et garde le dernier succes visible', async () => {
-        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requete invalide.' }, 422));
+    it('poursuit la rafale après un refus et garde le dernier succès visible', async () => {
+        fetchSpy.mockResolvedValueOnce(jsonResponse({ error: 'Requête invalide.' }, 422));
         const record = createSavedRouteRecord('user-1', SOURCE.origin, SOURCE.destination, OPTION);
 
         await Promise.all([write(clearTripHistoryOptions(client), undefined), write(saveSavedRouteOptions(client), record)]);

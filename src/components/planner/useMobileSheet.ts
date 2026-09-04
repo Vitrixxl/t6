@@ -1,5 +1,5 @@
-// Interaction de la feuille mobile : le panneau de trajets ne connait que sa
-// taille courante et branche ces gestionnaires sur sa poignee.
+// Interaction de la feuille mobile : le panneau de trajets ne connaît que sa
+// taille courante et branche ces gestionnaires sur sa poignée.
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { MOBILE_SHEET_HEIGHT, shiftMobileSheetLevel, type MobileSheetLevel } from '../app/shared';
 

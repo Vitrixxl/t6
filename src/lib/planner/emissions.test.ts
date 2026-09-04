@@ -31,7 +31,7 @@ function option(id: string, distanceKm: number, carbonGrams: number): RouteOptio
     };
 }
 
-describe('reference carbone voiture', () => {
+describe('référence carbone voiture', () => {
     it('mesure 3 km avec le facteur voiture versionne a 142 gCO2e/km', () => {
         const reference = createCarbonReference({
             distanceMeters: 3000,
@@ -47,7 +47,7 @@ describe('reference carbone voiture', () => {
         });
     });
 
-    it('applique exactement la meme reference a des options de distances differentes', () => {
+    it('applique exactement la même référence a des options de distances diffèrentes', () => {
         const reference = createCarbonReference({ distanceMeters: 3000, durationSeconds: 600, source: 'cache' });
         const [shortOption, longOption] = applyCarbonReference(
             [option('court', 2, 100), option('long', 5, 500)],
@@ -57,22 +57,22 @@ describe('reference carbone voiture', () => {
         expect(shortOption.carbonReference).toBe(reference);
         expect(longOption.carbonReference).toBe(reference);
         expect(shortOption.carbonSavedGrams).toBe(326);
-        // L'option fait 5 km, mais la reference reste 3 x 142 = 426 gCO2e.
+        // L'option fait 5 km, mais la référence reste 3 x 142 = 426 gCO2e.
         expect(longOption.carbonSavedGrams).toBe(-74);
     });
 
-    it('calcule la comparaison apres la mesure OSRM reelle des segments', async () => {
-        const from = { label: 'Depart', lat: 45.75, lon: 4.83 };
-        const to = { label: 'Arrivee', lat: 45.77, lon: 4.87 };
+    it('calcule la comparaison après la mesure OSRM réelle des segments', async () => {
+        const from = { label: 'Départ', lat: 45.75, lon: 4.83 };
+        const to = { label: 'Arrivée', lat: 45.77, lon: 4.87 };
         const estimated = buildOption({
             id: 'velo-mesure',
-            title: 'Velo mesure',
+            title: 'Vélo mesure',
             summary: '',
             modes: ['bike'],
             legs: [
                 createLeg({
                     id: 'velo',
-                    title: 'Velo',
+                    title: 'Vélo',
                     mode: 'bike',
                     from,
                     to,
@@ -103,7 +103,7 @@ describe('reference carbone voiture', () => {
         expect(compared.carbonSavedGrams).toBe(-74);
     });
 
-    it("n'invente aucune economie quand la mesure voiture est indisponible", () => {
+    it("n'invente aucune économie quand la mesure voiture est indisponible", () => {
         const [result] = applyCarbonReference([option('marche', 5, 0)], null);
 
         expect(result.carbonReference).toBeNull();
@@ -112,7 +112,7 @@ describe('reference carbone voiture', () => {
 });
 
 describe('facteurs GTFS', () => {
-    it('distingue tramway, metro et approximation funiculaire', () => {
+    it('distingue tramway, métro et approximation funiculaire', () => {
         expect(transitEmissionFactor(0).gramsCo2ePerPassengerKm).toBe(3.8);
         expect(transitEmissionFactor(1).gramsCo2ePerPassengerKm).toBe(4.2);
         expect(transitEmissionFactor(7).approximation).toContain('funiculaire');

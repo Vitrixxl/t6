@@ -1,4 +1,4 @@
-// Formulaire de planification : trajet date ponctuel ou routine recurrente.
+// Formulaire de planification : trajet date ponctuel ou routine récurrente.
 import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -17,7 +17,7 @@ import { FieldError, OnceScheduleFields, PlanningKindTabs, RecurringScheduleFiel
 
 export function PlanTripDialog() {
     // Le formulaire s'ouvre des qu'un trajet est mis en planification, et se
-    // ferme en rendant ce trajet a null : l'orchestrateur n'a rien a tenir.
+    // ferme en rendant ce trajet à null : l'orchestrateur n'a rien à tenir.
     const [source, setSource] = useAtom(planSourceAtom);
     const submitPlan = usePlanSubmission();
     const onOpenChange = (open: boolean) => {
@@ -44,7 +44,7 @@ export function PlanTripDialog() {
         return null;
     }
 
-    // Sans date, le calendrier s'ouvre a la place d'un simple message.
+    // Sans date, le calendrier s'ouvre à la place d'un simple message.
     const submit = form.handleSubmit(submitPlan, (fieldErrors) => {
         if (fieldErrors.date) {
             setDatePickerOpen(true);
@@ -57,7 +57,7 @@ export function PlanTripDialog() {
                 <form noValidate onSubmit={submit}>
                     <DialogHeader>
                         <DialogTitle className="font-display">Planifier ce trajet</DialogTitle>
-                        <DialogDescription>Une date precise, ou une routine dont chaque passage compte tout seul.</DialogDescription>
+                        <DialogDescription>Une date précise, ou une routine dont chaque passage compte tout seul.</DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-3 px-5">
@@ -88,7 +88,7 @@ export function PlanTripDialog() {
                         </Button>
                         <Button type="submit">
                             <CalendarPlus className="size-4" aria-hidden="true" />
-                            {kind === 'once' ? 'Planifier' : 'Creer la routine'}
+                            {kind === 'once' ? 'Planifier' : 'Créer la routine'}
                         </Button>
                     </DialogFooter>
                 </form>

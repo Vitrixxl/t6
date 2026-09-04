@@ -1,7 +1,7 @@
 // Tests de chargement de la configuration.
 //
-// `.env.example` liste les cles avec une valeur vide, pour documenter ce qui
-// existe. Copier ce fichier ne doit pas transformer chaque defaut en chaine
+// `.env.example` liste les clés avec une valeur vide, pour documenter ce qui
+// existe. Copier ce fichier ne doit pas transformer chaque défaut en chaîne
 // vide : c'est l'objet du premier cas ci-dessous.
 import { describe, expect, it } from 'bun:test';
 import { loadConfig } from '../config/index.ts';
@@ -19,7 +19,7 @@ describe('loadConfig', () => {
         expect(loadConfig({ OSRM_BASE_URL: 'http://127.0.0.1:5000/' }).osrmBaseUrl).toBe('http://127.0.0.1:5000');
     });
 
-    it('refuse une duree de cache absurde plutot que de la subir en requete', () => {
+    it('refuse une durée de cache absurde plutôt que de la subir en requête', () => {
         expect(() => loadConfig({ ROUTE_CACHE_TTL_MS: '-1' })).toThrow();
         expect(() => loadConfig({ ROUTE_CACHE_TTL_MS: 'plus tard' })).toThrow();
     });

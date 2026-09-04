@@ -1,9 +1,9 @@
 // Le formulaire de planification : un trajet date, ou une routine.
 //
-// Les deux formes partagent un seul schema plat, plus simple a tenir dans un
-// formulaire que deux variantes ; ce qui ne vaut que pour l'une se verifie
+// Les deux formes partagent un seul schéma plat, plus simple à tenir dans un
+// formulaire que deux variantes ; ce qui ne vaut que pour l'une se vérifie
 // selon le type choisi. Les heures et les jours reprennent les contrats de la
-// routine : ce qui passe ici passe a l'API.
+// routine : ce qui passe ici passe à l'API.
 import { z } from 'zod';
 import { dayOfWeek, timeOfDay } from '../../../contracts';
 
@@ -11,7 +11,7 @@ export const planForm = z
     .object({
         kind: z.enum(['once', 'recurring']),
         /** Vide, le nom du trajet source s'applique. */
-        label: z.string().max(200, '200 caracteres au plus.'),
+        label: z.string().max(200, '200 caractères au plus.'),
         date: z.date().nullable(),
         time: timeOfDay,
         daysOfWeek: z.array(dayOfWeek).max(7),

@@ -1,11 +1,11 @@
-"""Integre le GTFS statique reel du reseau TCL (SYTRAL, licence ODbL).
+"""Intègre le GTFS statique réel du réseau TCL (SYTRAL, licence ODbL).
 
-Telecharge le zip GTFS officiel (ressource "Reseau urbain TCL" referencee sur
+Telecharge le zip GTFS officiel (ressource "Réseau urbain TCL" référencée sur
 transport.data.gouv.fr, distribuee via une URL a jeton fournie par la variable
-d'environnement GTFS_SOURCE_URL), extrait les arrets et lignes structurantes
-autour du centre de la metropole et genere `public/data/gtfs-feed.json`.
+d'environnement GTFS_SOURCE_URL), extrait les arrêts et lignes structurantes
+autour du centre de la métropole et génère `public/data/gtfs-feed.json`.
 
-Aucune dependance externe: stdlib uniquement. Aucun secret dans le code.
+Aucune dépendance externe: stdlib uniquement. Aucun secret dans le code.
 """
 
 from __future__ import annotations
@@ -25,24 +25,24 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "tmp" / "gtfs" / "lyon_tcl.zip"
 OUTPUT = ROOT / "public" / "data" / "gtfs-feed.json"
 
-# La ressource GTFS "Reseau urbain TCL" (SYTRAL, ODbL) est referencee sur
+# La ressource GTFS "Réseau urbain TCL" (SYTRAL, ODbL) est référencée sur
 # transport.data.gouv.fr et distribuee via une URL a jeton. Ce jeton est un
 # SECRET: il n'est jamais code en dur ni versionne. Il est fourni au build par
 # la variable d'environnement GTFS_SOURCE_URL (voir .env.example et le README).
 GTFS_URL = os.environ.get("GTFS_SOURCE_URL", "").strip()
 
-# Perimetre produit: la metropole de Lyon entiere (le reseau metro/tram/funiculaire
-# s'etend jusqu'a ~13 km du centre - Meyzieu, Venissieux, Vaulx-en-Velin).
+# Périmètre produit: la métropole de Lyon entière (le réseau metro/tram/funiculaire
+# s'etend jusqu'à ~13 km du centre - Meyzieu, Vénissieux, Vaulx-en-Velin).
 CENTER_LAT = 45.7578
 CENTER_LON = 4.8320
 RADIUS_KM = 16.0
 CACHE_MAX_AGE_HOURS = 24
 
-# route_type GTFS: 0 tram, 1 metro, 3 bus, 7 funiculaire.
+# route_type GTFS: 0 tram, 1 métro, 3 bus, 7 funiculaire.
 KEPT_ROUTE_TYPES = {0, 1, 7}
 HEADWAY_BY_TYPE = {1: 4, 0: 8, 7: 10}
-# Lignes ecartees : navette aeroport Rhonexpress (service premium payant ~16 EUR,
-# non representatif de la mobilite urbaine quotidienne visee par la plateforme).
+# Lignes écartées : navette aéroport Rhônexpress (service premium payant ~16 EUR,
+# non représentatif de la mobilité urbaine quotidienne visée par la plateforme).
 EXCLUDED_ROUTE_SHORT_NAMES = {"RX", "RHONEXPRESS"}
 
 
@@ -56,19 +56,19 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 def download_gtfs() -> Path:
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     if CACHE.exists() and (time.time() - CACHE.stat().st_mtime) < CACHE_MAX_AGE_HOURS * 3600:
-        print(f"Cache GTFS reutilise: {CACHE}")
+        print(f"Cache GTFS réutilise: {CACHE}")
         return CACHE
     if not GTFS_URL:
         print(
             "Erreur: variable d'environnement GTFS_SOURCE_URL absente.\n"
-            "Definir l'URL du GTFS TCL (voir .env.example), par exemple:\n"
+            "Définir l'URL du GTFS TCL (voir .env.example), par exemple:\n"
             "  export GTFS_SOURCE_URL='https://.../lyon_tcl.zip?apikey=...'\n"
             "puis relancer: npm run generate:gtfs\n"
-            "Le feed public/data/gtfs-feed.json deja versionne reste utilisable sans re-telechargement.",
+            "Le feed public/data/gtfs-feed.json déjà versionne reste utilisable sans re-telechargement.",
             file=sys.stderr,
         )
         raise SystemExit(1)
-    print("Telechargement du GTFS TCL (~43 Mo)...")
+    print("Téléchargement du GTFS TCL (~43 Mo)...")
     request = urllib.request.Request(GTFS_URL, headers={"User-Agent": "urbanflow-mobility-build"})
     with urllib.request.urlopen(request, timeout=180) as response, CACHE.open("wb") as target:
         target.write(response.read())
@@ -130,8 +130,8 @@ def build_feed(archive: zipfile.ZipFile) -> dict:
             }
         )
 
-    # Aucun plafond : tous les arrets du rayon metropolitain sont retenus, pour
-    # que le nombre annonce dans l'interface soit le nombre reel.
+    # Aucun plafond : tous les arrêts du rayon métropolitain sont retenus, pour
+    # que le nombre annonce dans l'interface soit le nombre réel.
     for stop in stops:
         stop.pop("_distance")
 
@@ -172,7 +172,7 @@ def main() -> None:
         feed = build_feed(archive)
     OUTPUT.write_text(json.dumps(feed, ensure_ascii=False, indent=2), encoding="utf-8")
     print(
-        f"Feed genere: {OUTPUT} ({len(feed['stops'])} arrets, {len(feed['routes'])} lignes,"
+        f"Feed génère: {OUTPUT} ({len(feed['stops'])} arrêts, {len(feed['routes'])} lignes,"
         f" agence {feed['agency']['agency_name']})"
     )
 

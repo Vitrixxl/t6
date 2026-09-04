@@ -1,7 +1,7 @@
 // Module authentification : connexion et inscription.
 //
 // Chaque formulaire valide avec le contrat que l'API applique (contracts/auth) :
-// une saisie refusee ici le serait au meme titre par le serveur.
+// une saisie refusée ici le serait au même titre par le serveur.
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -67,7 +67,7 @@ function RegisterForm() {
     return (
         <form className="grid gap-3" noValidate onSubmit={form.handleSubmit((values) => register.mutate(values))}>
             <label className="grid gap-1.5 text-sm font-medium" htmlFor="register-display-name">
-                Nom affiche
+                Nom affiché
                 <Input
                     id="register-display-name"
                     autoComplete="name"
@@ -94,7 +94,7 @@ function RegisterForm() {
             </label>
             <RequestError error={register.error} />
             <Button type="submit" disabled={register.isPending}>
-                {register.isPending ? 'Traitement...' : 'Creer le compte'}
+                {register.isPending ? 'Traitement...' : 'Créer le compte'}
             </Button>
         </form>
     );
@@ -107,7 +107,7 @@ export function AuthScreen() {
         <main className="grid min-h-dvh place-items-center bg-[radial-gradient(circle_at_18%_12%,oklch(0.93_0.05_130/0.65),transparent_42%),radial-gradient(circle_at_85%_90%,oklch(0.9_0.17_122/0.28),transparent_38%),linear-gradient(160deg,oklch(0.976_0.008_95),oklch(0.955_0.018_110))] p-4">
             <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-float backdrop-blur-xl md:grid-cols-[1.05fr_1fr]">
                 <section
-                    aria-label="Presentation UrbanFlow"
+                    aria-label="Présentation UrbanFlow"
                     className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(155deg,oklch(0.34_0.075_165),oklch(0.44_0.09_160)_55%,oklch(0.5_0.1_150))] p-8 text-primary-foreground md:flex"
                 >
                     <div
@@ -133,22 +133,22 @@ export function AuthScreen() {
                             <span className="text-[oklch(0.9_0.17_122)]">bas carbone.</span>
                         </h1>
                         <p className="mt-4 max-w-xs text-sm leading-relaxed text-primary-foreground/78">
-                            Planifie tes deplacements multimodaux, automatise tes routines et suis tes objectifs carbone, dans une seule
-                            application pour la metropole.
+                            Planifie tes déplacements multimodaux, automatise tes routines et suis tes objectifs carbone, dans une seule
+                            application pour la métropole.
                         </p>
                     </div>
                     <ul className="relative grid gap-2 text-[13px] font-medium text-primary-foreground/92">
                         <li className="flex items-center gap-2">
                             <Route className="size-4 text-[oklch(0.9_0.17_122)]" aria-hidden="true" />
-                            Planificateur multimodal temps reel
+                            Planificateur multimodal temps réel
                         </li>
                         <li className="flex items-center gap-2">
                             <Bike className="size-4 text-[oklch(0.9_0.17_122)]" aria-hidden="true" />
-                            Velos, trottinettes et arrets GTFS integres
+                            Vélos, trottinettes et arrêts GTFS intégrés
                         </li>
                         <li className="flex items-center gap-2">
                             <ShieldCheck className="size-4 text-[oklch(0.9_0.17_122)]" aria-hidden="true" />
-                            Donnees protegees, geolocalisation avec consentement
+                            Données protégées, géolocalisation avec consentement
                         </li>
                     </ul>
                 </section>
@@ -162,7 +162,7 @@ export function AuthScreen() {
                     <CardHeader>
                         <Badge variant="info" className="w-fit">
                             <Sparkles className="size-3.5" aria-hidden="true" />
-                            Mobilite urbaine intelligente
+                            Mobilité urbaine intelligente
                         </Badge>
                         <CardTitle className="font-display text-2xl">UrbanFlow Mobility</CardTitle>
                         <CardDescription>Connecte-toi pour planifier tes trajets et suivre tes objectifs carbone.</CardDescription>

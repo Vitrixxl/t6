@@ -1,9 +1,9 @@
-// Contrats des objets de mobilite : trajet realise, trajet programme, routine
-// recurrente, itineraire sauvegarde.
+// Contrats des objets de mobilité : trajet realise, trajet programmé, routine
+// récurrente, itinéraire sauvegarde.
 //
 // Chaque objet existe sous deux formes : tel que le serveur le rend, avec son
 // identifiant et son proprietaire, et tel que le client l'envoie au PUT de la
-// ressource (`...Input`), sans les deux valeurs portees par l'URL/la session.
+// ressource (`...Input`), sans les deux valeurs portées par l'URL/la session.
 import { z } from 'zod';
 import {
     carbonGrams,
@@ -40,22 +40,22 @@ export const plannedTrip = z.object({
     id: identifier,
     ...owned,
     ...tripShape,
-    /** Date et heure prevues du depart (ISO). */
+    /** Date et heure prévues du départ (ISO). */
     scheduledFor: isoDate,
     status: plannedTripStatus,
     createdAt: isoDate,
     completedAt: isoDate.nullable(),
 });
 export const plannedTripInput = plannedTrip.omit({ id: true, userId: true }).extend({
-    // L'etat `done` passe exclusivement par la transition atomique completion.
+    // L'état `done` passe exclusivement par la transition atomique complétion.
     status: z.enum(['planned', 'cancelled']),
     completedAt: z.null(),
 });
 export type PlannedTrip = z.infer<typeof plannedTrip>;
 
 /**
- * Periode pendant laquelle une routine compte ses passages. `to` reste null
- * tant qu'elle court ; une mise en pause la clot, une reprise en ouvre une
+ * Période pendant laquelle une routine compte ses passages. `to` reste null
+ * tant qu'elle court ; une mise en pause la clôt, une reprise en ouvre une
  * nouvelle.
  */
 export const routinePeriod = z.object({
@@ -78,10 +78,10 @@ export const recurringTrip = z.object({
     departureTime: timeOfDay,
     /** Heure du retour pour un aller-retour, sinon null. */
     returnTime: timeOfDay.nullable(),
-    // Une routine n'est jamais materialisee en trajets : ses passages sont
-    // comptes a la lecture, sur ces periodes. Au moins une (la creation en
-    // ouvre une) ; la borne haute garde l'etat fini, une pause et une reprise
-    // n'ajoutant qu'une entree.
+    // Une routine n'est jamais matérialisée en trajets : ses passages sont
+    // comptes à la lecture, sur ces périodes. Au moins une (la création en
+    // ouvre une) ; la borne haute garde l'état fini, une pause et une reprise
+    // n'ajoutant qu'une entrée.
     periods: z.array(routinePeriod).min(1).max(100),
     createdAt: isoDate,
 });
@@ -103,6 +103,6 @@ export type SavedRouteRecord = z.infer<typeof savedRoute>;
 /** Identifiant d'une ressource appartenant au compte courant. */
 export const resourceIdParams = z.object({ id: identifier });
 
-/** Reponse atomique de la transition qui alimente le suivi carbone. */
+/** Réponse atomique de la transition qui alimente le suivi carbone. */
 export const completedPlannedTrip = z.object({ plannedTrip, tripRecord });
 export type CompletedPlannedTrip = z.infer<typeof completedPlannedTrip>;

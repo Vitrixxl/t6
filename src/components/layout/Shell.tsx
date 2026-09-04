@@ -56,7 +56,7 @@ export function ShellSidebar({
                 </span>
                 <div className="min-w-0 leading-tight">
                     <p className="font-display text-[15px] font-semibold tracking-tight">UrbanFlow</p>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Planificateur de mobilite</p>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Planificateur de mobilité</p>
                 </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto pb-3 pt-2">
@@ -66,7 +66,7 @@ export function ShellSidebar({
                         index={1}
                         icon={<CalendarClock className="size-4 shrink-0 text-primary" aria-hidden="true" />}
                         title="Mes trajets"
-                        subtitle="A venir, recurrents et objectifs"
+                        subtitle="À venir, récurrents et objectifs"
                     />
                     <TripsSidebarSection />
                 </section>
@@ -76,7 +76,7 @@ export function ShellSidebar({
                         index={2}
                         icon={<Layers3 className="size-4 shrink-0 text-primary" aria-hidden="true" />}
                         title="Couches"
-                        subtitle="Mobilite temps reel"
+                        subtitle="Mobilité temps réel"
                     />
                     <LayerPanel layers={layers} onLayersChange={onLayersChange} network={network} />
                 </section>
@@ -121,10 +121,10 @@ export function LayerPanel({
         network: TransportNetwork;
     }) {
     const stations = network.sharedMobility.data.stations;
-    // Velo'v est un service a stations : on compte les stations et les velos qui
+    // Vélo'v est un service à stations : on compte les stations et les vélos qui
     // s'y trouvent. Dott est en flotte libre : chaque trottinette est un point,
-    // il n'y a pas de station a compter. Les deux ne se resument donc pas de la
-    // meme facon, et les melanger sous un seul libelle rendait le chiffre faux.
+    // il n'y a pas de station à compter. Les deux ne se résument donc pas de la
+    // même facon, et les mélanger sous un seul libellé rendait le chiffre faux.
     const velovStations = stations.filter((station) => station.kind === 'velov');
     const scooters = stations.filter((station) => station.kind === 'scooter');
     const bikeCount = velovStations.reduce((sum, station) => sum + station.bikes_available, 0);
@@ -134,15 +134,15 @@ export function LayerPanel({
         <div className="px-3 pb-4">
             <div className="grid gap-3">
                 <LayerToggle
-                    label="Arrets GTFS"
-                    detail={`${network.gtfs.stops.length} arrets publics`}
+                    label="Arrêts GTFS"
+                    detail={`${network.gtfs.stops.length} arrêts publics`}
                     active={layers.transitStops}
                     color="bg-[#2563eb]"
                     onClick={() => onLayersChange({ ...layers, transitStops: !layers.transitStops })}
                 />
                 <LayerToggle
-                    label="Velo'v"
-                    detail={`${bikeCount} velos dans ${velovStations.length} stations`}
+                    label="Vélo’v"
+                    detail={`${bikeCount} vélos dans ${velovStations.length} stations`}
                     active={layers.velov}
                     color="bg-[#84cc16]"
                     onClick={() => onLayersChange({ ...layers, velov: !layers.velov })}
@@ -157,9 +157,9 @@ export function LayerPanel({
             </div>
             {network.sources?.sharedMobility === 'gbfs-live' ? (
                 <div className="mt-4 rounded-lg border border-primary/25 bg-accent px-3 py-2 text-xs text-accent-foreground">
-                    Donnees live: GBFS Velo'v + Dott ({getFeedFreshness(network.sharedMobility)})
+                    Données live: GBFS Vélo'v + Dott ({getFeedFreshness(network.sharedMobility)})
                     {network.sources.gtfs === 'tcl-odbl' ? ', GTFS TCL (ODbL)' : ''}
-                    {network.sources.weather === 'open-meteo' ? ', meteo Open-Meteo' : ''}.
+                    {network.sources.weather === 'open-meteo' ? ', météo Open-Meteo' : ''}.
                 </div>
             ) : (
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">

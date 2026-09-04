@@ -1,8 +1,8 @@
-// Mesure des options d'itineraire par le service de routage.
+// Mesure des options d'itinéraire par le service de routage.
 //
-// Le moteur local (lib/planner) assemble les options a partir des acces choisis
-// par duree OSRM. La meme requete mesure ensuite chaque segment : elle s'annule
-// d'elle-meme quand les extremites changent, et se garde le temps qu'un
+// Le moteur local (lib/planner) assemble les options à partir des accès choisis
+// par durée OSRM. La même requête mesure ensuite chaque segment : elle s'annule
+// d'elle-même quand les extrémités changent, et se garde le temps qu'un
 // utilisateur compare deux recherches.
 import { queryOptions, skipToken } from '@tanstack/react-query';
 import type { GeoPoint, MobilityProfile, TransportNetwork } from '../types';
@@ -23,8 +23,8 @@ export interface RouteSearch {
 }
 
 async function loadMeasuredRoutes(search: RouteSearch, network: TransportNetwork, signal: AbortSignal) {
-    // La voiture reste une reference invisible. Sa mesure demarre en parallele
-    // du choix des stations et sera appliquee a toutes les options.
+    // La voiture reste une référence invisible. Sa mesure demarre en parallèle
+    // du choix des stations et sera appliquée à toutes les options.
     const carReferencePromise = fetchRouteMatrix(
         'car',
         [search.origin],
@@ -56,7 +56,7 @@ export function measuredRoutesQuery(search: RouteSearch | null, network: Transpo
     return queryOptions({
         queryKey: search ? queryKeys.measuredRoutes(search.origin, search.destination, search.profile) : ['measured-routes', null],
         queryFn: search ? ({ signal }) => loadMeasuredRoutes(search, network, signal) : skipToken,
-        // Le serveur cache les traces 24 h : remesurer au retour sur l'onglet
+        // Le serveur cache les tracés 24 h : remesurer au retour sur l'onglet
         // n'apporterait rien.
         staleTime: 5 * 60_000,
     });

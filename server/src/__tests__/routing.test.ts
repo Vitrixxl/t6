@@ -1,8 +1,8 @@
-// Tests de la route de calcul d'itineraire.
+// Tests de la route de calcul d'itinéraire.
 //
-// Le calculateur est remplace par un `fetch` sous controle : la suite verifie
-// le comportement de l'API (validation, cache, indisponibilite), pas celui
-// d'OSRM. Aucun appel reseau ne sort.
+// Le calculateur est remplace par un `fetch` sous contrôle : la suite vérifie
+// le comportement de l'API (validation, cache, indisponibilité), pas celui
+// d'OSRM. Aucun appel réseau ne sort.
 import { afterEach, describe, expect, it } from 'bun:test';
 import { createTestApi, json, type ErrorBody } from './helpers.ts';
 
@@ -41,7 +41,7 @@ const OSRM_PAYLOAD = {
     ],
 };
 
-/** Remplace le calculateur et compte les appels reellement sortis. */
+/** Remplace le calculateur et compte les appels réellement sortis. */
 function stubUpstream(response: (url: string) => Response): { calls: () => number } {
     let calls = 0;
     globalThis.fetch = (async (input: Parameters<typeof globalThis.fetch>[0]) => {
@@ -62,8 +62,11 @@ afterEach(() => {
 const PATH = '/api/route?mode=bike&from=4.832,45.7578&to=4.8594,45.7606';
 
 describe('GET /api/route', () => {
-    it('renvoie le trace, la distance et la duree du calculateur', async () => {
-        stubUpstream(okResponse);
+    it('renvoie le tracé, la distance et la durée du calculateur', async () => {
+        stubUpstream((url) => {
+            expect(new URL(url).searchParams.get('geometries')).toBe('geojson');
+            return okResponse();
+        });
         const api = createTestApi();
 
         const body = await json<RouteBody>(await api.call(PATH));
@@ -75,7 +78,7 @@ describe('GET /api/route', () => {
         api.close();
     });
 
-    it("ne sollicite le calculateur qu'une fois pour un meme trajet", async () => {
+    it("ne sollicite le calculateur qu'une fois pour un même trajet", async () => {
         const upstream = stubUpstream(okResponse);
         const api = createTestApi();
 
@@ -87,7 +90,7 @@ describe('GET /api/route', () => {
         api.close();
     });
 
-    it('repond 503 quand le calculateur ne repond pas et qu aucun trace n est connu', async () => {
+    it('répond 503 quand le calculateur ne répond pas et qu’aucun tracé n’est connu', async () => {
         stubUpstream(() => {
             throw new Error('service injoignable');
         });
@@ -100,7 +103,7 @@ describe('GET /api/route', () => {
         api.close();
     });
 
-    it('sert le trace connu plutot qu une carte vide quand le calculateur tombe', async () => {
+    it('sert le tracé connu plutôt qu’une carte vide quand le calculateur tombe', async () => {
         let available = true;
         stubUpstream(() => {
             if (!available) {
@@ -119,7 +122,7 @@ describe('GET /api/route', () => {
         api.close();
     });
 
-    it('refuse des coordonnees mal formees sans appeler le calculateur', async () => {
+    it('refuse des coordonnées mal formees sans appeler le calculateur', async () => {
         const upstream = stubUpstream(okResponse);
         const api = createTestApi();
 
@@ -130,10 +133,10 @@ describe('GET /api/route', () => {
         api.close();
     });
 
-    // Verrouille B15 : le flux GBFS publie certaines stations Velo'v avec treize
-    // decimales. Une borne de precision les rejetait, et tout itineraire passant
+    // Verrouille B15 : le flux GBFS publie certaines stations Vélo'v avec treize
+    // décimales. Une borne de précision les rejetait, et tout itinéraire passant
     // par l'une d'elles remontait au client comme un service indisponible.
-    it('accepte la precision reelle des sources tierces', async () => {
+    it('accepte la précision réelle des sources tierces', async () => {
         stubUpstream(okResponse);
         const api = createTestApi();
 
@@ -170,7 +173,7 @@ describe('POST /api/route-matrix', () => {
             body: input,
         });
 
-    it('mesure tous les acces en une requete OSRM puis partage le cache', async () => {
+    it('mesure tous les accès en une requête OSRM puis partage le cache', async () => {
         const upstream = stubUpstream((url) => {
             expect(url).toContain('/routed-foot/table/v1/foot/');
             expect(url).toContain('annotations=distance%2Cduration');
@@ -202,7 +205,7 @@ describe('POST /api/route-matrix', () => {
         api.close();
     });
 
-    it('borne la matrice agregee a trente-deux points par axe', async () => {
+    it('borne la matrice agrégée a trente-deux points par axe', async () => {
         const upstream = stubUpstream(() => okResponse());
         const api = createTestApi();
         const tooMany = Array.from({ length: 33 }, (_, index) => ({ lat: 45.75, lon: 4.84 + index / 1000 }));
@@ -214,7 +217,7 @@ describe('POST /api/route-matrix', () => {
         api.close();
     });
 
-    it('mesure la reference voiture avec driving et la ressort du cache partage', async () => {
+    it('mesure la référence voiture avec driving et la ressort du cache partagé', async () => {
         const upstream = stubUpstream((url) => {
             expect(url).toContain('/routed-car/table/v1/driving/');
             return new Response(

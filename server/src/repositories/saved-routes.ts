@@ -1,4 +1,4 @@
-// Depot des itineraires sauvegardes par l'utilisateur. Un enregistrement est
+// Dépôt des itinéraires sauvegardes par l'utilisateur. Un enregistrement est
 // remplace ou retire sans recharger les autres dans la commande SQL.
 import { and, desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';

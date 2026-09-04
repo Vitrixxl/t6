@@ -1,11 +1,11 @@
-// Trace de voirie, demande a notre propre API.
+// Tracé de voirie, demande a notre propre API.
 //
-// Le navigateur n'appelle plus le calculateur d'itineraires directement. Le
+// Le navigateur n'appelle plus le calculateur d'itinéraires directement. Le
 // quota d'une instance publique se compte par adresse IP : chaque client
-// consommait le meme quota sans que rien ne soit mutualise, et une session de
+// consommait le même quota sans que rien ne soit mutualise, et une session de
 // test un peu active suffisait a couper le service pour tout le monde (B13).
-// L'API interpose un cache partage et rend un contrat fini — trace, distance,
-// duree, instructions — que le client n'a plus qu'a consommer.
+// L'API interpose un cache partagé et rend un contrat fini — tracé, distance,
+// durée, instructions — que le client n'a plus qu'a consommer.
 import type { GeoPoint, RouteInstruction, RouteMeasure, RoutableMode } from '../../../types';
 import { api, treatyRequest } from '../../api/client';
 import { withTimeout } from '../http';
@@ -18,12 +18,12 @@ export interface RouteGeometry {
 }
 
 /**
- * Format attendu par l'API : `lon,lat`, une paire par parametre.
+ * Format attendu par l'API : `lon,lat`, une paire par paramètre.
  *
- * Six decimales valent une dizaine de centimetres, bien au-dela de la precision
- * d'un GPS de telephone ou d'un point d'ancrage de station. Les tronquer evite
- * d'envoyer les treize decimales de certaines sources, et rapproche la requete
- * de la cle de cache du serveur : deux appels identiques a un metre pres ne
+ * Six décimales valent une dizaine de centimetres, bien au-delà de la précision
+ * d'un GPS de téléphone ou d'un point d'ancrage de station. Les tronquer évite
+ * d'envoyer les treize décimales de certaines sources, et rapproche la requête
+ * de la clé de cache du serveur : deux appels identiques à un mètre près ne
  * repartent pas chez le calculateur.
  */
 function coordinates(point: Pick<GeoPoint, 'lat' | 'lon'>): string {
@@ -49,7 +49,7 @@ export async function fetchRouteGeometry(
             path: payload.path.map(([lon, lat], index) => ({
                 lon,
                 lat,
-                label: index === 0 ? origin.label : index === payload.path.length - 1 ? destination.label : 'Trace route',
+                label: index === 0 ? origin.label : index === payload.path.length - 1 ? destination.label : 'Tracé routier',
             })),
             distanceMeters: payload.distanceMeters,
             durationSeconds: payload.durationSeconds,
@@ -61,7 +61,7 @@ export async function fetchRouteGeometry(
 }
 
 /**
- * Mesure plusieurs acces en une requete OSRM Table. Le resultat conserve
+ * Mesure plusieurs accès en une requête OSRM Table. Le résultat conserve
  * l'ordre des origines et destinations ; une cellule `null` est inaccessible.
  */
 export async function fetchRouteMatrix(

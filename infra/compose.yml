@@ -1,43 +1,43 @@
-# UrbanFlow au complet : l'application, son API et le calculateur d'itineraires.
+# UrbanFlow au complet : l'application, son API et le calculateur d'itinéraires.
 #
-# Le meme serveur porte le client et l'API — une seule origine, donc un cookie
-# de session de premiere partie et aucun en-tete CORS.
+# Le même serveur porte le client et l'API — une seule origine, donc un cookie
+# de session de première partie et aucun en-tête CORS.
 #
-# Il ecoute en **HTTPS**, et ce n'est pas une precaution de production : le
-# navigateur reserve au contexte securise la geolocalisation,
+# Il écoute en **HTTPS**, et ce n'est pas une précaution de production : le
+# navigateur reserve au contexte securise la géolocalisation,
 # `crypto.randomUUID` et le service worker. Sans lui l'application ne
-# fonctionne que sur localhost, donc pas depuis un telephone.
+# fonctionne que sur localhost, donc pas depuis un téléphone.
 #
 #   docker compose -f infra/compose.yml up -d
 #
-# Le calculateur exige un prealable : ./infra/osrm-prepare.sh, qui telecharge
-# les donnees et construit les trois index. Sans lui, les services osrm-*
-# demarrent puis s'arretent faute de jeu de donnees.
+# Le calculateur exige un préalable : ./infra/osrm-prepare.sh, qui telecharge
+# les données et construit les trois index. Sans lui, les services osrm-*
+# démarrent puis s'arrêtent faute de jeu de données.
 services:
   app:
     build:
       context: ..
       dockerfile: infra/api.Dockerfile
     environment:
-      # Le calculateur est vise par son nom de service : le reseau du compose
-      # fait la resolution, aucun port OSRM n'a besoin d'etre publie.
+      # Le calculateur est vise par son nom de service : le réseau du compose
+      # fait la résolution, aucun port OSRM n'a besoin d'être publie.
       OSRM_BASE_URL: http://osrm:5000
-      # Adresses supplementaires a inscrire dans le certificat. Renseigner l'IP
-      # de la machine sur le reseau local pour y acceder depuis un telephone :
+      # Adresses supplémentaires a inscrire dans le certificat. Renseigner l'IP
+      # de la machine sur le réseau local pour y accéder depuis un téléphone :
       #   TLS_EXTRA_HOSTS=IP:192.168.1.37
       TLS_EXTRA_HOSTS: ${TLS_EXTRA_HOSTS:-}
     volumes:
       - app-data:/data
       - app-certs:/certs
-    # Publie sur toutes les interfaces : sinon le telephone ne verrait rien.
+    # Publie sur toutes les interfaces : sinon le téléphone ne verrait rien.
     ports:
       - '4000:4000'
     depends_on: [osrm]
     restart: unless-stopped
 
-  # OSRM ne sait servir qu'un profil a la fois : les regles de circulation
-  # different selon le mode sur une meme rue, et elles sont gravees dans l'index
-  # au pretraitement. D'ou trois moteurs, regroupes derriere une facade qui
+  # OSRM ne sait servir qu'un profil à la fois : les règles de circulation
+  # différent selon le mode sur une même rue, et elles sont gravees dans l'index
+  # au prétraitement. D'où trois moteurs, regroupés derrière une façade qui
   # reproduit les chemins de l'instance publique.
   osrm:
     image: docker.io/library/caddy:2-alpine
@@ -61,8 +61,8 @@ services:
       - ./osrm-data:/data
     restart: unless-stopped
 
-  # La voiture n'est jamais proposee. Ce profil ne sert qu'a mesurer une fois
-  # le scenario de reference carbone entre le depart et l'arrivee.
+  # La voiture n'est jamais proposée. Ce profil ne sert qu'à mesurer une fois
+  # le scénario de référence carbone entre le départ et l'arrivée.
   osrm-car:
     image: ghcr.io/project-osrm/osrm-backend:latest
     command: osrm-routed --algorithm mld /data/lyon-car.osrm

@@ -1,8 +1,8 @@
-// Traduction ligne SQL <-> objet du domaine. Isolee ici pour que les depots
+// Traduction ligne SQL <-> objet du domaine. Isolée ici pour que les dépôts
 // restent lisibles et que la forme des colonnes ne fuite nulle part ailleurs.
 //
-// Les lignes arrivent typees par Drizzle : plus de conversion de type, il ne
-// reste que le passage du plat (origin_lat, origin_lon) a l'imbrique
+// Les lignes arrivent typées par Drizzle : plus de conversion de type, il ne
+// reste que le passage du plat (origin_lat, origin_lon) à l'imbrique
 // (origin: GeoPoint), que SQLite ne sait pas representer.
 import type { GeoPoint, MobilityMode, SessionUser } from '../../../src/types.ts';
 import type { users } from '../db/schema.ts';

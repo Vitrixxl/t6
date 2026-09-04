@@ -1,51 +1,51 @@
 #!/usr/bin/env bash
-# Prepare les donnees OSRM pour le calcul d'itineraires local.
+# Prépare les données OSRM pour le calcul d'itinéraires local.
 #
-# A lancer une fois. Trois jeux de donnees sont produits, un par profil :
-# pieton, velo et voiture n'ont pas les memes regles sur les memes rues (sens
-# uniques, escaliers, zones pietonnes) et ne peuvent donc pas partager un
-# index. La trottinette utilise le profil velo ; la voiture reste une reference
-# carbone invisible et n'est jamais proposee.
+# A lancer une fois. Trois jeux de données sont produits, un par profil :
+# piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues (sens
+# uniques, escaliers, zones piétonnes) et ne peuvent donc pas partager un
+# index. La trottinette utilise le profil vélo ; la voiture reste une référence
+# carbone invisible et n'est jamais proposée.
 #
-# Prerequis : docker. `osmium` est facultatif : s'il est installe,
-# la region est decoupee autour de Lyon, ce qui divise par dix le temps de
-# pretraitement. Sinon toute la region Rhone-Alpes est traitee — plus long, mais
-# sans dependance supplementaire, et le resultat est identique sur Lyon.
+# Prérequis : docker. `osmium` est facultatif : s'il est installe,
+# la région est découpée autour de Lyon, ce qui divise par dix le temps de
+# prétraitement. Sinon toute la région Rhône-Alpes est traitée — plus long, mais
+# sans dépendance supplémentaire, et le résultat est identique sur Lyon.
 set -euo pipefail
 
 ENGINE="${CONTAINER_ENGINE:-docker}"
 IMAGE="ghcr.io/project-osrm/osrm-backend:latest"
 DATA_DIR="$(cd "$(dirname "$0")" && pwd)/osrm-data"
 REGION_URL="https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf"
-# Boite englobant la metropole, un peu plus large que le rayon de 16 km du feed.
+# Boite englobant la métropole, un peu plus large que le rayon de 16 km du feed.
 BBOX="4.60,45.60,5.05,45.95"
 
 command -v "$ENGINE" >/dev/null || {
-  echo "Erreur : '$ENGINE' introuvable. Installer docker, ou definir CONTAINER_ENGINE." >&2
+  echo "Erreur : '$ENGINE' introuvable. Installer docker, ou définir CONTAINER_ENGINE." >&2
   exit 1
 }
 
 mkdir -p "$DATA_DIR"
 
 if [ ! -f "$DATA_DIR/rhone-alpes.osm.pbf" ]; then
-  echo "Telechargement de l'extrait Rhone-Alpes (~400 Mo)..."
+  echo "Téléchargement de l'extrait Rhône-Alpes (~400 Mo)..."
   curl -L --fail --progress-bar -o "$DATA_DIR/rhone-alpes.osm.pbf" "$REGION_URL"
 fi
 
 SOURCE="$DATA_DIR/rhone-alpes.osm.pbf"
 if command -v osmium >/dev/null; then
   if [ ! -f "$DATA_DIR/lyon.osm.pbf" ]; then
-    echo "Decoupage de la metropole..."
+    echo "Découpage de la métropole..."
     osmium extract --bbox "$BBOX" --overwrite -o "$DATA_DIR/lyon.osm.pbf" "$SOURCE"
   fi
   SOURCE="$DATA_DIR/lyon.osm.pbf"
 else
-  echo "osmium absent : toute la region Rhone-Alpes sera traitee (comptez"
-  echo "une dizaine de minutes par profil, et ~8 Go de memoire au pic)."
+  echo "osmium absent : toute la région Rhône-Alpes sera traitée (comptez"
+  echo "une dizaine de minutes par profil, et ~8 Go de mémoire au pic)."
 fi
 
-# `mld` est l'algorithme adapte a un graphe qui tient en memoire : pretraitement
-# rapide, et requetes en microsecondes une fois le service demarre.
+# `mld` est l'algorithme adapte à un graphe qui tient en mémoire : prétraitement
+# rapide, et requêtes en microsecondes une fois le service demarre.
 for profile in foot bike car; do
   echo
   echo "=== Profil $profile ==="
@@ -60,14 +60,14 @@ for profile in foot bike car; do
 done
 
 echo
-echo "Donnees pretes. Demarrer la pile serveur :"
+echo "Données prêtes. Demarrer la pile serveur :"
 echo "  docker compose -f infra/compose.yml up -d"
 echo
 echo "L'API y est incluse et vise le calculateur local : rien a configurer."
 echo "Le client reste lance a part, par bun run dev."
 echo
-echo "Pour utiliser le calculateur local depuis une API lancee hors conteneur,"
-echo "publier le port de la facade et renseigner dans .env :"
+echo "Pour utiliser le calculateur local depuis une API lancée hors conteneur,"
+echo "publier le port de la façade et renseigner dans .env :"
 echo "  OSRM_BASE_URL=http://127.0.0.1:5000"
 echo "Tant que cette ligne est absente ou vide, l'application utilise"
 echo "l'instance publique : rien a defaire pour revenir en arriere."

@@ -1,11 +1,11 @@
-// Cles du cache de requetes. Les declarer ici, et nulle part ailleurs, evite
-// qu'une lecture et une invalidation designent la meme donnee par deux
-// chaines differentes.
+// Clés du cache de requêtes. Les declarer ici, et nulle part ailleurs, évite
+// qu'une lecture et une invalidation désignent la même donnée par deux
+// chaines différentes.
 import type { GeoPoint, MobilityProfile } from '../types';
 
 export const queryKeys = {
     session: ['session'],
-    /** Prefixe commun, utilise uniquement pour purger le compte a la deconnexion. */
+    /** Préfixe commun, utilise uniquement pour purger le compte à la déconnexion. */
     account: ['account'],
     profile: ['account', 'profile'],
     tripRecords: ['account', 'tripRecords'],
@@ -13,8 +13,8 @@ export const queryKeys = {
     recurringTrips: ['account', 'recurringTrips'],
     savedRoutes: ['account', 'savedRoutes'],
     transportNetwork: ['transport-network'],
-    // Les extremites et le profil determinent les options calculees, donc leur
-    // mesure ; le libelle d'un point n'y change rien.
+    // Les extrémités et le profil determinent les options calculées, donc leur
+    // mesure ; le libellé d'un point n'y change rien.
     measuredRoutes: (origin: GeoPoint, destination: GeoPoint, profile: MobilityProfile) =>
         [
             'measured-routes',
@@ -23,7 +23,7 @@ export const queryKeys = {
 } as const;
 
 export const mutationKeys = {
-    /** Prefixe de tout ce qui ecrit le compte : c'est ce que la banniere d'erreur observe. */
+    /** Préfixe de tout ce qui ecrit le compte : c'est ce que la banniere d'erreur observe. */
     account: ['account'],
     deleteAccount: ['account', 'delete'],
     profileSave: ['account', 'profile-save'],

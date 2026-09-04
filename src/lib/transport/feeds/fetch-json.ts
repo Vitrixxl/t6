@@ -1,5 +1,5 @@
-// Lecture JSON commune aux flux : delai borne et erreur explicite, pour que
-// chaque appelant puisse decider de son repli local sans inspecter la reponse.
+// Lecture JSON commune aux flux : délai borne et erreur explicite, pour que
+// chaque appelant puisse decider de son repli local sans inspecter la réponse.
 const FETCH_TIMEOUT_MS = 8000;
 
 export async function fetchJson<T>(url: string, fetcher: typeof fetch = fetch): Promise<T> {

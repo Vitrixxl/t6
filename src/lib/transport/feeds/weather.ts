@@ -1,11 +1,11 @@
-// Meteo temps reel (Open-Meteo) : elle alimente le scoring, une option velo
+// Météo temps réel (Open-Meteo) : elle alimente le scoring, une option vélo
 // perdant de l'interet sous la pluie ou le vent fort.
 import type { WeatherSignal } from '../../../types';
 
 export const OPEN_METEO_URL =
     'https://api.open-meteo.com/v1/forecast?latitude=45.7578&longitude=4.832&current=temperature_2m,wind_speed_10m,precipitation,weather_code';
 
-// Perimetre produit: toute la metropole de Lyon (Velo'v couvre Lyon/Villeurbanne,
+// Périmètre produit: toute la métropole de Lyon (Vélo'v couvre Lyon/Villeurbanne,
 // Dott et TCL debordent sur les communes limitrophes).
 
 export interface OpenMeteoCurrent {

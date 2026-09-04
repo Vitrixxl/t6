@@ -1,13 +1,13 @@
-// Velos et trottinettes en libre-service (GBFS).
+// Vélos et trottinettes en libre-service (GBFS).
 //
 // Aucun plafond d'affichage : le nombre annonce dans l'interface est le nombre
-// reellement disponible. Seul le perimetre metropolitain filtre les donnees,
+// réellement disponible. Seul le périmètre métropolitain filtre les données,
 // et c'est une decision de service, pas une limite technique.
 //
-// Deux sources aux formats differents : Velo'v (GBFS v3, stations fixes, deux
+// Deux sources aux formats différents : Vélo'v (GBFS v3, stations fixes, deux
 // documents a fusionner) et Dott (GBFS v2.3, vehicules libres). Elles sont
-// normalisees vers un meme type SharedStation pour que la carte et le moteur
-// n'aient qu'un modele a connaitre.
+// normalisées vers un même type SharedStation pour que la carte et le moteur
+// n'aient qu'un modèle a connaître.
 import type { SharedMobilityFeed, SharedStation } from '../../../types';
 import { distanceToCenterKm, STATION_RADIUS_KM } from './area';
 import { fetchJson } from './fetch-json';
@@ -78,7 +78,7 @@ export function mergeVelovStations(
                 {
                     station_id: `velov-${station.station_id}`,
                     kind: 'velov' as const,
-                    name: `Velo'v ${localizedName(station.name)}`,
+                    name: `Vélo'v ${localizedName(station.name)}`,
                     lat: station.lat,
                     lon: station.lon,
                     capacity: station.capacity ?? 0,

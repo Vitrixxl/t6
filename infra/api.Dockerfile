@@ -1,8 +1,8 @@
-# Image d'UrbanFlow : l'API et le client, servis par le meme serveur.
+# Image d'UrbanFlow : l'API et le client, servis par le même serveur.
 #
-# Deux etages. Le premier construit le client — c'est le seul moment ou les
-# dependances de developpement sont necessaires. Le second n'embarque que le
-# serveur, ses dependances de production et le client construit.
+# Deux etages. Le premier construit le client — c'est le seul moment où les
+# dépendances de développement sont nécessaires. Le second n'embarque que le
+# serveur, ses dépendances de production et le client construit.
 FROM docker.io/oven/bun:1-alpine AS build
 
 WORKDIR /app
@@ -12,9 +12,9 @@ RUN bun install --frozen-lockfile
 COPY tsconfig.json index.html bunfig.toml ./
 COPY src ./src
 COPY public ./public
-# Le script de construction et son greffon de resolution : les copier un par
-# un plutot que le dossier entier garde l'image affranchie de l'outillage de
-# test et de generation, qui n'a rien a y faire.
+# Le script de construction et son greffon de résolution : les copier un par
+# un plutôt que le dossier entier garde l'image affranchie de l'outillage de
+# test et de génération, qui n'a rien a y faire.
 COPY scripts/build.ts scripts/served-as-is.ts ./scripts/
 RUN bun scripts/build.ts
 
@@ -22,24 +22,24 @@ FROM docker.io/oven/bun:1-alpine
 
 WORKDIR /app
 
-# Les dependances d'abord : cette couche n'est reconstruite que si le manifeste
-# change, pas a chaque modification du code.
+# Les dépendances d'abord : cette couche n'est reconstruite que si le manifeste
+# change, pas à chaque modification du code.
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 # Le serveur execute directement le TypeScript : ni compilation, ni artefact
-# intermediaire. Le contrat de donnees est partage avec le client, le serveur ne
+# intermédiaire. Le contrat de données est partagé avec le client, le serveur ne
 # tourne pas sans lui.
 COPY server ./server
 COPY src/types.ts ./src/types.ts
 COPY --from=build /app/dist ./dist
 
-# Le certificat est genere au premier demarrage s'il manque : voir entrypoint.sh.
+# Le certificat est génère au premier démarrage s'il manque : voir entrypoint.sh.
 COPY infra/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && apk add --no-cache openssl
 
 # La base vit dans un volume : le conteneur reste jetable, comptes et trajets
-# survivent a sa recreation.
+# survivent à sa recreation.
 ENV DATABASE_PATH=/data/urbanflow.db
 # Sans cela le serveur n'ecouterait que la boucle locale du conteneur.
 ENV API_HOST=0.0.0.0

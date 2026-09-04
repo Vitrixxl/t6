@@ -1,21 +1,21 @@
-// Decoupe du trace d'une ligne entre deux stations.
+// Decoupe du tracé d'une ligne entre deux stations.
 //
-// Le portail publie le trace complet d'une ligne, d'un terminus a l'autre. Un
-// segment d'itineraire n'en emprunte qu'une portion : il faut donc projeter la
-// station de montee et celle de descente sur la polyligne, puis en extraire la
-// partie comprise entre les deux. C'est ce qui permet de dessiner le metro sur
-// ses rails plutot que sur la voirie.
+// Le portail publie le tracé complet d'une ligne, d'un terminus à l'autre. Un
+// segment d'itinéraire n'en emprunte qu'une portion : il faut donc projeter la
+// station de montée et celle de descente sur la polyligne, puis en extraire la
+// partie comprise entre les deux. C'est ce qui permet de dessiner le métro sur
+// ses rails plutôt que sur la voirie.
 import type { GeoPoint, GtfsStop } from '../../types';
 import { haversineDistanceKm } from './geo';
 
 /**
- * Au-dela de cette distance, la station n'est pas sur le trace retenu : c'est
- * une antenne, ou le sens inverse ne passe pas au meme endroit. On prefere
- * alors ne rien decouper plutot que de produire un trace faux.
+ * Au-dela de cette distance, la station n'est pas sur le tracé retenu : c'est
+ * une antenne, ou le sens inverse ne passe pas au même endroit. On préfère
+ * alors ne rien découper plutôt que de produire un tracé faux.
  */
 const MAX_SNAP_KM = 0.3;
 
-/** Un point projete : ou il tombe sur la polyligne, et a quelle distance. */
+/** Un point projete : où il tombe sur la polyligne, et a quelle distance. */
 interface Projection {
     /** Index du segment [i, i+1] portant la projection. */
     index: number;
@@ -24,9 +24,9 @@ interface Projection {
 }
 
 /**
- * Les calculs se font dans un plan local : la longitude est mise a l'echelle de
- * la latitude par son cosinus, sans quoi un degre de longitude compterait
- * autant qu'un degre de latitude et la projection deriverait vers l'est.
+ * Les calculs se font dans un plan local : la longitude est mise à l'échelle de
+ * la latitude par son cosinus, sans quoi un degré de longitude compterait
+ * autant qu'un degré de latitude et la projection deriverait vers l'est.
  */
 function scaleLon(latitude: number): number {
     return Math.cos((latitude * Math.PI) / 180);
@@ -46,7 +46,7 @@ function projectOnShape(shape: [number, number][], target: Pick<GeoPoint, 'lat' 
         const py = target.lat - aLat;
         const ratio = span === 0 ? 0 : Math.min(Math.max((px * dx + py * dy) / span, 0), 1);
         const point: GeoPoint = {
-            label: 'Trace de ligne',
+            label: 'Tracé de ligne',
             lat: aLat + ratio * (bLat - aLat),
             lon: aLon + ratio * (bLon - aLon),
         };
@@ -60,9 +60,9 @@ function projectOnShape(shape: [number, number][], target: Pick<GeoPoint, 'lat' 
 }
 
 /**
- * Portion de trace reliant deux stations, extremites comprises. Renvoie `null`
- * si l'une des deux n'est pas sur ce trace : l'appelant ecarte cette desserte
- * plutot que d'afficher une geometrie inventee.
+ * Portion de tracé reliant deux stations, extrémités comprises. Renvoie `null`
+ * si l'une des deux n'est pas sur ce tracé : l'appelant ecarte cette desserte
+ * plutôt que d'afficher une géométrie inventée.
  */
 export function sliceShape(shape: [number, number][], from: GtfsStop, to: GtfsStop): GeoPoint[] | null {
     if (shape.length < 2) {
@@ -75,13 +75,13 @@ export function sliceShape(shape: [number, number][], from: GtfsStop, to: GtfsSt
         return null;
     }
 
-    // Le trace est stocke dans un seul sens. Un trajet en sens inverse se lit en
+    // Le tracé est stocké dans un seul sens. Un trajet en sens inverse se lit en
     // remontant la polyligne : on decoupe dans l'ordre croissant puis on retourne.
     const reversed = end.index < start.index;
     const [first, last] = reversed ? [end, start] : [start, end];
     const between = shape
         .slice(first.index + 1, last.index + 1)
-        .map(([lon, lat]) => ({ label: 'Trace de ligne', lat, lon }));
+        .map(([lon, lat]) => ({ label: 'Tracé de ligne', lat, lon }));
 
     const path = [
         { ...first.point, label: reversed ? to.stop_name : from.stop_name },
@@ -92,7 +92,7 @@ export function sliceShape(shape: [number, number][], from: GtfsStop, to: GtfsSt
     return reversed ? path.reverse() : path;
 }
 
-/** Longueur reelle d'un trace, somme de ses segments. */
+/** Longueur réelle d'un tracé, somme de ses segments. */
 export function pathLengthKm(path: GeoPoint[]): number {
     let total = 0;
     for (let index = 0; index < path.length - 1; index += 1) {
@@ -102,12 +102,12 @@ export function pathLengthKm(path: GeoPoint[]): number {
 }
 
 /**
- * Point situe a mi-longueur du trace, et non a son point median.
+ * Point situe à mi-longueur du tracé, et non à son point médian.
  *
- * Les sommets d'un trace publie sont denses dans les courbes et rares sur les
- * lignes droites : la moitie des points peut tenir dans le premier dixieme du
- * parcours. Prendre l'index median collait donc l'etiquette de ligne a une
- * extremite, par-dessus le repere de depart.
+ * Les sommets d'un tracé publie sont denses dans les courbes et rares sur les
+ * lignes droites : la moitie des points peut tenir dans le premier dixième du
+ * parcours. Prendre l'index médian collait donc l'étiquette de ligne à une
+ * extrémité, par-dessus le repere de départ.
  */
 export function midpointOfPath(path: GeoPoint[]): GeoPoint | null {
     if (path.length === 0) {
@@ -123,8 +123,8 @@ export function midpointOfPath(path: GeoPoint[]): GeoPoint | null {
     let walked = 0;
     for (let index = 0; index < spans.length; index += 1) {
         if (walked + spans[index] >= half) {
-            // Interpolation lineaire dans le segment qui porte la moitie : sur
-            // quelques dizaines de metres, la courbure de la Terre est negligeable.
+            // Interpolation linéaire dans le segment qui porte la moitie : sur
+            // quelques dizaines de mètres, la courbure de la Terre est negligeable.
             const ratio = spans[index] === 0 ? 0 : (half - walked) / spans[index];
             const from = path[index];
             const to = path[index + 1];

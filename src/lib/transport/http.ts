@@ -1,7 +1,7 @@
-// Politique reseau commune aux flux externes.
+// Politique réseau commune aux flux externes.
 //
-// En mobilite a connectivite variable, une requete qui pend est pire qu'une
-// requete qui echoue vite : le repli local prend alors le relais. Le delai est
+// En mobilité a connectivite variable, une requête qui pend est pire qu'une
+// requête qui echoue vite : le repli local prend alors le relais. Le délai est
 // combine au signal d'annulation eventuel de l'appelant.
 const NETWORK_TIMEOUT_MS = 8000;
 

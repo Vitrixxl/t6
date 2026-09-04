@@ -1,13 +1,13 @@
-// Etapes d'un itineraire : un segment par ligne.
+// Étapes d'un itinéraire : un segment par ligne.
 //
-// Les etapes affichees sont les segments du trajet, pas les manoeuvres du
-// calculateur d'itineraires. Ce que l'utilisateur a besoin de savoir avant de
-// partir, c'est l'enchainement — marcher jusqu'a la station, prendre le velo,
-// marcher jusqu'a l'arret, prendre le metro — et non « tourner a droite dans
-// 80 m », qui releve du guidage pas-a-pas et n'a de sens qu'en chemin.
+// Les étapes affichées sont les segments du trajet, pas les manœuvres du
+// calculateur d'itinéraires. Ce que l'utilisateur a besoin de savoir avant de
+// partir, c'est l'enchaînement — marcher jusqu'à la station, prendre le vélo,
+// marcher jusqu'à l'arrêt, prendre le métro — et non « tourner à droite dans
+// 80 m », qui releve du guidage pas-à-pas et n'a de sens qu'en chemin.
 //
-// La liste n'est jamais repliee : c'est l'information principale d'une option
-// d'itineraire, la demander d'un geste supplementaire revient a la cacher.
+// La liste n'est jamais repliée : c'est l'information principale d'une option
+// d'itinéraire, la demander d'un geste supplémentaire revient à la cacher.
 import type { RouteLeg, RouteOption } from '../../types';
 import { formatDistance, visibleLegs } from '../../lib/planner';
 import { legColor } from '../map/legStyle';
@@ -16,8 +16,8 @@ import { MODE_ICON } from '../app/shared';
 function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
     const Icon = MODE_ICON[leg.mode];
     const color = legColor(leg);
-    // Le nom de ligne est deja porte par la pastille : le repeter dans le titre
-    // donnerait "Metro D Metro D vers Venissieux".
+    // Le nom de ligne est déjà porte par la pastille : le repeter dans le titre
+    // donnerait "Métro D Métro D vers Vénissieux".
     const title = leg.mapLabel && leg.title.startsWith(leg.mapLabel) ? leg.title.slice(leg.mapLabel.length).trim() : leg.title;
 
     return (
@@ -29,8 +29,8 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
                 >
                     <Icon className="size-3.5" aria-hidden="true" />
                 </span>
-                {/* Le filet relie visuellement les etapes : on lit une suite, pas une
-            liste de cartes independantes. */}
+                {/* Le filet relie visuellement les étapes : on lit une suite, pas une
+            liste de cartes indépendantes. */}
                 {last ? null : <span className="mt-1 w-px flex-1 bg-border" aria-hidden="true" />}
             </div>
 
@@ -48,8 +48,8 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
                         {title}
                     </strong>
                     {/* Une correspondance interne n'a pas de distance fiable dans le
-              GTFS. Afficher "0 m" ferait passer une absence de donnee pour
-              une mesure ; sa duree estimee suffit. */}
+              GTFS. Afficher "0 m" ferait passer une absence de donnée pour
+              une mesure ; sa durée estimée suffit. */}
                     <span className="shrink-0 font-mono text-[0.68rem] text-muted-foreground">
                         {leg.transfer ? `${leg.durationMinutes} min` : (
                             <>{formatDistance(leg.distanceKm)} &middot; {leg.durationMinutes} min</>
@@ -71,9 +71,9 @@ export function RouteSteps({ routeOption }: { routeOption: RouteOption }) {
     }
 
     return (
-        <section aria-label="Etapes de l'itineraire">
+        <section aria-label="Étapes de l'itinéraire">
             <h3 className="mb-2 text-[0.68rem] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                Etapes
+                Étapes
             </h3>
             <ol className="m-0 list-none p-0">
                 {legs.map((leg, index) => (

@@ -1,9 +1,9 @@
-// La session : reprise au demarrage, ouverture a la connexion, fermeture a la
-// deconnexion ou a l'effacement du compte.
+// La session : reprise au démarrage, ouverture à la connexion, fermeture à la
+// déconnexion ou à l'effacement du compte.
 //
-// La session est la seule requete qui ne se relit jamais d'elle-meme : la
-// connexion et la deconnexion l'ecrivent directement dans le cache, et ce
-// qu'elle rend a l'ouverture amorce chaque ressource du compte.
+// La session est la seule requête qui ne se relit jamais d'elle-même : la
+// connexion et la déconnexion l'ecrivent directement dans le cache, et ce
+// qu'elle rend à l'ouverture amorce chaque ressource du compte.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { Session } from '../contracts';
@@ -22,15 +22,15 @@ export function readSession(client: QueryClient): Session | null {
     return client.getQueryData(sessionQuery.queryKey) ?? null;
 }
 
-/** Ouvre une session : le compte et son etat, tels que le serveur les rend. */
+/** Ouvre une session : le compte et son état, tels que le serveur les rend. */
 export function openSession(client: QueryClient, session: Session): void {
     client.setQueryData(sessionQuery.queryKey, session);
 }
 
 export function closeSession(client: QueryClient): void {
     // Purger d'abord les ressources puis fermer la session. Les observateurs
-    // des ecrans du compte peuvent encore se rendre entre deux notifications :
-    // ils doivent alors voir l'ancienne session, jamais un compte deja absent.
+    // des écrans du compte peuvent encore se rendre entre deux notifications :
+    // ils doivent alors voir l'ancienne session, jamais un compte déjà absent.
     client.getMutationCache().clear();
     client.removeQueries({ queryKey: queryKeys.account });
     client.setQueryData(sessionQuery.queryKey, null);
@@ -42,13 +42,13 @@ export function logout(client: QueryClient): Promise<void> {
     return revocation;
 }
 
-/** Droit a l'effacement : le serveur supprime en cascade, puis la session se ferme. */
+/** Droit à l'effacement : le serveur supprime en cascade, puis la session se ferme. */
 export function deleteAccountOptions(client: QueryClient) {
     return mutationOptions({
         mutationKey: mutationKeys.deleteAccount,
         mutationFn: () => deleteAccount(),
         onSuccess: () => closeSession(client),
-        // Un refus reste lisible (useSaveError) tant qu'un succes ne l'a pas remplace.
+        // Un refus reste lisible (useSaveError) tant qu'un succès ne l'a pas remplace.
         gcTime: Infinity,
     });
 }

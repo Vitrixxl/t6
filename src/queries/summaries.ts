@@ -1,7 +1,7 @@
-// Syntheses derivees de plusieurs parties du compte. Les routines n'ecrivent
-// rien dans l'historique : leurs passages echus sont ajoutes au moment de
-// compter, par les memes fonctions pour les objectifs et le suivi carbone,
-// donc les deux ecrans annoncent le meme chiffre.
+// Syntheses dérivées de plusieurs parties du compte. Les routines n'ecrivent
+// rien dans l'historique : leurs passages échus sont ajoutés au moment de
+// compter, par les mêmes fonctions pour les objectifs et le suivi carbone,
+// donc les deux écrans annoncent le même chiffre.
 import { useMemo } from 'react';
 import type { CarbonSummary, TripActivitySummary } from '../types';
 import { summarizeCarbon } from '../lib/carbon';

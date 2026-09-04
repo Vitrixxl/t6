@@ -1,5 +1,5 @@
-// Dispositions de l'ecran principal. L'orchestrateur fournit l'etat et les
-// actions ; ce module decide uniquement ou afficher chaque bloc.
+// Dispositions de l'écran principal. L'orchestrateur fournit l'état et les
+// actions ; ce module décide uniquement où afficher chaque bloc.
 import type { Dispatch, SetStateAction } from 'react';
 import type { GeoPoint, RouteOption, TransportNetwork } from '../../types';
 import { CarbonPanel } from '../carbon/CarbonPanel';
@@ -46,7 +46,7 @@ function SaveErrorBanner({ message }: { message: string | null }) {
     }
     return (
         <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs leading-5 text-red-800">
-            Action refusee par le serveur : {message}
+            Action refusée par le serveur : {message}
         </p>
     );
 }

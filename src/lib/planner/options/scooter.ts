@@ -1,4 +1,4 @@
-// Generateur d'option : scooter.
+// Générateur d'option : scooter.
 import type { RouteLeg, RouteOption, RouteRequest } from '../../../types';
 import type { RouteAccessPlan } from '../access';
 import { stationToPoint, withinServiceArea } from '../geo';
@@ -9,7 +9,7 @@ export function createScooterOption(
     directKm: number,
     access: RouteAccessPlan['scooter'],
 ): RouteOption | null {
-    // La disponibilite au depart ne suffit pas : sans borne a l'arrivee, une
+    // La disponibilité au départ ne suffit pas : sans borne à l'arrivée, une
     // trottinette libre a 200 m suffisait a proposer n'importe quelle distance,
     // Lyon-Paris compris (B17).
     if (!withinServiceArea(destination)) {
@@ -35,22 +35,22 @@ export function createScooterOption(
             ...createLeg({
                 id: 'scooter-core',
                 mode: 'scooter',
-                title: 'Trottinette partagee',
+                title: 'Trottinette partagée',
                 from: stationToPoint(station),
                 to: destination,
                 distanceKm: directKm * 1.06,
                 accessible: !profile.accessibilityNeed,
-                // Deverrouillage par l'application.
+                // Déverrouillage par l'application.
                 estimate: { overheadMinutes: 1 },
             }),
-            detail: `${station.scooters_available} trottinettes disponibles au depart.`,
+            detail: `${station.scooters_available} trottinettes disponibles au départ.`,
         },
     ];
 
     return buildOption({
         id: 'scooter',
         title: 'Trottinette',
-        summary: 'Trajet direct en trottinette partagee selon disponibilite.',
+        summary: 'Trajet direct en trottinette partagée selon disponibilité.',
         modes: ['walk', 'scooter'],
         legs,
         reliabilityScore: 80,

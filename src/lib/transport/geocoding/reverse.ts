@@ -1,7 +1,7 @@
 // Geocodage inverse : d'un point de la carte vers une adresse lisible.
 //
 // Utilise pour nommer un point choisi par appui long. Sans cela, l'utilisateur
-// verrait des coordonnees brutes dans son champ de recherche.
+// verrait des coordonnées brutes dans son champ de recherche.
 import type { GeoPoint } from '../../../types';
 import { withTimeout } from '../http';
 
@@ -12,8 +12,8 @@ interface ReverseResponse {
 }
 
 /**
- * Rend un libelle pour un point. En cas d'echec (reseau, point hors couverture
- * BAN), on retombe sur les coordonnees : l'utilisateur garde un point
+ * Rend un libellé pour un point. En cas d'échec (réseau, point hors couverture
+ * BAN), on retombe sur les coordonnées : l'utilisateur garde un point
  * utilisable, seulement moins bien nomme.
  */
 export async function describePoint(lat: number, lon: number, signal?: AbortSignal): Promise<GeoPoint> {

@@ -1,9 +1,9 @@
-// Moteur d'itineraires : produit les options multimodales candidates, puis les
+// Moteur d'itinéraires : produit les options multimodales candidates, puis les
 // classe selon le profil de l'utilisateur.
 //
-// Chaque mode a son generateur dans options/ ; ce fichier ne fait que les
-// appeler et trier le resultat. Ajouter un mode revient donc a ajouter un
-// fichier, sans toucher a la logique de classement.
+// Chaque mode à son générateur dans options/ ; ce fichier ne fait que les
+// appeler et trier le résultat. Ajouter un mode revient donc a ajouter un
+// fichier, sans toucher à la logique de classement.
 import type { MobilityProfile, RouteLeg, RouteOption, RouteRequest } from '../../types';
 import { estimateRouteAccessPlan, type RouteAccessPlan } from './access';
 import { haversineDistanceKm } from './geo';
@@ -40,7 +40,7 @@ export function planRoutes(
 
 /**
  * Note et classe les options. Extrait de `planRoutes` parce que le classement
- * doit etre refait apres mesure : le score depend de la duree et du carbone,
+ * doit être refait après mesure : le score dépend de la durée et du carbone,
  * qui changent quand la voirie remplace le vol d'oiseau.
  */
 export function rankRoutes(routes: RouteOption[], profile: MobilityProfile): RouteOption[] {
@@ -50,9 +50,9 @@ export function rankRoutes(routes: RouteOption[], profile: MobilityProfile): Rou
 /**
  * Mesure toutes les options par le service de routage, puis les reclasse.
  *
- * Les distances a vol d'oiseau ne servent qu'a construire les segments avant
+ * Les distances à vol d'oiseau ne servent qu'a construire les segments avant
  * leur mesure. Ces chiffres ne doivent pas atteindre l'interface : une liste ou
- * une ligne mesuree et les autres estimees ne sont pas comparables (B20).
+ * une ligne mesurée et les autres estimées ne sont pas comparables (B20).
  */
 export async function measureRoutes(
     routes: RouteOption[],
@@ -63,9 +63,9 @@ export async function measureRoutes(
         routes.map(async (option) => applyRoutedLegs(option, await measure(option.legs))),
     );
 
-    // Une option dont un segment n'a pas de trace n'a pas de mesure : l'afficher
-    // supposerait de retomber sur son estimation, donc de remettre deux methodes
-    // dans la meme liste.
+    // Une option dont un segment n'a pas de tracé n'a pas de mesure : l'afficher
+    // supposerait de retomber sur son estimation, donc de remettre deux méthodes
+    // dans la même liste.
     return rankRoutes(
         measured.filter((option) =>
             option.legs.length > 0 && option.legs.every((leg) => leg.transfer || leg.path.length >= 2),

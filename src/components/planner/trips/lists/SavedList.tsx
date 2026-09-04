@@ -1,4 +1,4 @@
-// Itineraires enregistres : reprogrammer ou supprimer.
+// Itinéraires enregistrés : reprogrammer ou supprimer.
 import { CalendarPlus, Route, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { SavedRouteRecord } from '../../../../types';
@@ -19,8 +19,8 @@ export function SavedList({
         return (
             <EmptyState
                 icon={<Route className="size-4" aria-hidden="true" />}
-                title="Aucun itineraire enregistre"
-                hint="Enregistre un itineraire calcule pour le retrouver ici et le planifier en un clic."
+                title="Aucun itinéraire enregistré"
+                hint="Enregistre un itinéraire calculé pour le retrouver ici et le planifier en un clic."
             />
         );
     }

@@ -1,9 +1,9 @@
-// Selection des points d'acces au reseau par temps de trajet reel.
+// Sélection des points d'accès au réseau par temps de trajet réel.
 //
-// Haversine ne sert qu'a retenir huit candidats : une barriere urbaine peut
-// rendre le point geometriquement le plus proche beaucoup plus long a rejoindre.
+// Haversine ne sert qu'à retenir huit candidats : une barriere urbaine peut
+// rendre le point géométriquement le plus proche beaucoup plus long a rejoindre.
 // La decision finale repose donc sur une matrice OSRM, puis le planificateur
-// pur recoit les stations et trajets deja choisis.
+// pur reçoit les stations et trajets déjà choisis.
 import type { GeoPoint, RouteMeasure, RoutableMode, SharedStation, TransportNetwork } from '../../types';
 import { MAX_STATION_ACCESS_KM } from './constants';
 import { haversineDistanceKm, nearestStation, stationCandidates, stationToPoint, stopToPoint } from './geo';
@@ -30,7 +30,7 @@ export interface StationAccess {
 export interface FeederAccess {
     vehicle: StationAccess;
     journey: TransitJourney;
-    /** Le Velo'v doit etre rendu avant de rejoindre la station de transport. */
+    /** Le Vélo'v doit être rendu avant de rejoindre la station de transport. */
     dropoff: StationAccess | null;
 }
 
@@ -119,7 +119,7 @@ function stopAccesses(
     return result;
 }
 
-/** Tous les acces pietons initiaux tiennent dans une seule matrice OSRM. */
+/** Tous les accès piétons initiaux tiennent dans une seule matrice OSRM. */
 async function routedWalkingAccess(
     network: TransportNetwork,
     origin: GeoPoint,
@@ -169,7 +169,7 @@ async function routedWalkingAccess(
     };
 }
 
-/** Velo et trottinette partagent le meme profil OSRM et donc la meme matrice. */
+/** Vélo et trottinette partagent le même profil OSRM et donc la même matrice. */
 async function routedFeederAccess(
     network: TransportNetwork,
     bikePickup: StationAccess | null,

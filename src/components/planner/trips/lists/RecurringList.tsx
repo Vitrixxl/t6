@@ -1,7 +1,7 @@
 // Routines : mise en pause, reprise, suppression.
 //
-// Une routine n'a pas d'occurrences a cocher : chaque passage deja echu compte
-// de lui-meme. La carte le montre en annonçant le prochain passage et le
+// Une routine n'a pas d'occurrences à cocher : chaque passage déjà échu compte
+// de lui-même. La carte le montre en annonçant le prochain passage et le
 // nombre de passages comptes cette semaine.
 import { Pause, Play, Repeat, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/button';
@@ -23,8 +23,8 @@ export function RecurringList({
         return (
             <EmptyState
                 icon={<Repeat className="size-4" aria-hidden="true" />}
-                title="Aucun trajet recurrent"
-                hint="Automatise tes deplacements reguliers (ex: aller-retour au travail) : chaque passage prevu compte de lui-meme dans tes objectifs et ton suivi carbone."
+                title="Aucun trajet récurrent"
+                hint="Automatise tes déplacements réguliers (ex: aller-retour au travail) : chaque passage prévu compte de lui-même dans tes objectifs et ton suivi carbone."
             />
         );
     }
@@ -56,11 +56,11 @@ export function RecurringList({
                                 </h3>
                                 <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />
                                 <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                                    Depart {trip.departureTime}
+                                    Départ {trip.departureTime}
                                     {trip.returnTime ? ` · retour ${trip.returnTime}` : ''}
                                 </p>
                                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                    {next ? `Prochain passage : ${formatScheduleLabel(next.toISOString(), now)}` : 'Aucun passage prevu'}
+                                    {next ? `Prochain passage : ${formatScheduleLabel(next.toISOString(), now)}` : 'Aucun passage prévu'}
                                     {` · ${thisWeek} passage${thisWeek > 1 ? 's' : ''} cette semaine`}
                                 </p>
                             </div>
@@ -99,7 +99,7 @@ export function RecurringList({
                                 size="compactIcon"
                                 className="h-7 w-7 text-muted-foreground"
                                 onClick={() => onDelete(trip)}
-                                aria-label={`Supprimer le trajet recurrent ${trip.label}`}
+                                aria-label={`Supprimer le trajet récurrent ${trip.label}`}
                             >
                                 <Trash2 className="size-3.5" aria-hidden="true" />
                             </Button>

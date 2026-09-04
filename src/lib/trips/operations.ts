@@ -1,6 +1,6 @@
-// Operations pures sur les vues locales des trajets programmes et routines.
-// Elles projettent immediatement une commande granulaire dans le cache ; elles
-// ne definissent ni requete HTTP ni stockage.
+// Opérations pures sur les vues locales des trajets programmés et routines.
+// Elles projettent immédiatement une commande granulaire dans le cache ; elles
+// ne definissent ni requête HTTP ni stockage.
 import type { PlannedTrip, PlannedTripStatus, RecurringTrip } from '../../types';
 import { PLANNED_LIMIT } from '../../contracts/limits';
 import { isRoutinePaused } from './routines';
@@ -41,10 +41,10 @@ export function upsertRecurring(trips: RecurringTrip[], trip: RecurringTrip): Re
 }
 
 /**
- * Pause : la periode d'activite courante se clot, les passages suivants ne
- * comptent plus. Reprise : une nouvelle periode s'ouvre, et les passages
+ * Pause : la période d'activite courante se clôt, les passages suivants ne
+ * comptent plus. Reprise : une nouvelle période s'ouvre, et les passages
  * tombes pendant la pause restent hors compte. Sans effet si la routine est
- * deja dans l'etat demande.
+ * déjà dans l'état demande.
  */
 export function setRecurringPaused(
     trips: RecurringTrip[],

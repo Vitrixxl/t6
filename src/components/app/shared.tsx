@@ -1,12 +1,12 @@
-// Elements partages par les modules d'interface : carte differee, constantes de
-// modes, etats de calques et de feuille mobile, micro-composants transverses.
+// Éléments partagés par les modules d'interface : carte différée, constantes de
+// modes, états de calques et de feuille mobile, micro-composants transverses.
 import { type ComponentProps, lazy, Suspense } from 'react';
 import { Bike, Bus, Footprints, Zap } from 'lucide-react';
 import type { MobilityMode, RouteOption } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 
-// La carte embarque MapLibre (~2/3 du poids applicatif). On la charge a la
-// demande, apres l'ecran de connexion, pour alleger le bundle initial.
+// La carte embarque MapLibre (~2/3 du poids applicatif). On la charge à la
+// demande, après l'écran de connexion, pour alleger le bundle initial.
 export const LazyUrbanMap = lazy(() => import('../map/UrbanMap').then((module) => ({ default: module.UrbanMap })));
 
 export function UrbanMap(props: ComponentProps<typeof LazyUrbanMap>) {
@@ -25,7 +25,7 @@ export function UrbanMap(props: ComponentProps<typeof LazyUrbanMap>) {
 
 export const MODE_OPTIONS: Array<{ mode: MobilityMode; label: string }> = [
     { mode: 'walk', label: 'Marche' },
-    { mode: 'bike', label: 'Velo' },
+    { mode: 'bike', label: 'Vélo' },
     { mode: 'scooter', label: 'Trottinette' },
     { mode: 'transit', label: 'Transport public' },
 ];
@@ -169,8 +169,8 @@ export function LayerPill({ active, onClick, children }: { active: boolean; onCl
 }
 
 export function Metric({ label, value, compact = false }: { label: string; value: string; compact?: boolean }) {
-    // <dl> auto-porteur : les dt/dd restent valides quel que soit le conteneur
-    // parent (grilles div), exigence WCAG verifiee par l'audit axe-core.
+    // <dl> auto-porteur : les dt/dd restent validés quel que soit le conteneur
+    // parent (grilles div), exigence WCAG vérifiée par l'audit axe-core.
     return (
         <dl className={`m-0 rounded-lg border border-border/70 bg-background/75 ${compact ? 'px-2 py-1.5' : 'p-2.5'}`}>
             <dt className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{label}</dt>

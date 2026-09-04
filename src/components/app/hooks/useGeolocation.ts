@@ -1,9 +1,9 @@
-// Geolocalisation de l'utilisateur.
+// Géolocalisation de l'utilisateur.
 //
 // Deux temps distincts : une demande explicite (consentement du navigateur,
 // exigence C6/C8 - la position n'est jamais prise sans action de l'utilisateur),
-// puis un suivi leger qui tient le repere "Ma position" a jour sur la carte.
-// Il ne s'agit pas de guidage : uniquement l'affichage temps reel.
+// puis un suivi léger qui tient le repere "Ma position" à jour sur la carte.
+// Il ne s'agit pas de guidage : uniquement l'affichage temps réel.
 import { useEffect, useRef, useState } from 'react';
 import type { GeoPoint } from '../../../types';
 import { IS_DEV } from '../../../env';
@@ -12,16 +12,16 @@ const FIRST_FIX_OPTIONS: PositionOptions = { enableHighAccuracy: true, maximumAg
 const WATCH_OPTIONS: PositionOptions = { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 };
 
 /**
- * Position simulee en developpement.
+ * Position simulée en développement.
  *
- * Le poste de developpement n'est pas a Lyon, et le navigateur d'un
- * environnement de test refuse souvent la geolocalisation : le parcours
- * "Ma position" devenait alors intestable, alors qu'il est au coeur de F2.
- * Ce point est place a la Guillotiere, dans le perimetre du reseau, pour que
- * les itineraires calcules ressemblent a ceux d'un utilisateur reel.
+ * Le poste de développement n'est pas a Lyon, et le navigateur d'un
+ * environnement de test refuse souvent la géolocalisation : le parcours
+ * "Ma position" devenait alors intestable, alors qu'il est au cœur de F2.
+ * Ce point est place à la Guillotiere, dans le périmètre du réseau, pour que
+ * les itinéraires calculés ressemblent a ceux d'un utilisateur réel.
  *
- * La garde `IS_DEV` est evaluee a la compilation : le bloc
- * disparait du build de production, ou seule la geolocalisation du navigateur
+ * La garde `IS_DEV` est évaluée à la compilation : le bloc
+ * disparaît du build de production, ou seule la géolocalisation du navigateur
  * subsiste.
  */
 const DEV_POSITION: GeoPoint = {
@@ -33,17 +33,17 @@ const DEV_POSITION: GeoPoint = {
 
 export interface Geolocation {
     currentPosition: GeoPoint | null;
-    /** Message affiche a l'utilisateur : la precision reelle est annoncee, jamais supposee. */
+    /** Message affiche à l'utilisateur : la précision réelle est annoncée, jamais supposée. */
     status: string;
     requestCurrentPosition: () => Promise<GeoPoint | null>;
 }
 
 export function useGeolocation(): Geolocation {
     const [currentPosition, setCurrentPosition] = useState<GeoPoint | null>(null);
-    const [status, setStatus] = useState('GPS non demande');
+    const [status, setStatus] = useState('GPS non demandé');
     const watchIdRef = useRef<number | null>(null);
 
-    // Le suivi est arrete au demontage : pas de capteur laisse actif en fond.
+    // Le suivi est arrête au démontage : pas de capteur laisse actif en fond.
     useEffect(
         () => () => {
             if (watchIdRef.current !== null) {
@@ -61,7 +61,7 @@ export function useGeolocation(): Geolocation {
             accuracyMeters: position.coords.accuracy,
         };
         setCurrentPosition(point);
-        setStatus(`GPS ok - precision ${Math.round(position.coords.accuracy)} m`);
+        setStatus(`GPS ok - précision ${Math.round(position.coords.accuracy)} m`);
         return point;
     };
 
@@ -76,7 +76,7 @@ export function useGeolocation(): Geolocation {
         new Promise((resolve) => {
             if (IS_DEV) {
                 setCurrentPosition(DEV_POSITION);
-                setStatus('GPS simule (developpement)');
+                setStatus('GPS simulé (développement)');
                 resolve(DEV_POSITION);
                 return;
             }
@@ -96,7 +96,7 @@ export function useGeolocation(): Geolocation {
                 },
                 (error) => {
                     // Refus assume : l'utilisateur garde la saisie manuelle (C6).
-                    setStatus(`GPS refuse: ${error.message}`);
+                    setStatus(`GPS refusé: ${error.message}`);
                     resolve(null);
                 },
                 FIRST_FIX_OPTIONS,

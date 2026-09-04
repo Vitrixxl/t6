@@ -1,5 +1,5 @@
-// Trajets programmes : lecture de la ressource et commandes qui la modifient.
-// Chaque succes applique uniquement la reponse du serveur au cache concerne.
+// Trajets programmés : lecture de la ressource et commandes qui la modifient.
+// Chaque succès applique uniquement la réponse du serveur au cache concerne.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import type { PlannedTrip, TripRecord } from '../types';

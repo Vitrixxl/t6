@@ -1,31 +1,31 @@
-// Contrat de la route de calcul d'itineraire.
+// Contrat de la route de calcul d'itinéraire.
 import { z } from 'zod';
 import { geoPoint } from './primitives';
 
-/** Modes qui empruntent la voirie et peuvent donc etre mesures par OSRM. */
-// `car` est exclusivement un profil de mesure pour la reference carbone : il
+/** Modes qui empruntent la voirie et peuvent donc être mesures par OSRM. */
+// `car` est exclusivement un profil de mesure pour la référence carbone : il
 // n'appartient pas a MobilityMode et ne peut donc jamais devenir une option.
 export const ROUTABLE_MODES = ['walk', 'bike', 'scooter', 'car'] as const;
 export const routableMode = z.enum(ROUTABLE_MODES);
 export type RoutableMode = z.infer<typeof routableMode>;
 
 /**
- * Les coordonnees arrivent en chaine dans la requete (`?from=4.83,45.75`) :
- * une paire tient en un parametre, et le format est lisible dans un journal
+ * Les coordonnées arrivent en chaîne dans la requête (`?from=4.83,45.75`) :
+ * une paire tient en un paramètre, et le format est lisible dans un journal
  * comme dans une barre d'adresse.
  *
- * Le nombre de decimales n'est volontairement pas borne. Une premiere version
+ * Le nombre de décimales n'est volontairement pas borné. Une première version
  * le limitait a sept, ce qui rejetait cinquante-deux des quatre cent
- * soixante-cinq stations Velo'v du flux GBFS, publiees avec treize decimales :
- * tout itineraire passant par l'une d'elles echouait en 422, que le client
+ * soixante-cinq stations Vélo'v du flux GBFS, publiées avec treize décimales :
+ * tout itinéraire passant par l'une d'elles échouait en 422, que le client
  * traduisait par « service de routage indisponible » (B15). Une contrainte de
  * validation doit borner ce qui est dangereux — ici la longueur totale — sans
- * decreter une precision que la source ne respecte pas.
+ * decreter une précision que la source ne respecte pas.
  *
- * Elysia decoupe sur la virgule toute valeur de requete validee par un
- * schema qu'il ne connait pas : la paire arrive donc en tableau de deux
+ * Elysia decoupe sur la virgule toute valeur de requête validée par un
+ * schéma qu'il ne connaît pas : la paire arrive donc en tableau de deux
  * chaines, que le contrat recolle avant de la verifier. La documentation
- * OpenAPI, elle, decrit bien une chaine.
+ * OpenAPI, elle, décrit bien une chaîne.
  */
 const coordinatePair = z.preprocess(
     (value) => (Array.isArray(value) ? value.join(',') : value),
@@ -51,15 +51,15 @@ export const routeGeometry = z.object({
     distanceMeters: z.number().min(0),
     durationSeconds: z.number().min(0),
     instructions: z.array(routeInstruction),
-    /** D'ou vient la reponse : utile en revue, et pour mesurer le cache. */
+    /** D'où vient la réponse : utile en revue, et pour mesurer le cache. */
     source: z.enum(['cache', 'upstream']),
 });
 export type RouteGeometry = z.infer<typeof routeGeometry>;
 
 /**
- * Une matrice borne les appels necessaires pour classer quelques points d'acces
- * par temps reel. Chaque categorie garde huit candidats ; une requete agrege
- * plusieurs categories, d'ou un maximum de trente-deux points par axe.
+ * Une matrice borne les appels nécessaires pour classer quelques points d'accès
+ * par temps réel. Chaque categorie garde huit candidats ; une requête agrege
+ * plusieurs catégories, d'où un maximum de trente-deux points par axe.
  */
 const routeMatrixPoints = z.array(geoPoint.pick({ lat: true, lon: true })).min(1).max(32);
 

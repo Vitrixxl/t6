@@ -1,13 +1,13 @@
-// Routines : une habitude declaree, jamais materialisee.
+// Routines : une habitude déclarée, jamais matérialisée.
 //
 // Une routine dit « ces jours-la, a cette heure, je fais ce trajet ». Rien
-// n'est genere a l'avance : au moment de compter les trajets faits ou le CO2
-// evite, on regarde simplement combien de passages sont deja tombes dans ses
-// periodes d'activite. Pas d'occurrence a creer, a dedoublonner ni a purger ;
-// un compteur se recalcule, il ne peut pas se desynchroniser.
+// n'est génère à l'avance : au moment de compter les trajets faits ou le CO2
+// évite, on regarde simplement combien de passages sont déjà tombes dans ses
+// périodes d'activite. Pas d'occurrence a créér, a dedoublonner ni a purger ;
+// un compteur se recalcule, il ne peut pas se désynchroniser.
 import type { RecurringTrip } from '../../types';
 
-/** Une routine est en pause quand sa derniere periode d'activite est close. */
+/** Une routine est en pause quand sa derniere période d'activite est close. */
 export function isRoutinePaused(routine: RecurringTrip): boolean {
     const last = routine.periods[routine.periods.length - 1];
     return !last || last.to !== null;
@@ -35,9 +35,9 @@ export function occurrencesBetween(routine: RecurringTrip, from: Date, to: Date)
 }
 
 /**
- * Passages deja echus, tombes dans les periodes d'activite et pas avant
- * `floor`. Un passage dont l'heure n'est pas encore passee ne compte pas :
- * ce qui n'a pas encore pu etre fait n'est pas fait.
+ * Passages déjà échus, tombes dans les périodes d'activite et pas avant
+ * `floor`. Un passage dont l'heure n'est pas encore passée ne compte pas :
+ * ce qui n'a pas encore pu être fait n'est pas fait.
  */
 export function countOccurrences(routine: RecurringTrip, floor: Date, now: Date): number {
     let count = 0;
@@ -74,14 +74,14 @@ export function sumRoutines(routines: RecurringTrip[], floor: Date, now: Date): 
         totals.trips += count;
         totals.distanceKm += count * routine.distanceKm;
         totals.carbonGrams += count * routine.carbonGrams;
-        // Une comparaison absente ne vaut pas zero dans le trajet. Elle est
-        // simplement exclue de l'agregat des seules economies mesurees.
+        // Une comparaison absente ne vaut pas zéro dans le trajet. Elle est
+        // simplement exclue de l'agregat des seules économies mesurées.
         totals.carbonSavedGrams += count * (routine.carbonSavedGrams ?? 0);
     }
     return totals;
 }
 
-/** Plancher pour « depuis toujours » : avant toute date de creation possible. */
+/** Plancher pour « depuis toujours » : avant toute date de création possible. */
 export const BEGINNING_OF_TIME = new Date(0);
 
 function startOfDay(date: Date): Date {

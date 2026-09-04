@@ -1,10 +1,10 @@
-// Garde d'authentification. `resolve` calcule une valeur derivee du contexte
+// Garde d'authentification. `resolve` calcule une valeur dérivée du contexte
 // avant le gestionnaire : ici l'identifiant de l'utilisateur porte par le
-// cookie de session. Toute route qui monte ce plugin recoit un `userId` deja
-// type comme une chaine, et n'a aucune verification a refaire.
+// cookie de session. Toute route qui monte ce plugin reçoit un `userId` déjà
+// typé comme une chaîne, et n'a aucune vérification à refaire.
 //
 // Le contexte est passe en argument, jamais reconstruit : il porte la
-// connexion a la base, il ne doit exister qu'une fois par application.
+// connexion à la base, il ne doit exister qu'une fois par application.
 import { Elysia } from 'elysia';
 import type { AppContext } from './context.ts';
 import { hashToken } from '../security/tokens.ts';
@@ -22,7 +22,7 @@ export function authGuard(ctx: AppContext) {
             const session = repositories.sessions.findValid(hashToken(String(token)), new Date().toISOString());
             if (!session) {
                 cookie[SESSION_COOKIE]?.remove();
-                return status(401, { error: 'Session expiree.' });
+                return status(401, { error: 'Session expirée.' });
             }
 
             return { userId: session.user_id };

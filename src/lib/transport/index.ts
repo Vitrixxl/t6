@@ -1,5 +1,5 @@
-// Integration des flux transport : geocodage, routage et sources de donnees.
-// Le reste de l'application importe d'ici et ignore le decoupage interne.
+// Intégration des flux transport : géocodage, routage et sources de données.
+// Le reste de l'application importe d'ici et ignore le découpage interne.
 export { describePoint, searchPlaces, type PlaceKind, type PlaceSearchResult } from './geocoding';
 export { enhanceLegsWithLiveRouting, fetchRouteMatrix, hasCompleteGeometry } from './routing';
 export {

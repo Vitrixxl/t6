@@ -1,9 +1,9 @@
-// Module suivi carbone : synthese de la semaine en cours, objectif et
+// Module suivi carbone : synthèse de la semaine en cours, objectif et
 // historique effacable.
 //
-// Les chiffres de l'entete portent sur la semaine, l'historique dessous sur les
-// cinquante derniers trajets : les libelles le disent, sinon le meme ecran
-// affiche deux periodes sans le signaler (B16).
+// Les chiffres de l'entête portent sur la semaine, l'historique dessous sur les
+// cinquante derniers trajets : les libellés le disent, sinon le même écran
+// affiche deux périodes sans le signaler (B16).
 import { Button } from '../ui/button';
 import { useCarbonSummary, useClearTripHistory, useProfile, useTripRecords } from '../../queries';
 import { Metric } from '../app/shared';
@@ -32,7 +32,7 @@ export function CarbonPanel() {
                     <Metric label="Comparaison voiture / semaine" value={formatCarbonComparison(summary.totalSavedGrams)} />
                 </div>
                 {records.length > 0 ? (
-                    <ul className="grid gap-2 text-sm" aria-label="Derniers trajets enregistres">
+                    <ul className="grid gap-2 text-sm" aria-label="Derniers trajets enregistrés">
                         {records.slice(0, 3).map((record) => (
                             <li key={record.id} className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
                                 <span>{record.routeTitle}</span>
@@ -41,7 +41,7 @@ export function CarbonPanel() {
                         ))}
                     </ul>
                 ) : (
-                    <p className="text-sm text-muted-foreground">Marque un trajet planifie comme fait pour alimenter le suivi.</p>
+                    <p className="text-sm text-muted-foreground">Marque un trajet planifié comme fait pour alimenter le suivi.</p>
                 )}
                 <Button type="button" variant="outline" size="sm" onClick={clearHistory} disabled={records.length === 0}>
                     Effacer l'historique

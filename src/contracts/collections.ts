@@ -1,5 +1,5 @@
 // Contrats de lecture des collections du compte. Les ecritures ne prennent
-// jamais une liste : chaque ressource possede son PUT/DELETE dans trips.ts.
+// jamais une liste : chaque ressource possède son PUT/DELETE dans trips.ts.
 import { z } from 'zod';
 import { plannedTrip, recurringTrip, savedRoute, tripRecord } from './trips';
 

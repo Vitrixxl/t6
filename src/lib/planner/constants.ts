@@ -1,6 +1,6 @@
-// Constantes physiques du moteur d'itineraires : vitesses et reperes.
+// Constantes physiques du moteur d'itinéraires : vitesses et reperes.
 // Les facteurs carbone, qui portent une source et une version, vivent dans
-// emissions.ts.
+// émissions.ts.
 import type { GeoPoint, MobilityMode } from '../../types';
 
 export const SPEED_KMH: Record<MobilityMode, number> = {
@@ -17,10 +17,10 @@ export const MODE_LABELS: Record<MobilityMode, string> = {
     transit: 'transport public',
 };
 
-// Coefficients du modele de score, centralises et testes (routePlanner.test.ts).
-// Le score part de la fiabilite de l'option, ajoute un bonus par mode prefere et
+// Coefficients du modèle de score, centralisés et testes (routePlanner.test.ts).
+// Le score part de la fiabilité de l'option, ajoute un bonus par mode préféré et
 
-// RG3 : un segment velo/trottinette n'est propose que si une station est a portee de marche.
+// RG3 : un segment vélo/trottinette n'est propose que si une station est à portée de marche.
 export const MAX_STATION_ACCESS_KM = 0.4;
 
 export const LANDMARKS: GeoPoint[] = [

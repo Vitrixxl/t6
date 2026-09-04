@@ -1,5 +1,5 @@
-// Perimetre de la metropole desservie : les flux partages couvrent une zone
-// plus large que le service, on ecarte ce qui est hors perimetre.
+// Périmètre de la métropole desservie : les flux partagés couvrent une zone
+// plus large que le service, on ecarte ce qui est hors périmètre.
 export const CITY_CENTER = { lat: 45.7578, lon: 4.832 };
 export const METRO_RADIUS_KM = 16;
 export const STATION_RADIUS_KM = METRO_RADIUS_KM;

@@ -35,7 +35,7 @@ const NOW = new Date(2026, 6, 15, 7, 0);
 const LATER = new Date(2026, 6, 21, 12, 0);
 
 describe('planned trips', () => {
-    it('cree un trajet et le passe a fait avec horodatage', () => {
+    it('crée un trajet et le passe a fait avec horodatage', () => {
         const trip = createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 16, 8, 30), NOW);
 
         const done = setPlannedStatus(upsertPlanned([], trip), trip.id, 'done', new Date(2026, 6, 16, 9, 0));
@@ -46,13 +46,13 @@ describe('planned trips', () => {
         const record = plannedTripToRecord(done[0]);
         expect(record.routeTitle).toBe(SOURCE.label);
         expect(record.carbonSavedGrams).toBe(SOURCE.carbonSavedGrams);
-        // Un trajet marque fait porte forcement sa date d'achevement : l'affirmer
-        // avant la comparaison evite de comparer a `null` sans s'en apercevoir.
+        // Un trajet marqué fait porte forcement sa date d'achevement : l'affirmer
+        // avant la comparaison évite de comparer a `null` sans s'en apercevoir.
         expect(done[0].completedAt).not.toBeNull();
         expect(record.createdAt).toBe(done[0].completedAt as string);
     });
 
-    it('upcomingTrips ne retourne que les trajets a faire, tries par date', () => {
+    it('upcomingTrips ne retourne que les trajets à faire, tries par date', () => {
         const past = { ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 10, 8, 0), NOW), id: 'past' };
         const soon = { ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 15, 18, 0), NOW), id: 'soon' };
         const later = { ...createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 17, 8, 0), NOW), id: 'later' };
@@ -62,32 +62,32 @@ describe('planned trips', () => {
     });
 });
 
-// Une routine n'engendre aucun trajet : ses passages sont comptes a la
-// lecture, entre sa creation et maintenant, sur ses periodes d'activite.
-describe('routines — passages comptes a la lecture', () => {
+// Une routine n'engendre aucun trajet : ses passages sont comptes à la
+// lecture, entre sa création et maintenant, sur ses périodes d'activite.
+describe('routines — passages comptes à la lecture', () => {
     const routine = (returnTime: string | null = '18:00') =>
         createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [1, 3, 5], departureTime: '08:30', returnTime }, NOW);
 
-    it('compte les passages aller-retour des jours actifs entre la creation et maintenant', () => {
-        // Creee mercredi 15 a 07:00, lue mardi 21 a midi : mer 15, ven 17, lun 20,
-        // deux sens a chaque fois. Rien le mardi 21, qui n'est pas un jour actif.
+    it('compte les passages aller-retour des jours actifs entre la création et maintenant', () => {
+        // Créée mercredi 15 a 07:00, lue mardi 21 a midi : mer 15, ven 17, lun 20,
+        // deux sens à chaque fois. Rien le mardi 21, qui n'est pas un jour actif.
         expect(countOccurrences(routine(), new Date(0), LATER)).toBe(6);
         expect(countOccurrences(routine(null), new Date(0), LATER)).toBe(3);
     });
 
-    it('liste les heures de passage dans l ordre, aller puis retour', () => {
+    it('liste les heures de passage dans l’ordre, aller puis retour', () => {
         const passages = occurrencesBetween(routine(), NOW, new Date(2026, 6, 16));
         expect(passages.map((at) => at.getHours())).toEqual([8, 18]);
         expect(passages[0].getMinutes()).toBe(30);
     });
 
     // Descendant de B18 : un passage dont l'heure n'est pas encore venue n'est
-    // pas fait. Consultee a midi, la routine du jour ne compte que le matin.
-    it('ne compte pas un passage dont l heure n est pas encore passee', () => {
+    // pas fait. Consultée a midi, la routine du jour ne compte que le matin.
+    it('ne compte pas un passage dont l’heure n’est pas encore passée', () => {
         const midi = new Date(2026, 6, 15, 12, 0);
         expect(countOccurrences(routine(), new Date(0), midi)).toBe(1);
-        // Et rien avant la creation : la routine creee a 07:00 ne compte pas un
-        // passage de 06:00 le meme jour.
+        // Et rien avant la création : la routine créée a 07:00 ne compte pas un
+        // passage de 06:00 le même jour.
         const tot = createRecurringTrip(USER_ID, SOURCE, { daysOfWeek: [3], departureTime: '06:00', returnTime: null }, NOW);
         expect(countOccurrences(tot, new Date(0), midi)).toBe(0);
     });
@@ -97,7 +97,7 @@ describe('routines — passages comptes a la lecture', () => {
         expect(countOccurrences(routine(), new Date(2026, 6, 20), LATER)).toBe(2);
     });
 
-    it('la pause clot la periode, la reprise en ouvre une nouvelle', () => {
+    it('la pause clôt la période, la reprise en ouvre une nouvelle', () => {
         const created = routine();
         expect(isRoutinePaused(created)).toBe(false);
 
@@ -108,17 +108,17 @@ describe('routines — passages comptes a la lecture', () => {
         expect(nextOccurrence(paused[0], LATER)).toBeNull();
 
         // Reprise lundi 20 a 07:00 : le vendredi 17 reste hors compte, le lundi
-        // compte a nouveau.
+        // compte à nouveau.
         const resumed = setRecurringPaused(paused, created.id, false, new Date(2026, 6, 20, 7, 0));
         expect(isRoutinePaused(resumed[0])).toBe(false);
         expect(resumed[0].periods).toHaveLength(2);
         expect(countOccurrences(resumed[0], new Date(0), LATER)).toBe(4);
 
-        // Demander l'etat deja en place ne change rien.
+        // Demander l'état déjà en place ne change rien.
         expect(setRecurringPaused(resumed, created.id, false)[0]).toBe(resumed[0]);
     });
 
-    it('annonce le prochain passage d une routine active', () => {
+    it('annonce le prochain passage d’une routine active', () => {
         // Mercredi 07:00 : le prochain passage est l'aller de 08:30 du jour.
         expect(nextOccurrence(routine(), NOW)?.getTime()).toBe(new Date(2026, 6, 15, 8, 30).getTime());
         // Mardi midi : le prochain jour actif est le mercredi 22, aller a 08:30.
@@ -164,7 +164,7 @@ describe('summarizeTripActivity', () => {
         // Mois calendaire (juillet) : le trajet du 1er juin est exclu.
         expect(summary.doneThisMonth).toBe(7);
         expect(summary.savedThisMonthGrams).toBe(SOURCE.carbonSavedGrams * 7);
-        // A venir : seuls les trajets dates ; une routine n'est pas « a venir ».
+        // À venir : seuls les trajets dates ; une routine n'est pas « à venir ».
         expect(summary.upcomingCount).toBe(1);
         expect(summary.recurringActiveCount).toBe(1);
     });

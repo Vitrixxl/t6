@@ -1,5 +1,5 @@
 // Historique carbone : lecture, puis effacement volontaire. Les lignes sont
-// creees uniquement par la completion d'un trajet programme.
+// créées uniquement par la complétion d'un trajet programmé.
 import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
@@ -10,7 +10,7 @@ export function tripHistoryRoutes(ctx: AppContext) {
         .use(authGuard(ctx))
         .get('', ({ userId, repositories }) => repositories.tripRecords.list(userId), {
             response: { 200: tripRecords, 401: errorResponse },
-            detail: { summary: 'Lire l historique des trajets realises' },
+            detail: { summary: 'Lire l’historique des trajets réalisés' },
         })
         .delete(
             '',
@@ -20,7 +20,7 @@ export function tripHistoryRoutes(ctx: AppContext) {
             },
             {
                 response: { 200: okResponse, 401: errorResponse },
-                detail: { summary: 'Effacer volontairement tout l historique (idempotent)' },
+                detail: { summary: 'Effacer volontairement tout l’historique (idempotent)' },
             },
         );
 }

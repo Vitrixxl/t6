@@ -1,8 +1,8 @@
-// Vue agregee de l'etat d'un compte.
+// Vue agrégée de l'état d'un compte.
 //
-// Les depots restent specialises par table ; cette facade compose la reponse
+// Les dépôts restent specialises par table ; cette façade compose la réponse
 // unique attendue par le client au moment de l'hydratation, pour qu'aucune
-// route n'ait a connaitre la liste des depots a interroger.
+// route n'ait a connaître la liste des dépôts a interroger.
 import type { MobilityProfile, PlannedTrip, RecurringTrip, SavedRouteRecord, TripRecord } from '../../../src/types.ts';
 import type { PlannedTripRepository } from './planned-trips.ts';
 import type { RecurringTripRepository } from './recurring-trips.ts';

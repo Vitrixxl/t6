@@ -1,9 +1,9 @@
-// Protocole OSRM : profils, appel, lecture de la reponse.
+// Protocole OSRM : profils, appel, lecture de la réponse.
 //
-// OSRM prepare un jeu de donnees par profil : marche et velo ont des regles
-// differentes sur les memes rues (sens uniques, escaliers, zones pietonnes),
+// OSRM prépare un jeu de données par profil : marche et vélo ont des règles
+// différentes sur les mêmes rues (sens uniques, escaliers, zones piétonnes),
 // et ne peuvent donc pas partager un index. La trottinette reprend le profil
-// velo ; toutes les URLs restent derivees d'une meme racine configurable.
+// vélo ; toutes les URLs restent dérivées d'une même racine configurable.
 import { z } from 'zod';
 import type { GeoPoint, RouteInstruction, RoutableMode } from '../../../../src/types.ts';
 import { buildInstructions } from './instructions.ts';
@@ -17,7 +17,7 @@ let nextPublicRequestAt = 0;
 /**
  * L'instance publique refuse les rafales (HTTP 429). Les appels de plusieurs
  * options partagent donc une cadence au niveau du serveur. Une instance locale
- * n'est pas ralentie ; son interet est precisement d'absorber la charge.
+ * n'est pas ralentie ; son interet est précisément d'absorber la charge.
  */
 async function waitForPublicSlot(baseUrl: string): Promise<void> {
     if (new URL(baseUrl).hostname !== PUBLIC_OSRM_HOST) {
@@ -101,7 +101,7 @@ function routeMeasure(distanceMeters: number | null | undefined, durationSeconds
 /**
  * Chemin du service pour un mode. Les noms suivent la convention des instances
  * OSRM (`/routed-<profil>/route/v1/<profil>/`), celle qu'utilisent aussi bien
- * l'instance publique que les images officielles auto-hebergees.
+ * l'instance publique que les images officielles auto-hébergées.
  */
 function profile(mode: RoutableMode): 'foot' | 'bike' | 'driving' {
     if (mode === 'walk') {
@@ -113,7 +113,7 @@ function profile(mode: RoutableMode): 'foot' | 'bike' | 'driving' {
     return 'bike';
 }
 
-/** Chemin uniforme de l'instance publique et de la facade auto-hebergee. */
+/** Chemin uniforme de l'instance publique et de la façade auto-hébergée. */
 export function servicePath(mode: RoutableMode, service: 'route' | 'table'): string {
     const name = profile(mode);
     const serviceProfile = mode === 'car' ? 'car' : name;
@@ -152,15 +152,15 @@ export async function fetchUpstreamRoute(
             instructions: buildInstructions(route.legs?.flatMap((leg) => leg.steps ?? []) ?? []),
         };
     } catch {
-        // Indisponibilite, delai depasse, reponse illisible : l'appelant tranchera
-        // ce qu'il en dit a l'utilisateur. On ne fabrique pas de trace de repli.
+        // Indisponibilité, délai dépasse, réponse illisible : l'appelant tranchera
+        // ce qu'il en dit à l'utilisateur. On ne fabrique pas de tracé de repli.
         return null;
     }
 }
 
 /**
- * Distances et durees de toutes les origines vers toutes les destinations.
- * Une seule requete remplace jusqu'a huit appels individuels lors du choix
+ * Distances et durées de toutes les origines vers toutes les destinations.
+ * Une seule requête remplace jusqu'à huit appels individuels lors du choix
  * d'une station. Les valeurs `null` d'OSRM signalent un couple inaccessible.
  */
 export async function fetchUpstreamMatrix(

@@ -1,5 +1,5 @@
-// Depot des routines (ex : aller-retour domicile-travail), adressees une par
-// une par leur cle composee utilisateur/identifiant.
+// Dépôt des routines (ex : aller-retour domicile-travail), adressees une par
+// une par leur clé composée utilisateur/identifiant.
 import { and, count, desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { recurringTrips } from '../db/schema.ts';

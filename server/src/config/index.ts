@@ -1,6 +1,6 @@
-// Configuration du serveur. Toute variable d'environnement est lue et validee
-// ici, une seule fois : une valeur absurde arrete le processus au demarrage
-// plutot que de produire une panne obscure en pleine requete.
+// Configuration du serveur. Toute variable d'environnement est lue et validée
+// ici, une seule fois : une valeur absurde arrête le processus au démarrage
+// plutôt que de produire une panne obscure en pleine requête.
 
 export interface ServerConfig {
     /** ':memory:' en test, fichier SQLite sinon. */
@@ -8,49 +8,49 @@ export interface ServerConfig {
     port: number;
     host: string;
     isProduction: boolean;
-    /** Duree de vie d'une session (cookie + ligne en base). */
+    /** Durée de vie d'une session (cookie + ligne en base). */
     sessionTtlMs: number;
     /**
-     * A n'activer que derriere un proxy de confiance qui reecrit
+     * A n'activer que derrière un proxy de confiance qui réécrit
      * X-Forwarded-For : sinon n'importe quel client peut usurper son adresse et
-     * contourner la limitation de debit.
+     * contourner la limitation de débit.
      */
     trustProxy: boolean;
     /**
-     * Base du service de routage. Par defaut l'instance publique de
-     * demonstration d'OpenStreetMap : elle depanne, mais elle n'a aucun
+     * Base du service de routage. Par défaut l'instance publique de
+     * démonstration d'OpenStreetMap : elle dépanne, mais elle n'a aucun
      * engagement de service et limite par adresse IP (B13). Pointer cette
-     * variable sur une instance OSRM locale supprime toute dependance tierce a
-     * l'execution — voir le README.
+     * variable sur une instance OSRM locale supprime toute dépendance tierce a
+     * l'exécution — voir le README.
      */
     osrmBaseUrl: string;
     /**
-     * Dossier du client construit, servi par l'API elle-meme. Une seule origine
-     * pour l'application et son API : cookie de premiere partie, aucun CORS.
+     * Dossier du client construit, servi par l'API elle-même. Une seule origine
+     * pour l'application et son API : cookie de première partie, aucun CORS.
      */
     webRoot: string;
     /**
-     * Certificat et cle TLS. Renseignes, le serveur ecoute en HTTPS.
+     * Certificat et clé TLS. Renseignes, le serveur écoute en HTTPS.
      *
-     * Le chiffrement n'est pas qu'une precaution : le navigateur reserve au
-     * contexte securise la geolocalisation, `crypto.randomUUID` et le service
+     * Le chiffrement n'est pas qu'une précaution : le navigateur reserve au
+     * contexte securise la géolocalisation, `crypto.randomUUID` et le service
      * worker. Sans HTTPS, l'application est inutilisable ailleurs que sur
-     * localhost — depuis un telephone du reseau local, par exemple.
+     * localhost — depuis un téléphone du réseau local, par exemple.
      */
     tlsCertPath: string;
     tlsKeyPath: string;
     /**
-     * Duree de validite d'un trace en cache. La voirie ne bouge pas d'un jour a
-     * l'autre : une journee evite de redemander mille fois le meme trajet sans
-     * risquer de servir une geometrie obsolete.
+     * Durée de validité d'un tracé en cache. La voirie ne bouge pas d'un jour a
+     * l'autre : une journee évite de redemander mille fois le même trajet sans
+     * risquer de servir une géométrie obsolete.
      */
     routeCacheTtlMs: number;
 }
 
 /**
- * Une variable absente et une variable vide sont la meme chose : `.env.example`
- * liste les cles avec une valeur vide, et les copier ne doit pas ecraser la
- * valeur par defaut par une chaine vide.
+ * Une variable absente et une variable vide sont la même chose : `.env.example`
+ * liste les clés avec une valeur vide, et les copier ne doit pas ecraser la
+ * valeur par défaut par une chaîne vide.
  */
 function text(raw: string | undefined, fallback: string): string {
     return raw === undefined || raw.trim() === '' ? fallback : raw.trim();
@@ -62,7 +62,7 @@ function positiveInteger(name: string, raw: string | undefined, fallback: number
     }
     const value = Number(raw);
     if (!Number.isInteger(value) || value <= 0) {
-        throw new Error(`${name} doit etre un entier positif (recu : ${raw}).`);
+        throw new Error(`${name} doit être un entier positif (reçu : ${raw}).`);
     }
     return value;
 }

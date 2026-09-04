@@ -1,5 +1,5 @@
-// Definition des couches MapLibre. UrbanMap alimente les sources ; ce module
-// decrit une seule fois comment chacune est affichee et rendue interactive.
+// Définition des couches MapLibre. UrbanMap alimente les sources ; ce module
+// décrit une seule fois comment chacune est affichée et rendue interactive.
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
 import type { MutableRefObject } from 'react';
 import { WALK_DASH_ARRAY, legWidthExpression } from './legStyle';
@@ -7,7 +7,7 @@ import { bindPointPopup, escapeHtml } from './popup';
 
 function installRouteLayers(map: MaplibreMap): void {
     if (!map.getLayer('routes-casing')) {
-        // Lisere blanc sous le trace : le rend lisible sur tous les fonds de rue.
+        // Lisere blanc sous le tracé : le rend lisible sur tous les fonds de rue.
         map.addLayer({
             id: 'routes-casing',
             type: 'line',
@@ -15,7 +15,7 @@ function installRouteLayers(map: MaplibreMap): void {
             layout: { 'line-cap': 'round', 'line-join': 'round' },
             paint: {
                 'line-color': '#ffffff',
-                // Le zoom doit etre dans un interpolate de premier niveau (contrainte
+                // Le zoom doit être dans un interpolate de premier niveau (contrainte
                 // des expressions camera MapLibre), le case porte sur les sorties.
                 'line-width': [
                     'interpolate',
@@ -89,7 +89,7 @@ function installLegLayers(map: MaplibreMap): void {
 
 function installPositionLayers(map: MaplibreMap): void {
     if (!map.getLayer('points-accuracy')) {
-        // Halo de precision : il dit ce que le point ne dit pas, a savoir
+        // Halo de précision : il dit ce que le point ne dit pas, à savoir
         // l'incertitude de la mesure. Sous le point, jamais par-dessus.
         map.addLayer({
             id: 'points-accuracy',
@@ -148,7 +148,7 @@ function installTransitLayer(map: MaplibreMap, popupRef: MutableRefObject<maplib
         type: 'circle',
         source: 'stops',
         paint: {
-            // Taille liee au zoom pour rester lisible en vue metropole comme en vue rue.
+            // Taille liée au zoom pour rester lisible en vue métropole comme en vue rue.
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 3.5, 12, 5.5, 15, 9],
             // Bleu vif vs vert lime des stations : contraste net entre les couches.
             'circle-color': '#2563eb',
@@ -158,9 +158,9 @@ function installTransitLayer(map: MaplibreMap, popupRef: MutableRefObject<maplib
         },
     });
     bindPointPopup(map, 'stops-circle', popupRef, (properties) => `
-        <p class="ufm-popup-kind">Arret transport public</p>
+        <p class="ufm-popup-kind">Arrêt transport public</p>
         <strong>${escapeHtml(properties.label)}</strong>
-        <p>${properties.accessible === true || properties.accessible === 'true' ? 'Accessible PMR' : 'Accessibilite PMR non garantie'}</p>
+        <p>${properties.accessible === true || properties.accessible === 'true' ? 'Accessible PMR' : 'Accessibilité PMR non garantie'}</p>
     `);
 }
 
@@ -182,9 +182,9 @@ function installVelovLayer(map: MaplibreMap, popupRef: MutableRefObject<maplibre
         },
     });
     bindPointPopup(map, 'velov-circle', popupRef, (properties) => `
-        <p class="ufm-popup-kind">Station Velo'v</p>
+        <p class="ufm-popup-kind">Station Vélo'v</p>
         <strong>${escapeHtml(properties.label)}</strong>
-        <p>${escapeHtml(properties.bikes)} velo(s) disponibles sur ${escapeHtml(properties.capacity)} places</p>
+        <p>${escapeHtml(properties.bikes)} vélo(s) disponibles sur ${escapeHtml(properties.capacity)} places</p>
     `);
 }
 
@@ -198,11 +198,11 @@ function installScooterLayer(map: MaplibreMap, popupRef: MutableRefObject<maplib
         type: 'circle',
         source: 'scooters',
         paint: {
-            // Plus petit que Velo'v : la flotte libre est dense, des points trop
+            // Plus petit que Vélo'v : la flotte libre est dense, des points trop
             // gros se recouvrent et masquent la carte.
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 12, 4, 15, 7],
-            // Orange contre le vert lime de Velo'v : les deux couches restent
-            // distinguables meme affichees ensemble.
+            // Orange contre le vert lime de Vélo'v : les deux couches restent
+            // distinguables même affichées ensemble.
             'circle-color': '#f97316',
             'circle-opacity': 0.9,
             'circle-stroke-color': '#7c2d12',
@@ -212,7 +212,7 @@ function installScooterLayer(map: MaplibreMap, popupRef: MutableRefObject<maplib
     bindPointPopup(map, 'scooters-circle', popupRef, (properties) => `
         <p class="ufm-popup-kind">Trottinette en flotte libre</p>
         <strong>${escapeHtml(properties.label)}</strong>
-        <p>${escapeHtml(properties.scooters)} disponible(s) a cet emplacement</p>
+        <p>${escapeHtml(properties.scooters)} disponible(s) à cet emplacement</p>
     `);
 }
 

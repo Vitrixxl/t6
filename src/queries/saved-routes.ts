@@ -1,4 +1,4 @@
-// Itineraires enregistres : lecture, ajout et suppression par identifiant.
+// Itinéraires enregistrés : lecture, ajout et suppression par identifiant.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';

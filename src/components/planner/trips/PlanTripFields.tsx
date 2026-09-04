@@ -1,4 +1,4 @@
-// Champs du formulaire de planification. Le dialogue choisit le bloc a afficher ;
+// Champs du formulaire de planification. Le dialogue choisit le bloc à afficher ;
 // chaque bloc ne gere que ses valeurs et ses erreurs.
 import type { UseFormReturn } from 'react-hook-form';
 import { CalendarClock, Repeat } from 'lucide-react';
@@ -25,7 +25,7 @@ export function PlanningKindTabs({ kind, onChange }: { kind: PlanFormValues['kin
             </button>
             <button type="button" role="tab" aria-selected={kind === 'recurring'} className={tabClass(kind === 'recurring')} onClick={() => onChange('recurring')}>
                 <Repeat className="size-3.5" aria-hidden="true" />
-                Recurrent
+                Récurrent
             </button>
         </div>
     );
@@ -117,7 +117,7 @@ export function RecurringScheduleFields({ form }: { form: UseFormReturn<PlanForm
             </div>
             <div className="grid grid-cols-2 gap-2">
                 <label className="grid gap-1.5 text-xs font-semibold" htmlFor="plan-departure">
-                    Heure de depart
+                    Heure de départ
                     <Input id="plan-departure" type="time" className="h-9 text-sm" {...form.register('departureTime')} />
                     <FieldError message={errors.departureTime?.message} />
                 </label>
@@ -129,7 +129,7 @@ export function RecurringScheduleFields({ form }: { form: UseFormReturn<PlanForm
             </div>
             <label className="flex items-center gap-2 text-sm font-medium">
                 <input type="checkbox" className="size-4 accent-primary" {...form.register('roundTrip')} />
-                Aller-retour (le retour est planifie automatiquement)
+                Aller-retour (le retour est planifié automatiquement)
             </label>
         </>
     );

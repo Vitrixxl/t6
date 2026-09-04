@@ -1,5 +1,5 @@
-// Genere l'ensemble des captures du dossier (output/screens/) sur l'application
-// en fonctionnement reel. Reproductible : bun run screens (serveur sur 5173 ou
+// Génère l'ensemble des captures du dossier (output/screens/) sur l'application
+// en fonctionnement réel. Reproductible : bun run screens (serveur sur 5173 ou
 // SCREENS_BASE_URL).
 import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright-core';
@@ -44,9 +44,9 @@ async function login(page) {
 }
 
 // La destination est saisie en premier : sur mobile, la barre ne montre qu'un
-// champ tant qu'aucune destination n'est choisie, et le depart n'apparait
+// champ tant qu'aucune destination n'est choisie, et le départ n'apparaît
 // qu'ensuite. Cet ordre fonctionne aussi sur bureau, ou les deux champs
-// coexistent des le depart.
+// coexistent dès le départ.
 async function planRoute(page, originQuery, destQuery, destPattern, prefix) {
     await page.click(`#${prefix}-destination-search`);
     await page.fill(`#${prefix}-destination-search`, destQuery);
@@ -78,17 +78,17 @@ const shot = (page, name, options = {}) => page.screenshot({ path: `${OUT}/${nam
     await planRoute(page, 'place bellecour lyon', 'gare part dieu lyon', /Gare/, 'desktop-origin'.replace('-origin', ''));
     await shot(page, '03-planner-desktop.png');
 
-    // 04. Hub planificateur : routine creee (ses passages echus comptent d'eux-memes)
-    // et, s'il existe un trajet date, marquage fait -> objectifs alimentes
+    // 04. Hub planificateur : routine créée (ses passages échus comptent d'eux-mêmes)
+    // et, s'il existe un trajet date, marquage fait -> objectifs alimentés
     await page.getByRole('button', { name: /^planifier$/i }).first().click();
     await page.waitForTimeout(700);
     await page.getByRole('tab', { name: /recurrent/i }).click();
     await page.waitForTimeout(400);
     await page.fill('#plan-label', 'Aller-retour travail');
-    await page.getByRole('button', { name: /creer la routine/i }).click();
+    await page.getByRole('button', { name: /créer la routine/i }).click();
     await page.waitForTimeout(1200);
     const fait = page.getByRole('button', { name: /^fait$/i }).first();
-    await page.getByRole('tab', { name: /a venir/i }).click();
+    await page.getByRole('tab', { name: /à venir/i }).click();
     await page.waitForTimeout(400);
     if (await fait.count()) {
         await fait.click();
@@ -115,13 +115,13 @@ const shot = (page, name, options = {}) => page.screenshot({ path: `${OUT}/${nam
     await page.waitForTimeout(1800);
     await shot(page, '02-auth-mobile.png');
 
-    // 06. Options d'itineraire mobile (feuille glissable)
+    // 06. Options d'itinéraire mobile (feuille glissable)
     await login(page);
     await planRoute(page, 'place bellecour lyon', 'gare part dieu lyon', /Gare/, 'mobile');
     await shot(page, '06-planner-mobile.png');
 
-    // 07. Hub planificateur mobile (objectifs + a venir). Sur mobile, la feuille
-    // d'options recouvre la barre d'actions : c'est son entete qui porte l'acces.
+    // 07. Hub planificateur mobile (objectifs + à venir). Sur mobile, la feuille
+    // d'options recouvre la barre d'actions : c'est son entête qui porte l'accès.
     await page.getByRole('button', { name: /mes trajets/i }).first().click();
     await page.waitForTimeout(1200);
     await shot(page, '07-hub-mobile.png');
@@ -129,4 +129,4 @@ const shot = (page, name, options = {}) => page.screenshot({ path: `${OUT}/${nam
 }
 
 await browser.close();
-console.log(`captures generees dans ${OUT}/`);
+console.log(`captures générées dans ${OUT}/`);

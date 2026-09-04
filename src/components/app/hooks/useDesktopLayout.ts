@@ -1,10 +1,10 @@
 // Disposition courante : bureau ou mobile.
 //
-// Les deux dispositions ne sont pas deux habillages du meme arbre : chacune
+// Les deux dispositions ne sont pas deux habillages du même arbre : chacune
 // monte sa carte, ses panneaux, ses barres. Les rendre toutes les deux et n'en
 // montrer qu'une par CSS faisait tourner deux instances MapLibre en permanence
 // (deux contextes WebGL, deux fois les tuiles, deux fois les sources). On ne
-// rend donc que celle qui s'affiche, et le point de bascule est le meme que
+// rend donc que celle qui s'affiche, et le point de bascule est le même que
 // celui des classes `lg:` de Tailwind.
 import { useSyncExternalStore } from 'react';
 

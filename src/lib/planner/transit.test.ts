@@ -7,13 +7,13 @@ function stop(id: string, name: string, lat: number, lon: number, routes: string
     return { stop_id: id, stop_name: name, stop_lat: lat, stop_lon: lon, wheelchair_boarding: 1, routes };
 }
 
-// Deux lignes en croix. `nord` va du sud au nord, `est` de l'ouest a l'est, et
+// Deux lignes en croix. `nord` va du sud au nord, `est` de l'ouest à l'est, et
 // elles se croisent a Hub. Aller de Sud a Est impose donc une correspondance.
 const SUD = stop('sud', 'Sud', 45.74, 4.84, ['nord']);
 const HUB = stop('hub', 'Hub', 45.76, 4.84, ['nord', 'est']);
 const NORD = stop('nord', 'Nord', 45.78, 4.84, ['nord']);
 const EST = stop('est', 'Est', 45.76, 4.88, ['est']);
-const BUS = stop('bus', 'Arret de bus', 45.7401, 4.8401, []);
+const BUS = stop('bus', 'Arrêt de bus', 45.7401, 4.8401, []);
 
 const network: TransportNetwork = {
     gtfs: {
@@ -51,12 +51,12 @@ const network: TransportNetwork = {
 const at = (record: GtfsStop) => ({ label: record.stop_name, lat: record.stop_lat, lon: record.stop_lon });
 
 describe('findTransitJourney', () => {
-    it('ne fait jamais monter a un arret qu aucune ligne ne dessert', () => {
-        const journey = findTransitJourney(network, { label: 'Depart', lat: 45.7402, lon: 4.8402 }, at(NORD), false);
+    it('ne fait jamais monter à un arrêt qu’aucune ligne ne dessert', () => {
+        const journey = findTransitJourney(network, { label: 'Départ', lat: 45.7402, lon: 4.8402 }, at(NORD), false);
         expect(journey?.rides[0].boarding.stop_id).toBe('sud');
     });
 
-    it('nomme la ligne qui dessert reellement les deux stations', () => {
+    it('nomme la ligne qui dessert réellement les deux stations', () => {
         const journey = findTransitJourney(network, at(SUD), at(NORD), false);
         expect(journey?.rides).toHaveLength(1);
         expect(journey?.rides[0].route.route_short_name).toBe('A');
@@ -69,12 +69,12 @@ describe('findTransitJourney', () => {
         expect(journey?.rides[1].boarding.stop_id).toBe('hub');
     });
 
-    it('suit le trace de la ligne, pas la ligne droite entre les stations', () => {
+    it('suit le tracé de la ligne, pas la ligne droite entre les stations', () => {
         const journey = findTransitJourney(network, at(SUD), at(NORD), false);
         expect(journey?.rides[0].path.length).toBeGreaterThan(2);
     });
 
-    it('ne renvoie rien si aucune station n est a portee de marche', () => {
+    it('ne renvoie rien si aucune station n’est à portée de marche', () => {
         expect(findTransitJourney(network, { label: 'Loin', lat: 46.5, lon: 5.5 }, at(NORD), false)).toBeNull();
     });
 
@@ -99,19 +99,19 @@ describe('sliceShape', () => {
         expect(path?.[path.length - 1].lat).toBeCloseTo(45.76, 4);
     });
 
-    it('retourne le trace quand on le remonte a contresens', () => {
+    it('retourne le tracé quand on le remonte a contresens', () => {
         const path = sliceShape(shape, NORD, SUD);
         expect(path?.[0].lat).toBeCloseTo(45.78, 4);
         expect(path?.[path.length - 1].lat).toBeCloseTo(45.74, 4);
     });
 
-    it('renvoie null quand la station n est pas sur le trace', () => {
+    it('renvoie null quand la station n’est pas sur le tracé', () => {
         expect(sliceShape(shape, SUD, EST)).toBeNull();
     });
 });
 
 describe('pathLengthKm', () => {
-    it('somme les segments plutot que la distance a vol d oiseau', () => {
+    it('somme les segments plutôt que la distance à vol d’oiseau', () => {
         const detour = pathLengthKm([
             { label: 'a', lat: 45.75, lon: 4.83 },
             { label: 'b', lat: 45.76, lon: 4.83 },
@@ -134,11 +134,11 @@ describe('midpointOfPath', () => {
         expect(middle?.lat).toBeGreaterThan(medianIndexPoint.lat);
     });
 
-    it('tombe au centre d un trace regulier', () => {
+    it('tombe au centre d’un tracé régulier', () => {
         expect(midpointOfPath([point(45.75, 4.85), point(45.76, 4.85), point(45.77, 4.85)])?.lat).toBeCloseTo(45.76, 4);
     });
 
-    it('rend le point unique d un trace degenere, et rien sur un trace vide', () => {
+    it('rend le point unique d’un tracé degenere, et rien sur un tracé vide', () => {
         expect(midpointOfPath([point(45.75, 4.85)])?.lat).toBe(45.75);
         expect(midpointOfPath([])).toBeNull();
     });
@@ -156,7 +156,7 @@ const interchange: GtfsStop = {
 const routeA: GtfsRoute = {
     route_id: 'metro-a',
     route_short_name: 'A',
-    route_long_name: 'Metro A',
+    route_long_name: 'Métro A',
     route_type: 1,
     route_color: 'EE3898',
     route_text_color: 'FFFFFF',
@@ -166,7 +166,7 @@ const routeA: GtfsRoute = {
 const routeB: GtfsRoute = {
     route_id: 'metro-b',
     route_short_name: 'B',
-    route_long_name: 'Metro B',
+    route_long_name: 'Métro B',
     route_type: 1,
     route_color: '0074C8',
     route_text_color: 'FFFFFF',
@@ -174,7 +174,7 @@ const routeB: GtfsRoute = {
 };
 
 describe('transitLegs', () => {
-    it('materialise la correspondance entre deux lignes comme une etape a pied', () => {
+    it('matérialise la correspondance entre deux lignes comme une étape à pied', () => {
         const journey: TransitJourney = {
             rides: [
                 {
@@ -209,9 +209,9 @@ describe('transitLegs', () => {
 
         expect(legs.map((leg) => leg.mode)).toEqual(['transit', 'walk', 'transit']);
         expect(legs[1]).toMatchObject({
-            title: 'Correspondance a pied',
-            from: 'Quai Metro A',
-            to: 'Quai Metro B',
+            title: 'Correspondance à pied',
+            from: 'Quai Métro A',
+            to: 'Quai Métro B',
             durationMinutes: 4,
             distanceKm: 0,
             path: [],

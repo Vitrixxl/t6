@@ -1,11 +1,11 @@
 /* Polices locales.
  *
  * Les declarations viennent des paquets @fontsource-variable, mais les fichiers
- * sont servis depuis /fonts/ au lieu d'etre encodes dans la feuille de style.
- * Encodees, elles ajoutaient cent kilo-octets a un CSS qui bloque le rendu ;
- * servies a part, elles se chargent en parallele et se mettent en cache seules.
+ * sont servis depuis /fonts/ au lieu d'être encodés dans la feuille de style.
+ * Encodees, elles ajoutaient cent kilo-octets à un CSS qui bloque le rendu ;
+ * servies a part, elles se chargent en parallèle et se mettent en cache seules.
  *
- * Genere par scripts/build.ts — ne pas modifier a la main. */
+ * Génère par scripts/build.ts — ne pas modifier à la main. */
 
 
 @font-face {

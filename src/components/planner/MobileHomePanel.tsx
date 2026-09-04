@@ -1,27 +1,27 @@
 // Contenu du tiroir "Autour de moi" sur mobile.
 //
-// L'utilisateur choisit son rayon : ce qui compte a 300 m quand on est presse
-// n'est pas ce qui compte a 2 km quand on prepare un trajet. L'unite est
-// selectionnable parce qu'on ne raisonne pas en kilometres pour une distance
-// de quartier, ni en metres pour une distance de ville.
+// L'utilisateur choisit son rayon : ce qui compte à 300 m quand on est presse
+// n'est pas ce qui compte à 2 km quand on prépare un trajet. L'unité est
+// selectionnable parce qu'on ne raisonne pas en kilomètres pour une distance
+// de quartier, ni en mètres pour une distance de ville.
 import { useMemo, useState } from 'react';
 import { Bike, CloudRain, TramFront, Wind, Zap } from 'lucide-react';
 import type { GeoPoint, TransportNetwork, WeatherSignal } from '../../types';
 import { findWithinRadius, formatDistance, walkMinutes, type NearbyWithin } from '../../lib/planner';
 
 const WEATHER_LABEL: Record<WeatherSignal['condition'], string> = {
-    clear: 'Degage',
-    light_rain: 'Pluie legere',
+    clear: 'Dégagé',
+    light_rain: 'Pluie légère',
     heavy_rain: 'Forte pluie',
     wind: 'Vent',
 };
 
 type DistanceUnit = 'm' | 'km';
 
-/** Rayon par defaut : dix minutes de marche, l'horizon spontane d'un pieton. */
+/** Rayon par défaut : dix minutes de marche, l'horizon spontane d'un piéton. */
 const DEFAULT_RADIUS = { value: 800, unit: 'm' as DistanceUnit };
 
-/** Un point de reference est toujours necessaire : GPS, depart saisi, ou le centre. */
+/** Un point de référence est toujours nécessaire : GPS, départ saisi, ou le centre. */
 function referencePoint(currentPosition: GeoPoint | null, origin: GeoPoint | null): GeoPoint {
     return currentPosition ?? origin ?? { lat: 45.7578, lon: 4.832, label: 'Centre de Lyon' };
 }
@@ -52,8 +52,8 @@ function Group({
                     {icon}
                     {label}
                 </span>
-                {/* Le compte est le nombre reel dans le rayon, pas la longueur de la
-            liste affichee : un plafond de rendu n'est pas une mesure (B9). */}
+                {/* Le compte est le nombre réel dans le rayon, pas la longueur de la
+            liste affichée : un plafond de rendu n'est pas une mesure (B9). */}
                 <span className="text-sm font-bold tabular-nums">{group.count}</span>
             </div>
 
@@ -100,7 +100,7 @@ export function MobileHomePanel({
     const radiusKm = toKilometers(radius.value, radius.unit);
 
     // Le balayage porte sur plusieurs milliers de points : on ne le refait que si
-    // la position de reference, le reseau ou le rayon change.
+    // la position de référence, le réseau ou le rayon change.
     const nearby = useMemo(() => findWithinRadius(network, point, radiusKm), [network, point, radiusKm]);
     const weather = network.gtfs.weather;
 
@@ -115,19 +115,19 @@ export function MobileHomePanel({
                         step={radius.unit === 'km' ? 1 : 50}
                         value={radius.value}
                         onChange={(event) => setRadius((current) => ({ ...current, value: Math.max(Number(event.target.value) || 0, 1) }))}
-                        // Hauteur en pixels : la racine du document est a 14 px, une valeur
+                        // Hauteur en pixels : la racine du document est à 14 px, une valeur
                         // en rem raterait la cible tactile de 44 px.
                         className="h-[44px] w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground"
                         aria-label="Distance de recherche"
                     />
                 </label>
                 <label className="grid w-24 gap-1 text-[0.68rem] font-bold uppercase tracking-[0.07em] text-muted-foreground">
-                    Unite
+                    Unité
                     <select
                         value={radius.unit}
                         onChange={(event) => setRadius((current) => ({ ...current, unit: event.target.value as DistanceUnit }))}
                         className="h-[44px] w-full rounded-xl border border-border bg-background px-2 text-sm font-semibold text-foreground"
-                        aria-label="Unite de distance"
+                        aria-label="Unité de distance"
                     >
                         <option value="m">m</option>
                         <option value="km">km</option>
@@ -147,12 +147,12 @@ export function MobileHomePanel({
 
             <Group
                 icon={<Bike className="size-3" aria-hidden="true" />}
-                label="Velo'v"
+                label="Vélo’v"
                 tone="text-[#4d7c0f]"
                 group={nearby.velov}
-                nameOf={(station: NearbyWithin['velov']['items'][number]['item']) => station.name.replace(/^Velo'v /, '')}
+                nameOf={(station: NearbyWithin['velov']['items'][number]['item']) => station.name.replace(/^Vélo'v /, '')}
                 availabilityOf={(station: NearbyWithin['velov']['items'][number]['item']) =>
-                    `${station.bikes_available} velo${station.bikes_available > 1 ? 's' : ''} disponible${station.bikes_available > 1 ? 's' : ''}`
+                    `${station.bikes_available} vélo${station.bikes_available > 1 ? 's' : ''} disponible${station.bikes_available > 1 ? 's' : ''}`
                 }
             />
             <Group
@@ -167,12 +167,12 @@ export function MobileHomePanel({
             />
             <Group
                 icon={<TramFront className="size-3" aria-hidden="true" />}
-                label="Arrets"
+                label="Arrêts"
                 tone="text-[#1d4ed8]"
                 group={nearby.stop}
                 nameOf={(stop: NearbyWithin['stop']['items'][number]['item']) => stop.stop_name}
                 availabilityOf={(stop: NearbyWithin['stop']['items'][number]['item']) =>
-                    stop.routes.length > 0 ? `Lignes ${stop.routes.join(', ')}` : 'Arret de bus'
+                    stop.routes.length > 0 ? `Lignes ${stop.routes.join(', ')}` : 'Arrêt de bus'
                 }
             />
 

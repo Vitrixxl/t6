@@ -1,6 +1,6 @@
-// Hub central des trajets : a venir, routines, historique, enregistres.
+// Hub central des trajets : à venir, routines, historique, enregistrés.
 // Le dialogue ne fait qu'aiguiller vers la liste correspondante ; chaque liste
-// vit dans son propre fichier. Il lit les ressources du compte et declenche
+// vit dans son propre fichier. Il lit les ressources du compte et déclenche
 // leurs actions directement : rien ne transite par l'orchestrateur.
 import { useEffect, useMemo, useState } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
@@ -33,10 +33,10 @@ import { UpcomingList } from './lists/UpcomingList';
 export type { TripsHubTab };
 
 const HUB_TABS: Array<{ id: TripsHubTab; label: string }> = [
-    { id: 'upcoming', label: 'A venir' },
-    { id: 'recurring', label: 'Recurrents' },
+    { id: 'upcoming', label: 'À venir' },
+    { id: 'recurring', label: 'Récurrents' },
     { id: 'history', label: 'Historique' },
-    { id: 'saved', label: 'Enregistres' },
+    { id: 'saved', label: 'Enregistrés' },
 ];
 
 export function TripsHubDialog({
@@ -44,7 +44,7 @@ export function TripsHubDialog({
     onLoadSavedRoute,
 }: {
     onNewTrip: () => void;
-    /** Recharge un itineraire enregistre sur la carte : l'orchestrateur tient le depart et l'arrivee. */
+    /** Recharge un itinéraire enregistré sur la carte : l'orchestrateur tient le départ et l'arrivée. */
     onLoadSavedRoute: (route: SavedRouteRecord) => void;
 }) {
     const [hub, setHub] = useAtom(tripsHubAtom);
@@ -96,22 +96,22 @@ export function TripsHubDialog({
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="font-display">Planificateur de trajets</DialogTitle>
-                    <DialogDescription>Planifie, automatise et suis tes deplacements bas carbone.</DialogDescription>
+                    <DialogDescription>Planifie, automatise et suis tes déplacements bas carbone.</DialogDescription>
                 </DialogHeader>
 
                 <div className="grid max-h-[calc(100dvh-14rem)] gap-3 overflow-y-auto px-5 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <Metric label="Fait / semaine" value={String(summary.doneThisWeek)} compact />
                         <Metric label="CO₂e évité / sem." value={`${summary.savedThisWeekGrams} gCO₂e`} compact />
-                        <Metric label="A venir" value={String(summary.upcomingCount)} compact />
-                        <Metric label="Recurrents actifs" value={String(summary.recurringActiveCount)} compact />
+                        <Metric label="À venir" value={String(summary.upcomingCount)} compact />
+                        <Metric label="Récurrents actifs" value={String(summary.recurringActiveCount)} compact />
                     </div>
 
                     <TripGoalsCard />
 
                     <Button type="button" className="h-11 w-full justify-center rounded-xl" onClick={onNewTrip}>
                         <Search className="size-4" aria-hidden="true" />
-                        Nouveau trajet — choisir un depart et une arrivee
+                        Nouveau trajet — choisir un départ et une arrivée
                     </Button>
 
                     <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Sections trajets">

@@ -8,7 +8,7 @@ const destination: GeoPoint = { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 };
 
 const option: RouteOption = {
     id: 'bike',
-    title: 'Velo partage bas carbone',
+    title: 'Vélo partagé bas carbone',
     summary: 'Test',
     modes: ['walk', 'bike'],
     legs: [],
@@ -26,7 +26,7 @@ const option: RouteOption = {
 };
 
 describe('savedRoutes', () => {
-    it('genere un identifiant stable: sauvegarder deux fois le meme trajet ne cree pas de doublon', () => {
+    it('génère un identifiant stable: sauvegarder deux fois le même trajet ne crée pas de doublon', () => {
         const first = createSavedRouteRecord('user-1', origin, destination, option);
         const second = createSavedRouteRecord('user-1', origin, destination, option);
         expect(first.id).toBe(second.id);
@@ -47,7 +47,7 @@ describe('savedRoutes', () => {
         expect(removeSavedRoute(addSavedRoute([], record), record.id)).toEqual([]);
     });
 
-    it('borne la liste aux plus recents', () => {
+    it('borne la liste aux plus récents', () => {
         let records = addSavedRoute([], createSavedRouteRecord('user-1', origin, destination, option));
         for (let index = 0; index < SAVED_ROUTES_LIMIT + 5; index += 1) {
             const point = { ...destination, label: `Point ${index}` };

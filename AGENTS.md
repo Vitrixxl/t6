@@ -1,114 +1,114 @@
 # AGENTS.md
 
-Consignes pour tout agent travaillant sur ce depot. UrbanFlow Mobility est le
+Consignes pour tout agent travaillant sur ce dépôt. UrbanFlow Mobility est le
 projet professionnel du Titre 6 CDSD (RNCP 36146, session septembre 2026) : une
-plateforme de mobilite urbaine multimodale. Le code sera **ouvert et discute en
-revue face-a-face** devant un jury, ce qui oriente la plupart des regles
+plateforme de mobilité urbaine multimodale. Le code sera **ouvert et discuté en
+revue face-à-face** devant un jury, ce qui oriente la plupart des règles
 ci-dessous.
 
-## Exigence de qualite
+## Exigence de qualité
 
-Le but est un depot propre, qu'un developpeur senior peut lire sans deviner
-qu'un agent y a travaille. Pas un prototype qui marche par accident, pas du
+Le but est un dépôt propre, qu'un développeur senior peut lire sans deviner
+qu'un agent y a travaillé. Pas un prototype qui marche par accident, pas du
 code produit sans comprendre ce qu'il fait.
 
-- Chaque chose a sa place, et une seule : une regle metier vit dans
-  `services/`, une requete dans `repositories/`, un contrat dans
+- Chaque chose a sa place, et une seule : une règle métier vit dans
+  `services/`, une requête dans `repositories/`, un contrat dans
   `src/contracts/`, une ressource servie par l'API dans `src/queries/`, un
-  etat d'ecran dans `src/state/`. Un morceau de code qui ne sait pas dans
-  quel dossier aller est mal decoupe.
-- Une API se concoit par ressource : des routes qui disent ce qu'elles
-  remplacent, des verbes qui ont leur sens (PUT idempotent), des reponses
-  typees. Un point d'entree fourre-tout qui ecrase tout est un defaut de
+  état d'écran dans `src/state/`. Un morceau de code qui ne sait pas dans
+  quel dossier aller est mal découpé.
+- Une API se conçoit par ressource : des routes qui disent ce qu'elles
+  remplacent, des verbes qui ont leur sens (PUT idempotent), des réponses
+  typées. Un point d'entrée fourre-tout qui écrase tout est un défaut de
   conception, pas une simplification.
 - TypeScript strict, sans `any`, sans cast pour faire taire le compilateur,
   sans `eslint-disable` de confort. Un type qui refuse a souvent raison.
-- Pas de code mort, pas de commentaire perime, pas de vocabulaire herite
-  d'une version precedente. Quand la chose change, son nom change.
-- ESLint bloque une complexite cyclomatique superieure a 10 et plus de trois
-  niveaux d'imbrication. L'objectif n'est pas de deplacer les branches dans un
-  relais generique : extraire une responsabilite nommee et garder le parcours
-  appelant lineaire.
-- Un changement de conception se propage partout ou il est decrit : code,
+- Pas de code mort, pas de commentaire périmé, pas de vocabulaire hérité
+  d'une version précédente. Quand la chose change, son nom change.
+- ESLint bloque une complexité cyclomatique supérieure à 10 et plus de trois
+  niveaux d'imbrication. L'objectif n'est pas de déplacer les branches dans un
+  relais générique : extraire une responsabilité nommée et garder le parcours
+  appelant linéaire.
+- Un changement de conception se propage partout où il est décrit : code,
   tests, README, CHECKLIST, OpenAPI, ce fichier, et les supports de revue
   maintenus (section ci-dessous).
 - Avant de proposer, se demander comment un relecteur exigeant verrait le
-  code. Si la reponse est « bricole », ne pas le proposer.
+  code. Si la réponse est « bricolé », ne pas le proposer.
 
-## Dossier PDF — artefact gele
+## Dossier PDF — artefact gelé
 
-**Ne jamais modifier `scripts/generate_dossier.py`, ne jamais regenerer ni
-controler `output/pdf/`.** Le dossier PDF est un livrable historique gele qui
-ne sera plus mis a jour. Un changement fonctionnel futur ne s'y reporte pas,
-meme si son contenu devient anterieur au code courant.
+**Ne jamais modifier `scripts/generate_dossier.py`, ne jamais régénérer ni
+contrôler `output/pdf/`.** Le dossier PDF est un livrable historique gelé qui
+ne sera plus mis à jour. Un changement fonctionnel futur ne s'y reporte pas,
+même si son contenu devient antérieur au code courant.
 
-## Supports de revue — a tenir a jour
+## Supports de revue — à tenir à jour
 
-Le depot est defendu a l'oral a partir de fichiers qui decrivent
-l'application. Ils ne sont pas versionnes (`output/` est ignore) mais ils sont
+Le dépôt est défendu à l'oral à partir de fichiers qui décrivent
+l'application. Ils ne sont pas versionnés (`output/` est ignoré) mais ils sont
 critiques : une phrase qui contredit le code se voit en revue, et c'est le
 candidat qui la porte.
 
-- `output/soutenance/01-deroule.html` : le deroule d'oral, ce qu'il faut dire
+- `output/soutenance/01-deroule.html` : le déroulé d'oral, ce qu'il faut dire
   et dans quel ordre.
-- `output/soutenance/02-bogues.html` : l'echantillon de bogues presente en
+- `output/soutenance/02-bogues.html` : l'échantillon de bogues présenté en
   revue de test.
-- `output/soutenance/03-ecarts.html` : les ecarts assumes entre le sujet et
+- `output/soutenance/03-ecarts.html` : les écarts assumés entre le sujet et
   le livrable.
-- `output/revue-code.html` : la roadmap de lecture du depot, dans l'ordre des
-  appels, avec les fichiers et symboles a ouvrir dans l'editeur.
+- `output/revue-code.html` : la roadmap de lecture du dépôt, dans l'ordre des
+  appels, avec les fichiers et symboles à ouvrir dans l'éditeur.
 
 **Toute modification fonctionnelle se reporte dans ces quatre fichiers dans
-le meme travail**, pas dans un second temps : nombre d'options du moteur, modes et
-combinaisons proposes, regles de gestion, nombre de tests par suite,
-comportement en cas de panne d'une API. Pour la roadmap, verifier les chemins,
+le même travail**, pas dans un second temps : nombre d'options du moteur, modes et
+combinaisons proposés, règles de gestion, nombre de tests par suite,
+comportement en cas de panne d'une API. Pour la roadmap, vérifier les chemins,
 les symboles et l'ordre des appels. Avant de rendre la main, relire chacun
-d'eux en se demandant s'il decrit encore l'application telle qu'elle est.
+d'eux en se demandant s'il décrit encore l'application telle qu'elle est.
 
 ## Journal des bogues — obligatoire
 
-**Tout bogue corrige donne lieu a une entree dans [`docs/BUGS.md`](docs/BUGS.md).**
+**Tout bogue corrigé donne lieu à une entrée dans [`docs/BUGS.md`](docs/BUGS.md).**
 
-C'est la contrainte la plus importante de ce depot. La competence C3.3 de la
-grille est evaluee lors d'une revue de test portant sur « un echantillon de
-bogues traites », ou il faut expliciter trois pratiques : identification,
-correction, **et test du correctif**. Un correctif non consigne est un
-correctif indefendable.
+C'est la contrainte la plus importante de ce dépôt. La compétence C3.3 de la
+grille est évaluée lors d'une revue de test portant sur « un échantillon de
+bogues traités », où il faut expliciter trois pratiques : identification,
+correction, **et test du correctif**. Un correctif non consigné est un
+correctif indéfendable.
 
-Chaque entree porte :
+Chaque entrée porte :
 
-- le symptome observe, pas la conclusion ;
-- la cause racine, distincte du symptome ;
+- le symptôme observé, pas la conclusion ;
+- la cause racine, distincte du symptôme ;
 - le correctif et le **lien de commit** ;
-- le fichier ou le montrer ;
-- le **niveau de verrouillage** : automatise, faible, ou ouvert.
+- le fichier où le montrer ;
+- le **niveau de verrouillage** : automatisé, faible, ou ouvert.
 
-Un bogue identifie mais non corrige va dans la section « Ouverts ». Ne rien
-cacher : un bogue documente et assume vaut mieux qu'un bogue decouvert par
-l'evaluateur.
+Un bogue identifié mais non corrigé va dans la section « Ouverts ». Ne rien
+cacher : un bogue documenté et assumé vaut mieux qu'un bogue découvert par
+l'évaluateur.
 
-Ne jamais qualifier un correctif d'« automatise » si aucun test, audit ou lint
-n'echoue en cas de regression. Une configuration de build ou un rendu visuel se
+Ne jamais qualifier un correctif d'« automatisé » si aucun test, audit ou lint
+n'échoue en cas de régression. Une configuration de build ou un rendu visuel se
 verrouille faiblement, et cela se dit.
 
-## Chaine d'outillage
+## Chaîne d'outillage
 
-Toute la chaine tourne sous **Bun**, sans exception : execution, regroupement,
+Toute la chaîne tourne sous **Bun**, sans exception : exécution, regroupement,
 tests, serveur. Pas de `npm`, pas de `node`, pas de bundler tiers. Un outil de
 plus doit se justifier par un besoin que Bun ne couvre pas.
 
-Le depot reste sur **TypeScript 7**. Tant que `typescript-eslint` ne le prend
+Le dépôt reste sur **TypeScript 7**. Tant que `typescript-eslint` ne le prend
 pas en charge, ESLint utilise le parseur Babel pour la syntaxe ; `tsc` strict
-reste l'autorite pour les types et les symboles inutilises.
+reste l'autorité pour les types et les symboles inutilisés.
 
-Le format de reference des fichiers JavaScript et TypeScript est celui du LSP
-TypeScript 7 appele par Neovim a la sauvegarde : espaces, indentation de quatre
-colonnes, sans Prettier ni Biome. `.editorconfig` porte ces options pour eviter
-qu'un autre editeur ne reformate le depot avec deux espaces.
+Le format de référence des fichiers JavaScript et TypeScript est celui du LSP
+TypeScript 7 appelé par Neovim à la sauvegarde : espaces, indentation de quatre
+colonnes, sans Prettier ni Biome. `.editorconfig` porte ces options pour éviter
+qu'un autre éditeur ne reformate le dépôt avec deux espaces.
 
 Le serveur porte **l'API et le client** : une seule origine, donc un cookie de
-session de premiere partie et aucun en-tete CORS. Il n'y a pas de serveur de
-developpement separe.
+session de première partie et aucun en-tête CORS. Il n'y a pas de serveur de
+développement séparé.
 
 ```bash
 bun install          # bun.lock est le seul lockfile
@@ -117,125 +117,126 @@ bun run build        # construit le client dans dist/
 bun run start        # sert le build de production
 bun run check        # lint + typage + tests + build
 bun run test         # tests du client et de l'API (src/ et server/)
-bun run e2e          # scenario de planification (Playwright)
-bun run audit:a11y   # axe-core sur quatre ecrans
+bun run e2e          # scénario de planification (Playwright)
+bun run audit:a11y   # axe-core sur quatre écrans
 ```
 
-L'ingestion GTFS reste en Python : pas d'equivalent JavaScript, et c'est
-assume. La generation du dossier PDF est gelee par la regle ci-dessus.
+L'ingestion GTFS reste en Python : pas d'équivalent JavaScript, et c'est
+assumé. La génération du dossier PDF est gelée par la règle ci-dessus.
 
 ## Architecture
 
 Un fichier, une raison de changer. Ce n'est pas un seuil de lignes : un fichier
-long mais cohesif reste preferable a trois fichiers qui se renvoient la balle.
+long mais cohésif reste préférable à trois fichiers qui se renvoient la balle.
 
 **API** (`server/src/`) : `config/` `db/` `repositories/` `services/`
-`plugins/` `routes/`. Les routes ne portent aucune regle metier, seule la
-couche depot interroge la base (Drizzle sur `bun:sqlite`, jamais `sql.raw` sur
-une entree), et les contrats zod de `src/contracts/` valident la requete,
-typent le gestionnaire et generent l'OpenAPI depuis une source unique. Une
-collection se lit par GET ; chaque ressource s'ecrit ou se retire par son URL.
-Aucun depot ne remplace une collection complete.
+`plugins/` `routes/`. Les routes ne portent aucune règle métier, seule la
+couche dépôt interroge la base (Drizzle sur `bun:sqlite`, jamais `sql.raw` sur
+une entrée), et les contrats zod de `src/contracts/` valident la requête,
+typent le gestionnaire et génèrent l'OpenAPI depuis une source unique. Une
+collection se lit par GET ; chaque ressource s'écrit ou se retire par son URL.
+Aucun dépôt ne remplace une collection complète.
 
-Le schema vit dans `server/src/db/schema.ts`. Toute modification passe par
+Le schéma vit dans `server/src/db/schema.ts`. Toute modification passe par
 `bun run db:generate`, et la migration produite dans `server/drizzle/` se
-committe avec le schema : elle est appliquee au demarrage, y compris sur la
+committe avec le schéma : elle est appliquée au démarrage, y compris sur la
 base `:memory:` des tests.
 
-**Client** (`src/`) : `lib/planner/` (un generateur par mode dans `options/`),
+**Client** (`src/`) : `lib/planner/` (un générateur par mode dans `options/`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
 authentification, une commande par ressource du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa
-requete et ses actions), `state/` (l'etat d'ecran partage entre modules, en
-atomes jotai), `components/map/` (cycle de vie et couches separes),
-`components/planner/` (etat de recherche et rendu separes),
+requête et ses actions), `state/` (l'état d'écran partagé entre modules, en
+atomes jotai), `components/map/` (cycle de vie et couches séparés),
+`components/planner/` (état de recherche et rendu séparés),
 `components/app/` (orchestrateur, dispositions et hooks),
-`components/tutorial/` (parcours distincts desktop et mobile, cibles posees sur
-les controles reels). Tous les appels du client vers l'API UrbanFlow passent
-par Eden Treaty et sont types depuis l'arbre Elysia ; aucun appel n'envoie une
-collection complete. Les appels aux services tiers restent dans
+`components/tutorial/` (parcours distincts desktop et mobile, cibles posées sur
+les contrôles réels). Tous les appels du client vers l'API UrbanFlow passent
+par Eden Treaty et sont typés depuis l'arbre Elysia ; aucun appel n'envoie une
+collection complète. Les appels aux services tiers restent dans
 `lib/transport/`. Les composants appellent les hooks dont ils ont
-besoin ; on ne fait pas transiter l'etat par des props. Un formulaire valide
+besoin ; on ne fait pas transiter l'état par des props. Un formulaire valide
 avec le contrat que l'API applique (react-hook-form + zod) : aucune borne
-n'est recopiee dans un composant.
+n'est recopiée dans un composant.
 
-Le contrat de donnees est importe **par le client et par l'API** :
-`src/contracts/` porte un schema zod par objet echange ou saisi, et le type
-qui en derive ; `src/types.ts` reexporte ces types et declare ceux qui ne se
-valident pas (flux transport, options d'itineraire). Un changement casse la
-compilation des deux cotes : c'est voulu, ne pas le contourner en dupliquant
+Le contrat de données est importé **par le client et par l'API** :
+`src/contracts/` porte un schéma zod par objet échangé ou saisi, et le type
+qui en dérive ; `src/types.ts` réexporte ces types et déclare ceux qui ne se
+valident pas (flux transport, options d'itinéraire). Un changement casse la
+compilation des deux côtés : c'est voulu, ne pas le contourner en dupliquant
 les types ni les bornes.
 
-## Regles de fond
+## Règles de fond
 
 **Ne jamais afficher un plafond comme une mesure.** Ce fut un vrai bogue
-(B9) : l'interface annoncait « 300 trottinettes » parce que c'etait la
-constante de troncature. Si une liste est bornee pour le rendu, le nombre
-annonce reste le nombre reel.
+(B9) : l'interface annonçait « 300 trottinettes » parce que c'était la
+constante de troncature. Si une liste est bornée pour le rendu, le nombre
+annoncé reste le nombre réel.
 
-**Le serveur est la seule source de verite.** Il n'y a ni mode sans serveur
-ni cache local persistant : c'est l'API qui sert le client, l'etat du compte
-est recu a la connexion et amorce le cache de requetes (React Query,
+**Le serveur est la seule source de vérité.** Il n'y a ni mode sans serveur
+ni cache local persistant : c'est l'API qui sert le client, l'état du compte
+est reçu à la connexion et amorce le cache de requêtes (React Query,
 `src/queries/`). Chaque commande transporte une ressource, jamais la collection
-complete ; les envois sont serialises. La completion d'un trajet et la creation
-de son historique forment une seule transaction serveur. Une preference ne
-reecrit aucun trajet. Une ecriture refusee se dit a l'utilisateur, elle ne se
-masque pas : seule la vue concernee est relue depuis son GET, l'ecran revient a
-ce que le serveur tient, et l'action est a rejouer.
+complète ; les envois sont sérialisés. La complétion d'un trajet et la création
+de son historique forment une seule transaction serveur. Une préférence ne
+réécrit aucun trajet. Une écriture refusée se dit à l'utilisateur, elle ne se
+masque pas : seule la vue concernée est relue depuis son GET, l'écran revient à
+ce que le serveur tient, et l'action est à rejouer.
 
-**Jamais de geometrie approchee.** Un trace faux se lit comme un itineraire
-reel et envoie l'utilisateur ailleurs ; un trace absent se voit. Tant qu'une
-source reelle n'a pas repondu, un segment n'a pas de trace, la carte n'affiche
-rien pour lui et l'interface dit lequel des deux etats s'applique — calcul en
+**Jamais de géométrie approchée.** Un tracé faux se lit comme un itinéraire
+réel et envoie l'utilisateur ailleurs ; un tracé absent se voit. Tant qu'une
+source réelle n'a pas répondu, un segment n'a pas de tracé, la carte n'affiche
+rien pour lui et l'interface dit lequel des deux états s'applique — calcul en
 cours, ou service indisponible. Ce fut un vrai bogue (B14) : des points
-intermediaires decores, invisibles tant que le routage reel les remplaçait,
-sont apparus le jour ou le service tiers a cesse de repondre.
+intermédiaires décorés, invisibles tant que le routage réel les remplaçait,
+sont apparus le jour où le service tiers a cessé de répondre.
 
-**Nommer les limites plutot que les masquer.** Le moteur d'itineraires reste
-heuristique et il n'y a pas de graphe horaire GTFS : les frequences sont des
-moyennes, pas des horaires. Ces limites sont ecrites dans le code et dans les
+**Nommer les limites plutôt que les masquer.** Le moteur d'itinéraires reste
+heuristique et il n'y a pas de graphe horaire GTFS : les fréquences sont des
+moyennes, pas des horaires. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
-En revanche le nom de ligne **est** affiche depuis l'integration de la desserte
-publiee : une ligne n'est proposee que si elle dessert reellement les deux
+En revanche le nom de ligne **est** affiché depuis l'intégration de la desserte
+publiée : une ligne n'est proposée que si elle dessert réellement les deux
 stations du segment.
 
-Les objectifs d'economie de CO2 hebdomadaire et mensuel sont deux valeurs de
-profil independantes. Le mensuel ne se derive pas du premier : chaque periode
-est comparee a son propre objectif persiste par l'API.
+Les objectifs d'économie de CO2 hebdomadaire et mensuel sont deux valeurs de
+profil indépendantes. Le mensuel ne se dérive pas du premier : chaque période
+est comparée à son propre objectif persisté par l'API.
 
-**La voiture est une reference, jamais une option.** Elle n'entre pas dans
-`MobilityMode`, les preferences ni la liste des itineraires : seul
-`RoutableMode` connait `car`. Une matrice OSRM driving `1 x 1` mesure sa
-distance entre les extremites de la recherche, une seule fois et en parallele
-du reste. Cette meme reference est appliquee a toutes les options apres leurs
-mesures reelles. Le facteur est versionne dans `src/lib/planner/emissions.ts` ;
-une economie negative reste negative, et une reference indisponible reste
-`null` jusque dans les contrats et la base. Aucun zero de repli n'est invente.
+**La voiture est une référence, jamais une option.** Elle n'entre pas dans
+`MobilityMode`, les préférences ni la liste des itinéraires : seul
+`RoutableMode` connaît `car`. Une matrice OSRM driving `1 x 1` mesure sa
+distance entre les extrémités de la recherche, une seule fois et en parallèle
+du reste. Cette même référence est appliquée à toutes les options après leurs
+mesures réelles. Le facteur est versionné dans `src/lib/planner/emissions.ts` ;
+une économie négative reste négative, et une référence indisponible reste
+`null` jusque dans les contrats et la base. Aucun zéro de repli n'est inventé.
 
 Les facteurs de transport public suivent le `route_type` GTFS. Tramway et
-metro portent leurs facteurs documentes ; le funiculaire reprend explicitement
-le facteur metro tant qu'aucune donnee specifique n'est disponible. Toute
-valeur carbone affichee utilise l'unite `gCO2e` (rendue `gCO₂e` dans l'UI).
+métro portent leurs facteurs documentés ; le funiculaire reprend explicitement
+le facteur métro tant qu'aucune donnée spécifique n'est disponible. Toute
+valeur carbone affichée utilise l'unité `gCO2e` (rendue `gCO₂e` dans l'UI).
 
-**Commentaires : le pourquoi, pas le quoi.** Ils sont en francais, sans
-accents, alignes sur le style existant. Un commentaire qui paraphrase la ligne
+**Commentaires : le pourquoi, pas le quoi.** Ils sont en français, avec les
+accents et les caractères typographiques appropriés, alignés sur le style
+existant. Un commentaire qui paraphrase la ligne
 suivante est du bruit ; un commentaire qui explique un arbitrage a de la
 valeur en revue.
 
-## Verification
+## Vérification
 
-Une modification observable dans le navigateur se verifie **dans le
+Une modification observable dans le navigateur se vérifie **dans le
 navigateur**, pas au compilateur. `bun run check` ne prouve pas qu'une carte
 s'affiche ni qu'un bouton fait ce qu'il annonce.
 
-Le scenario `bun run e2e` couvre le parcours critique : connexion, GPS, calcul
-d'options, planification, marquage « fait ». Le relancer apres toute
+Le scénario `bun run e2e` couvre le parcours critique : connexion, GPS, calcul
+d'options, planification, marquage « fait ». Le relancer après toute
 modification qui touche ce chemin.
 
 ## Git
 
-Messages en francais, sans accents. Le corps explique le **probleme resolu**
+Messages en français, avec les accents. Le corps explique le **problème résolu**
 avant la solution — ces messages sont lus en revue et servent de trace de
 raisonnement. Ne jamais committer `.env`, la base SQLite, ni le dossier
 `output/`.

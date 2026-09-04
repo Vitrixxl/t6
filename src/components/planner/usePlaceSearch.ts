@@ -1,5 +1,5 @@
-// Etat d'une recherche de lieu : saisie, temporisation, annulation et choix.
-// Le composant visuel ne connait ainsi ni le geocodeur ni son cycle reseau.
+// État d'une recherche de lieu : saisie, temporisation, annulation et choix.
+// Le composant visuel ne connaît ainsi ni le géocodeur ni son cycle réseau.
 import { useEffect, useState } from 'react';
 import type { GeoPoint } from '../../types';
 import { searchPlaces, type PlaceSearchResult } from '../../lib/transport';
@@ -34,7 +34,7 @@ export function usePlaceSearch(input: {
             searchPlaces(trimmedQuery, input.searchOrigin ?? undefined, controller.signal)
                 .then((items) => {
                     setResults(items);
-                    setStatus(items.length > 0 ? '' : 'Aucun resultat dans la metropole de Lyon');
+                    setStatus(items.length > 0 ? '' : 'Aucun résultat dans la métropole de Lyon');
                 })
                 .catch(() => {
                     setResults([]);

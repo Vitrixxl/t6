@@ -1,6 +1,6 @@
-// Libelles uniques pour la comparaison contrefactuelle avec la voiture.
-// Le signe est une information metier : une economie negative devient des
-// emissions supplementaires, jamais un zero silencieux ni un nombre « evite ».
+// Libellés uniques pour la comparaison contrefactuelle avec la voiture.
+// Le signe est une information métier : une économie négative devient des
+// émissions supplémentaires, jamais un zéro silencieux ni un nombre « évite ».
 
 export function formatCarbonFootprint(grams: number): string {
     return `${grams} gCO₂e`;

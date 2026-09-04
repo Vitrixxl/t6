@@ -1,15 +1,15 @@
-// Traduction des manoeuvres OSRM en instructions lisibles en francais.
+// Traduction des manœuvres OSRM en instructions lisibles en français.
 //
-// Cote serveur : c'est l'API qui rend un contrat fini (trace, distance, duree,
-// instructions), et non le navigateur qui reconstitue le sens d'une reponse
-// tierce. Le client n'a donc jamais a connaitre le protocole OSRM.
+// Côté serveur : c'est l'API qui rend un contrat fini (tracé, distance, durée,
+// instructions), et non le navigateur qui reconstitue le sens d'une réponse
+// tierce. Le client n'a donc jamais a connaître le protocole OSRM.
 import type { RouteInstruction } from '../../../../src/types.ts';
 import type { OsrmStep } from './osrm.ts';
 
 const MANEUVER_LABEL: Partial<Record<string, string>> = {
     depart: 'Partir',
     'new name': 'Continuer',
-    merge: "S'inserer",
+    merge: "S’insérer",
     'on ramp': 'Prendre la bretelle',
     'off ramp': 'Sortir',
 };
@@ -43,7 +43,7 @@ export function formatManeuver(step: OsrmStep): string {
     const road = step.name ? ` sur ${step.name}` : '';
 
     if (type === 'arrive') {
-        return 'Arriver a destination';
+        return 'Arriver à destination';
     }
     if (type === 'roundabout' || type === 'rotary') {
         return `Prendre la ${formatOrdinal(exit ?? 1)} sortie${road}`;
@@ -54,17 +54,17 @@ export function formatManeuver(step: OsrmStep): string {
 export function formatModifier(modifier?: string): string {
     switch (modifier) {
         case 'left':
-            return 'Tourner a gauche';
+            return 'Tourner à gauche';
         case 'right':
-            return 'Tourner a droite';
+            return 'Tourner à droite';
         case 'slight left':
-            return 'Legerement a gauche';
+            return 'Légèrement à gauche';
         case 'slight right':
-            return 'Legerement a droite';
+            return 'Légèrement à droite';
         case 'sharp left':
-            return 'Prendre franchement a gauche';
+            return 'Prendre franchement à gauche';
         case 'sharp right':
-            return 'Prendre franchement a droite';
+            return 'Prendre franchement à droite';
         case 'uturn':
             return 'Faire demi-tour';
         case 'straight':
@@ -75,7 +75,7 @@ export function formatModifier(modifier?: string): string {
 }
 
 export function formatOrdinal(value: number): string {
-    if (value === 1) return '1ere';
+    if (value === 1) return '1ère';
     return `${value}e`;
 }
 

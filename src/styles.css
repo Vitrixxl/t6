@@ -125,7 +125,7 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Desature la carte pour laisser respirer l'identite pin/creme. */
+/* Desature la carte pour laisser respirer l'identité pin/creme. */
 .maplibregl-map canvas {
   filter: saturate(0.55) contrast(1.01) brightness(1.02) sepia(0.08);
 }
@@ -150,7 +150,7 @@ body {
   font-size: 10px !important;
 }
 
-/* Popup de details des points (arrets, stations partagees). */
+/* Popup de details des points (arrêts, stations partagées). */
 .ufm-popup .maplibregl-popup-content {
   border-radius: 0.875rem;
   border: 1px solid var(--border);
@@ -197,8 +197,8 @@ body {
   border-top-color: var(--card);
 }
 
-/* Popover de selection d'un point par appui long sur la carte. Cible tactile
-   de 44 px, exprimee en pixels : la racine du document est a 14px, donc une
+/* Popover de sélection d'un point par appui long sur la carte. Cible tactile
+   de 44 px, exprimée en pixels : la racine du document est a 14px, donc une
    valeur en rem tomberait a 38,5 px. */
 .ufm-popup .ufm-picker-actions {
   display: grid;
@@ -233,16 +233,16 @@ body {
   outline-offset: 2px;
 }
 
-/* Sur mobile, la barre d'actions occupe le bas de l'ecran : les commandes de
-   la carte remontent au-dessus d'elle plutot que de passer dessous. */
+/* Sur mobile, la barre d'actions occupe le bas de l'écran : les commandes de
+   la carte remontent au-dessus d'elle plutôt que de passer dessous. */
 @media (max-width: 1023px) {
   .maplibregl-ctrl-bottom-right {
     bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
   }
 }
 
-/* Libelle du mode pose sur un segment de transport public. Le fond bleu est
-   celui de la couche transport, pour que le lien avec le trait soit immediat. */
+/* Libellé du mode pose sur un segment de transport public. Le fond bleu est
+   celui de la couche transport, pour que le lien avec le trait soit immédiat. */
 .ufm-leg-label {
   display: inline-flex;
   align-items: center;
@@ -259,8 +259,8 @@ body {
   pointer-events: none;
 }
 
-/* Reperes de depart et d'arrivee. L'epingle est ancree par sa pointe sur la
-   coordonnee, le libelle se place au-dessus pour ne pas masquer la carte
+/* Reperes de départ et d'arrivée. L'épingle est ancrée par sa pointe sur la
+   coordonnée, le libellé se place au-dessus pour ne pas masquer la carte
    autour du point. */
 .ufm-endpoint {
   display: flex;

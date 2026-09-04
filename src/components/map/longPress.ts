@@ -1,13 +1,13 @@
-// Selection d'un point par appui long sur la carte.
+// Sélection d'un point par appui long sur la carte.
 //
 // Sur mobile il n'y a ni clic droit ni survol : l'appui long est le geste
-// attendu pour "agir sur cet endroit precis". Deux precautions le distinguent
-// d'un deplacement de carte : un seuil de duree, et l'annulation des que le
-// doigt bouge au-dela de quelques pixels.
+// attendu pour "agir sur cet endroit précis". Deux precautions le distinguent
+// d'un déplacement de carte : un seuil de durée, et l'annulation dès que le
+// doigt bouge au-delà de quelques pixels.
 import maplibregl, { type Map as MaplibreMap, type MapMouseEvent, type MapTouchEvent } from 'maplibre-gl';
 
 const LONG_PRESS_MS = 500;
-/** Au-dela, l'utilisateur fait glisser la carte, il ne designe pas un point. */
+/** Au-dela, l'utilisateur fait glisser la carte, il ne désigné pas un point. */
 const MOVE_TOLERANCE_PX = 10;
 
 export interface PickedPoint {
@@ -20,9 +20,9 @@ export interface LongPressHandlers {
 }
 
 /**
- * Branche la detection d'appui long et rend la fonction de detachement.
- * Ecoute la souris autant que le tactile : le comportement est ainsi
- * verifiable sur un poste de developpement, pas seulement sur telephone.
+ * Branche la détection d'appui long et rend la fonction de detachement.
+ * Écoute la souris autant que le tactile : le comportement est ainsi
+ * vérifiable sur un poste de développement, pas seulement sur téléphone.
  */
 export function bindLongPress(map: MaplibreMap, { onPick }: LongPressHandlers): () => void {
     let timer: number | null = null;
@@ -64,7 +64,7 @@ export function bindLongPress(map: MaplibreMap, { onPick }: LongPressHandlers): 
     map.on('mousedown', start);
     map.on('mousemove', move);
     map.on('mouseup', cancel);
-    // Un deplacement programmatique (recentrage, zoom) ne doit pas etre pris
+    // Un déplacement programmatique (recentrage, zoom) ne doit pas être pris
     // pour un appui maintenu.
     map.on('movestart', cancel);
 
@@ -88,8 +88,8 @@ export interface PickerLabels {
 }
 
 /**
- * Construit le contenu du popover de selection. Le DOM est assemble par code
- * plutot que par une chaine HTML : les libelles ne peuvent pas s'echapper en
+ * Construit le contenu du popover de sélection. Le DOM est assemble par code
+ * plutôt que par une chaîne HTML : les libellés ne peuvent pas s'echapper en
  * balises, et les boutons portent de vrais ecouteurs.
  */
 export function createPickerContent(
@@ -124,7 +124,7 @@ export function createPickerContent(
     return container;
 }
 
-/** Repere visuel pose a l'endroit choisi, retire avec le popover. */
+/** Repere visuel pose à l'endroit choisi, retire avec le popover. */
 export function createPickerMarker(map: MaplibreMap, point: PickedPoint): maplibregl.Marker {
     return new maplibregl.Marker({ color: '#0e6b4e' }).setLngLat([point.lon, point.lat]).addTo(map);
 }

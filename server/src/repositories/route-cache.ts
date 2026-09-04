@@ -1,4 +1,4 @@
-// Depot du cache de traces. Seule couche a connaitre la table du cache.
+// Dépôt du cache de traces. Seule couche a connaître la table du cache.
 import { eq, lt } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { routeCache } from '../db/schema.ts';
@@ -27,7 +27,7 @@ export function createRouteCacheRepository(db: Executor) {
                 .run();
         },
 
-        /** Purge les entrees expirees. Sans elle, le cache grossit sans fin. */
+        /** Purge les entrées expirées. Sans elle, le cache grossit sans fin. */
         purgeOlderThan(ttlMs: number): void {
             db.delete(routeCache).where(lt(routeCache.createdAt, Date.now() - ttlMs)).run();
         },

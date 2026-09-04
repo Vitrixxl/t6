@@ -1,10 +1,10 @@
-// Creation d'un trajet programme ou d'une routine a partir d'un trajet source
-// (option calculee ou itineraire enregistre).
+// Création d'un trajet programmé ou d'une routine à partir d'un trajet source
+// (option calculée ou itinéraire enregistré).
 import type { GeoPoint, MobilityMode, PlannedTrip, RecurringTrip } from '../../types';
 
 export const WEEKDAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
-/** Donnees minimales d'un trajet source (option calculee ou trajet enregistre). */
+/** Données minimales d'un trajet source (option calculée ou trajet enregistre). */
 export interface TripSource {
     label: string;
     origin: GeoPoint;
@@ -60,7 +60,7 @@ export function createRecurringTrip(
         daysOfWeek: [...schedule.daysOfWeek].sort((a, b) => a - b),
         departureTime: schedule.departureTime,
         returnTime: schedule.returnTime,
-        // Active des sa creation : ses passages comptent a partir de maintenant.
+        // Active des sa création : ses passages comptent à partir de maintenant.
         periods: [{ from: now.toISOString(), to: null }],
         createdAt: now.toISOString(),
     };

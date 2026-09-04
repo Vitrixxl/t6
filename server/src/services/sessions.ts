@@ -1,6 +1,6 @@
-// Ouverture d'une session utilisateur : creation du jeton, ecriture en base et
+// Ouverture d'une session utilisateur : création du jeton, écriture en base et
 // pose du cookie. Regroupe ici pour que l'inscription et la connexion posent
-// exactement le meme cookie, avec exactement les memes protections.
+// exactement le même cookie, avec exactement les mêmes protections.
 import type { ServerConfig } from '../config/index.ts';
 import type { SessionRepository } from '../repositories/sessions.ts';
 import { createSessionToken, hashToken } from '../security/tokens.ts';
@@ -28,8 +28,8 @@ export function openSession(
     cookie[SESSION_COOKIE]?.set({
         value: token,
         httpOnly: true, // inaccessible au JavaScript de page : un XSS ne vole pas la session
-        sameSite: 'lax', // pas envoye sur une requete inter-site : protection CSRF
-        secure: config.isProduction, // HTTPS obligatoire hors developpement local
+        sameSite: 'lax', // pas envoye sur une requête inter-site : protection CSRF
+        secure: config.isProduction, // HTTPS obligatoire hors développement local
         path: '/',
         maxAge: Math.floor(config.sessionTtlMs / 1000),
     });

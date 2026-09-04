@@ -1,4 +1,4 @@
-// Etat du compte : commandes granulaires, idempotence, transition atomique,
+// État du compte : commandes granulaires, idempotence, transition atomique,
 // cloisonnement entre ressources et entre comptes.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { DEFAULT_PROFILE } from '../../../src/contracts/index.ts';
@@ -26,14 +26,14 @@ const ROUTINE = {
 const SAVED_ROUTE = {
     ...TRIP_SHAPE,
     routeId: 'bike',
-    routeTitle: 'Velo',
+    routeTitle: 'Vélo',
     score: 82,
 };
 
 const readState = async (cookie: string) => json<StateBody>(await api.call('/api/state', { cookie }));
 
 describe('ressources du compte', () => {
-    it('rejoue le PUT d une ressource sans doublon', async () => {
+    it('rejoue le PUT d’une ressource sans doublon', async () => {
         const cookie = await api.register('rejeu@lyon.fr');
 
         const first = await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
@@ -50,17 +50,17 @@ describe('ressources du compte', () => {
 
         await api.putResource(cookie, '/api/trips/planned/trip-2', {
             ...PLANNED_TRIP,
-            label: 'Deuxieme trajet',
+            label: 'Deuxième trajet',
             scheduledFor: '2026-09-03T06:15:00.000Z',
         });
 
         expect((await readState(cookie)).plannedTrips.map((trip) => trip.id)).toEqual(['trip-1', 'trip-2']);
     });
 
-    it('supprime une ressource sans toucher a sa voisine ni a une autre collection', async () => {
+    it('supprime une ressource sans toucher à sa voisine ni à une autre collection', async () => {
         const cookie = await api.register('retrait@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
-        await api.putResource(cookie, '/api/trips/planned/trip-2', { ...PLANNED_TRIP, label: 'A conserver' });
+        await api.putResource(cookie, '/api/trips/planned/trip-2', { ...PLANNED_TRIP, label: 'À conserver' });
         await api.putResource(cookie, '/api/trips/recurring/routine-1', ROUTINE);
 
         expect((await api.call('/api/trips/planned/trip-1', { method: 'DELETE', cookie })).status).toBe(200);
@@ -70,7 +70,7 @@ describe('ressources du compte', () => {
         expect(state.recurringTrips).toHaveLength(1);
     });
 
-    it('met a jour une routine sans reecrire sa voisine', async () => {
+    it('met à jour une routine sans reecrire sa voisine', async () => {
         const cookie = await api.register('routines-granulaires@lyon.fr');
         await api.putResource(cookie, '/api/trips/recurring/routine-1', ROUTINE);
         await api.putResource(cookie, '/api/trips/recurring/routine-2', { ...ROUTINE, label: 'Salle de sport' });
@@ -83,7 +83,7 @@ describe('ressources du compte', () => {
         expect((await readState(cookie)).recurringTrips.map((routine) => routine.id).sort()).toEqual(['routine-1', 'routine-2']);
     });
 
-    it('supprime un itineraire enregistre sans reecrire sa voisine', async () => {
+    it('supprime un itinéraire enregistré sans reecrire sa voisine', async () => {
         const cookie = await api.register('favoris-granulaires@lyon.fr');
         await api.putResource(cookie, '/api/saved-routes/saved-1', SAVED_ROUTE);
         await api.putResource(cookie, '/api/saved-routes/saved-2', { ...SAVED_ROUTE, routeId: 'walk', routeTitle: 'Marche' });
@@ -104,7 +104,7 @@ describe('ressources du compte', () => {
         expect((await json<{ carbonSavedGrams: number | null }>(response)).carbonSavedGrams).toBeNull();
     });
 
-    it('rejette une ressource invalide sans alterer celle deja stockee', async () => {
+    it('rejette une ressource invalide sans alterer celle déjà stockée', async () => {
         const cookie = await api.register('validation@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
 
@@ -117,7 +117,7 @@ describe('ressources du compte', () => {
         expect((await readState(cookie)).plannedTrips.map((trip) => trip.id)).toEqual(['trip-1']);
     });
 
-    it('termine le trajet et cree l historique dans une seule transition idempotente', async () => {
+    it('termine le trajet et crée l’historique dans une seule transition idempotente', async () => {
         const cookie = await api.register('completion@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
 
@@ -132,14 +132,14 @@ describe('ressources du compte', () => {
         expect(state.tripRecords[0].id).toBe('trip:trip-1');
     });
 
-    it('n invente aucun historique si le trajet a terminer n existe pas', async () => {
+    it('n’invente aucun historique si le trajet a terminer n’existe pas', async () => {
         const cookie = await api.register('completion-absente@lyon.fr');
 
         expect((await api.call('/api/trips/planned/inconnu/completion', { method: 'PUT', cookie })).status).toBe(404);
         expect((await readState(cookie)).tripRecords).toHaveLength(0);
     });
 
-    it('n autorise pas le client a fabriquer directement un trajet termine', async () => {
+    it('n’autorise pas le client a fabriquer directement un trajet terminé', async () => {
         const cookie = await api.register('transition@lyon.fr');
 
         const response = await api.putResource(cookie, '/api/trips/planned/trip-1', {
@@ -152,7 +152,7 @@ describe('ressources du compte', () => {
         expect((await readState(cookie)).plannedTrips).toHaveLength(0);
     });
 
-    it('efface l historique uniquement par la commande explicite DELETE', async () => {
+    it('efface l’historique uniquement par la commande explicite DELETE', async () => {
         const cookie = await api.register('historique@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
         await api.call('/api/trips/planned/trip-1/completion', { method: 'PUT', cookie });
@@ -176,7 +176,7 @@ describe('ressources du compte', () => {
         expect((await api.call('/api/trips/planned')).status).toBe(401);
     });
 
-    it('ne laisse jamais un utilisateur modifier les donnees d un autre', async () => {
+    it('ne laisse jamais un utilisateur modifier les données d’un autre', async () => {
         const alice = await api.register('alice@lyon.fr');
         const bob = await api.register('bob@lyon.fr');
         await api.putResource(alice, '/api/trips/planned/trip-1', PLANNED_TRIP);
@@ -188,7 +188,7 @@ describe('ressources du compte', () => {
     });
 });
 
-describe('profil de mobilite', () => {
+describe('profil de mobilité', () => {
     it('remplace le profil sans toucher aux trajets', async () => {
         const cookie = await api.register('profil@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
@@ -217,7 +217,7 @@ describe('profil de mobilite', () => {
         const response = await api.putProfile(cookie, { ...DEFAULT_PROFILE, maxWalkMinutes: 240 });
 
         expect(response.status).toBe(422);
-        expect((await json<{ error: string }>(response)).error).not.toBe('Requete invalide.');
+        expect((await json<{ error: string }>(response)).error).not.toBe('Requête invalide.');
     });
 
     it('le profil se lit seul', async () => {

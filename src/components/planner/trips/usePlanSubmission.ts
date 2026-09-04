@@ -1,6 +1,6 @@
-// Ce que le formulaire de planification declenche : l'enregistrement, la
+// Ce que le formulaire de planification déclenche : l'enregistrement, la
 // fermeture du formulaire, et l'ouverture de l'onglet du hub qui montre le
-// resultat. Les consequences d'une action sont decidees ici, pas dans le
+// résultat. Les consequences d'une action sont decidees ici, pas dans le
 // composant.
 import { useAtom, useSetAtom } from 'jotai';
 import { openHubAtom, planSourceAtom } from '../../../state';

@@ -1,5 +1,5 @@
-// Les contrats sont partages par le formulaire et par l'API : ces tests
-// verrouillent les bornes qu'un relecteur s'attend a retrouver des deux cotes.
+// Les contrats sont partagés par le formulaire et par l'API : ces tests
+// verrouillent les bornes qu'un relecteur s'attend a retrouver des deux côtés.
 import { describe, expect, it } from 'bun:test';
 import {
     DEFAULT_PROFILE,
@@ -28,17 +28,17 @@ const TRIP = {
     completedAt: null,
 };
 
-describe('profil de mobilite', () => {
-    it('accepte le profil par defaut', () => {
+describe('profil de mobilité', () => {
+    it('accepte le profil par défaut', () => {
         expect(mobilityProfile.safeParse(DEFAULT_PROFILE).success).toBe(true);
     });
 
-    it('borne la marche maximale (5-45 min) et l objectif carbone (250-20000 g)', () => {
+    it('borne la marche maximale (5-45 min) et l’objectif carbone (250-20000 g)', () => {
         expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, maxWalkMinutes: 999 }).success).toBe(false);
         expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, carbonGoalGramsPerWeek: 10 }).success).toBe(false);
     });
 
-    it('valide des objectifs d economie de CO2 hebdomadaire et mensuel independants', () => {
+    it('valide des objectifs d’économie de CO2 hebdomadaire et mensuel indépendants', () => {
         expect(
             mobilityProfile.safeParse({
                 ...DEFAULT_PROFILE,
@@ -54,7 +54,7 @@ describe('profil de mobilite', () => {
         expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, preferredModes: [] }).success).toBe(false);
     });
 
-    it('refuse les chevrons dans le nom affiche, avec un message en francais', () => {
+    it('refuse les chevrons dans le nom affiché, avec un message en français', () => {
         const result = mobilityProfile.safeParse({ ...DEFAULT_PROFILE, displayName: '<script>Nadia</script>' });
 
         expect(result.success).toBe(false);
@@ -63,7 +63,7 @@ describe('profil de mobilite', () => {
 });
 
 describe('authentification', () => {
-    it('l inscription exige douze caracteres et un chiffre', () => {
+    it('l’inscription exige douze caractères et un chiffre', () => {
         expect(registration.safeParse({ email: 'a@b.fr', password: 'UrbanFlow2026!', displayName: 'Nadia' }).success).toBe(true);
         expect(registration.safeParse({ email: 'a@b.fr', password: 'UrbanFlowUrban!', displayName: 'Nadia' }).success).toBe(false);
         expect(registration.safeParse({ email: 'a@b.fr', password: 'Court1!', displayName: 'Nadia' }).success).toBe(false);
@@ -89,22 +89,22 @@ describe('trajets', () => {
         expect(parsed.status).toBe('planned');
     });
 
-    it('conserve une comparaison voiture absente au lieu de la transformer en zero', () => {
+    it('conserve une comparaison voiture absente au lieu de la transformer en zéro', () => {
         const parsed = plannedTripInput.parse({ ...TRIP, carbonSavedGrams: null });
 
         expect(parsed.carbonSavedGrams).toBeNull();
     });
 
-    it('refuse une date qui n est pas ISO et un statut inconnu', () => {
+    it('refuse une date qui n’est pas ISO et un statut inconnu', () => {
         expect(plannedTripInput.safeParse({ ...TRIP, scheduledFor: 'demain' }).success).toBe(false);
         expect(plannedTripInput.safeParse({ ...TRIP, status: 'perdu' }).success).toBe(false);
     });
 
-    it('reserve le statut fait a la commande de completion', () => {
+    it('reserve le statut fait à la commande de complétion', () => {
         expect(plannedTripInput.safeParse({ ...TRIP, status: 'done', completedAt: '2026-09-02T07:00:00.000Z' }).success).toBe(false);
     });
 
-    it('une routine a au moins un jour, une periode, et des heures HH:MM', () => {
+    it('une routine a au moins un jour, une période, et des heures HH:MM', () => {
         const routine = {
             ...TRIP,
             userId: 'user-1',

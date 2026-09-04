@@ -1,4 +1,4 @@
-// Routines : lecture, creation, pause et suppression de la ressource visee.
+// Routines : lecture, création, pause et suppression de la ressource visée.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { RecurringTrip } from '../types';

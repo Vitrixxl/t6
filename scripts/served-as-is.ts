@@ -1,10 +1,10 @@
-// Les references absolues du document designent des fichiers servis a leur
-// chemin exact — manifeste, icones, polices. Les regrouper leur donnerait une
+// Les références absolues du document désignent des fichiers servis a leur
+// chemin exact — manifeste, icônes, polices. Les regrouper leur donnerait une
 // empreinte dans le nom, or ces chemins sont ecrits en dur dans le manifeste et
 // la feuille de style. Bun les laisse donc intactes.
 //
-// Le meme greffon sert a la construction et au serveur de developpement : une
-// seule regle, sinon les deux montages divergent sans qu'on s'en apercoive.
+// Le même greffon sert à la construction et au serveur de développement : une
+// seule règle, sinon les deux montages divergent sans qu'on s'en aperçoive.
 import type { BunPlugin } from 'bun';
 
 const servedAsIs: BunPlugin = {

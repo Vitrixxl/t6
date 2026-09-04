@@ -1,11 +1,11 @@
 // Assemblage de l'API.
 //
-// createApp() est pur : il recoit sa configuration et rend une application
-// Elysia sans ouvrir de port. Les tests appellent donc les routes en memoire
-// (app.handle(new Request(...))), sans reseau ni port a reserver.
+// createApp() est pur : il reçoit sa configuration et rend une application
+// Elysia sans ouvrir de port. Les tests appellent donc les routes en mémoire
+// (app.handle(new Request(...))), sans réseau ni port a reserver.
 //
-// L'ordre de montage compte : les plugins transverses (en-tetes, journal,
-// debit, erreurs) sont installes avant les routes, pour s'appliquer a toutes.
+// L'ordre de montage compte : les plugins transverses (en-têtes, journal,
+// débit, erreurs) sont installes avant les routes, pour s'appliquer à toutes.
 import { Elysia } from 'elysia';
 import { openapi } from '@elysiajs/openapi';
 import { z } from 'zod';
@@ -18,7 +18,7 @@ import { requestLog } from './plugins/request-log.ts';
 import { securityHeaders } from './plugins/security-headers.ts';
 import { routes } from './routes/index.ts';
 
-/** Borne defensive des corps JSON, independante des limites metier. */
+/** Borne defensive des corps JSON, indépendante des limites métier. */
 const MAX_BODY_BYTES = 512 * 1024;
 
 export function createApp(overrides: Partial<ServerConfig> = {}) {
@@ -32,9 +32,9 @@ export function createApp(overrides: Partial<ServerConfig> = {}) {
         .use(requestLog(config.isProduction))
         // Limitation globale ; les routes d'authentification resserrent encore.
         .use(rateLimit({ max: 300, windowMs: 60_000, scope: 'global', trustProxy: config.trustProxy }))
-        // Documentation OpenAPI generee a partir des contrats des routes : elle ne
+        // Documentation OpenAPI générée à partir des contrats des routes : elle ne
         // peut pas deriver du code puisqu'elle en est extraite. Les contrats
-        // sont des schemas zod (src/contracts/), traduits en JSON Schema ici.
+        // sont des schémas zod (src/contracts/), traduits en JSON Schéma ici.
         .use(
             openapi({
                 path: '/doc',
@@ -43,7 +43,7 @@ export function createApp(overrides: Partial<ServerConfig> = {}) {
                     info: {
                         title: 'API UrbanFlow Mobility',
                         version: '1.0.0',
-                        description: "API de la plateforme de mobilite urbaine : comptes, profils, trajets et itineraires.",
+                        description: "API de la plateforme de mobilité urbaine : comptes, profils, trajets et itinéraires.",
                     },
                 },
             }),

@@ -1,10 +1,10 @@
-// Contrat de donnees du domaine, importe par le client et par l'API.
+// Contrat de données du domaine, importe par le client et par l'API.
 //
 // Tout ce qui s'echange avec le serveur ou se saisit dans un formulaire est
-// decrit par un schema zod dans src/contracts/ ; son type en derive et se
-// reexporte ici pour que le reste du code n'ait qu'un point d'import. Les
+// décrit par un schéma zod dans src/contracts/ ; son type en dérive et se
+// réexporte ici pour que le reste du code n'ait qu'un point d'import. Les
 // types ci-dessous sont ceux qui ne se valident pas : flux transport et
-// resultats du moteur d'itineraires, calcules et jamais recus d'un tiers.
+// résultats du moteur d'itinéraires, calculés et jamais reçus d'un tiers.
 export type {
     GeoPoint,
     MobilityMode,
@@ -40,9 +40,9 @@ export interface GtfsStop {
     stop_lon: number;
     wheelchair_boarding: 0 | 1 | 2;
     /**
-     * Lignes structurantes desservant l'arret (`['B', 'T1']`), issues du champ
-     * `desserte` du portail open data. Vide pour un arret uniquement bus : le
-     * moteur d'itineraires ne peut alors pas y faire monter le voyageur.
+     * Lignes structurantes desservant l'arrêt (`['B', 'T1']`), issues du champ
+     * `desserte` du portail open data. Vide pour un arrêt uniquement bus : le
+     * moteur d'itinéraires ne peut alors pas y faire monter le voyageur.
      */
     routes: string[];
 }
@@ -55,9 +55,9 @@ export interface GtfsRoute {
     route_color: string;
     route_text_color: string;
     /**
-     * Trace reel de la ligne, en couples `[lon, lat]`, simplifie a 2 m pres. Une
-     * ligne de metro ne suit pas la voirie : sans ce trace, le segment ne peut
-     * etre dessine qu'en approximation routiere, ce qui l'envoie ailleurs.
+     * Trace réel de la ligne, en couples `[lon, lat]`, simplifie a 2 m près. Une
+     * ligne de métro ne suit pas la voirie : sans ce tracé, le segment ne peut
+     * être dessine qu'en approximation routière, ce qui l'envoie ailleurs.
      */
     shape: [number, number][];
 }
@@ -89,9 +89,9 @@ export interface GtfsFeed {
 export interface SharedStation {
     station_id: string;
     /**
-     * Nature du point : station Velo'v (ancrage fixe) ou trottinette en flotte
-     * libre. Les deux services n'ont ni la meme densite ni le meme usage, on ne
-     * les melange donc pas dans l'interface.
+     * Nature du point : station Vélo'v (ancrage fixe) ou trottinette en flotte
+     * libre. Les deux services n'ont ni la même densite ni le même usage, on ne
+     * les mélange donc pas dans l'interface.
      */
     kind: 'velov' | 'scooter';
     name: string;
@@ -130,28 +130,28 @@ export interface TransportNetwork {
 export interface RouteLeg {
     id: string;
     mode: MobilityMode;
-    /** Correspondance pietonne interne : temps estime, mais aucun trace invente sans donnees de station. */
+    /** Correspondance piétonne interne : temps estime, mais aucun tracé invente sans données de station. */
     transfer?: boolean;
     title: string;
     /**
-     * Libelle court ecrit sur le trace de la carte : le nom exact de la ligne
-     * ("Metro B", "Tram T1"). Il n'est pose que si la ligne dessert reellement
-     * les deux arrets du segment, verifie sur la desserte publiee.
+     * Libellé court ecrit sur le tracé de la carte : le nom exact de la ligne
+     * ("Métro B", "Tram T1"). Il n'est pose que si la ligne dessert réellement
+     * les deux arrêts du segment, vérifie sur la desserte publiée.
      */
     mapLabel?: string;
-    /** Couleur officielle de la ligne, pour tracer le segment a ses couleurs. */
+    /** Couleur officielle de la ligne, pour tracer le segment à ses couleurs. */
     mapColor?: string;
     from: string;
     to: string;
-    /** Extremites du segment. Toujours connues, meme sans geometrie. */
+    /** Extrémités du segment. Toujours connues, même sans géométrie. */
     fromPoint: GeoPoint;
     toPoint: GeoPoint;
     /**
-     * Geometrie a dessiner. Elle n'est renseignee que par une source reelle : le
-     * trace publie d'une ligne de transport, ou la reponse du service de
+     * Géométrie a dessiner. Elle n'est renseignee que par une source réelle : le
+     * trace publie d'une ligne de transport, ou la réponse du service de
      * routage. Tant qu'elle est vide, la carte n'affiche rien pour ce segment et
      * l'interface indique un calcul en cours. On ne dessine jamais une
-     * approximation : un trace faux est pire qu'un trace absent (B14).
+     * approximation : un tracé faux est pire qu'un tracé absent (B14).
      */
     path: GeoPoint[];
     distanceKm: number;
@@ -160,8 +160,8 @@ export interface RouteLeg {
     accessible: boolean;
     detail: string;
     /**
-     * Hypotheses de calcul du segment, conservees a part. Sans elles, remplacer
-     * la distance et la duree par celles du reseau routier effacerait l'attente
+     * Hypothèses de calcul du segment, conservées a part. Sans elles, remplacer
+     * la distance et la durée par celles du réseau routier effacerait l'attente
      * et la congestion, qui ne sont pas du temps de parcours.
      */
     estimate: LegEstimate;
@@ -169,20 +169,20 @@ export interface RouteLeg {
 
 export interface LegEstimate {
     /**
-     * Multiplicateur du temps de parcours. Le calculateur d'itineraires raisonne
-     * en circulation fluide : il ne connait pas le trafic. Ce facteur est
-     * l'hypothese de congestion, assumee et affichee comme telle.
+     * Multiplicateur du temps de parcours. Le calculateur d'itinéraires raisonne
+     * en circulation fluide : il ne connaît pas le trafic. Ce facteur est
+     * l'hypothèse de congestion, assumee et affichée comme telle.
      */
     travelFactor: number;
-    /** Temps fixe hors parcours : deverrouiller un velo, attendre une rame, etre pris en charge. */
+    /** Temps fixe hors parcours : déverrouiller un vélo, attendre une rame, être pris en charge. */
     overheadMinutes: number;
-    /** Facteur d'emission retenu pour ce segment, en g/km et **par personne**. */
+    /** Facteur d'émission retenu pour ce segment, en g/km et **par personne**. */
     carbonGramsPerKm: number;
 }
 
-/** Scenario voiture invisible, commun a toutes les options d'une recherche. */
+/** Scénario voiture invisible, commun à toutes les options d'une recherche. */
 export interface CarbonReference {
-    /** Distance du profil OSRM driving entre les extremites de la recherche. */
+    /** Distance du profil OSRM driving entre les extrémités de la recherche. */
     distanceKm: number;
     /** Empreinte de cette distance avec le facteur versionne. */
     carbonGrams: number;

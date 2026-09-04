@@ -1,5 +1,5 @@
-// Itineraires enregistres : creation et projection pure dans la vue locale.
-// La couche queries envoie ensuite seulement la ressource concernee.
+// Itinéraires enregistrés : création et projection pure dans la vue locale.
+// La couche queries envoie ensuite seulement la ressource concernée.
 import type { GeoPoint, RouteOption, SavedRouteRecord } from '../types';
 import { SAVED_ROUTES_LIMIT } from '../contracts/limits';
 
@@ -27,7 +27,7 @@ export function createSavedRouteRecord(
     };
 }
 
-/** Ajoute en tete ; le meme trajet enregistre deux fois remplace sa version precedente. */
+/** Ajoute en tete ; le même trajet enregistre deux fois remplace sa version précédente. */
 export function addSavedRoute(records: SavedRouteRecord[], record: SavedRouteRecord): SavedRouteRecord[] {
     return [record, ...records.filter((item) => item.id !== record.id)].slice(0, SAVED_ROUTES_LIMIT);
 }
@@ -36,7 +36,7 @@ export function removeSavedRoute(records: SavedRouteRecord[], recordId: string):
     return records.filter((record) => record.id !== recordId);
 }
 
-/** Identifiant deterministe : meme origine, meme destination, meme option. */
+/** Identifiant déterministe : même origine, même destination, même option. */
 function stableSavedRouteId(origin: GeoPoint, destination: GeoPoint, routeId: string): string {
     return [
         routeId,

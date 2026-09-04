@@ -1,4 +1,4 @@
-// Module planification - restitution desktop : bandeau d'options, detail de
+// Module planification - restitution desktop : bandeau d'options, détail de
 // trajet et barre de statut des sources.
 import { CalendarPlus, Check, Route, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -75,7 +75,7 @@ export function RouteDetailPanel({
                         <div className="mb-2 flex min-w-0 items-center gap-2">
                             <ShieldCheck className="size-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
                             <span className="truncate text-[11px] font-semibold text-emerald-700">
-                                {routeOption.accessible ? 'PMR compatible' : 'PMR limite'}
+                                {routeOption.accessible ? 'PMR compatible' : 'PMR limité'}
                             </span>
                         </div>
                         <h2 className="truncate text-[15px] font-semibold tracking-normal">{routeOption.title}</h2>
@@ -91,7 +91,7 @@ export function RouteDetailPanel({
             </div>
             <div className="grid gap-3 p-3">
                 <div className="grid grid-cols-2 gap-2">
-                    <Metric label="Duree" value={`${routeOption.durationMinutes} min`} />
+                    <Metric label="Durée" value={`${routeOption.durationMinutes} min`} />
                     <Metric label="Distance" value={`${routeOption.distanceKm.toFixed(1)} km`} />
                     <Metric label="Empreinte" value={formatCarbonFootprint(routeOption.carbonGrams)} />
                     <Metric label="Vs voiture" value={formatCarbonComparison(routeOption.carbonSavedGrams)} />
@@ -130,7 +130,7 @@ export function RouteDetailPanel({
                     </Button>
                     <Button type="button" variant="outline" onClick={onSave}>
                         {saved ? <Check className="size-4" aria-hidden="true" /> : <Route className="size-4" aria-hidden="true" />}
-                        {saved ? 'Enregistre' : 'Enregistrer'}
+                        {saved ? 'Enregistré' : 'Enregistrer'}
                     </Button>
                 </div>
             </div>

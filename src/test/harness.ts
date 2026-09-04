@@ -1,12 +1,12 @@
 // Passerelle de test.
 //
-// Les tests etaient ecrits pour Vitest, qui est un outil du bundler precedent.
-// Plutot que de reecrire neuf fichiers et deux cents assertions — donc de
+// Les tests étaient ecrits pour Vitest, qui est un outil du bundler précédent.
+// Plutôt que de reecrire neuf fichiers et deux cents assertions — donc de
 // risquer d'en changer le sens au passage — cette passerelle traduit les
-// quelques primitives utilisees vers celles de `bun:test`.
+// quelques primitives utilisées vers celles de `bun:test`.
 //
-// Elle ne couvre que ce dont le depot se sert. Une methode absente doit etre
-// ajoutee ici en connaissance de cause, pas contournee dans un test.
+// Elle ne couvre que ce dont le dépôt se sert. Une méthode absente doit être
+// ajoutée ici en connaissance de cause, pas contournee dans un test.
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 
 export { afterEach, beforeEach, describe, expect, it };
@@ -20,7 +20,7 @@ export const vi = {
 
     /**
      * Remplace une valeur globale en gardant l'ancienne. `bun:test` n'a pas
-     * d'equivalent : la restauration doit etre explicite, d'ou la table.
+     * d'équivalent : la restauration doit être explicite, d'où la table.
      */
     stubGlobal(name: string, value: unknown) {
         if (!stubbed.has(name)) {

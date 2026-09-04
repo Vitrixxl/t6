@@ -1,73 +1,73 @@
 # Journal des bogues
 
-Ce document existe pour une raison precise. La competence **C3.3** est evaluee
-lors d'une revue face-a-face ou le candidat doit expliciter et valider trois
+Ce document existe pour une raison précise. La compétence **C3.3** est évaluée
+lors d'une revue face-à-face ou le candidat doit expliciter et valider trois
 pratiques :
 
 - ses pratiques pour **identifier la source** des bogues ;
 - ses pratiques de **correction** des bogues ;
 - ses pratiques de **test et validation des correctifs**.
 
-Chaque entree ci-dessous suit donc ces trois sections, dans cet ordre. Un
-correctif non consigne est un correctif indefendable : ce qui n'est pas ecrit
-ici ne peut pas etre montre en revue.
+Chaque entrée ci-dessous suit donc ces trois sections, dans cet ordre. Un
+correctif non consigné est un correctif indéfendable : ce qui n'est pas écrit
+ici ne peut pas être montré en revue.
 
-**Regle de verrouillage.** Un correctif n'est declare verrouille que si son test
-a ete vu **rouge avant le correctif, puis vert apres**. Un test ecrit apres coup
-qui passe du premier coup ne prouve rien : il peut tres bien ne rien couvrir.
-La verification rouge-puis-vert est notee dans chaque entree.
+**Règle de verrouillage.** Un correctif n'est déclare verrouille que si son test
+a été vu **rouge avant le correctif, puis vert après**. Un test écrit après coup
+qui passe du premier coup ne prouve rien : il peut très bien ne rien couvrir.
+La vérification rouge-puis-vert est notée dans chaque entrée.
 
 ---
 
-## B16 — L'objectif hebdomadaire etait calcule sur tout l'historique
+## B16 — L'objectif hebdomadaire était calcule sur tout l'historique
 
-**Criticite** : majeur — l'indicateur central de la fonctionnalite F4
+**Criticité** : majeur — l'indicateur central de la fonctionnalité F4
 (calculateur d'empreinte carbone avec suivi personnel) annonçait un chiffre faux.
 
 ### Identifier la source
 
-La recherche est partie d'une hypothese de terrain plutot que d'un signalement :
-**les fenetres d'agregation sont un endroit ou les defauts se logent souvent**,
-parce que la periode est portee par le libelle et non par le calcul. J'ai donc
-relu les fonctions d'agregation en cherchant, pour chacune, ou etait la borne de
+La recherche est partie d'une hypothèse de terrain plutôt que d'un signalement :
+**les fenêtres d'agrégation sont un endroit ou les défauts se logent souvent**,
+parce que la période est portée par le libellé et non par le calcul. J'ai donc
+relu les fonctions d'agrégation en cherchant, pour chacune, ou était la borne de
 temps.
 
 `summarizeCarbon` acceptait un `weeklyGoalGrams` mais sommait **tous** les
-enregistrements, sans aucun filtre de date. Restait a savoir si c'etait
-volontaire : un cumul de toujours est une quantite legitime. J'ai donc cherche
-le libelle affiche a cote, et trouve dans `CarbonPanel` :
+enregistrements, sans aucun filtre de date. Restait à savoir si c'était
+volontaire : un cumul de toujours est une quantité légitime. J'ai donc cherché
+le libellé affiché a côté, et trouvé dans `CarbonPanel` :
 
 > `{summary.goalUsagePercent}% de l'objectif hebdomadaire de ... g`
 
-C'est l'appariement qui tranchait. La confirmation est venue d'un second ecran :
-`TripGoalsCard` affiche la meme notion en s'appuyant sur `savedThisWeekGrams`,
-lui correctement borne a la semaine par `summarizeTripActivity`.
+C'est l'appariement qui tranchait. La confirmation est venue d'un second écran :
+`TripGoalsCard` affiche la même notion en s'appuyant sur `savedThisWeekGrams`,
+lui correctement borne à la semaine par `summarizeTripActivity`.
 
-**Symptome, une fois nomme** : la barre de progression hebdomadaire ne
-redescendait jamais le lundi, et deux ecrans annonçaient des chiffres
-differents pour la meme notion.
+**Symptôme, une fois nomme** : la barre de progression hebdomadaire ne
+redescendait jamais le lundi, et deux écrans annonçaient des chiffres
+différents pour la même notion.
 
-**Cause racine** : aucune des deux fonctions n'etait fausse. `summarizeCarbon`
+**Cause racine** : aucune des deux fonctions n'était fausse. `summarizeCarbon`
 est un cumul de toujours, `summarizeTripActivity` filtre bien la semaine. Le
-defaut etait **l'appariement** d'un total sans borne avec un libelle
-hebdomadaire — un defaut qui n'existe dans aucun des deux fichiers, seulement
+défaut était **l'appariement** d'un total sans borne avec un libellé
+hebdomadaire — un défaut qui n'existe dans aucun des deux fichiers, seulement
 entre eux.
 
 ### Corriger
 
-La fenetre est appliquee **a la source**, dans `summarizeCarbon`, et non dans
-chaque ecran : laisser chaque appelant filtrer aurait reproduit le meme defaut
-au prochain ecran ajoute.
+La fenêtre est appliquée **à la source**, dans `summarizeCarbon`, et non dans
+chaque écran : laisser chaque appelant filtrer aurait reproduit le même défaut
+au prochain écran ajoute.
 
 `startOfWeek` vivait dans `trips/summary.ts`. Le laisser la et l'importer
 depuis le suivi carbone aurait couple deux modules sans rapport ; le
-reimplementer aurait cree deux definitions du lundi, libres de diverger. Il
+reimplementer aurait créé deux définitions du lundi, libres de diverger. Il
 part donc dans `src/lib/week.ts`, dont c'est la seule raison d'exister.
 
-Les libelles de `CarbonPanel` deviennent explicites — « Trajets cette semaine »,
-« CO2 evite cette semaine » — parce que l'entete porte desormais sur la semaine
+Les libellés de `CarbonPanel` deviennent explicites — « Trajets cette semaine »,
+« CO2 évité cette semaine » — parce que l'entête porte désormais sur la semaine
 alors que l'historique dessous porte sur les cinquante derniers trajets. Deux
-periodes sur un meme ecran doivent se dire.
+périodes sur un même écran doivent se dire.
 
 **Ou le voir** : `src/lib/week.ts`, `src/lib/carbon.ts`,
 `src/components/carbon/CarbonPanel.tsx`
@@ -75,215 +75,215 @@ periodes sur un meme ecran doivent se dire.
 ### Tester et valider le correctif
 
 Trois tests unitaires ecrits **avant** le correctif, sur une fonction pure a
-horloge injectee :
+horloge injectée :
 
-1. un trajet de la semaine, un de la semaine precedente : seul le premier compte ;
-2. bascule du lundi : le meme trajet compte le dimanche soir, plus le lundi matin ;
-3. borne inferieure : un trajet fait lundi a 00:00 est dans la semaine.
+1. un trajet de la semaine, un de la semaine précédente : seul le premier compte ;
+2. bascule du lundi : le même trajet compte le dimanche soir, plus le lundi matin ;
+3. borne inférieure : un trajet fait lundi a 00:00 est dans la semaine.
 
-Un quatrième test verrouille la cause racine plutot que son symptome : il
+Un quatrième test verrouille la cause racine plutôt que son symptôme : il
 construit des trajets planifies, les convertit en enregistrements par le chemin
-reel (`plannedTripToRecord`), et exige que **les deux agregats annoncent le meme
-CO2 evite**. C'est celui-la qui empeche les deux ecrans de rediverger ; les
+réel (`plannedTripToRecord`), et exige que **les deux agrégats annoncent le même
+CO2 évité**. C'est celui-la qui empeche les deux écrans de rediverger ; les
 trois premiers ne verrouillent que le calcul.
 
 **Validation** : les deux premiers tests vus **rouges** avant le correctif
-(`expected 2 to be 1`, `expected 1 to be +0`), **verts** apres. Suite complete
+(`expected 2 to be 1`, `expected 1 to be +0`), **verts** après. Suite complète
 verte : 94 tests unitaires, 37 tests d'API.
 
-**Niveau de verrouillage** : **automatise**.
+**Niveau de verrouillage** : **automatisé**.
 
 ---
 
-## B17 — Une trottinette proposee sur 416 kilometres
+## B17 — Une trottinette proposée sur 416 kilomètres
 
-**Criticite** : majeur — la contrainte C6 exige de « garantir la precision et la
-fiabilite des donnees de geolocalisation et d'itineraires ». Un itineraire
+**Criticité** : majeur — la contrainte C6 exige de « garantir la précision et la
+fiabilité des données de géolocalisation et d'itinéraires ». Un itinéraire
 impossible presente comme une option y contrevient directement.
 
 ### Identifier la source
 
-Aucun signalement ne pointait ce defaut : il fallait aller le chercher. J'ai
-soumis le moteur a des **entrees aux limites** et verifie des **invariants**
-plutot que des valeurs attendues — technique proche du property-based testing.
+Aucun signalement ne pointait ce défaut : il fallait aller le chercher. J'ai
+soumis le moteur a des **entrées aux limites** et vérifie des **invariants**
+plutôt que des valeurs attendues — technique proche du property-based testing.
 L'interet est de ne pas avoir a deviner ou est le bogue.
 
-Entrees : origine egale a la destination, destination hors perimetre (Paris),
-antipode, profil PMR, covoiturage a un occupant. Invariants controles sur
-**toutes** les options rendues : distance et duree finies et positives, CO2
-positif, score entre 0 et 100, aucun segment de duree nulle.
+Entrées : origine égale à la destination, destination hors périmètre (Paris),
+antipode, profil PMR, covoiturage à un occupant. Invariants contrôles sur
+**toutes** les options rendues : distance et durée finies et positives, CO2
+positif, score entre 0 et 100, aucun segment de durée nulle.
 
-Aucun invariant n'a saute. C'est une **comparaison** qui a revele le defaut :
-pour Paris, le moteur rendait une option trottinette mais aucune option velo.
-Deux modes presque identiques, dont un seul survit a une destination absurde —
-cette asymetrie n'a aucune justification metier, et c'est elle qui a designe
+Aucun invariant n'a saute. C'est une **comparaison** qui a revele le défaut :
+pour Paris, le moteur rendait une option trottinette mais aucune option vélo.
+Deux modes presque identiques, dont un seul survit à une destination absurde —
+cette asymétrie n'a aucune justification métier, et c'est elle qui a désigné
 l'oubli.
 
 Mesures depuis Bellecour, une fois le soupçon confirme : Vienne 28 km / 2 h,
-Grenoble 100 km / 6 h, **Paris 416 km / 23 h / 6233 g**. Au meme moment,
-l'application affichait sa propre banniere « hors metropole de Lyon :
-velos/trottinettes indisponibles » au-dessus de la liste qui proposait
+Grenoble 100 km / 6 h, **Paris 416 km / 23 h / 6233 g**. Au même moment,
+l'application affichait sa propre banniere « hors métropole de Lyon :
+vélos/trottinettes indisponibles » au-dessus de la liste qui proposait
 exactement cela.
 
-**Cause racine** : RG3 — un vehicule partage doit etre a distance de marche —
-etait verifiee **aux deux extremites** dans `createBikeOption`, mais
-**seulement a l'origine** dans `createScooterOption`. Rien d'autre ne bornait
+**Cause racine** : RG3 — un vehicule partage doit être a distance de marche —
+était vérifiée **aux deux extrémités** dans `createBikeOption`, mais
+**seulement à l'origine** dans `createScooterOption`. Rien d'autre ne bornait
 la course.
 
-Le velo n'etait donc pas protege par une intention, mais **par effet de bord** :
-sa seconde verification existe parce qu'un Velo'v se rend a une borne, pas
-parce que quelqu'un avait pense au probleme de la distance.
+Le vélo n'était donc pas protege par une intention, mais **par effet de bord** :
+sa seconde vérification existe parce qu'un Vélo'v se rend à une borne, pas
+parce que quelqu'un avait pense au problème de la distance.
 
 ### Corriger
 
-La correction evidente — copier la verification du velo — aurait produit un
-second bogue. Le Velo'v est un service **a bornes** : exiger une station a
-l'arrivee est legitime. La trottinette est en **flotte libre** : exiger une
-trottinette a l'arrivee n'a aucun sens, il n'y en a peut-etre aucune la-bas
+La correction évidente — copier la vérification du vélo — aurait produit un
+second bogue. Le Vélo'v est un service **a bornes** : exiger une station a
+l'arrivée est légitime. La trottinette est en **flotte libre** : exiger une
+trottinette à l'arrivée n'a aucun sens, il n'y en a peut-etre aucune la-bas
 justement parce que personne n'y est encore alle.
 
-La regle manquante n'est donc pas la meme. Pour une flotte libre, la contrainte
-de fin de trajet est la **zone de service de l'operateur** : au-dela, le
+La règle manquante n'est donc pas la même. Pour une flotte libre, la contrainte
+de fin de trajet est la **zone de service de l'opérateur** : au-delà, le
 vehicule est immobilise et l'utilisateur penalise. `withinServiceArea` s'appuie
-sur le perimetre metropolitain deja utilise par la banniere de couverture, ce
-qui les rend d'accord par construction plutot que par coincidence.
+sur le périmètre métropolitain déjà utilisé par la banniere de couverture, ce
+qui les rend d'accord par construction plutôt que par coincidence.
 
 **Ou le voir** : `src/lib/planner/geo.ts` (`withinServiceArea`),
 `src/lib/planner/options/scooter.ts`
 
 ### Tester et valider le correctif
 
-Trois tests ecrits **avant** le correctif :
+Trois tests écrits **avant** le correctif :
 
 1. destination hors zone : aucune option trottinette ;
 2. destination dans la zone : l'option est toujours la — un correctif qui
    supprimerait le mode passerait le premier test et echouerait celui-ci ;
-3. **les deux modes partages sont bornes**, sans qu'aucun ne survive a l'autre.
-   C'est le test de la cause racine : il verrouille l'asymetrie elle-meme, la ou
+3. **les deux modes partagés sont bornes**, sans qu'aucun ne survive à l'autre.
+   C'est le test de la cause racine : il verrouille l'asymétrie elle-même, la ou
    les deux premiers ne couvrent que la trottinette.
 
 **Validation** : tests 1 et 3 vus **rouges** avant le correctif
 (`expected [ 'scooter', 'carpool', 'walk' ] to not include 'scooter'`),
-**verts** apres. Puis rejeu de la sonde initiale : Vienne, Grenoble et Paris ne
+**verts** après. Puis rejeu de la sonde initiale : Vienne, Grenoble et Paris ne
 rendent plus que marche et covoiturage — exactement ce que la banniere annonce —
 tandis que Villeurbanne, a 8 km, conserve sa trottinette.
 
-**Niveau de verrouillage** : **automatise**.
+**Niveau de verrouillage** : **automatisé**.
 
 ---
 
-## B18 — Des trajets deja passes comptes comme a venir
+## B18 — Des trajets déjà passes comptes comme à venir
 
-**Criticite** : mineur — aucun calcul faux ni action erronee, mais un compteur
-qui ment sur l'ecran principal.
+**Criticité** : mineur — aucun calcul faux ni action erronee, mais un compteur
+qui ment sur l'écran principal.
 
 ### Identifier la source
 
 Les dates sont un terrain a fort rendement : elles concentrent les cas limites
-que personne ne joue a la main. J'ai donc sonde le moteur de recurrence **sans
+que personne ne joue à la main. J'ai donc sonde le moteur de recurrence **sans
 navigateur**, en injectant une horloge — `syncRecurringOccurrences` et
 `summarizeTripActivity` acceptent toutes deux un `now`, ce qui rend chaque
-scenario reproductible a la seconde pres.
+scénario reproductible à la seconde près.
 
-Quatre situations passees au crible, en une seule sonde :
+Quatre situations passées au crible, en une seule sonde :
 
-| Situation | Resultat |
+| Situation | Résultat |
 | --- | --- |
-| Rejeu de la generation | idempotent, aucun doublon |
-| Fenetre a cheval sur le passage a l'heure d'hiver | 08:00 local des deux cotes, correct |
-| Trajet fait le dimanche, consulte le lundi | bien rattache a la semaine precedente |
-| **Generation a 22 h un mercredi** | **occurrences de 08:00 et 18:00 du jour creees** |
+| Rejeu de la génération | idempotent, aucun doublon |
+| Fenêtre a cheval sur le passage à l'heure d'hiver | 08:00 local des deux côtés, correct |
+| Trajet fait le dimanche, consulté le lundi | bien rattache à la semaine précédente |
+| **Génération a 22 h un mercredi** | **occurrences de 08:00 et 18:00 du jour créées** |
 
-La derniere ligne est le defaut. `upcomingTrips` les renvoyait ensuite comme
-« a venir » : a 22 h, la pastille annonçait **2 trajets a venir**, tous deux
+La derniere ligne est le défaut. `upcomingTrips` les renvoyait ensuite comme
+« à venir » : a 22 h, la pastille annonçait **2 trajets à venir**, tous deux
 passes depuis longtemps.
 
 **Cause racine** : deux decisions raisonnables qui se composent mal.
-`syncRecurringOccurrences` parcourt les jours a partir d'aujourd'hui sans jamais
-comparer l'heure de l'occurrence a `now`. Et la tolerance de 24 h de
+`syncRecurringOccurrences` parcourt les jours à partir d'aujourd'hui sans jamais
+comparer l'heure de l'occurrence a `now`. Et la tolérance de 24 h de
 `upcomingTrips` — voulue, pour marquer « fait » en fin de journee un trajet du
-matin — **masque** l'erreur au lieu de l'arreter.
+matin — **masque** l'erreur au lieu de l'arrêter.
 
 Aucune des deux n'est fautive isolement. C'est leur composition qui l'est, ce
 qui explique qu'aucune relecture d'un seul fichier ne l'aurait revelee.
 
 ### Corriger
 
-Le correctif porte sur la **generation**, pas sur la tolerance. Une occurrence
-n'est materialisee que si son heure est encore devant : ce qui n'a jamais existe
-n'a pas a naitre dans le passe.
+Le correctif porte sur la **génération**, pas sur la tolérance. Une occurrence
+n'est matérialisée que si son heure est encore devant : ce qui n'a jamais existe
+n'a pas a naître dans le passe.
 
-Corriger du cote de `upcomingTrips` aurait ete le reflexe le plus court — c'est
-la que le symptome se voit — et aurait casse un comportement voulu : on ne
-pourrait plus marquer fait, le soir, le trajet du matin. Le symptome et la cause
-n'etaient pas dans le meme fichier.
+Corriger du côté de `upcomingTrips` aurait été le reflexe le plus court — c'est
+là que le symptôme se voit — et aurait casse un comportement voulu : on ne
+pourrait plus marquer fait, le soir, le trajet du matin. Le symptôme et la cause
+n'étaient pas dans le même fichier.
 
 **Ou le voir** : `src/lib/trips/routines.ts`
 
 ### Tester et valider le correctif
 
-Trois tests ecrits **avant** le correctif :
+Trois tests écrits **avant** le correctif :
 
-1. generation a 22 h : aucune occurrence du jour, et rien de passe dans la liste
-   des trajets a venir ;
-2. generation a 07 h : les deux occurrences du jour sont bien creees — un
+1. génération a 22 h : aucune occurrence du jour, et rien de passe dans la liste
+   des trajets à venir ;
+2. génération a 07 h : les deux occurrences du jour sont bien créées — un
    correctif qui supprimerait purement les occurrences du jour passerait le
    premier test et echouerait celui-ci ;
-3. **non-regression de la tolerance** : une occurrence **deja existante** et
-   passee reste listee et marquable le soir. C'est le test qui empeche de
-   « corriger » en cassant la grace de 24 h.
+3. **non-regression de la tolérance** : une occurrence **déjà existante** et
+   passée reste listee et marquable le soir. C'est le test qui empeche de
+   « corriger » en cassant la grâce de 24 h.
 
 **Validation** : premier test vu **rouge** avant le correctif
-(`expected [ … ] to have a length of +0 but got 2`), **vert** apres. Puis rejeu
-de la sonde initiale : « occurrences du jour deja passees : (aucune) », et
-« comptees comme a venir : 0 », l'idempotence et le changement d'heure restant
+(`expected [ … ] to have a length of +0 but got 2`), **vert** après. Puis rejeu
+de la sonde initiale : « occurrences du jour déjà passées : (aucune) », et
+« comptées comme à venir : 0 », l'idempotence et le changement d'heure restant
 inchanges.
 
-**Niveau de verrouillage** : **automatise**.
+**Niveau de verrouillage** : **automatisé**.
 
-**Devenir** : le moteur de recurrence a ete retire depuis. Une routine
-n'engendre plus aucun trajet : ses passages sont comptes a la lecture, entre
-sa creation et maintenant, et seuls ceux dont l'heure est passee comptent
-(`src/lib/trips/routines.ts`). Le defaut ne peut plus se produire, par
+**Devenir** : le moteur de recurrence a été retire depuis. Une routine
+n'engendre plus aucun trajet : ses passages sont comptes à la lecture, entre
+sa création et maintenant, et seuls ceux dont l'heure est passée comptent
+(`src/lib/trips/routines.ts`). Le défaut ne peut plus se produire, par
 construction ; le test « ne compte pas un passage dont l'heure n'est pas
-encore passee » (`src/lib/trips/trips.test.ts`) verrouille la meme propriete
+encore passée » (`src/lib/trips/trips.test.ts`) verrouille la même propriété
 sous sa nouvelle forme.
 
 ---
 
-## B19 — La pastille et la fiche annonçaient deux chiffres pour le meme trajet
+## B19 — La pastille et la fiche annonçaient deux chiffres pour le même trajet
 
-**Criticite** : majeur — deux mesures contradictoires du meme itineraire, a
-quelques centimetres l'une de l'autre sur le meme ecran.
+**Criticité** : majeur — deux mesures contradictoires du même itinéraire, a
+quelques centimetres l'une de l'autre sur le même écran.
 
 ### Identifier la source
 
-Trouve en **relisant une capture d'ecran** produite pour la soutenance, pas en
+Trouve en **relisant une capture d'écran** produite pour la soutenance, pas en
 lisant du code. La pastille de l'option retenue annonçait « Trottinette 11 min
-· 2,3 km » et la fiche de detail, juste en dessous, « 21 min · 3,2 km ».
+· 2,3 km » et la fiche de détail, juste en dessous, « 21 min · 3,2 km ».
 
-C'est une methode a part entiere : regarder son propre produit avec les yeux de
-celui qui va le decouvrir. Le defaut etait la depuis l'introduction du routage
+C'est une méthode a part entière : regarder son propre produit avec les yeux de
+celui qui va le decouvrir. Le défaut était la depuis l'introduction du routage
 par segment, et aucune relecture de code ne l'avait revele — parce qu'il ne se
-voit que lorsque les deux valeurs sont affichees cote a cote.
+voit que lorsque les deux valeurs sont affichées côté a côté.
 
-**Cause racine** : seul l'itineraire selectionne est route segment par segment,
+**Cause racine** : seul l'itinéraire selectionne est route segment par segment,
 choix delibere qui borne le nombre d'appels au calculateur. `selectedRoute`
-recevait donc les mesures reelles, mais la liste qui alimente les pastilles
-continuait de porter les estimations a vol d'oiseau. Les deux composants lisaient
-deux objets differents pour le meme trajet.
+recevait donc les mesures réelles, mais la liste qui alimente les pastilles
+continuait de porter les estimations à vol d'oiseau. Les deux composants lisaient
+deux objets différents pour le même trajet.
 
-Meme famille que B16 : deux vues d'une meme grandeur, alimentees par des sources
+Même famille que B16 : deux vues d'une même grandeur, alimentees par des sources
 qui ne se parlent pas.
 
 ### Corriger
 
-La reconciliation est extraite dans une fonction pure, `applyRoutedSelection`,
-plutot que laissee dans le hook : c'est ce qui la rend testable, et le defaut
-etait precisement dans la couche non testee.
+La réconciliation est extraite dans une fonction pure, `applyRoutedSelection`,
+plutôt que laissee dans le hook : c'est ce qui la rend testable, et le défaut
+était précisément dans la couche non testee.
 
-Les options **non selectionnees** gardent leur estimation. Ce n'est pas un
-compromis : elles n'ont pas ete routees, l'estimation est donc la seule mesure
+Les options **non sélectionnées** gardent leur estimation. Ce n'est pas un
+compromis : elles n'ont pas été routees, l'estimation est donc la seule mesure
 dont on dispose, et l'annoncer est exact.
 
 **Ou le voir** : `src/lib/planner/legs.ts`,
@@ -291,77 +291,77 @@ dont on dispose, et l'annoncer est exact.
 
 ### Tester et valider le correctif
 
-Trois tests ecrits **avant** le correctif, la fonction ayant d'abord ete posee
-en passe-plat pour obtenir un echec d'assertion plutot qu'une erreur de
+Trois tests écrits **avant** le correctif, la fonction ayant d'abord été posee
+en passe-plat pour obtenir un échec d'assertion plutôt qu'une erreur de
 compilation :
 
-1. la liste porte les mesures routees de l'option selectionnee ;
-2. les autres options restent **identiques par reference** — un correctif qui
+1. la liste porte les mesures routees de l'option sélectionnée ;
+2. les autres options restent **identiques par référence** — un correctif qui
    recalculerait tout passerait le premier test et echouerait celui-ci ;
-3. sans itineraire route, la liste est rendue inchangee.
+3. sans itinéraire route, la liste est rendue inchangée.
 
 **Validation** : premier test vu **rouge** (`expected 14 to be 28`), **vert**
-apres. Suite complete : 103 tests unitaires, 37 tests d'API. Capture mobile
-regeneree pour verifier que les deux valeurs concordent a l'ecran.
+après. Suite complète : 103 tests unitaires, 37 tests d'API. Capture mobile
+régénérée pour verifier que les deux valeurs concordent à l'écran.
 
-**Niveau de verrouillage** : **automatise**.
+**Niveau de verrouillage** : **automatisé**.
 
 ---
 
-## B20 — Les chiffres d'une option changeaient selon qu'elle etait selectionnee
+## B20 — Les chiffres d'une option changeaient selon qu'elle était sélectionnée
 
-**Criticite** : majeur — la liste d'options existe pour comparer, et ses lignes
-n'etaient pas comparables entre elles.
+**Criticité** : majeur — la liste d'options existe pour comparer, et ses lignes
+n'étaient pas comparables entre elles.
 
 ### Identifier la source
 
-Signale par l'utilisateur, captures a l'appui : le meme trajet, deux relevés.
+Signale par l'utilisateur, captures à l'appui : le même trajet, deux relevés.
 
-| Option | Velo selectionne | Trottinette selectionnee |
+| Option | Vélo selectionne | Trottinette sélectionnée |
 | --- | --- | --- |
-| Velo | **32 min, 5,0 km** | 26 min, 4,5 km |
+| Vélo | **32 min, 5,0 km** | 26 min, 4,5 km |
 | Trottinette | 17 min, 4,0 km | **24 min, 4,8 km** |
 
-Chaque option changeait de valeurs en devenant selectionnee, et y revenait en
-cessant de l'etre.
+Chaque option changeait de valeurs en devenant sélectionnée, et y revenait en
+cessant de l'être.
 
 **Cause racine** : pour borner le nombre d'appels au calculateur, un seul
-itineraire etait mesure segment par segment — celui affiche. Les autres
-restaient sur l'estimation a vol d'oiseau du moteur local. La liste melangeait
-donc **deux methodes de mesure**, et comparer 24 minutes mesurees a 31 minutes
-estimees n'a aucun sens.
+itinéraire était mesure segment par segment — celui affiche. Les autres
+restaient sur l'estimation à vol d'oiseau du moteur local. La liste melangeait
+donc **deux méthodes de mesure**, et comparer 24 minutes mesurées a 31 minutes
+estimées n'a aucun sens.
 
 **Ce bogue est ne d'un correctif.** B19 avait corrige la contradiction entre la
-pastille et la fiche de detail en faisant remonter la valeur mesuree dans la
-liste. La contradiction a disparu de l'ecran de detail pour reapparaitre, sous
-une autre forme, dans la comparaison. Une correction qui deplace un defaut au
-lieu de le supprimer est une correction incomplete : la vraie question n'etait
+pastille et la fiche de détail en faisant remonter la valeur mesurée dans la
+liste. La contradiction a disparu de l'écran de détail pour reapparaître, sous
+une autre forme, dans la comparaison. Une correction qui deplace un défaut au
+lieu de le supprimer est une correction incomplete : la vraie question n'était
 pas « quelle valeur afficher ou », mais « pourquoi deux valeurs coexistent ».
 
 ### Corriger
 
-Toutes les options sont mesurees, plus seulement celle qu'on regarde. Le calcul
-local ne sert qu'a savoir **quelles** options existent ; ses chiffres ne
+Toutes les options sont mesurées, plus seulement celle qu'on regarde. Le calcul
+local ne sert qu'à savoir **quelles** options existent ; ses chiffres ne
 sortent plus du hook.
 
-Trois consequences assumees :
+Trois consequences assumées :
 
-- le cout passe de trois appels a une quinzaine par recherche. Il est absorbe
-  par le cache partage introduit en B13 : les memes trajets ne repartent pas
-  chez le calculateur, et une instance auto-hebergee rend la question sans
+- le coût passe de trois appels à une quinzaine par recherche. Il est absorbe
+  par le cache partagé introduit en B13 : les mêmes trajets ne repartent pas
+  chez le calculateur, et une instance auto-hébergée rend là question sans
   objet ;
-- une option dont un segment n'a pas pu etre mesure est **ecartee**. La garder
-  supposerait de retomber sur son estimation, donc de remettre deux methodes
-  dans la meme liste ;
-- le classement est refait apres mesure. Le score depend de la duree et du
+- une option dont un segment n'a pas pu être mesure est **écartée**. La garder
+  supposerait de retomber sur son estimation, donc de remettre deux méthodes
+  dans la même liste ;
+- le classement est refait après mesure. Le score dépend de la durée et du
   carbone : le figer sur l'estimation aurait contredit les chiffres affiches.
 
 L'orchestration est extraite dans `measureRoutes`, fonction pure prenant le
-routeur en parametre — c'est ce qui la rend testable, la version precedente
-vivant dans un hook React hors de portee des tests.
+routeur en paramètre — c'est ce qui la rend testable, la version précédente
+vivant dans un hook React hors de portée des tests.
 
-`applyRoutedSelection`, le correctif de B19, disparait : la structure rend
-desormais la contradiction impossible, la pastille et la fiche lisant le meme
+`applyRoutedSelection`, le correctif de B19, disparaît : la structure rend
+désormais la contradiction impossible, la pastille et la fiche lisant le même
 objet. Un garde-fou qui ne garde plus rien est du bruit.
 
 **Ou le voir** : `src/lib/planner/index.ts` (`measureRoutes`, `rankRoutes`),
@@ -369,104 +369,104 @@ objet. Un garde-fou qui ne garde plus rien est du bruit.
 
 ### Tester et valider le correctif
 
-Trois tests ecrits **avant** le correctif, la fonction ayant d'abord ete posee
-en passe-plat pour obtenir des echecs d'assertion plutot qu'une erreur d'import :
+Trois tests écrits **avant** le correctif, la fonction ayant d'abord été posee
+en passe-plat pour obtenir des échecs d'assertion plutôt qu'une erreur d'import :
 
-1. **toutes** les options ressortent mesurees, aucune ne reste a l'estimation ;
-2. une option dont un segment n'a pas de trace est ecartee — un correctif qui la
+1. **toutes** les options ressortent mesurées, aucune ne reste à l'estimation ;
+2. une option dont un segment n'a pas de tracé est écartée — un correctif qui la
    garderait avec son estimation passerait le premier test et echouerait
    celui-ci ;
-3. le classement est recalcule sur les mesures : les scores different de ceux de
+3. le classement est recalcule sur les mesures : les scores différent de ceux de
    l'estimation, et restent ordonnes.
 
-Le routeur de test est un doublon qui double les distances et pose un trace.
-La premiere version ne posait pas de trace, et le test echouait pour une raison
-etrangere au correctif : un doublon doit se comporter comme la chose qu'il
+Le routeur de test est un doublon qui double les distances et pose un tracé.
+La première version ne posait pas de tracé, et le test échouait pour une raison
+étrangère au correctif : un doublon doit se comporter comme la chose qu'il
 remplace, sinon il teste autre chose.
 
 **Validation** : les trois vus **rouges** (`expected 2.67 to be close to 5.34`,
 `expected [ … ] to have a length of +0 but got 6`, `expected [ 100, 93, … ] to
-not deeply equal [ 100, 93, … ]`), **verts** apres. Suite complete : 103 tests
+not deeply equal [ 100, 93, … ]`), **verts** après. Suite complète : 103 tests
 unitaires, 37 tests d'API.
 
-**Niveau de verrouillage** : **automatise**.
+**Niveau de verrouillage** : **automatisé**.
 
 ---
 
-## B21 — Le service worker servait l'API depuis son cache, y compris apres la deconnexion
+## B21 — Le service worker servait l'API depuis son cache, y compris après la déconnexion
 
-**Criticite** : critique — une session revoquee en base restait « vivante »
-dans le navigateur, et le compte suivant sur le meme appareil pouvait recevoir
-l'etat du precedent.
+**Criticité** : critique — une session révoquée en base restait « vivante »
+dans le navigateur, et le compte suivant sur le même appareil pouvait recevoir
+l'état du précédent.
 
 ### Identifier la source
 
-Trouve en verifiant la deconnexion de bout en bout, apres le passage de l'etat
-du compte sur des atomes. Le scenario bureau demandait `/api/state` juste apres
-la deconnexion et recevait **200**, alors que le journal du serveur montrait,
-dans l'ordre, la revocation puis un **401** sur la meme route.
+Trouve en verifiant la déconnexion de bout en bout, après le passage de l'état
+du compte sur des atomes. Le scénario bureau demandait `/api/state` juste après
+la déconnexion et recevait **200**, alors que le journal du serveur montrait,
+dans l'ordre, la révocation puis un **401** sur la même route.
 
-Deux temoins qui se contredisent designent un intermediaire. Rejoue avec
-`curl` sans navigateur : connexion, deconnexion, `/api/state` → 401. Le serveur
+Deux témoins qui se contredisent désignent un intermédiaire. Rejoue avec
+`curl` sans navigateur : connexion, déconnexion, `/api/state` → 401. Le serveur
 est donc hors de cause ; il reste, entre la page et lui, le service worker.
-`public/sw.js` appliquait « cache d'abord » a **toute** requete GET de meme
-origine en 200, `/api/*` compris. Une fois `/api/state` vue une premiere fois,
-chaque lecture suivante venait du cache, deconnexion ou non. Le meme mecanisme
+`public/sw.js` appliquait « cache d'abord » a **toute** requête GET de même
+origine en 200, `/api/*` compris. Une fois `/api/state` vue une première fois,
+chaque lecture suivante venait du cache, déconnexion ou non. Le même mécanisme
 pouvait renvoyer `/api/auth/session` en cache au rechargement : la session d'un
-compte precedent ressuscitee sur un appareil partage.
+compte précédent ressuscitee sur un appareil partage.
 
-La cause est anterieure a l'etat en memoire : elle existait depuis la mise en
-place du service worker, masquee tant que le cache local du client faisait
-ecran entre l'interface et l'API.
+La cause est antérieure à l'état en mémoire : elle existait depuis la mise en
+place du service worker, masquée tant que le cache local du client faisait
+écran entre l'interface et l'API.
 
 ### Corriger
 
 Le service worker laisse passer `/api/*` sans jamais le mettre en cache
-(`public/sw.js`, garde en tete du gestionnaire `fetch`). Les reponses de l'API
-dependent de la session et changent a chaque action : aucune n'est cachable.
-Le socle de l'application et les donnees statiques (GTFS, stations de repli)
-restent en cache pour le hors ligne, c'est leur role. Le nom du cache passe en
-`v3` pour que les installations existantes jettent le leur a l'activation.
+(`public/sw.js`, garde en tete du gestionnaire `fetch`). Les réponses de l'API
+dépendent de la session et changent à chaque action : aucune n'est cachable.
+Le soclé de l'application et les données statiques (GTFS, stations de repli)
+restent en cache pour le hors ligne, c'est leur rôle. Le nom du cache passe en
+`v3` pour que les installations existantes jettent le leur à l'activation.
 
 ### Tester et valider le correctif
 
-Le scenario `bun run e2e` gagne une septieme assertion, ecrite **avant** le
-correctif : apres deconnexion, `/api/state` repond 401 au navigateur et le
-rechargement ramene l'ecran de connexion. Un test unitaire ne suffit pas ici,
+Le scénario `bun run e2e` gagne une septieme assertion, ecrite **avant** le
+correctif : après déconnexion, `/api/state` répond 401 au navigateur et le
+rechargement ramene l'écran de connexion. Un test unitaire ne suffit pas ici,
 le comportement fautif est celui du navigateur avec son service worker actif ;
-le scenario tourne sur le build de production, ou le service worker est
+le scénario tourne sur le build de production, ou le service worker est
 enregistre.
 
 **Validation** : vu **rouge** avant le correctif (`apres deconnexion,
-/api/state repond encore 200 au navigateur`), **vert** apres (`7/7 assertions
-passees`), sur un serveur et une base neufs. Le scenario bureau (profil,
-objectifs, rechargement, deconnexion) rejoue aussi vert.
+/api/state repond encore 200 au navigateur`), **vert** après (`7/7 assertions
+passees`), sur un serveur et une base neufs. Le scénario bureau (profil,
+objectifs, rechargement, déconnexion) rejoue aussi vert.
 
-**Niveau de verrouillage** : **automatise** (scenario E2E bloquant en CI).
+**Niveau de verrouillage** : **automatisé** (scénario E2E bloquant en CI).
 
 ---
 
-## B22 — Une erreur React apparaissait pendant la deconnexion
+## B22 — Une erreur React apparaissait pendant la déconnexion
 
-**Criticite** : moyenne — la session etait bien revoquee, mais la console du
-navigateur signalait `Aucune session ouverte.` pendant le retour a l'ecran de
+**Criticité** : moyenne — la session était bien révoquée, mais la console du
+navigateur signalait `Aucune session ouverte.` pendant le retour à l'écran de
 connexion.
 
 ### Identifier la source
 
-Le scenario E2E passait ses sept assertions tout en remontant une
-`PAGE ERROR` juste apres la purge du compte. `closeSession` publiait d'abord
-une session nulle, puis supprimait les requetes et mutations du compte. Entre
+Le scénario E2E passait ses sept assertions tout en remontant une
+`PAGE ERROR` juste après la purge du compte. `closeSession` publiait d'abord
+une session nulle, puis supprimait les requêtes et mutations du compte. Entre
 ces notifications, un composant encore monte pouvait se rendre, appeler
-`useUser` et constater que sa session avait deja disparu.
+`useUser` et constater que sa session avait déjà disparu.
 
 ### Corriger
 
 `closeSession` purge maintenant les mutations et les ressources du compte
 avant de publier sa fermeture. Comme React Query regroupe ses notifications,
-`useUser` conserve aussi dans une reference de composant sa derniere session
-valide : le dernier rendu precedant le demontage reste coherent, sans faire
-survivre cette valeur au composant ni a la prochaine connexion.
+`useUser` conserve aussi dans une référence de composant sa derniere session
+valide : le dernier rendu précédant le démontage reste cohérent, sans faire
+survivre cette valeur au composant ni à la prochaine connexion.
 
 **Ou le voir** : `src/queries/session.ts` (`closeSession`),
 `src/queries/user.ts` (`useUser`)
@@ -475,46 +475,46 @@ survivre cette valeur au composant ni a la prochaine connexion.
 
 ### Tester et valider le correctif
 
-Le test de deconnexion observe la requete de session et verifie qu'au moment
-exact ou elle devient nulle, aucune requete de l'ancien compte ne subsiste.
-Le scenario `bun run e2e` doit en plus terminer ses 7/7 assertions sans
+Le test de déconnexion observe la requête de session et vérifie qu'au moment
+exact où elle devient nulle, aucune requête de l'ancien compte ne subsiste.
+Le scénario `bun run e2e` doit en plus terminer ses 7/7 assertions sans
 `PAGE ERROR` dans un vrai navigateur.
 
-**Niveau de verrouillage** : **automatise** (test du cache + scenario E2E).
+**Niveau de verrouillage** : **automatisé** (test du cache + scénario E2E).
 
 ---
 
-## B23 — Le point d'acces le plus proche n'etait pas toujours le plus rapide
+## B23 — Le point d'accès le plus proche n'était pas toujours le plus rapide
 
-**Criticite** : majeur — un mur, des voies ferrees ou une entree situee de
-l'autre cote d'un ilot pouvaient faire choisir une station Velo'v, une
-trottinette ou un arret plus long a rejoindre qu'un candidat un peu plus loin.
+**Criticité** : majeur — un mur, des voies ferrees ou une entrée situee de
+l'autre côté d'un îlot pouvaient faire choisir une station Vélo'v, une
+trottinette ou un arrêt plus long a rejoindre qu'un candidat un peu plus loin.
 
 ### Identifier la source
 
-Le defaut a ete trouve en questionnant le choix technique pendant la revue du
-moteur : la selection des stations utilisait uniquement la distance Haversine,
-alors que la duree affichee ensuite venait d'OSRM. Le moteur optimisait donc une
-grandeur differente de celle annoncee a l'utilisateur.
+Le défaut a été trouve en questionnant le choix technique pendant la revue du
+moteur : la sélection des stations utilisait uniquement la distance Haversine,
+alors que la durée affichée ensuite venait d'OSRM. Le moteur optimisait donc une
+grandeur différente de celle annoncée à l'utilisateur.
 
-**Symptome** : deux points d'acces proches pouvaient etre classes dans le
-mauvais ordre des qu'un obstacle imposait un detour pieton.
+**Symptôme** : deux points d'accès proches pouvaient être classes dans le
+mauvais ordre des qu'un obstacle imposait un detour piéton.
 
 **Cause racine** : `nearestStation` et les candidats GTFS decidaient directement
-sur la distance a vol d'oiseau. OSRM n'intervenait qu'apres la construction de
-l'option, trop tard pour corriger le point d'acces choisi.
+sur la distance à vol d'oiseau. OSRM n'intervenait qu'après la construction de
+l'option, trop tard pour corriger le point d'accès choisi.
 
 ### Corriger
 
 Haversine ne prend plus de decision : il borne seulement la recherche a huit
-candidats. `POST /api/route-matrix` mesure ensuite, en une requete OSRM Table,
-les durees reelles vers ces candidats. Le moteur retient le plus rapide dans la
-limite metier, puis construit les options. La marche choisit le profil pieton ;
-le rabattement velo et trottinette utilise le profil velo.
+candidats. `POST /api/route-matrix` mesure ensuite, en une requête OSRM Table,
+les durées réelles vers ces candidats. Le moteur retient le plus rapide dans la
+limite métier, puis construit les options. La marche choisit le profil piéton ;
+le rabattement vélo et trottinette utilise le profil vélo.
 
-Les cellules de la matrice rejoignent le cache SQLite partage de B13 sous des
-cles distinctes des geometries. Une geometrie deja connue peut fournir sa
-mesure ; une entree expiree peut encore servir si OSRM tombe.
+Les cellules de la matrice rejoignent le cache SQLite partagé de B13 sous des
+clés distinctes des géométries. Une géométrie déjà connue peut fournir sa
+mesure ; une entrée expirée peut encore servir si OSRM tombe.
 
 **Ou le voir** : `src/lib/planner/access.ts`,
 `server/src/services/routing/index.ts`, `server/src/routes/routing.ts`
@@ -523,44 +523,44 @@ mesure ; une entree expiree peut encore servir si OSRM tombe.
 
 ### Tester et valider le correctif
 
-`src/lib/planner/access.test.ts` oppose une station plus proche a vol d'oiseau
-mais accessible en douze minutes a une station plus eloignee accessible en 110
+`src/lib/planner/access.test.ts` oppose une station plus proche à vol d'oiseau
+mais accessible en douze minutes à une station plus eloignee accessible en 110
 secondes : la seconde doit gagner. Les tests API verifient qu'une matrice
-complete ne produit qu'un appel amont, puis ressort entierement du cache.
+complète ne produit qu'un appel amont, puis ressort entierement du cache.
 
-Le test de selection a ete ajoute apres la premiere implementation : il
-detectera une regression, mais n'a pas ete vu rouge avant le correctif initial.
+Le test de sélection a été ajoute après la première implémentation : il
+detectera une régression, mais n'a pas été vu rouge avant le correctif initial.
 
-**Niveau de verrouillage** : **faible** (regression automatisee, protocole
+**Niveau de verrouillage** : **faible** (régression automatisee, protocole
 rouge-puis-vert initial non observe).
 
 ---
 
-## B24 — Le temps de correspondance metro etait invisible dans les etapes
+## B24 — Le temps de correspondance métro était invisible dans les étapes
 
-**Criticite** : moyenne — la duree totale comptait quatre minutes, mais la fiche
-passait directement de la premiere ligne a la seconde. L'utilisateur ne voyait
-ni qu'il devait marcher ni d'ou venait ce temps.
+**Criticité** : moyenne — la durée totale comptait quatre minutes, mais la fiche
+passait directement de la première ligne à la seconde. L'utilisateur ne voyait
+ni qu'il devait marcher ni d'où venait ce temps.
 
 ### Identifier la source
 
-Le defaut a ete signale sur une capture du trajet Metro A vers Metro B a
-Charpennes : les deux cartes de ligne etaient consecutives, sans etape entre
-elles. La constante `TRANSFER_PENALTY_MINUTES` etait seulement ajoutee au total
+Le défaut a été signale sur une capture du trajet Métro A vers Métro B a
+Charpennes : les deux cartes de ligne étaient consecutives, sans étape entre
+elles. La constante `TRANSFER_PENALTY_MINUTES` était seulement ajoutée au total
 du parcours dans `findTransitJourney`.
 
-**Cause racine** : la correspondance etait une penalite de scoring, pas un
+**Cause racine** : la correspondance était une pénalité de scoring, pas un
 segment du domaine. La restitution ne pouvait donc pas l'afficher, et le temps
 de marche maximal du profil ne pouvait pas la compter comme marche.
 
 ### Corriger
 
-`transitLegs` insere entre deux trajets un segment `walk` intitule
-« Correspondance a pied », de quatre minutes. Il reste visible meme avec une
-distance nulle et participe aux agregats. Le segment porte `transfer: true` :
-le routeur et la verification de geometrie savent alors que l'absence de trace
-est volontaire. Le GTFS ne publiant pas les cheminements interieurs entre quais,
-aucune ligne droite trompeuse n'est dessinee sur la carte.
+`transitLegs` insère entre deux trajets un segment `walk` intitule
+« Correspondance à pied », de quatre minutes. Il reste visible même avec une
+distance nulle et participe aux agrégats. Le segment porte `transfer: true` :
+le routeur et la vérification de géométrie savent alors que l'absence de tracé
+est volontaire. Le GTFS ne publiant pas les cheminements intérieurs entre quais,
+aucune ligne droite trompeuse n'est dessinée sur la carte.
 
 **Ou le voir** : `src/lib/planner/transit.ts`,
 `src/components/planner/RouteSteps.tsx`, `src/lib/transport/routing/legs.ts`
@@ -570,25 +570,25 @@ aucune ligne droite trompeuse n'est dessinee sur la carte.
 ### Tester et valider le correctif
 
 Le test construit deux lignes qui se croisent a Charpennes et exige exactement
-trois segments : metro A, marche, metro B. La premiere execution a ete vue
+trois segments : métro A, marche, métro B. La première exécution a été vue
 **rouge** : la fabrique ajoutait sa minute minimale de parcours aux quatre
-minutes fixes et rendait cinq minutes. Apres distinction entre distance nulle
-et temps fixe, le test est vert a quatre minutes. Un second test verifie
-qu'OSRM n'est pas appele et que la geometrie vide est acceptee.
+minutes fixes et rendait cinq minutes. Après distinction entre distance nulle
+et temps fixe, le test est vert a quatre minutes. Un second test vérifie
+qu'OSRM n'est pas appele et que la géométrie vide est acceptee.
 
-**Niveau de verrouillage** : **automatise**.
+**Niveau de verrouillage** : **automatisé**.
 
 ---
 
-## B25 — L'objectif mensuel de CO2 ne pouvait pas etre choisi
+## B25 — L'objectif mensuel de CO2 ne pouvait pas être choisi
 
-**Criticite** : moyenne — le planificateur affichait une progression mensuelle,
-mais sa cible etait toujours l'objectif hebdomadaire multiplie par quatre. Un
+**Criticité** : moyenne — le planificateur affichait une progression mensuelle,
+mais sa cible était toujours l'objectif hebdomadaire multiplie par quatre. Un
 utilisateur ne pouvait donc pas fixer une ambition propre au mois.
 
 ### Identifier la source
 
-**Symptome** : modifier l'objectif hebdomadaire changeait automatiquement la
+**Symptôme** : modifier l'objectif hebdomadaire changeait automatiquement la
 cible mensuelle, sans champ mensuel dans le profil.
 
 **Cause racine** : `TripGoalsCard` calculait directement
@@ -597,11 +597,11 @@ valeur mensuelle a persister ; l'interface ne pouvait donc pas faire autrement.
 
 ### Corriger
 
-Le contrat partage porte maintenant `monthlySavedGoalGrams`, avec ses bornes et
-une valeur par defaut pour les comptes anterieurs. Le profil presente deux
-champs explicites et independants, puis le planificateur compare chaque agregat
-a la cible de sa periode. `PUT /api/me/profile` persiste le profil entier :
-aucune route ou table supplementaire n'est necessaire.
+Le contrat partagé porte maintenant `monthlySavedGoalGrams`, avec ses bornes et
+une valeur par défaut pour les comptes antérieurs. Le profil presente deux
+champs explicites et indépendants, puis le planificateur compare chaque agregat
+à la cible de sa période. `PUT /api/me/profile` persiste le profil entier :
+aucune route ou table supplémentaire n'est nécessaire.
 
 **Ou le voir** : `src/contracts/profile.ts`,
 `src/components/profile/ProfilePanels.tsx`,
@@ -612,59 +612,59 @@ aucune route ou table supplementaire n'est necessaire.
 ### Tester et valider le correctif
 
 Le test de contrat fixe deux valeurs volontairement non proportionnelles et
-verifie leurs bornes independamment. Le test d'integration API remplace ensuite
-le profil avec un objectif mensuel, le relit et exige la meme valeur. Enfin, la
-recette navigateur a enregistre 2 300 g par semaine et 11 500 g par mois, puis
-a confirme leur conservation apres rechargement.
+vérifie leurs bornes indépendamment. Le test d'intégration API remplace ensuite
+le profil avec un objectif mensuel, le relit et exige la même valeur. Enfin, la
+recette navigateur a enregistré 2 300 g par semaine et 11 500 g par mois, puis
+a confirmé leur conservation après rechargement.
 
-Le test automatise a ete ajoute avec le champ et n'a pas ete vu rouge avant sa
-premiere implementation.
+Le test automatise a été ajoute avec le champ et n'a pas été vu rouge avant sa
+première implémentation.
 
 **Niveau de verrouillage** : **faible** (contrat et persistance automatises,
 recette visuelle manuelle, protocole rouge-puis-vert initial non observe).
 
 ---
 
-## B26 — Chaque option inventait sa propre reference voiture
+## B26 — Chaque option inventait sa propre référence voiture
 
-**Criticite** : majeur — deux alternatives entre le meme depart et la meme
-arrivee n'etaient pas comparees au meme scenario, donc l'indicateur central de
-la fonctionnalite carbone pouvait favoriser artificiellement l'option la plus
+**Criticité** : majeur — deux alternatives entre le même départ et la même
+arrivée n'étaient pas comparées au même scénario, donc l'indicateur central de
+la fonctionnalité carbone pouvait favoriser artificiellement l'option la plus
 longue.
 
 ### Identifier la source
 
-Le defaut a ete trouve en expliquant la formule pendant la revue du moteur.
-`summarizeLegs` calculait la reference comme `distance de l'option x 180`, puis
-soustrayait l'empreinte de cette option. Une option de cinq kilometres recevait
-donc une voiture fictive de cinq kilometres, meme si la route automobile entre
-les extremites n'en faisait que trois.
+Le défaut a été trouve en expliquant la formule pendant la revue du moteur.
+`summarizeLegs` calculait la référence comme `distance de l'option x 180`, puis
+soustrayait l'empreinte de cette option. Une option de cinq kilomètres recevait
+donc une voiture fictive de cinq kilomètres, même si la route automobile entre
+les extrémités n'en faisait que trois.
 
-**Symptome** : deux options allant au meme endroit affichaient des references
-voiture differentes, proportionnelles a leurs propres detours. Une option plus
-longue pouvait annoncer davantage de CO2 evite uniquement parce que sa voiture
-de comparaison avait ete rallongee avec elle.
+**Symptôme** : deux options allant au même endroit affichaient des références
+voiture différentes, proportionnelles a leurs propres detours. Une option plus
+longue pouvait annoncer davantage de CO2 évité uniquement parce que sa voiture
+de comparaison avait été rallongee avec elle.
 
-**Cause racine** : la comparaison contrefactuelle etait calculee dans
-`summarizeLegs`, fonction qui ne connait que les segments de l'alternative.
-Elle ne disposait ni des extremites globales de la recherche ni d'une mesure
-automobile. Le `Math.max(..., 0)` masquait en plus tout resultat negatif.
+**Cause racine** : la comparaison contrefactuelle était calculée dans
+`summarizeLegs`, fonction qui ne connaît que les segments de l'alternative.
+Elle ne disposait ni des extrémités globales de la recherche ni d'une mesure
+automobile. Le `Math.max(..., 0)` masquait en plus tout résultat négatif.
 
 ### Corriger
 
-La voiture reste hors de `MobilityMode` et n'apparait jamais dans les options
-ou les preferences. `car` n'existe que dans `RoutableMode` et pointe vers le
+La voiture reste hors de `MobilityMode` et n'apparaît jamais dans les options
+ou les préférences. `car` n'existe que dans `RoutableMode` et pointe vers le
 profil OSRM `driving`. Au lancement d'une recherche, une matrice `1 x 1`
-mesure la distance voiture en parallele du choix des acces. Apres le routage de
-toutes les alternatives, `applyCarbonReference` leur applique le meme objet
+mesure la distance voiture en parallèle du choix des accès. Après le routage de
+toutes les alternatives, `applyCarbonReference` leur applique le même objet
 `CarbonReference` : distance, empreinte et version du facteur.
 
 Le facteur est fige a 142 gCO2e/passager-km pour une voiture thermique moyenne
-diesel, une personne, modelisation ADEME 2025. Les transports publics utilisent
-desormais le facteur de leur `route_type` GTFS : 3,8 pour le tramway, 4,2 pour
-le metro, et le funiculaire reprend explicitement le metro par approximation.
+diesel, une personne, modélisation ADEME 2025. Les transports publics utilisent
+désormais le facteur de leur `route_type` GTFS : 3,8 pour le tramway, 4,2 pour
+le métro, et le funiculaire reprend explicitement le métro par approximation.
 
-Une economie negative est conservee et affichee en emissions supplementaires.
+Une économie négative est conservée et affichée en émissions supplémentaires.
 Si le profil voiture echoue, l'empreinte propre des options reste visible,
 `carbonSavedGrams` vaut `null` dans le contrat et en base, et l'interface dit
 « Comparaison voiture indisponible ».
@@ -677,73 +677,73 @@ Si le profil voiture echoue, l'empreinte propre des options reste visible,
 
 ### Tester et valider le correctif
 
-Les tests couvrent la cause plutot qu'un seul affichage :
+Les tests couvrent la cause plutôt qu'un seul affichage :
 
 1. une route voiture de 3 km produit exactement `3 x 142 = 426 gCO2e` ;
-2. des options de 2 et 5 km partagent le meme objet de reference ; la seconde,
+2. des options de 2 et 5 km partagent le même objet de référence ; la seconde,
    a 500 gCO2e, conserve `426 - 500 = -74 gCO2e` ;
-3. la comparaison est appliquee apres le remplacement de l'estimation de 2 km
+3. la comparaison est appliquée après le remplacement de l'estimation de 2 km
    par une mesure OSRM de 5 km ;
-4. une panne voiture rend `null`, jamais zero ;
-5. le test API exige `/routed-car/table/v1/driving/`, puis verifie qu'un second
-   appel ressort du cache partage sans nouvel appel amont ;
+4. une panne voiture rend `null`, jamais zéro ;
+5. le test API exige `/routed-car/table/v1/driving/`, puis vérifie qu'un second
+   appel ressort du cache partagé sans nouvel appel amont ;
 6. le contrat interdit toujours `car` dans les modes proposes et la migration
    persiste bien une comparaison absente.
 
-La recette navigateur a affiche, pour le meme trajet, une empreinte pietonne de
-`0 gCO₂e` et `564 gCO₂e evites` issus de la reference routiere. Le scenario E2E
-reste vert a 8/8 et axe-core ne detecte aucune violation sur les quatre ecrans.
+La recette navigateur a affiché, pour le même trajet, une empreinte piétonne de
+`0 gCO₂e` et `564 gCO₂e evites` issus de la référence routière. Le scénario E2E
+reste vert a 8/8 et axe-core ne detecte aucune violation sur les quatre écrans.
 
-Ces tests ont ete ajoutes avec la correction et n'ont pas ete observes rouges
+Ces tests ont été ajoutés avec la correction et n'ont pas été observes rouges
 sur la version initiale.
 
-**Niveau de verrouillage** : **faible** (regressions automatisees et recette
+**Niveau de verrouillage** : **faible** (régressions automatisées et recette
 navigateur, protocole rouge-puis-vert initial non observe).
 
 ---
 
-## B27 — Modifier un element reecrivait toute sa collection
+## B27 — Modifier un élément reecrivait toute sa collection
 
-**Criticite** : majeur — une vue locale perimee pouvait effacer silencieusement
-des trajets crees depuis un autre appareil, et une coupure entre deux requetes
-pouvait laisser un trajet termine sans son entree carbone.
+**Criticité** : majeur — une vue locale périmée pouvait effacer silencieusement
+des trajets crees depuis un autre appareil, et une coupure entre deux requêtes
+pouvait laisser un trajet terminé sans son entrée carbone.
 
 ### Identifier la source
 
-Le defaut est apparu pendant la revue du depot `trip-records.ts` :
+Le défaut est apparu pendant la revue du dépôt `trip-records.ts` :
 `replaceAll` supprimait toutes les lignes de l'utilisateur, puis reinserait la
-liste fournie par le navigateur. La meme forme existait dans les quatre depots
-de collections et remontait jusqu'a une mutation React Query generique.
+liste fournie par le navigateur. La même forme existait dans les quatre dépôts
+de collections et remontait jusqu'à une mutation React Query générique.
 
-**Symptome** : enregistrer, annuler ou supprimer un seul element envoyait une
-liste complete. Si deux appareils partaient de vues differentes, le dernier
-PUT gagnait a l'echelle de la collection et supprimait les lignes absentes de
-son cache. Marquer un trajet fait envoyait en plus deux PUT independants : un
+**Symptôme** : enregistrer, annuler ou supprimer un seul élément envoyait une
+liste complète. Si deux appareils partaient de vues différentes, le dernier
+PUT gagnait à l'échelle de la collection et supprimait les lignes absentes de
+son cache. Marquer un trajet fait envoyait en plus deux PUT indépendants : un
 pour le trajet, un pour l'historique.
 
-**Cause racine** : l'idempotence avait ete concue autour du remplacement de
-liste plutot qu'autour de l'identite des ressources. Le client etait donc
-traite comme l'autorite sur une collection qu'il ne pouvait connaitre qu'a un
+**Cause racine** : l'idempotence avait été conçue autour du remplacement de
+liste plutôt qu'autour de l'identité des ressources. Le client était donc
+traite comme l'autorité sur une collection qu'il ne pouvait connaître qu'a un
 instant donne.
 
 ### Corriger
 
-Les collections restent lisibles par GET, mais chaque trajet programme,
-routine et itineraire sauvegarde possede maintenant un
-`PUT /api/.../:id` et un `DELETE /api/.../:id`. Les depots exposent
-`findById`, `upsert` et `deleteById` sur la cle composee utilisateur/id ; aucun
-d'eux ne recoit une collection complete. Les limites de conservation retirent
+Les collections restent lisibles par GET, mais chaque trajet programmé,
+routine et itinéraire sauvegarde possède maintenant un
+`PUT /api/.../:id` et un `DELETE /api/.../:id`. Les dépôts exposent
+`findById`, `upsert` et `deleteById` sur la clé composée utilisateur/id ; aucun
+d'eux ne reçoit une collection complète. Les limites de conservation retirent
 uniquement les lignes excedentaires.
 
-La completion passe par
-`PUT /api/trips/planned/:id/completion`. Le service termine le trajet et cree
-son `TripRecord` dans une seule transaction SQLite ; le rejeu rend le meme
-etat sans doublon. Chaque fichier React Query porte directement la lecture et
-les commandes de sa ressource : il n'existe plus d'orchestrateur generique
-capable de modifier une partie arbitraire du compte. Apres un succes, seule la
-reponse du serveur est appliquee aux caches concernes ; Eden Treaty n'envoie
-que la ressource ciblee. Seul
-`DELETE /api/trips/history`, declenche par le bouton d'effacement explicite,
+La complétion passe par
+`PUT /api/trips/planned/:id/completion`. Le service termine le trajet et crée
+son `TripRecord` dans une seule transaction SQLite ; le rejeu rend le même
+état sans doublon. Chaque fichier React Query porte directement la lecture et
+les commandes de sa ressource : il n'existe plus d'orchestrateur générique
+capable de modifier une partie arbitraire du compte. Après un succès, seule la
+réponse du serveur est appliquée aux caches concernés ; Eden Treaty n'envoie
+que la ressource ciblée. Seul
+`DELETE /api/trips/history`, déclenche par le bouton d'effacement explicite,
 supprime volontairement tout l'historique.
 
 **Ou le voir** : `server/src/routes/planned-trips.ts`,
@@ -758,44 +758,44 @@ supprime volontairement tout l'historique.
 
 ### Tester et valider le correctif
 
-Les tests d'API prouvent qu'un second PUT conserve le premier element, qu'un
+Les tests d'API prouvent qu'un second PUT conserve le premier élément, qu'un
 DELETE conserve sa voisine et les autres collections, et reproduisent ces
-garanties pour les routines et les itineraires enregistres. Ils verifient
-aussi le rejeu de la completion, l'unicite de l'historique, le 404 sans trajet
+garanties pour les routines et les itinéraires enregistrés. Ils verifient
+aussi le rejeu de la complétion, l'unicite de l'historique, le 404 sans trajet
 source et l'impossibilite d'injecter directement un statut `done`.
 
-Les tests du client inspectent les requetes reelles produites par Eden : corps
+Les tests du client inspectent les requêtes réelles produites par Eden : corps
 unitaire sans `id` ni `userId`, identifiant dans l'URL, un seul endpoint de
-completion, DELETE explicites et serialisation des commandes en rafale. Un
-refus invalide uniquement la vue concernee.
+complétion, DELETE explicites et sérialisation des commandes en rafale. Un
+refus invalide uniquement la vue concernée.
 
-Ces tests ont ete ajoutes avec le refactoring et n'ont pas ete observes rouges
-sur une reproduction isolee avant la correction.
+Ces tests ont été ajoutés avec le refactoring et n'ont pas été observes rouges
+sur une reproduction isolée avant la correction.
 
-**Niveau de verrouillage** : **faible** (regressions automatisees et scenario
+**Niveau de verrouillage** : **faible** (régressions automatisées et scénario
 E2E adapte, protocole rouge-puis-vert initial non observe).
 
 ---
 
 ## B28 — L'action des objectifs n'indiquait pas ce qu'elle modifiait
 
-**Criticite** : faible — la carte Objectifs ne contenait qu'un bouton
+**Criticité** : faible — la carte Objectifs ne contenait qu'un bouton
 « Modifier ». Dans un planificateur qui permet aussi de modifier le profil et
-les trajets, l'objet de cette action devait etre devine.
+les trajets, l'objet de cette action devait être devine.
 
 ### Identifier la source
 
-**Symptome** : dans l'en-tete « Objectifs », l'action secondaire affichait le
-seul mot « Modifier », sans nom accessible plus precis.
+**Symptôme** : dans l'en-tête « Objectifs », l'action secondaire affichait le
+seul mot « Modifier », sans nom accessible plus précis.
 
-**Cause racine** : le libelle avait ete raccourci pour tenir dans la carte,
+**Cause racine** : le libellé avait été raccourci pour tenir dans la carte,
 alors que l'espace disponible permettait de nommer directement la ressource.
 
 ### Corriger
 
-Le bouton porte desormais le texte visible et le nom accessible « Modifier les
+Le bouton porte désormais le texte visible et le nom accessible « Modifier les
 objectifs ». L'action, son objet et le formulaire qui s'ouvre utilisent ainsi
-le meme vocabulaire.
+le même vocabulaire.
 
 **Ou le voir** : `src/components/planner/trips/TripGoalsCard.tsx`
 
@@ -803,48 +803,48 @@ le meme vocabulaire.
 
 ### Tester et valider le correctif
 
-Le scenario navigateur ouvre le planificateur apres avoir programme un trajet,
-puis cherche exactement un bouton accessible nomme « Modifier les objectifs ».
-Le test echoue si le libelle redevient vague ou si l'action disparait. Une
-capture en vue mobile a aussi confirme que le texte tient dans l'en-tete.
+Le scénario navigateur ouvre le planificateur après avoir programmé un trajet,
+puis cherche exactement un bouton accessible nommé « Modifier les objectifs ».
+Le test echoue si le libellé redevient vague ou si l'action disparaît. Une
+capture en vue mobile a aussi confirmé que le texte tient dans l'en-tête.
 
-Le controle a ete ajoute avec le correctif et n'a pas ete observe rouge avant
-sa premiere implementation.
+Le contrôle a été ajoute avec le correctif et n'a pas été observé rouge avant
+sa première implémentation.
 
-**Niveau de verrouillage** : **faible** (controle E2E bloquant et recette
+**Niveau de verrouillage** : **faible** (contrôle E2E bloquant et recette
 visuelle, protocole rouge-puis-vert initial non observe).
 
 ---
 
 ## B29 — Le tutoriel mobile sautait les fonctions de l'application
 
-**Criticite** : majeur — lors d'une premiere visite sur telephone, le guide
-passait de la recherche a la fin sans montrer la carte, les couches, les
+**Criticité** : majeur — lors d'une première visite sur téléphone, le guide
+passait de la recherche à la fin sans montrer la carte, les couches, les
 trajets, les objectifs ni le profil.
 
 ### Identifier la source
 
-**Symptome** : apres l'ecran d'accueil et la recherche, « Suivant » arrivait
-presque immediatement sur « C'est tout ! ». Les rares explications pouvaient en
-plus se superposer au controle designe sur un petit ecran.
+**Symptôme** : après l'écran d'accueil et la recherche, « Suivant » arrivait
+presque immédiatement sur « C'est tout ! ». Les rares explications pouvaient en
+plus se superposer au contrôle désigné sur un petit écran.
 
-**Cause racine** : une liste unique d'etapes ciblait surtout les panneaux du
-shell desktop. Le mecanisme sautait correctement une cible absente, mais sur
-mobile presque toutes les cibles l'etaient. La regle de placement centrait
+**Cause racine** : une liste unique d'étapes ciblait surtout les panneaux du
+shell desktop. Le mécanisme sautait correctement une cible absente, mais sur
+mobile presque toutes les cibles l'étaient. La règle de placement centrait
 aussi la bulle sur toute cible large, y compris la barre de recherche mobile.
 
 ### Corriger
 
-Le desktop conserve ses onze etapes. Le mobile possede maintenant un parcours
-de neuf etapes qui cible les controles reellement rendus : recherche, carte,
-position, proximite, couches, trajets/objectifs et profil. Les boutons de la
-barre d'actions ainsi que leurs equivalents dans la feuille d'itineraire
+Le desktop conserve ses onze étapes. Le mobile possède maintenant un parcours
+de neuf étapes qui cible les contrôles réellement rendus : recherche, carte,
+position, proximité, couches, trajets/objectifs et profil. Les boutons de la
+barre d'actions ainsi que leurs équivalents dans la feuille d'itinéraire
 portent des cibles mobiles explicites.
 
 La bulle mobile mesure l'espace disponible et se place sous une cible haute ou
-au-dessus d'une cible basse. Sa largeur est bornee par celle du viewport. La
-cle de premiere visite passe en version 2 afin que les utilisateurs ayant deja
-vu le parcours incomplet recoivent le parcours corrige.
+au-dessus d'une cible basse. Sà largeur est bornée par celle du viewport. La
+clé de première visite passe en version 2 afin que les utilisateurs ayant déjà
+vu le parcours incomplet reçoivent le parcours corrigé.
 
 **Ou le voir** : `src/components/tutorial/TutorialOverlay.tsx`,
 `src/components/planner/MobileQuickPanels.tsx`,
@@ -854,15 +854,15 @@ vu le parcours incomplet recoivent le parcours corrige.
 
 ### Tester et valider le correctif
 
-Le scenario E2E a d'abord ete etendu avec les neuf titres et les sept cibles
-attendus. Son premier passage rouge s'est arrete sur
-`la cible mobile-search n'est pas visible`. Apres correction, il parcourt les
-neuf etapes, verifie que chaque cible existe et calcule l'intersection entre la
-bulle et chaque controle : toute superposition fait echouer le test.
+Le scénario E2E a d'abord été étendu avec les neuf titres et les sept cibles
+attendus. Son premier passage rouge s'est arrête sur
+`la cible mobile-search n'est pas visible`. Après correction, il parcourt les
+neuf étapes, vérifie que chaque cible existe et calcule l'intersection entre la
+bulle et chaque contrôle : toute superposition fait échouer le test.
 
 La recette visuelle en 390 x 844 confirme que la carte reste lisible et que le
-bouton « Trajets et objectifs » est seul dans le spotlight. Le scenario complet
-termine ensuite la planification, la completion et la deconnexion en 8/8.
+bouton « Trajets et objectifs » est seul dans le spotlight. Le scénario complet
+termine ensuite la planification, la complétion et la déconnexion en 8/8.
 
-**Niveau de verrouillage** : **automatise** (E2E ecrit et observe rouge avant
-le correctif, puis vert ; captures mobiles de controle).
+**Niveau de verrouillage** : **automatisé** (E2E écrit et observé rouge avant
+le correctif, puis vert ; captures mobiles de contrôle).

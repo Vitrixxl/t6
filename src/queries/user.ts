@@ -1,12 +1,12 @@
-// Le compte tel que les ecrans l'affichent : la session, avec le profil
-// courant. Le nom affiche suit le profil des qu'il change.
+// Le compte tel que les écrans l'affichent : la session, avec le profil
+// courant. Le nom affiché suit le profil des qu'il change.
 import type { SessionUser } from '../types';
 import { useRef } from 'react';
 import { useProfile } from './profile';
 import { useSession } from './session';
 
 /**
- * Les ecrans du compte ne montent qu'avec une session. A la fermeture, React
+ * Les écrans du compte ne montent qu'avec une session. À la fermeture, React
  * Query peut publier la session nulle un rendu avant que React demonte cet
  * arbre : garder la derniere valeur du composant rend ce dernier rendu stable.
  */

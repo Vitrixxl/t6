@@ -1,5 +1,5 @@
 // Historique carbone : lecture et effacement explicite de la collection.
-// Les lignes individuelles sont creees par la completion d'un trajet programme.
+// Les lignes individuelles sont créées par la complétion d'un trajet programmé.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import type { TripRecord } from '../types';

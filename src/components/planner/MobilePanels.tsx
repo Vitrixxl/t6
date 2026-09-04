@@ -98,8 +98,8 @@ function MobileTripHeader({
     return (
         <div className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itineraire</p>
-                <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Ou vas-tu ?'}</h1>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itinéraire</p>
+                <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Où vas-tu ?'}</h1>
                 <p className={`truncate text-[11px] font-medium ${routingStatus === 'unavailable' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {ROUTING_STATUS_LABEL[routingStatus]}
                 </p>
@@ -132,7 +132,7 @@ function MobileTripHeader({
                 >
                     <UserRound className="size-5" aria-hidden="true" />
                 </Button>
-                <Button type="button" variant="outline" onClick={onClose} aria-label="Fermer l'itineraire" className="size-[44px] rounded-xl bg-white p-0">
+                <Button type="button" variant="outline" onClick={onClose} aria-label="Fermer l'itinéraire" className="size-[44px] rounded-xl bg-white p-0">
                     <X className="size-5" aria-hidden="true" />
                 </Button>
             </div>
@@ -198,7 +198,7 @@ function MobileRouteSelection({
                 </Button>
                 <Button type="button" variant="outline" size="sm" className="bg-white" onClick={() => onSaveRoute(routeOption)}>
                     {saved ? <Check className="size-4" aria-hidden="true" /> : <Route className="size-4" aria-hidden="true" />}
-                    {saved ? 'Enregistre' : 'Enregistrer'}
+                    {saved ? 'Enregistré' : 'Enregistrer'}
                 </Button>
             </div>
             <div className="px-4 pb-3">

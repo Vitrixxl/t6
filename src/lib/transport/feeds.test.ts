@@ -30,13 +30,13 @@ describe('mergeVelovStations', () => {
         );
 
         expect(stations).toHaveLength(1);
-        expect(stations[0].name).toBe("Velo'v BELLECOUR");
+        expect(stations[0].name).toBe("Vélo'v BELLECOUR");
         expect(stations[0].bikes_available).toBe(7);
         expect(stations[0].scooters_available).toBe(0);
         expect(stations[0].last_reported).toBe(Math.floor(Date.parse('2026-09-14T08:00:00Z') / 1000));
     });
 
-    it('ecarte les stations hors perimetre urbain et sans status', () => {
+    it('ecarte les stations hors périmètre urbain et sans status', () => {
         const stations = mergeVelovStations(
             [
                 { station_id: 'far', name: 'LOIN', lat: 46.5, lon: 5.5, capacity: 10 },
@@ -102,7 +102,7 @@ describe('weatherFromOpenMeteo', () => {
         ).toBe('wind');
     });
 
-    it('classe une bruine sans cumul mesurable en light_rain via le code meteo', () => {
+    it('classe une bruine sans cumul mesurable en light_rain via le code météo', () => {
         expect(
             weatherFromOpenMeteo({ temperature_2m: 12, wind_speed_10m: 10, precipitation: 0, weather_code: 51, time: 't' })
                 .condition,
@@ -110,9 +110,9 @@ describe('weatherFromOpenMeteo', () => {
     });
 });
 
-describe('mergeVelovStations - perimetre', () => {
-    it('retient toutes les stations du perimetre, sans plafond d affichage', () => {
-        // Le nombre annonce dans l'interface doit etre le nombre reellement
+describe('mergeVélovStations - périmètre', () => {
+    it('retient toutes les stations du périmètre, sans plafond d’affichage', () => {
+        // Le nombre annonce dans l'interface doit être le nombre réellement
         // disponible : un plafond affiche comme une mesure serait un mensonge.
         const information = Array.from({ length: 560 }, (_, index) => ({
             station_id: `s${index}`,
@@ -133,7 +133,7 @@ describe('mergeVelovStations - perimetre', () => {
         expect(mergeVelovStations(information, statuses)).toHaveLength(560);
     });
 
-    it('ecarte ce qui sort du perimetre metropolitain', () => {
+    it('ecarte ce qui sort du périmètre métropolitain', () => {
         // Le rayon reste : c'est une decision de service, pas un plafond.
         const information = [
             { station_id: 'proche', name: 'PROCHE', lat: 45.7578, lon: 4.832, capacity: 20 },
@@ -187,7 +187,7 @@ const localSharedMobility: SharedMobilityFeed = {
 };
 
 describe('fetchJson', () => {
-    it('remonte une erreur explicite avec URL et statut si le flux repond en echec', async () => {
+    it('remonte une erreur explicite avec URL et statut si le flux répond en échec', async () => {
         const fetcher = (async () => ({ ok: false, status: 429 }) as Response) as unknown as typeof fetch;
 
         await expect(fetchJson('https://flux.test/gbfs.json', fetcher)).rejects.toThrow(
@@ -197,7 +197,7 @@ describe('fetchJson', () => {
 });
 
 describe('loadTransportNetwork', () => {
-    it('bascule sur le fallback GBFS local et l\'etiquette comme tel quand le live est indisponible', async () => {
+    it('bascule sur le fallback GBFS local et l\'étiquette comme tel quand le live est indisponible', async () => {
         const fetcher = (async (input: RequestInfo | URL) => {
             const url = String(input);
             if (url.includes('gtfs-feed.json')) {
@@ -206,7 +206,7 @@ describe('loadTransportNetwork', () => {
             if (url.includes('shared-mobility.json')) {
                 return { ok: true, json: async () => localSharedMobility } as Response;
             }
-            throw new Error('reseau coupe');
+            throw new Error('réseau coupe');
         }) as unknown as typeof fetch;
 
         const network = await loadTransportNetwork(fetcher);
@@ -268,7 +268,7 @@ describe('loadTransportNetwork', () => {
 
         expect(network.sources?.sharedMobility).toBe('gbfs-live');
         expect(network.sources?.weather).toBe('open-meteo');
-        expect(network.sharedMobility.data.stations[0].name).toBe("Velo'v BELLECOUR");
+        expect(network.sharedMobility.data.stations[0].name).toBe("Vélo'v BELLECOUR");
         expect(network.gtfs.weather.temperature_celsius).toBe(19);
     });
 });

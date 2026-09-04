@@ -1,5 +1,5 @@
-// Construction des segments et assemblage d'une option a partir de ses
-// segments : distance, duree, carbone et accessibilite sont derives des
+// Construction des segments et assemblage d'une option à partir de ses
+// segments : distance, durée, carbone et accessibilité sont derives des
 // segments, jamais saisis en double.
 import type { GeoPoint, LegEstimate, MobilityMode, RouteInstruction, RouteLeg, RouteOption } from '../../types';
 import { SPEED_KMH } from './constants';
@@ -8,8 +8,8 @@ import { MODE_LABELS } from './labels';
 import { minutesForDistance, round } from './metrics';
 
 /**
- * Description d'un segment. Les extremites sont des points, pas des libelles :
- * le routage a besoin des coordonnees, et l'interface tire le libelle du point.
+ * Description d'un segment. Les extrémités sont des points, pas des libellés :
+ * le routage a besoin des coordonnées, et l'interface tire le libellé du point.
  */
 interface CommonLegInput {
     id: string;
@@ -19,9 +19,9 @@ interface CommonLegInput {
     distanceKm: number;
     accessible: boolean;
     /**
-     * Geometrie reelle, quand la source en publie une — c'est le cas du trace
+     * Géométrie réelle, quand la source en publie une — c'est le cas du tracé
      * d'une ligne de transport. Pour tout ce qui emprunte la voirie, elle reste
-     * vide jusqu'a la reponse du service de routage.
+     * vide jusqu'à la réponse du service de routage.
      */
     path?: GeoPoint[];
 }
@@ -45,14 +45,14 @@ function carbonFactor(input: LegInput): number {
     return input.estimate?.carbonGramsPerKm ?? ROAD_EMISSION_FACTORS[input.mode].gramsCo2ePerPassengerKm;
 }
 
-/** Duree d'un segment : parcours ajuste de la congestion, plus le temps fixe. */
+/** Durée d'un segment : parcours ajuste de la congestion, plus le temps fixe. */
 export function legDuration(travelMinutes: number, estimate: LegEstimate): number {
     return Math.max(Math.round(travelMinutes * estimate.travelFactor + estimate.overheadMinutes), 1);
 }
 
 export function createLeg(input: LegInput): RouteLeg {
     const roundedDistance = round(input.distanceKm, 2);
-    // Une etape sans distance connue (correspondance dans une station) ne doit
+    // Une étape sans distance connue (correspondance dans une station) ne doit
     // pas recevoir la minute minimale d'un parcours. Seul son temps fixe compte.
     const travelMinutes = roundedDistance === 0 ? 0 : minutesForDistance(roundedDistance, SPEED_KMH[input.mode]);
     const estimate: LegEstimate = {
@@ -79,7 +79,7 @@ export function createLeg(input: LegInput): RouteLeg {
     };
 }
 
-/** Mesures d'une option, toutes derivees de ses segments. */
+/** Mesures d'une option, toutes dérivées de ses segments. */
 export interface LegSummary {
     path: GeoPoint[];
     distanceKm: number;
@@ -113,8 +113,8 @@ export function buildOption(input: {
     return {
         ...input,
         ...summarizeLegs(input.legs),
-        // La reference voiture depend des extremites de la recherche, pas de la
-        // distance de l'option. Elle ne sera appliquee qu'apres la mesure OSRM.
+        // La référence voiture dépend des extrémités de la recherche, pas de la
+        // distance de l'option. Elle ne sera appliquée qu'après la mesure OSRM.
         carbonSavedGrams: null,
         carbonReference: null,
         instructions: buildFallbackInstructions(input.legs),
@@ -124,8 +124,8 @@ export function buildOption(input: {
 
 /**
  * Reporte sur l'option les mesures de ses segments une fois routes. Sans cela,
- * l'entete afficherait l'estimation a vol d'oiseau pendant que le detail
- * afficherait les distances reelles : deux chiffres differents pour le meme
+ * l'entête afficherait l'estimation à vol d'oiseau pendant que le détail
+ * afficherait les distances réelles : deux chiffres différents pour le même
  * trajet.
  */
 export function applyRoutedLegs(option: RouteOption, legs: RouteLeg[]): RouteOption {
@@ -134,9 +134,9 @@ export function applyRoutedLegs(option: RouteOption, legs: RouteLeg[]): RouteOpt
 
 
 /**
- * Trace complet d'une option. Un segment dont la geometrie n'est pas encore
- * connue n'apporte rien : le trace reste partiel plutot que d'etre complete par
- * une ligne droite qui ferait croire a un itineraire.
+ * Trace complet d'une option. Un segment dont la géométrie n'est pas encore
+ * connue n'apporte rien : le tracé reste partiel plutôt que d'être complète par
+ * une ligne droite qui ferait croire à un itinéraire.
  */
 export function mergeLegPaths(legs: RouteLeg[]): GeoPoint[] {
     return legs.reduce<GeoPoint[]>((points, leg) => {

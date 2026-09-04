@@ -1,8 +1,8 @@
 // Banc de performance reproductible sur le build de production (vite preview).
-// Protocole : N chargements a froid (contexte navigateur neuf, cache vide),
+// Protocole : N chargements à froid (contexte navigateur neuf, cache vide),
 // mesures issues des APIs Navigation Timing et Paint Timing du navigateur.
-// Les resultats dependent de la machine et du reseau : le protocole (appareil,
-// navigateur, reseau, date) doit etre publie avec les chiffres.
+// Les résultats dépendent de la machine et du réseau : le protocole (appareil,
+// navigateur, réseau, date) doit être publie avec les chiffres.
 import { chromium } from 'playwright-core';
 
 const BASE_URL = process.env.AUDIT_BASE_URL || 'http://localhost:4000';
@@ -49,14 +49,14 @@ function stats(key) {
     return { median: Math.round(median), p95: Math.round(p95) };
 }
 
-console.log('\n=== Synthese (ms, cache froid, N=' + samples.length + ') ===');
+console.log('\n=== Synthèse (ms, cache froid, N=' + samples.length + ') ===');
 for (const key of ['firstContentfulPaintMs', 'domContentLoadedMs', 'loadMs']) {
     const { median, p95 } = stats(key);
     console.log(`${key}: mediane ${median} ms | p95 ${p95} ms`);
 }
-console.log(`transfert initial median: ${stats('transferredKb').median} kB`);
+console.log(`transfert initial médian: ${stats('transferredKb').median} kB`);
 
-// Resultats persistes pour injection automatique dans le dossier PDF.
+// Résultats persistés pour injection automatique dans le dossier PDF.
 const { mkdirSync, writeFileSync } = await import('node:fs');
 mkdirSync('output/metrics', { recursive: true });
 writeFileSync(

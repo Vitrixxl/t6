@@ -175,7 +175,7 @@ export function TripGoalsCard() {
             </div>
             {editing ? (
                 <p className="mt-2 text-[10px] leading-4 text-muted-foreground">
-                    L'objectif de trajets mensuel est derive de l'objectif hebdomadaire (x 4). Les objectifs CO₂e sont independants.
+                    L'objectif de trajets mensuel est dérivé de l'objectif hebdomadaire (x 4). Les objectifs CO₂e sont indépendants.
                 </p>
             ) : null}
         </form>

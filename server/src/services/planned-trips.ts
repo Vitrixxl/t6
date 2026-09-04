@@ -1,6 +1,6 @@
-// Commandes des trajets programmes. La completion est une transition metier
-// atomique : elle modifie le trajet et cree son entree carbone dans la meme
-// transaction, y compris lors d'un rejeu apres une reponse perdue.
+// Commandes des trajets programmés. La complétion est une transition métier
+// atomique : elle modifie le trajet et crée son entrée carbone dans la même
+// transaction, y compris lors d'un rejeu après une réponse perdue.
 import type { Db } from '../db/index.ts';
 import { createRepositories } from '../repositories/index.ts';
 import type { CompletedPlannedTrip, PlannedTrip, TripRecord } from '../../../src/contracts/index.ts';

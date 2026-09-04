@@ -1,9 +1,9 @@
-// Limitation de debit par fenetre glissante, en memoire.
+// Limitation de débit par fenêtre glissante, en mémoire.
 //
-// Deux raisons de ne pas prendre une dependance : le plugin communautaire
-// n'est pas compatible avec la version majeure d'Elysia utilisee, et la regle
-// tient en quarante lignes verifiables. Limite assumee : le compteur est local
-// au processus. Derriere plusieurs instances, il faudra un compteur partage
+// Deux raisons de ne pas prendre une dépendance : le plugin communautaire
+// n'est pas compatible avec la version majeure d'Elysia utilisée, et la règle
+// tient en quarante lignes vérifiables. Limite assumée : le compteur est local
+// au processus. Derrière plusieurs instances, il faudra un compteur partagé
 // (Redis) - c'est note dans la trajectoire d'evolution.
 import { Elysia } from 'elysia';
 
@@ -13,17 +13,17 @@ interface Window {
 }
 
 export interface RateLimitOptions {
-    /** Nombre de requetes autorisees par fenetre. */
+    /** Nombre de requêtes autorisées par fenêtre. */
     max: number;
     windowMs: number;
-    /** Prefixe de compteur : deux limites distinctes ne se marchent pas dessus. */
+    /** Préfixe de compteur : deux limites distinctes ne se marchent pas dessus. */
     scope: string;
-    /** Ne faire confiance a X-Forwarded-For que derriere un proxy maitrise. */
+    /** Ne faire confiance a X-Forwarded-For que derrière un proxy maîtrise. */
     trustProxy: boolean;
 }
 
-// Un seul registre pour toutes les limites : le balayage periodique le purge
-// entierement, il n'y a pas de fuite memoire par portee.
+// Un seul registre pour toutes les limites : le balayage périodique le purge
+// entierement, il n'y a pas de fuite mémoire par portée.
 const windows = new Map<string, Window>();
 
 function clientKey(request: Request, trustProxy: boolean, address: string | undefined): string {
@@ -52,13 +52,13 @@ export function rateLimit(options: RateLimitOptions) {
             current.count += 1;
             if (current.count > options.max) {
                 set.headers['retry-after'] = String(Math.ceil((current.resetAt - now) / 1000));
-                return status(429, { error: 'Trop de requetes, reessayez dans un instant.' });
+                return status(429, { error: 'Trop de requêtes, réessayez dans un instant.' });
             }
         },
     );
 }
 
-/** Vide les compteurs (utilise par les tests pour rester independants). */
+/** Vide les compteurs (utilise par les tests pour rester indépendants). */
 export function resetRateLimits(): void {
     windows.clear();
 }

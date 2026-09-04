@@ -1,5 +1,5 @@
-// Briques d'affichage partagees par les vues du module trajets : elles n'ont
-// aucune logique metier, uniquement une representation coherente.
+// Briques d'affichage partagées par les vues du module trajets : elles n'ont
+// aucune logique métier, uniquement une representation cohérente.
 import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import type { PlannedTrip } from '../../../types';

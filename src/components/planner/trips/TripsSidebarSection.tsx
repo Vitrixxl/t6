@@ -1,4 +1,4 @@
-// Bloc trajets du rail lateral : raccourcis vers le hub et prochaines echeances.
+// Bloc trajets du rail latéral : raccourcis vers le hub et prochaines échéances.
 import { useSetAtom } from 'jotai';
 import { CalendarClock, Check, ChevronRight } from 'lucide-react';
 import { Button } from '../../ui/button';
@@ -28,7 +28,7 @@ export function TripsSidebarSection() {
                     <span className="block font-display text-[15px] font-semibold leading-tight tracking-tight">Ouvrir le planificateur</span>
                     <span className="block truncate text-[11px] font-medium text-primary-foreground/75">
                         {summary.upcomingCount > 0
-                            ? `${summary.upcomingCount} trajet${summary.upcomingCount > 1 ? 's' : ''} a venir · ${summary.recurringActiveCount} routine${summary.recurringActiveCount > 1 ? 's' : ''} active${summary.recurringActiveCount > 1 ? 's' : ''}`
+                            ? `${summary.upcomingCount} trajet${summary.upcomingCount > 1 ? 's' : ''} à venir · ${summary.recurringActiveCount} routine${summary.recurringActiveCount > 1 ? 's' : ''} active${summary.recurringActiveCount > 1 ? 's' : ''}`
                             : 'Dates, routines, objectifs et historique'}
                     </span>
                 </span>
@@ -66,7 +66,7 @@ export function TripsSidebarSection() {
                 </ul>
             ) : (
                 <p className="rounded-lg border border-dashed border-border bg-background/60 px-2.5 py-2 text-[11px] leading-4 text-muted-foreground">
-                    Aucun trajet planifie. Calcule un itineraire puis « Planifier ».
+                    Aucun trajet planifié. Calcule un itinéraire puis « Planifier ».
                 </p>
             )}
         </div>

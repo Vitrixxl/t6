@@ -1,5 +1,5 @@
-// Recherche de lieux : les deux sources sont interrogees en parallele et
-// fusionnees. Si l'une tombe, l'autre suffit ; l'erreur n'est propagee que si
+// Recherche de lieux : les deux sources sont interrogees en parallèle et
+// fusionnees. Si l'une tombe, l'autre suffit ; l'erreur n'est propagée que si
 // les deux echouent.
 import type { GeoPoint } from '../../../types';
 import { SEARCH_CENTER } from './area';

@@ -1,16 +1,16 @@
-// Geometrie reelle segment par segment.
+// Géométrie réelle segment par segment.
 //
 // Chaque segment est route avec le profil qui lui correspond : le segment
-// pieton suit les trottoirs, le segment velo les pistes cyclables. Le cout est
-// borne — on n'enrichit que l'itineraire selectionne, soit trois a quatre
-// appels, et seulement quand la selection change.
+// piéton suit les trottoirs, le segment vélo les pistes cyclables. Le coût est
+// borne — on n'enrichit que l'itinéraire selectionne, soit trois a quatre
+// appels, et seulement quand la sélection change.
 //
-// Toutes les options candidates sont mesurees avant affichage. Le cache partage
+// Toutes les options candidates sont mesurées avant affichage. Le cache partagé
 // absorbe les segments identiques entre options et utilisateurs.
 //
-// Un segment dont le routage ne repond pas ressort **sans geometrie**. C'est
-// deliberé : l'interface affichera un calcul en cours ou une indisponibilite,
-// jamais une ligne inventee. Un trace faux se lit comme un itineraire reel et
+// Un segment dont le routage ne répond pas ressort **sans géométrie**. C'est
+// deliberé : l'interface affichera un calcul en cours ou une indisponibilité,
+// jamais une ligne inventée. Un tracé faux se lit comme un itinéraire réel et
 // envoie l'utilisateur ailleurs (B14).
 import type { RouteLeg } from '../../../types';
 import { legDuration } from '../../planner/legs';
@@ -20,10 +20,10 @@ import { fetchRouteGeometry } from './osrm';
 export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: AbortSignal): Promise<RouteLeg[]> {
     return Promise.all(
         legs.map(async (leg) => {
-            // Un segment de transport public porte deja le trace reel de la ligne,
+            // Un segment de transport public porte déjà le tracé réel de la ligne,
             // decoupe entre les deux stations. OSRM ne route pas le rail : le lui
-            // demander renvoyait un itineraire *routier* entre les deux stations, ce
-            // qui dessinait le metro sur les quais et les sens uniques (B12).
+            // demander renvoyait un itinéraire *routier* entre les deux stations, ce
+            // qui dessinait le métro sur les quais et les sens uniques (B12).
             if (leg.mode === 'transit' || leg.transfer) {
                 return leg;
             }
@@ -33,10 +33,10 @@ export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: Abor
                 return { ...leg, path: [] };
             }
 
-            // La distance et la duree du reseau routier remplacent l'estimation a vol
-            // d'oiseau. Les hypotheses du segment sont conservees : la congestion
+            // La distance et la durée du réseau routier remplacent l'estimation a vol
+            // d'oiseau. Les hypothèses du segment sont conservées : la congestion
             // ajuste le temps de parcours, et l'attente ou la prise en charge s'y
-            // ajoutent — ce ne sont pas du trajet, le routage ne les connait pas.
+            // ajoutent — ce ne sont pas du trajet, le routage ne les connaît pas.
             const distanceKm = round(geometry.distanceMeters / 1000, 2);
 
             return {
@@ -50,7 +50,7 @@ export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: Abor
     );
 }
 
-/** Un itineraire est pret a etre dessine quand tous ses segments ont un trace. */
+/** Un itinéraire est prêt a être dessine quand tous ses segments ont un tracé. */
 export function hasCompleteGeometry(legs: RouteLeg[]): boolean {
     return legs.length > 0 && legs.every((leg) => leg.transfer || leg.path.length >= 2);
 }

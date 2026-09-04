@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe('RGPD', () => {
-    it('exporte l integralite des donnees du compte (art. 20)', async () => {
+    it('exporte l’integralite des données du compte (art. 20)', async () => {
         const cookie = await api.register('export@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
         await api.call('/api/trips/planned/trip-1/completion', { method: 'PUT', cookie });
@@ -29,7 +29,7 @@ describe('RGPD', () => {
         expect(body.tripRecords).toHaveLength(1);
     });
 
-    it('efface le compte et toutes ses donnees liees (art. 17)', async () => {
+    it('efface le compte et toutes ses données liées (art. 17)', async () => {
         const cookie = await api.register('efface@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
         await api.call('/api/trips/planned/trip-1/completion', { method: 'PUT', cookie });
@@ -40,7 +40,7 @@ describe('RGPD', () => {
         expect(
             (await api.call('/api/auth/login', { body: { email: 'efface@lyon.fr', password: PASSWORD } })).status,
         ).toBe(401);
-        // Cascade : plus aucune ligne liee ne subsiste en base.
+        // Cascade : plus aucune ligne liée ne subsiste en base.
         expect(api.db.select({ c: count() }).from(tripRecords).get()?.c).toBe(0);
         expect(api.db.select({ c: count() }).from(sessions).get()?.c).toBe(0);
     });

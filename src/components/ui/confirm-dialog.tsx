@@ -1,9 +1,9 @@
 // Dialogue de confirmation pour les actions sans retour en arriere.
 //
-// Deconnexion et suppression de compte partagent la meme forme, mais pas les
-// memes consequences : le libelle du bouton d'action dit ce qui va se passer
+// Déconnexion et suppression de compte partagent la même forme, mais pas les
+// mêmes consequences : le libellé du bouton d'action dit ce qui va se passer
 // ("Supprimer le compte"), jamais "Oui" ou "Confirmer", pour qu'un utilisateur
-// qui ne lit que le bouton comprenne quand meme ce qu'il declenche.
+// qui ne lit que le bouton comprenne quand même ce qu'il déclenche.
 import { Button } from './button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './dialog';
 

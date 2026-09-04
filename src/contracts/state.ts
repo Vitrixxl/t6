@@ -1,4 +1,4 @@
-// Etat complet d'un compte : ce que le serveur rend a l'ouverture de session
+// État complet d'un compte : ce que le serveur rend à l'ouverture de session
 // pour que le client amorce son cache. Il ne s'ecrit jamais en bloc : les
 // collections exposent ensuite une route par ressource.
 import { z } from 'zod';
@@ -15,11 +15,11 @@ export const accountState = z.object({
 });
 export type AccountState = z.infer<typeof accountState>;
 
-/** Reponse commune a l'inscription, la connexion et la reprise de session. */
+/** Réponse commune à l'inscription, la connexion et la reprise de session. */
 export const session = z.object({ user: sessionUser, state: accountState });
 export type Session = z.infer<typeof session>;
 
-/** Export RGPD (art. 20) : l'etat complet, augmente des donnees de compte. */
+/** Export RGPD (art. 20) : l'état complet, augmente des données de compte. */
 export const accountExport = accountState.extend({
     exportedAt: z.string(),
     account: z.object({

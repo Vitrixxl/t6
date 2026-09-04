@@ -1,6 +1,6 @@
-// Configuration de drizzle-kit : generation des migrations SQL a partir du
-// schema TypeScript. La base n'est lue que par `db:studio` ; `db:generate` ne
-// fait que comparer le schema aux migrations deja emises.
+// Configuration de drizzle-kit : génération des migrations SQL à partir du
+// schéma TypeScript. La base n'est lue que par `db:studio` ; `db:generate` ne
+// fait que comparer le schéma aux migrations déjà émises.
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({

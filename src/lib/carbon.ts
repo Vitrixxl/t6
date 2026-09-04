@@ -4,17 +4,17 @@ import { sumRoutines } from './trips/routines';
 import { startOfWeek } from './week';
 
 /**
- * Synthese de la semaine en cours.
+ * Synthèse de la semaine en cours.
  *
  * L'historique conserve les cinquante derniers trajets, toutes semaines
- * confondues : les cumuler pour les comparer a un objectif hebdomadaire
+ * confondues : les cumuler pour les comparer à un objectif hebdomadaire
  * revenait a remplir une barre de progression qui ne redescendait jamais le
- * lundi (B16). La fenetre est donc appliquee ici, a la source, plutot que
- * laissee a la charge de chaque ecran.
+ * lundi (B16). La fenêtre est donc appliquée ici, à la source, plutôt que
+ * laissee à la charge de chaque écran.
  *
- * Les routines n'ecrivent rien dans l'historique : leurs passages deja echus
- * de la semaine sont ajoutes ici, comme dans les objectifs, pour que les deux
- * ecrans annoncent le meme chiffre.
+ * Les routines n'ecrivent rien dans l'historique : leurs passages déjà échus
+ * de la semaine sont ajoutés ici, comme dans les objectifs, pour que les deux
+ * écrans annoncent le même chiffre.
  */
 export function summarizeCarbon(
     allRecords: TripRecord[],
@@ -40,7 +40,7 @@ export function summarizeCarbon(
     };
 }
 
-/** Ajoute un trajet realise en tete de l'historique, borne aux plus recents. */
+/** Ajoute un trajet realise en tete de l'historique, borne aux plus récents. */
 export function recordTrip(records: TripRecord[], record: TripRecord): TripRecord[] {
     return [record, ...records.filter((item) => item.id !== record.id)].slice(0, TRIP_HISTORY_LIMIT);
 }

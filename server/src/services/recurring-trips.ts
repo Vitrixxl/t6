@@ -1,5 +1,5 @@
-// Commandes des routines. La borne est verifiee cote serveur : un second
-// appareil ne peut pas la contourner avec une vue locale perimee.
+// Commandes des routines. La borne est vérifiée côté serveur : un second
+// appareil ne peut pas la contourner avec une vue locale périmée.
 import type { Db } from '../db/index.ts';
 import { createRepositories } from '../repositories/index.ts';
 import { RECURRING_LIMIT, type RecurringTrip } from '../../../src/contracts/index.ts';

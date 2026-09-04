@@ -1,10 +1,10 @@
-// Journal des requetes : une ligne structuree par requete servie.
+// Journal des requêtes : une ligne structuree par requête servie.
 //
-// Sans trace, un incident en production se diagnostique a l'aveugle. Le format
+// Sans trace, un incident en production se diagnostique à l'aveugle. Le format
 // est volontairement du JSON sur une ligne : lisible en console, indexable par
-// un collecteur sans parseur specifique. Aucune donnee personnelle n'y figure
-// (ni corps, ni identifiant de compte, ni adresse) : uniquement methode,
-// chemin, statut et duree.
+// un collecteur sans parseur spécifique. Aucune donnée personnelle n'y figure
+// (ni corps, ni identifiant de compte, ni adresse) : uniquement méthode,
+// chemin, statut et durée.
 import { Elysia } from 'elysia';
 
 export function requestLog(enabled: boolean) {

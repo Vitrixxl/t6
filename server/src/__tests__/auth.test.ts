@@ -1,4 +1,4 @@
-// Inscription, connexion, session : le chemin critique de securite.
+// Inscription, connexion, session : le chemin critique de sécurité.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { users } from '../db/schema.ts';
@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe('inscription', () => {
-    it('cree un compte et ouvre une session par cookie httpOnly', async () => {
+    it('crée un compte et ouvre une session par cookie httpOnly', async () => {
         const response = await api.call('/api/auth/register', {
             body: { email: 'citoyen@lyon.fr', password: PASSWORD, displayName: 'Citoyen' },
         });
@@ -37,7 +37,7 @@ describe('inscription', () => {
 
         expect(body).not.toContain(PASSWORD);
         expect(body).not.toContain('argon2');
-        // Verification directe en base : l'empreinte porte bien ses parametres.
+        // Vérification directe en base : l'empreinte porte bien ses paramètres.
         const stored = api.db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.email, 'a@lyon.fr')).get();
         expect(stored?.passwordHash).toStartWith('$argon2id$');
     });
@@ -58,7 +58,7 @@ describe('inscription', () => {
         expect(response.status).toBe(422);
     });
 
-    it('refuse un email deja enregistre', async () => {
+    it('refuse un email déjà enregistré', async () => {
         await api.register('doublon@lyon.fr');
         const response = await api.call('/api/auth/register', {
             body: { email: 'doublon@lyon.fr', password: PASSWORD, displayName: 'Doublon' },
@@ -68,7 +68,7 @@ describe('inscription', () => {
 });
 
 describe('connexion', () => {
-    it('renvoie le meme message pour un compte inconnu et un mot de passe faux', async () => {
+    it('renvoie le même message pour un compte inconnu et un mot de passe faux', async () => {
         await api.register('connu@lyon.fr');
 
         const inconnu = await api.call('/api/auth/login', { body: { email: 'inconnu@lyon.fr', password: PASSWORD } });
@@ -78,7 +78,7 @@ describe('connexion', () => {
 
         expect(inconnu.status).toBe(401);
         expect(mauvais.status).toBe(401);
-        // Aucun oracle d'enumeration : les deux reponses sont indiscernables.
+        // Aucun oracle d'énumération : les deux réponses sont indiscernables.
         expect((await json<ErrorBody>(inconnu)).error).toBe((await json<ErrorBody>(mauvais)).error);
     });
 
@@ -90,7 +90,7 @@ describe('connexion', () => {
         expect((await json<AuthBody>(response)).user.email).toBe('retour@lyon.fr');
     });
 
-    it('bloque le bourrage d identifiants au-dela de la limite', async () => {
+    it('bloque le bourrage d’identifiants au-delà de la limite', async () => {
         let last: Response | undefined;
         for (let attempt = 0; attempt < 12; attempt += 1) {
             last = await api.call('/api/auth/login', { body: { email: 'x@lyon.fr', password: PASSWORD } });
@@ -102,18 +102,18 @@ describe('connexion', () => {
 });
 
 describe('session', () => {
-    it('revoque la session cote serveur a la deconnexion', async () => {
+    it('révoque la session côté serveur a la déconnexion', async () => {
         const cookie = await api.register('deco@lyon.fr');
         expect((await api.call('/api/state', { cookie })).status).toBe(200);
 
         await api.call('/api/auth/logout', { method: 'POST', cookie });
 
-        // Le jeton vole apres coup ne vaut plus rien : la revocation est en base,
+        // Le jeton vole après coup ne vaut plus rien : la révocation est en base,
         // pas seulement dans le navigateur.
         expect((await api.call('/api/state', { cookie })).status).toBe(401);
     });
 
-    it('reprend la session portee par le cookie', async () => {
+    it('reprend la session portée par le cookie', async () => {
         const cookie = await api.register('reprise@lyon.fr');
         const response = await api.call('/api/auth/session', { cookie });
 
@@ -121,7 +121,7 @@ describe('session', () => {
         expect((await json<AuthBody>(response)).user.email).toBe('reprise@lyon.fr');
     });
 
-    it('refuse toute route protegee sans session', async () => {
+    it('refuse toute route protégée sans session', async () => {
         for (const path of ['/api/state', '/api/me/export', '/api/auth/session']) {
             expect((await api.call(path)).status).toBe(401);
         }

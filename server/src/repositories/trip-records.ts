@@ -1,5 +1,5 @@
-// Depot de l'historique des trajets realises (alimente par la transition
-// serveur d'un trajet programme). Le client ne peut pas injecter une liste.
+// Dépôt de l'historique des trajets réalisés (alimente par la transition
+// serveur d'un trajet programmé). Le client ne peut pas injecter une liste.
 import { and, desc, eq } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { tripRecords } from '../db/schema.ts';
@@ -59,7 +59,7 @@ export function createTripRecordRepository(db: Executor) {
                 .run();
         },
 
-        /** Seule l'action utilisateur « effacer l'historique » appelle cette operation. */
+        /** Seule l'action utilisateur « effacer l'historique » appelle cette opération. */
         clear(userId: string): void {
             db.delete(tripRecords).where(eq(tripRecords.userId, userId)).run();
         },

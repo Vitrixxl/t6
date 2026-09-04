@@ -1,7 +1,7 @@
-// Outillage commun aux tests d'integration.
+// Outillage commun aux tests d'intégration.
 //
-// Les routes sont appelees en memoire (app.handle) sur une base SQLite
-// ephemere : pas de port, pas de reseau, pas de fichier a nettoyer. La suite
+// Les routes sont appelées en mémoire (app.handle) sur une base SQLite
+// ephemere : pas de port, pas de réseau, pas de fichier a nettoyer. La suite
 // reste rejouable en CI et sur n'importe quel poste.
 import { createApp } from '../app.ts';
 import type { ServerConfig } from '../config/index.ts';
@@ -14,11 +14,11 @@ export const PASSWORD = 'UrbanFlow2026!';
 export interface TestApi {
     call: (path: string, options?: CallOptions) => Promise<Response>;
     register: (email?: string) => Promise<string>;
-    /** Ecrit une seule ressource, dont l'identifiant figure deja dans l'URL. */
+    /** Ecrit une seule ressource, dont l'identifiant figure déjà dans l'URL. */
     putResource: (cookie: string, path: string, body: unknown) => Promise<Response>;
-    /** Remplace le profil de mobilite. */
+    /** Remplace le profil de mobilité. */
     putProfile: (cookie: string, profile: Record<string, unknown>) => Promise<Response>;
-    /** Acces direct a la base, pour verifier ce que l'API a reellement ecrit. */
+    /** Accès direct à la base, pour verifier ce que l'API a réellement ecrit. */
     db: ReturnType<typeof createApp>['decorator']['db'];
     close: () => void;
 }
@@ -33,11 +33,11 @@ export function createTestApi(overrides: Partial<ServerConfig> = {}): TestApi {
     const app = createApp({
         databasePath: ':memory:',
         // Le faux calculateur des tests ne doit pas subir la temporisation reservee
-        // au service public, meme si fetch est remplace juste apres par le test.
+        // au service public, même si fetch est remplace juste après par le test.
         osrmBaseUrl: 'https://osrm.test',
         ...overrides,
     });
-    // Les compteurs de debit sont partages par le processus : on repart de zero
+    // Les compteurs de débit sont partagés par le processus : on repart de zéro
     // pour que l'ordre des tests n'ait aucune influence.
     resetRateLimits();
 
@@ -78,15 +78,15 @@ export function createTestApi(overrides: Partial<ServerConfig> = {}): TestApi {
         },
         db: app.decorator.db,
         close() {
-            // L'application n'ecoute jamais sur un port dans les tests : on ferme
-            // directement la base ephemere plutot qu'un serveur inexistant.
+            // L'application n'écoute jamais sur un port dans les tests : on ferme
+            // directement la base ephemere plutôt qu'un serveur inexistant.
             app.decorator.db.$client.close();
         },
     };
 }
 
-// Formes de reponse attendues. Les declarer sert deux fois : le test est type
-// sans cast disperse, et il echoue a la compilation si le contrat de l'API
+// Formes de réponse attendues. Les declarer sert deux fois : le test est type
+// sans cast disperse, et il echoue à la compilation si le contrat de l'API
 // change sans que le test suive.
 export interface ErrorBody {
     error: string;
@@ -115,19 +115,19 @@ export interface OpenApiSpec {
     paths: Record<string, unknown>;
 }
 
-/** Lit le corps JSON d'une reponse dans la forme attendue par le test. */
+/** Lit le corps JSON d'une réponse dans la forme attendue par le test. */
 export function json<T>(response: Response): Promise<T> {
     return response.json() as Promise<T>;
 }
 
-/** Extrait le cookie de session d'une reponse, pour le rejouer ensuite. */
+/** Extrait le cookie de session d'une réponse, pour le rejouer ensuite. */
 export function sessionCookie(response: Response): string {
     return (response.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
 }
 
 export const TRIP_RECORD = {
     id: 'trip-1',
-    routeTitle: 'Velo + metro',
+    routeTitle: 'Vélo + métro',
     modes: ['bike', 'transit'],
     distanceKm: 5.2,
     durationMinutes: 22,

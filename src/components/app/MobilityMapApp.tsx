@@ -1,6 +1,6 @@
-// Orchestrateur principal : recherche d'itineraires, comparaison des options et
-// carte. Il ne tient que l'etat de l'ecran (depart, arrivee, calques, panneaux
-// ouverts) : l'etat du compte vit dans le cache de requetes (src/queries/),
+// Orchestrateur principal : recherche d'itinéraires, comparaison des options et
+// carte. Il ne tient que l'état de l'écran (départ, arrivée, calques, panneaux
+// ouverts) : l'état du compte vit dans le cache de requêtes (src/queries/),
 // que chaque module lit.
 import { useEffect, useState } from 'react';
 import { useSetAtom } from 'jotai';
@@ -18,7 +18,7 @@ import { ProfileDrawer } from '../profile/ProfilePanels';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { DesktopMobilityLayout, MobileMobilityLayout, type TripMapState } from './MobilityLayouts';
 
-/** Duree du retour visuel "enregistre" sur le bouton. */
+/** Durée du retour visuel "enregistre" sur le bouton. */
 const SAVE_CONFIRMATION_MS = 1800;
 
 export function MobilityMapApp({ network }: { network: TransportNetwork }) {
@@ -28,9 +28,9 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
     const startPlanning = useSetAtom(planSourceAtom);
     const closeHub = useSetAtom(closeHubAtom);
 
-    // Le depart choisi explicitement. Tant qu'il est vide, c'est la position
-    // courante qui fait office de depart : ouvrir l'application et saisir une
-    // destination doit suffire, sans avoir a designer un depart evident.
+    // Le départ choisi explicitement. Tant qu'il est vide, c'est la position
+    // courante qui fait office de départ : ouvrir l'application et saisir une
+    // destination doit suffire, sans avoir a désigner un départ évident.
     const [chosenOrigin, setChosenOrigin] = useState<GeoPoint | null>(null);
     const [destination, setDestination] = useState<GeoPoint | null>(null);
     const [layers, setLayers] = useState<LayerState>(DEFAULT_LAYERS);
@@ -38,20 +38,20 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
     const [profileOpen, setProfileOpen] = useState(false);
     const [justSavedRouteId, setJustSavedRouteId] = useState('');
     const [tutorialSignal, setTutorialSignal] = useState(0);
-    // Une seule disposition est rendue a la fois : une seule carte en memoire.
+    // Une seule disposition est rendue à la fois : une seule carte en mémoire.
     const desktop = useDesktopLayout();
 
     const { currentPosition, status: geoStatus, requestCurrentPosition } = useGeolocation();
     const origin = chosenOrigin ?? currentPosition;
     const setOrigin = setChosenOrigin;
 
-    // La position est demandee des l'ouverture. Le navigateur pose lui-meme la
+    // La position est demandée dès l'ouverture. Le navigateur pose lui-même la
     // question du consentement : c'est cette invite qui vaut accord, et un refus
     // laisse simplement la saisie manuelle (C6/C8).
     useEffect(() => {
         void requestCurrentPosition();
         // Une seule fois par montage : redemander en boucle harcelerait
-        // l'utilisateur qui a refuse.
+        // l'utilisateur qui a refusé.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     const { routes, selectedRoute, setSelectedRouteId, routingStatus } = useRouteOptions({
@@ -64,8 +64,8 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
     const routeRequested = Boolean(origin && destination);
     const navigationPoint = currentPosition ? { ...currentPosition, label: 'Ma position' } : null;
 
-    // Demander sa position sert autant a la definir comme depart qu'a la voir :
-    // sans recentrage, le repere pouvait apparaitre hors du cadre visible.
+    // Demander sa position sert autant à la définir comme départ qu'à la voir :
+    // sans recentrage, le repere pouvait apparaître hors du cadre visible.
     const [mapFocus, setMapFocus] = useState<{ point: GeoPoint; at: number } | null>(null);
     const locateAndFocus = () =>
         void requestCurrentPosition().then((point) => {
@@ -76,17 +76,17 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
             setMapFocus({ point, at: Date.now() });
         });
 
-    // Perimetre produit: la recherche est bornee a la metropole, mais la position
-    // GPS peut en sortir. On previent honnetement que l'offre y est reduite.
+    // Périmètre produit: la recherche est bornée à la métropole, mais la position
+    // GPS peut en sortir. On prévient honnêtement que l'offre y est réduite.
     const outsideMetro = [origin, destination].some(
         (point) => point && haversineDistanceKm(point, CITY_CENTER) > METRO_RADIUS_KM + 4,
     );
     const coverageWarning = routeRequested && outsideMetro
-        ? 'Hors metropole de Lyon : transport public et velos/trottinettes indisponibles, seule la marche reste proposee.'
+        ? 'Hors métropole de Lyon : transport public et vélos/trottinettes indisponibles, seule la marche reste proposée.'
         : null;
 
-    // Appui long sur la carte : le point est nomme par geocodage inverse avant
-    // d'atterrir dans le champ, sinon l'utilisateur y verrait des coordonnees.
+    // Appui long sur la carte : le point est nommé par géocodage inverse avant
+    // d'atterrir dans le champ, sinon l'utilisateur y verrait des coordonnées.
     const pickPointFromMap = (picked: { lat: number; lon: number }, role: 'origin' | 'destination') => {
         void describePoint(picked.lat, picked.lon).then((point) => {
             if (role === 'origin') {
@@ -105,7 +105,7 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
         setDestination(point);
     };
 
-    // Le depart bascule sur la position courante quand il n'a jamais ete saisi :
+    // Le départ bascule sur la position courante quand il n'a jamais été saisi :
     // inverser un trajet dont un bout est implicite doit rester possible.
     const swapEndpoints = () => {
         const start = origin ?? currentPosition;
@@ -122,10 +122,10 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
         window.setTimeout(() => setJustSavedRouteId(''), SAVE_CONFIRMATION_MS);
     };
 
-    // Fermer l'itineraire remet l'ecran a son etat de depart : la feuille
-    // d'options cede la place a la barre d'actions, et la barre de recherche
-    // repasse a son unique champ. Les requetes en vol s'annulent d'elles-memes,
-    // leurs effets dependant du couple depart / arrivee.
+    // Fermer l'itinéraire remet l'écran à son état de départ : la feuille
+    // d'options cédé la place à la barre d'actions, et la barre de recherche
+    // repasse à son unique champ. Les requêtes en vol s'annulent d'elles-memes,
+    // leurs effets dépendant du couple départ / arrivée.
     const closeItinerary = () => {
         setChosenOrigin(null);
         setDestination(null);
@@ -140,7 +140,7 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
     };
 
     // "Nouveau trajet" depuis le hub : referme le dialog puis met le focus sur la
-    // recherche de depart (apres la restitution de focus de Radix).
+    // recherche de départ (après la restitution de focus de Radix).
     const startNewTrip = () => {
         closeHub();
         window.setTimeout(() => {

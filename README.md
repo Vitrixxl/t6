@@ -6,26 +6,26 @@ Application PWA React/TypeScript **mobile first** pour le sujet T6 CDSD "Urban F
 
 Deux briques, une seule origine pour le navigateur :
 
-- **Client** (`src/`) : PWA React/TypeScript 7. Les donnees du compte vivent dans le cache de requetes (React Query), amorce a la connexion. Tous les appels a l'API UrbanFlow passent par Eden Treaty et heritent leurs types de l'arbre Elysia.
+- **Client** (`src/`) : PWA React/TypeScript 7. Les données du compte vivent dans le cache de requêtes (React Query), amorce à la connexion. Tous les appels à l'API UrbanFlow passent par Eden Treaty et heritent leurs types de l'arbre Elysia.
 - **API** (`server/`) : Elysia sur Bun + SQLite (`bun:sqlite`). Comptes, sessions, trajets, routines, itinéraires sauvegardés, calcul d'itinéraires.
-- **Contrats** (`src/contracts/`) : un schema zod par objet echange, importe par les deux : validation de l'API, validation des formulaires (react-hook-form), types, OpenAPI.
+- **Contrats** (`src/contracts/`) : un schéma zod par objet echange, importe par les deux : validation de l'API, validation des formulaires (react-hook-form), types, OpenAPI.
 
-Le serveur est la seule source de verite : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
-en base, etat du compte rendu a la connexion, puis collections lues par `GET`. Chaque trajet, routine ou
-itineraire enregistre s'ecrit seul par `PUT /api/.../:id` et se retire par `DELETE /api/.../:id` ; aucun corps HTTP
-ne contient une collection complete. `PUT /api/trips/planned/:id/completion` termine le trajet et cree son entree
+Le serveur est la seule source de vérité : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
+en base, état du compte rendu à la connexion, puis collections lues par `GET`. Chaque trajet, routine ou
+itinéraire enregistré s'ecrit seul par `PUT /api/.../:id` et se retire par `DELETE /api/.../:id` ; aucun corps HTTP
+ne contient une collection complète. `PUT /api/trips/planned/:id/completion` termine le trajet et crée son entrée
 carbone dans une seule transaction idempotente. Seul `DELETE /api/trips/history` efface volontairement tout
-l'historique. Les envois sont serialises. Pas de cache local persistant : les vues vivent dans le cache React Query
-(`src/queries/`) le temps de la session, et une ecriture refusee est signalee a l'utilisateur, la vue concernee
-etant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
-socle et des flux transport par le service worker, etats de chargement explicites, erreurs reseau propres.
+l'historique. Les envois sont sérialisés. Pas de cache local persistant : les vues vivent dans le cache React Query
+(`src/queries/`) le temps de la session, et une écriture refusée est signalée à l'utilisateur, la vue concernée
+étant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
+socle et des flux transport par le service worker, états de chargement explicites, erreurs réseau propres.
 
 Il n'y a pas de mode sans serveur : c'est l'API qui sert le client, une API absente est une page absente.
 
 ## Organisation du code
 
-Le decoupage suit les responsabilites fonctionnelles ; la longueur seule ne
-commande pas la creation d'un module.
+Le découpage suit les responsabilités fonctionnelles ; la longueur seule ne
+commande pas la création d'un module.
 
 **API** (`server/src/`)
 
@@ -34,7 +34,7 @@ commande pas la creation d'un module.
 | `config/` | lecture et validation des variables d'environnement |
 | `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
 | `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
-| `services/` | règles métier qui composent plusieurs opérations : completion, sessions, routage et son cache |
+| `services/` | règles métier qui composent plusieurs opérations : complétion, sessions, routage et son cache |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
 
@@ -44,25 +44,25 @@ commande pas la creation d'un module.
 | --- | --- |
 | `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
-| `contracts/` | schemas zod partages avec l'API : validation, types derives, OpenAPI |
+| `contracts/` | schémas zod partagés avec l'API : validation, types derives, OpenAPI |
 | `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une commande par ressource du compte |
-| `queries/` | ressources servies par l'API dans le cache React Query : une ressource par fichier, sa requete et ses actions |
-| `state/` | etat d'ecran partage entre modules (jotai) : formulaire de planification, hub |
+| `queries/` | ressources servies par l'API dans le cache React Query : une ressource par fichier, sa requête et ses actions |
+| `state/` | état d'écran partage entre modules (jotai) : formulaire de planification, hub |
 | `components/map/` | carte MapLibre : cycle de vie, couches, popups, sources et marqueurs |
 | `components/planner/` | recherche : état réseau, liste de résultats et panneaux de restitution séparés |
 | `components/planner/trips/` | module trajets : hub, listes, formulaire, champs de planification et objectifs |
 | `components/app/` | orchestration de l'écran, dispositions desktop/mobile et hooks de géolocalisation/routage |
 | `components/tutorial/` | parcours de découverte distincts : 11 étapes desktop et 9 étapes ciblant les contrôles réellement présents sur mobile |
 
-Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (securite),
+Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
 `server/src/routes/planned-trips.ts`, `server/src/services/planned-trips.ts`, `src/lib/api/planned-trips.ts`
 et `src/queries/planned-trips.ts` (commande granulaire de bout en bout), puis
-`src/queries/routes.ts` et `src/lib/planner/index.ts` (moteur d'itineraires).
+`src/queries/routes.ts` et `src/lib/planner/index.ts` (moteur d'itinéraires).
 
 ## Livrables
 
-- `src/` : application fonctionnelle (auth + profils, planificateur multimodal, trajets programmes et routines, objectifs, suivi carbone).
-- `server/` : API HTTP (authentification, profil, ressources du compte, RGPD, calcul d'itineraires).
+- `src/` : application fonctionnelle (auth + profils, planificateur multimodal, trajets programmés et routines, objectifs, suivi carbone).
+- `server/` : API HTTP (authentification, profil, ressources du compte, RGPD, calcul d'itinéraires).
 - `public/manifest.webmanifest` + `public/sw.js` : PWA installable avec cache offline.
 - `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` : dossier projet (30 pages, généré par script).
 - `output/screens/` : captures automatisées (Playwright) intégrées au dossier.
@@ -85,60 +85,60 @@ Chaque flux a un fallback local (`public/data/`) signalé dans l'UI.
 
 ## Calcul d'itinéraires
 
-Le navigateur n'appelle jamais le calculateur directement. Une recherche se deroule en quatre temps :
+Le navigateur n'appelle jamais le calculateur directement. Une recherche se déroule en quatre temps :
 
-1. Haversine ne garde que huit stations ou arrets proches, afin de borner le cout.
-2. `POST /api/route-matrix` demande a OSRM la duree routable vers chacun d'eux ; le moteur choisit donc l'acces le plus rapide a pied ou a velo, pas le point geometriquement le plus proche. En parallele, une matrice voiture `1 x 1` mesure la reference carbone entre les deux extremites.
+1. Haversine ne garde que huit stations ou arrêts proches, afin de borner le coût.
+2. `POST /api/route-matrix` demande à OSRM la durée routable vers chacun d'eux ; le moteur choisit donc l'accès le plus rapide à pied ou à vélo, pas le point géométriquement le plus proche. En parallèle, une matrice voiture `1 x 1` mesure la référence carbone entre les deux extrémités.
 3. Le moteur assemble les options, puis `GET /api/route` mesure et trace chaque segment de voirie avant affichage.
-4. Quand toutes les options portent leurs mesures reelles, la meme reference voiture leur est appliquee, puis elles sont affichees.
+4. Quand toutes les options portent leurs mesures réelles, la même référence voiture leur est appliquée, puis elles sont affichées.
 
-Les deux routes utilisent le meme cache SQLite partage entre tous les clients. Une mesure de matrice peut reutiliser un trace deja connu, et inversement le cache evite de redemander les memes couples de points a OSRM. Les appels a l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs reponses sont inferes directement depuis les routes Elysia, sans type HTTP recopie dans le front.
+Les deux routes utilisent le même cache SQLite partagé entre tous les clients. Une mesure de matrice peut réutiliser un tracé déjà connu, et inversement le cache évite de redemander les mêmes couples de points à OSRM. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopie dans le front.
 
-Une correspondance entre deux lignes apparait comme une etape pietonne de quatre minutes. Le temps est explicite, mais aucun trait interieur n'est invente : le GTFS publie la desserte et les traces des lignes, pas les cheminements entre quais.
+Une correspondance entre deux lignes apparaît comme une étape piétonne de quatre minutes. Le temps est explicite, mais aucun trait intérieur n'est inventé : le GTFS publie la desserte et les tracés des lignes, pas les cheminements entre quais.
 
 ## Facteurs carbone
 
-La voiture n'appartient pas aux modes proposes ni aux preferences. C'est un
-scenario contrefactuel invisible, mesure une seule fois par le profil OSRM
-`driving` pour chaque couple depart-arrivee :
+La voiture n'appartient pas aux modes proposes ni aux préférences. C'est un
+scénario contrefactuel invisible, mesure une seule fois par le profil OSRM
+`driving` pour chaque couple départ-arrivée :
 
 ```text
-CO2e voiture = distance routiere voiture x 142 gCO2e/km
+CO2e voiture = distance routière voiture x 142 gCO2e/km
 CO2e evite   = CO2e voiture - CO2e de l'option mesuree
 ```
 
-Toutes les options d'une recherche utilisent donc strictement la meme
-reference, meme si leurs propres distances different. Une economie negative
-est conservee et affichee comme des `gCO2e supplementaires`. Si le profil
+Toutes les options d'une recherche utilisent donc strictement la même
+référence, même si leurs propres distances diffèrent. Une économie négative
+est conservée et affichée comme des `gCO2e supplementaires`. Si le profil
 voiture est indisponible, les alternatives restent visibles avec leur propre
-empreinte et l'interface indique `Comparaison voiture indisponible` ; aucun zero
-ni trajet approche n'est invente.
+empreinte et l'interface indique `Comparaison voiture indisponible` ; aucun zéro
+ni trajet approche n'est inventé.
 
-| Usage | Facteur | Perimetre | Source/version |
+| Usage | Facteur | Périmètre | Source/version |
 | --- | ---: | --- | --- |
-| Reference voiture | 142 gCO2e/passager-km | voiture thermique moyenne diesel, une personne | ADEME, modelisation transport 2025, consultee le 04/09/2026 |
-| Tramway (`route_type=0`) | 3,8 gCO2e/passager-km | par passager-kilometre | ADEME Impact CO2, modele 2025, consulte le 04/09/2026 |
-| Metro (`route_type=1`) | 4,2 gCO2e/passager-km | par passager-kilometre | ADEME Impact CO2, modele 2025, consulte le 04/09/2026 |
-| Funiculaire (`route_type=7`) | 4,2 gCO2e/passager-km | approximation par le facteur metro, faute de facteur specifique | ADEME Impact CO2, modele 2025, consulte le 04/09/2026 |
-| Marche / Velo'v / trottinette | 0 / 4 / 15 gCO2e/passager-km | hypotheses simplifiees UrbanFlow 2025 | versionnees dans `src/lib/planner/emissions.ts` |
+| Référence voiture | 142 gCO2e/passager-km | voiture thermique moyenne diesel, une personne | ADEME, modélisation transport 2025, consultée le 04/09/2026 |
+| Tramway (`route_type=0`) | 3,8 gCO2e/passager-km | par passager-kilomètre | ADEME Impact CO2, modèle 2025, consulté le 04/09/2026 |
+| Métro (`route_type=1`) | 4,2 gCO2e/passager-km | par passager-kilomètre | ADEME Impact CO2, modèle 2025, consulté le 04/09/2026 |
+| Funiculaire (`route_type=7`) | 4,2 gCO2e/passager-km | approximation par le facteur métro, faute de facteur spécifique | ADEME Impact CO2, modèle 2025, consulté le 04/09/2026 |
+| Marche / Vélo'v / trottinette | 0 / 4 / 15 gCO2e/passager-km | hypothèses simplifiées UrbanFlow 2025 | versionnées dans `src/lib/planner/emissions.ts` |
 
-La valeur, l'unite, le perimetre, la source, le millesime et la date de
+La valeur, l'unité, le périmètre, la source, le millésime et la date de
 consultation vivent ensemble dans `src/lib/planner/emissions.ts`. Le type
-`CarbonReference` conserve aussi la version du facteur utilisee.
+`CarbonReference` conserve aussi la version du facteur utilisée.
 
 ## Objectifs carbone personnels
 
 Le profil distingue trois notions : le budget carbone hebdomadaire, l'objectif
-d'economie hebdomadaire et l'objectif d'economie mensuel. Les deux objectifs
-d'economie sont independants : le mensuel n'est pas une multiplication arbitraire
-du chiffre hebdomadaire. Ils sont valides par le contrat partage, persistes avec
-`PUT /api/me/profile`, puis compares aux memes agregats semaine/mois que le suivi
+d'économie hebdomadaire et l'objectif d'économie mensuel. Les deux objectifs
+d'économie sont indépendants : le mensuel n'est pas une multiplication arbitraire
+du chiffre hebdomadaire. Ils sont validés par le contrat partagé, persistés avec
+`PUT /api/me/profile`, puis comparés aux mêmes agrégats semaine/mois que le suivi
 carbone dans le planificateur.
 
-Le tutoriel de premiere visite suit la disposition courante. Sur mobile, il
-montre successivement la recherche, la carte, le GPS, les disponibilites a
-proximite, les couches, les trajets/objectifs et le profil. Sa bulle se place
-au-dessus ou au-dessous du controle vise pour ne pas le masquer.
+Le tutoriel de première visite suit la disposition courante. Sur mobile, il
+montre successivement la recherche, la carte, le GPS, les disponibilités a
+proximité, les couches, les trajets/objectifs et le profil. Sa bulle se place
+au-dessus ou au-dessous du contrôle vise pour ne pas le masquer.
 
 Sans configuration, la source est l'instance publique de démonstration d'OpenStreetMap. Elle dépanne, mais elle n'a **aucun engagement de service et limite par adresse IP** — une session de test un peu active suffit à la déclencher (cf. `docs/BUGS.md`, B13).
 
@@ -155,7 +155,7 @@ Pour faire pointer une API lancée hors conteneur sur le calculateur local, publ
 
 Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
 
-OSRM sert un profil par processus — pieton, velo et voiture n'ont pas les memes regles sur les memes rues — d'ou trois services, regroupes par une facade derriere un seul port. La trottinette reprend le profil velo ; le profil voiture ne fournit que la reference carbone et l'application ne propose jamais ce mode. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une a l'autre ne change qu'une URL.
+OSRM sert un profil par processus — piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues — d'où trois services, regroupés par une façade derrière un seul port. La trottinette reprend le profil vélo ; le profil voiture ne fournit que la référence carbone et l'application ne propose jamais ce mode. Les chemins reproduisent ceux de l'instance publique, si bien que basculer de l'une à l'autre ne change qu'une URL.
 
 ## Commandes
 
@@ -164,7 +164,7 @@ bun install              # bun.lock est le seul lockfile du projet
 python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 
 cp .env.example .env     # secrets (jeton GTFS, compte Grand Lyon) et réglages API, jamais committés
-bun run dev              # serveur + reconstruction du client a chaque modification
+bun run dev              # serveur + reconstruction du client à chaque modification
 bun run seed:demo        # compte de démonstration côté serveur
 bun run db:generate      # migration SQL à partir de server/src/db/schema.ts (à committer avec le schéma)
 bun run generate:gtfs    # régénère le feed GTFS depuis la source officielle TCL
@@ -181,12 +181,12 @@ regroupement du client (`Bun.build`), tests du client et de l'API (`bun test`), 
 Aucun bundler ni lanceur de tests tiers. Seules l'ingestion GTFS et la génération du dossier restent en
 Python, faute d'équivalent dans l'écosystème JavaScript.
 
-Le depot conserve TypeScript 7. En attendant sa prise en charge par
+Le dépôt conserve TypeScript 7. En attendant sa prise en charge par
 `typescript-eslint`, ESLint analyse la syntaxe TypeScript avec le parseur Babel ;
-`tsc` strict reste l'autorite pour les types et les symboles inutilises, et une
-regle ESLint interdit explicitement le mot-cle `any`. Le lint bloque aussi une
-complexite cyclomatique superieure a 10 ou plus de trois niveaux d'imbrication :
-un flux dense doit etre decoupe en responsabilites nommees avant d'etre fusionne.
+`tsc` strict reste l'autorité pour les types et les symboles inutilisés, et une
+règle ESLint interdit explicitement le mot-cle `any`. Le lint bloque aussi une
+complexité cyclomatique supérieure a 10 ou plus de trois niveaux d'imbrication :
+un flux dense doit être decoupe en responsabilités nommées avant d'être fusionne.
 
 Le serveur porte **l'API et le client** : une seule origine, donc un cookie de session de première partie
 et aucun en-tête CORS. En développement, `bun run dev` lance le serveur et reconstruit le client à chaque
@@ -204,7 +204,7 @@ Chemin Chromium des scripts configurable via `CHROME_BIN`.
 Côté serveur : mots de passe hachés en argon2id (19 Mio, t=2, p=1 — paramètres OWASP, fonction *memory-hard*),
 sessions opaques de 256 bits dont seule l'empreinte SHA-256 est stockée (révocables à la déconnexion), cookie
 `httpOnly` + `SameSite=Lax` (pas de jeton manipulable en JavaScript, pas de CSRF inter-site), validation zod de
-toute entrée (les memes contrats que les formulaires du client), limitation de débit (10 req/min sur l'authentification), en-têtes de sécurité helmet, message
+toute entrée (les mêmes contrats que les formulaires du client), limitation de débit (10 req/min sur l'authentification), en-têtes de sécurité helmet, message
 d'erreur unique à la connexion pour ne pas divulguer l'existence d'un compte. Aucun en-tête CORS n'est émis :
 l'API n'est consommée qu'en même origine.
 

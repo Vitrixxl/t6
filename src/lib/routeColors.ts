@@ -1,6 +1,6 @@
 import type { RouteOption } from '../types';
 
-// Couleurs de trace par mode dominant. Isole du composant carte (qui charge
+// Couleurs de tracé par mode dominant. Isole du composant carte (qui charge
 // MapLibre) pour rester importable sans embarquer la librairie cartographique.
 export const ROUTE_COLORS: Record<string, string> = {
     transit: '#2f6cb3',
