@@ -267,9 +267,9 @@ heuristique et il n'y a pas de graphe horaire GTFS : les fréquences sont des
 moyennes, pas des horaires. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
-Un service horaire est préparé dans `server/src/services/transit/`, avec
-`GET /api/transit/network` et `GET /api/transit/journeys`. Il n’est pas encore
-branché au client : ne pas présenter les horaires comme livrés. L’import réel
+Un service horaire est préparé dans `server/src/services/transit/`, sans endpoint
+HTTP publié. Les anciennes routes non consommées ont été supprimées. Il n’est
+pas encore branché au client : ne pas présenter les horaires comme livrés. L’import réel
 attend une archive TCL récente et des tracés compatibles. Le suivi est dans
 `docs/PLAN-ATTENTE-GTFS.md` ; aucun horaire fictif des tests ne doit être activé.
 
@@ -364,3 +364,8 @@ trois moteurs OSRM dédiés, une base vide, puis lance l’audit et les scénari
 navigateur. Docker et Chromium sont nécessaires ; `CI_API_PORT` change le port
 local (4101 par défaut). Après le push, vérifier la conclusion du run GitHub.
 Un échec se corrige avant de considérer la livraison terminée.
+
+**Surface API.** Ne pas réintroduire GET /api/state : la session rend déjà cet
+état initial et chaque ressource possède son GET. Les anciens endpoints horaires
+restent absents tant qu’aucun parcours client ne les consomme. Les appelants des
+28 méthodes/chemins conservés sont documentés dans `docs/API-USAGE.md`.

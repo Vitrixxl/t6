@@ -1709,6 +1709,18 @@ L’inspection visuelle des captures reste un contrôle faible.
 
 **Test et niveau de verrouillage : automatisé.** Reproduction locale rouge avec 503 et expiration de l’attente du bouton, puis recette complète isolée verte : 239 tests, 715 assertions, 32 fichiers ; axe sur quatre écrans sans violation ; planification 9/9 ; scénarios types/mobile et Scalar réussis. La recette utilise les vrais moteurs et échoue si un service requis manque. BAN, GBFS, météo, tuiles et CDN Scalar restent externes ; le petit extrait OSM couvre les parcours de recette, pas toute la métropole. Le banc de performance reste indicatif.
 
+### B59 — OpenAPI exposait des routes sans consommateur applicatif
+
+**Symptôme observé.** L’API publiée contenait un GET global du compte et deux GET horaires, alors qu’aucun appel du client ne les utilisait. Des tests appelaient encore la lecture globale et entretenaient ce doublon.
+
+**Cause racine.** La réponse de session contient déjà l’état initial, puis le client relit ses ressources séparément. Les routes horaires provenaient d’un chantier préparatoire jamais branché à un parcours utilisateur.
+
+**Correctif.** [Commit 410caba](https://github.com/Vitrixxl/t6/commit/410caba) : retrait de `GET /api/state`, `GET /api/transit/network` et `GET /api/transit/journeys`, de leurs contrats HTTP exclusifs et du dépôt horaire dans le contexte HTTP. Les tests interrogent la session ou les vraies collections ; aucun alias n’est conservé. Le lecteur d’état reste nécessaire à l’authentification et à l’export. Le socle et l’import horaires restent préparatoires, sans endpoint publié.
+
+**Où le montrer.** `server/src/routes/index.ts`, `server/src/repositories/index.ts`, `src/contracts/transit.ts`, `server/src/__tests__/platform.test.ts` et l’inventaire `docs/API-USAGE.md`. Les deux fichiers de routes inutiles ont été supprimés.
+
+**Test et niveau de verrouillage : automatisé.** Les trois URL répondent 404 et sont absentes du schéma OpenAPI dans le test plateforme. La recette complète passe avec 239 tests, 714 assertions et 32 fichiers, axe sur quatre écrans, planification 9/9, filtres mobiles et Scalar. Les recettes dédiées d’annulation/rétablissement et d’export passent aussi avec les accès restants. L’inventaire des 28 méthodes/chemins conservés et de leurs appelants est une vérification de code, à maintenir lorsqu’un usage change.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire
@@ -1743,7 +1755,8 @@ l’accessibilité, les fréquences et les changements d’heure. Six tests Pyth
 sur archives miniatures sont invoqués par un test Bun et couvrent notamment
 les quais homonymes, exceptions, tracés absents et horaires manquants.
 `bun run check` passe : 218 tests Bun dans 26 fichiers, lint, typage et build.
-L’OpenAPI expose les deux lectures GET et leur contrat. Cela ne valide pas
+Les deux lectures GET préparatoires ont depuis été retirées faute de consommateur
+applicatif ; le service interne reste isolé. Cela ne valide pas
 encore un parcours TCL réel ni le branchement de l’interface.
 
 **Niveau de verrouillage** : **ouvert** pour le défaut utilisateur ; le socle

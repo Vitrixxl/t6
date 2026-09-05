@@ -239,3 +239,5 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 - [x] Documentation Scalar : CSP distincte du JSON, version fixée, agent et polices externes désactivés ; test serveur et recette navigateur dédiés.
 
 - [x] Avant push : `bun run ci`, identique au workflow GitHub, avec trois OSRM dédiés sur extrait réel versionné, base vide, disponibilité contrôlée, audit et trois recettes navigateur bloquantes.
+
+- [x] Surface API auditée : trois GET non consommés retirés, 28 méthodes/chemins conservés avec leurs appelants dans `docs/API-USAGE.md` ; absence vérifiée dans OpenAPI et en HTTP.

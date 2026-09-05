@@ -439,10 +439,9 @@ il n’invente ni passage ni géométrie. Les transferts spécifiques à une lig
 une course et les transferts à bord nécessitent encore un traitement dédié ;
 ils provoquent un refus explicite de l’import.
 
-`GET /api/transit/network` décrit le réseau importé et sa validité.
-`GET /api/transit/journeys` reçoit le paramètre JSON `search`, décrit dans
-l’OpenAPI : instant de départ, accessibilité, quais candidats et mesures d’accès.
-Le service cherche les courses de la journée demandée et leurs prolongements
+Les routes horaires inutilisées ont été retirées : aucun endpoint horaire n’est
+publié dans OpenAPI. Les outils d’import et le service préparatoire restent
+isolés du contexte HTTP. Le service interne cherche les courses de la journée demandée et leurs prolongements
 nocturnes, avec au plus une correspondance. Il compare les arrivées finales,
 respecte l’ordre des quais, les calendriers et les transferts. Les fréquences
 sans départs fixes restent étiquetées `frequency`. Une correspondance sans durée
@@ -545,3 +544,7 @@ reste externe : ce sont toujours les vrais appels. OSRM calcule localement sur
 l’extrait réel versionné ; aucun faux tracé ni service public de routage ne remplace
 un moteur manquant. Attendre une recette locale réussie avant `git push`, puis
 contrôler le résultat GitHub.
+
+Les endpoints conservés et leurs appelants sont recensés dans [API-USAGE](docs/API-USAGE.md).
+La session porte déjà l’état initial du compte ; les écrans utilisent ensuite les
+GET de chaque ressource. La lecture globale indépendante a été supprimée.

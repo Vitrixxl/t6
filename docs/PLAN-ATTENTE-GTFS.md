@@ -147,3 +147,10 @@ livraison, notamment pour une recherche à une date future.
 Premier jalon recommandé : valider une course TCL datée de bout en bout,
 avec ses vrais quais et un tracé cohérent. Ce jalon lève le risque principal —
 la compatibilité des données — avant de modifier tout le moteur et l’interface.
+
+## Surface HTTP au 5 septembre 2026
+
+Les deux routes préparatoires inutilisées ont été retirées de l’application et
+d’OpenAPI. Le service interne, les contrats d’import et les commandes GTFS restent
+préparatoires. La proposition d’endpoint ci-dessus n’est pas publiée : la recréer
+uniquement avec un consommateur client et une archive récente validée.
