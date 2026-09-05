@@ -1473,6 +1473,68 @@ hors ligne/panne GBFS réussis après ces attentes explicites.
 intermittente ; les scénarios vérifient les écrans mais aucun test distinct
 ne garantit l’ordre des instructions du script de recette.
 
+### B48 — Les corbeilles supprimaient les trajets sans confirmation
+
+**Symptôme observé** : cliquer sur la corbeille d’un trajet ponctuel,
+récurrent ou enregistré lançait immédiatement sa suppression. L’effacement
+de l’historique carbone était également immédiat.
+
+**Cause racine** : les boutons appelaient directement les mutations de
+suppression ; aucun état de confirmation ne séparait le clic et la commande.
+
+**Correctif** : [032ebb2](https://github.com/Vitrixxl/t6/commit/032ebb21b4a7a93cda2765cb4a8afb7cf866163f). Les listes conservent temporairement le trajet
+sélectionné et réutilisent `ConfirmDialog`, avec son nom et les conséquences.
+Annuler, fermer ou presser Échap n’envoie rien ; seule l’action explicite
+supprime. Échap ferme seulement la confirmation, sans fermer le hub parent.
+L’effacement carbone utilise le même dialogue et explique ce qui est conservé.
+
+**Où le montrer** : `src/components/planner/trips/lists/UpcomingList.tsx`,
+`RecurringList.tsx`, `SavedList.tsx`, `src/components/carbon/CarbonPanel.tsx`,
+`src/components/ui/confirm-dialog.tsx`.
+
+**Vérification réalisée** : `bun run e2e:trips` vérifie l’absence de DELETE
+avant confirmation, après Annuler et après Échap, puis une seule suppression
+confirmée et persistée. Les trois catégories de trajets et l’effacement carbone
+sont couverts, avec des confirmations à 390 et 1280 px. Les captures sont relues.
+`bun run check` passe : 219 tests/614 assertions, lint, typage et build.
+
+**Niveau de verrouillage** : **automatisé** pour les commandes et la
+conservation des données après annulation ; **faible** pour l’apparence des captures.
+
+### B49 — Le budget carbone était peu lisible et absent du suivi mobile
+
+**Symptôme observé** : le profil demandait un budget hebdomadaire, mais le
+suivi desktop montrait surtout un pourcentage sans dépense ni reste disponible.
+Le hub mobile n’affichait pas ce budget. Le tutoriel affirmait à tort que le
+budget influençait le calcul et le score des itinéraires.
+
+**Cause racine** : la jauge vivait uniquement dans `CarbonPanel`, monté sur
+bureau, et son texte parlait d’objectif sans distinguer émissions et économies.
+Le pourcentage était également tronqué à 999 % dans la synthèse.
+
+**Correctif** : [032ebb2](https://github.com/Vitrixxl/t6/commit/032ebb21b4a7a93cda2765cb4a8afb7cf866163f). `CarbonBudget` est utilisé par le hub et le
+suivi desktop. Il expose les émissions hebdomadaires, le maximum personnel,
+le reste ou le dépassement et le pourcentage réel ; seule la barre se borne
+à 100 %. Les économies par rapport à la voiture restent séparées. Le profil
+et le tutoriel décrivent ce rôle de suivi. Un repère SDES-Insee est accompagné
+de sa source, de son année, de la conversion annuelle/hebdomadaire et de son
+périmètre ; il ne fixe pas le budget et n’est pas présenté comme un objectif.
+
+**Où le montrer** : `src/components/carbon/CarbonBudget.tsx`,
+`src/lib/carbon.ts`, `src/lib/carbon.test.ts`, `scripts/e2e-trip-history.mjs`.
+
+**Vérification réalisée** : les 219 tests passent, dont le maintien du
+pourcentage réel au-delà de 999 %. La recette navigateur vérifie 300 gCO₂e
+émis face à un maximum de 250 g : dépassement de 50 g et 120 %, indépendamment
+des économies. Annuler le trajet libère le budget et le résultat persiste au
+rechargement. Le lien officiel et le millésime du repère sont présents.
+Planification : 9/9 ; axe-core : zéro violation détectée sur quatre écrans.
+Les limites d’un audit automatique restent celles décrites dans le README.
+
+**Niveau de verrouillage** : **automatisé** pour les calculs et les parcours
+vérifiés ; **faible** pour le rendu visuel et la vérification documentaire de
+la référence statistique, qui reste une donnée historique sourcée.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire
