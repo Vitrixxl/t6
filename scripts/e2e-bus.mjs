@@ -1,4 +1,6 @@
 // Calcul complet avec le feed WFS livré, l’API et les moteurs OSRM locaux.
+import { file } from 'bun';
+import { URL } from 'node:url';
 import { chromium } from 'playwright-core';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -13,7 +15,7 @@ try {
         email: `test-bus-${randomUUID()}@example.test`, password: 'RecetteBus2026!', displayName: 'Test bus',
     } });
     assert(signup.ok(), 'Inscription de recette refusée');
-    const feed = await (await context.request.get(base + '/data/gtfs-feed.json')).json();
+    const feed = await file(new URL('../data/transport/gtfs-feed.json', import.meta.url)).json();
     const route = feed.routes.find(route => route.route_short_name === 'TB11' && route.route_long_name.startsWith('Gare Saint-Paul'));
     assert(route?.stopSequence?.length > 1, 'Bus TB11 absent du feed livré');
     const start = feed.stops.find(stop => stop.stop_id === route.stopSequence[0]);

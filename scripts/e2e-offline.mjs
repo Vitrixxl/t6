@@ -75,8 +75,12 @@ try {
         storageState: await context.storageState(),
         serviceWorkers: 'block',
     });
-    await unavailableContext.route('https://api.cyclocity.fr/**', (route) => route.abort());
-    await unavailableContext.route('https://gbfs.api.ridedott.com/**', (route) => route.abort());
+    // La panne opérateur est verrouillée par les tests serveur. Ici, on vérifie
+    // le rendu de la réponse d'indisponibilité reçue par le navigateur.
+    await unavailableContext.route('**/api/transport/context', async (route) => {
+        const response = await route.fetch();
+        await route.fulfill({ response, json: { ...await response.json(), sharedMobility: null } });
+    });
     const unavailablePage = await unavailableContext.newPage();
     const requests = [];
     const errors = [];
@@ -105,6 +109,10 @@ try {
     assert.deepEqual(errors, []);
     await unavailableContext.close();
     console.log('Panne GBFS : message visible, aucun secours local, compteurs indisponibles, carte utilisable sur mobile et bureau.');
+} catch (error) {
+    await page.screenshot({ path: 'tmp/screenshots/offline-failure.png' });
+    console.error(await page.locator('body').innerText());
+    throw error;
 } finally {
     await browser.close();
 }

@@ -6,7 +6,7 @@ import { useSavedRoutes } from '../../queries';
 import { openHubAtom } from '../../state';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { LayerPill, type LayerState } from '../app/shared';
-import type { GeoPoint, TransportNetwork } from '../../types';
+import type { GeoPoint, TransportContext } from '../../types';
 import { MobileHomePanel } from './MobileHomePanel';
 
 function ActionButton({
@@ -54,7 +54,7 @@ export function MobileActionRail({
     onOpenProfile,
     onLocate,
 }: {
-    network: TransportNetwork;
+    network: TransportContext;
     currentPosition: GeoPoint | null;
     origin: GeoPoint | null;
     layers: LayerState;

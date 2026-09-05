@@ -1,12 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import App from './App';
 import './styles.css';
 import { IS_PROD } from './env';
 import { createQueryClient } from './queries';
 
+// React Query suppose initialement le réseau présent. Après un rechargement
+// hors ligne, partir du signal réel permet de reprendre les lectures au retour réseau.
+onlineManager.setOnline(navigator.onLine);
 const queryClient = createQueryClient();
 
 createRoot(document.getElementById('root') as HTMLElement).render(

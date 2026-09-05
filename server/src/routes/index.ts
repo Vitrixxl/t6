@@ -7,7 +7,7 @@ import { healthRoutes } from './health.ts';
 import { meRoutes } from './me.ts';
 import { plannedTripRoutes } from './planned-trips.ts';
 import { recurringTripRoutes } from './recurring-trips.ts';
-import { routingRoutes } from './routing.ts';
+import { transportRoutes } from './transport.ts';
 import { savedRouteRoutes } from './saved-routes.ts';
 import { tripHistoryRoutes } from './trip-history.ts';
 
@@ -20,5 +20,5 @@ export function routes(ctx: AppContext, config: ServerConfig) {
         .use(recurringTripRoutes(ctx))
         .use(tripHistoryRoutes(ctx))
         .use(savedRouteRoutes(ctx))
-        .use(routingRoutes(ctx, config));
+        .use(transportRoutes(ctx, config));
 }

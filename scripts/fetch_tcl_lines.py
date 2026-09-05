@@ -27,7 +27,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FEED = ROOT / "public" / "data" / "gtfs-feed.json"
+FEED = ROOT / "data" / "transport" / "gtfs-feed.json"
 
 WFS = "https://data.grandlyon.com/geoserver/sytral/ows"
 LAYER_STOPS = "sytral:tcl_sytral.tclarret"

@@ -11,6 +11,6 @@ export { useClearTripHistory, useTripRecords } from './trip-records';
 export { useDeleteSavedRoute, useSaveRoute, useSavedRoutes, type SaveRouteInput } from './saved-routes';
 export { useActivitySummary, useCarbonSummary } from './summaries';
 export { useSaveError } from './save-error';
-export { useTransportNetwork } from './transport';
+export { useTransportContext } from './transport';
 export { measuredRoutesQuery, type RouteSearch } from './routes';
 export { useExportAccount } from './account-export';

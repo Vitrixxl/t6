@@ -1,3 +1,4 @@
+import type { GtfsAgency, GtfsStop, GtfsRoute, GtfsTrip, WeatherSignal } from '../../../src/types';
 // Schéma de la base, source unique pour Drizzle.
 //
 // Chaque table est déclarée une fois ici ; drizzle-kit en dérive les
@@ -205,3 +206,26 @@ export const transitShapes = sqliteTable('transit_shapes', {
     id: text('id').notNull(),
     points: text('points', { mode: 'json' }).$type<[number, number][]>().notNull(),
 }, (t) => [primaryKey({ columns: [t.feedId, t.id] })]);
+
+// Le réseau publié est importé une fois par version. Les quais ont leurs
+// coordonnées en colonnes pour l'index spatial ; les tracés restent par ligne.
+export const transportMetadata = sqliteTable('transport_metadata', {
+    id: integer('id').primaryKey(),
+    version: text('version').notNull(),
+    agency: text('agency', { mode: 'json' }).$type<GtfsAgency>().notNull(),
+    weather: text('weather', { mode: 'json' }).$type<WeatherSignal>().notNull(),
+});
+export const transportStops = sqliteTable('transport_stops', {
+    id: integer('id').primaryKey(),
+    stopId: text('stop_id').notNull().unique(),
+    lat: real('lat').notNull(), lon: real('lon').notNull(),
+    payload: text('payload', { mode: 'json' }).$type<GtfsStop>().notNull(),
+});
+export const transportRoutes = sqliteTable('transport_routes', {
+    id: text('id').primaryKey(),
+    payload: text('payload', { mode: 'json' }).$type<GtfsRoute>().notNull(),
+});
+export const transportTrips = sqliteTable('transport_trips', {
+    id: text('id').primaryKey(),
+    payload: text('payload', { mode: 'json' }).$type<GtfsTrip>().notNull(),
+});

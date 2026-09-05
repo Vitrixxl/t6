@@ -86,6 +86,7 @@ try {
     await waitForHttp(`${base}/api/health`);
     await run(['bun', 'run', 'audit:a11y']);
     await run(['bun', 'run', 'e2e']);
+    await run(['bun', 'run', 'e2e:transport']);
     await run(['bun', 'scripts/e2e-mobile-transit.mjs']);
     await run(['bun', 'scripts/e2e-api-doc.mjs']);
     // La performance reste indicative, comme dans le workflow précédent.

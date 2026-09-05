@@ -6,8 +6,12 @@
 // de quartier, ni en mètres pour une distance de ville.
 import { useMemo, useState } from 'react';
 import { Bike, CloudRain, TramFront, Wind, Zap } from 'lucide-react';
-import type { GeoPoint, TransportNetwork, WeatherSignal } from '../../types';
-import { findWithinRadius, formatDistance, walkMinutes, type NearbyWithin } from '../../lib/planner';
+import type { GeoPoint, TransportContext, WeatherSignal } from '../../types';
+import { formatDistance, walkMinutes, type NearbyWithin } from '../../lib/planner';
+
+import { findSharedWithinRadius } from '../../lib/planner/nearby';
+import { useNearbyStops } from '../../queries/nearby-stops';
+import { MAX_NEARBY_RADIUS_KM } from '../../contracts/transport';
 
 const WEATHER_LABEL: Record<WeatherSignal['condition'], string> = {
     clear: 'Dégagé',
@@ -90,7 +94,7 @@ export function MobileHomePanel({
     origin,
     onUseCurrentPosition,
 }: {
-    network: TransportNetwork;
+    network: TransportContext;
     currentPosition: GeoPoint | null;
     origin: GeoPoint | null;
     onUseCurrentPosition: () => void;
@@ -99,10 +103,11 @@ export function MobileHomePanel({
     const point = useMemo(() => referencePoint(currentPosition, origin), [currentPosition, origin]);
     const radiusKm = toKilometers(radius.value, radius.unit);
 
-    // Le balayage porte sur plusieurs milliers de points : on ne le refait que si
-    // la position de référence, le réseau ou le rayon change.
-    const nearby = useMemo(() => findWithinRadius(network, point, radiusKm), [network, point, radiusKm]);
-    const weather = network.gtfs.weather;
+    // Les véhicules partagés viennent du contexte ; les quais TCL sont demandés
+    // séparément au serveur, sans dépendre des cellules visibles de la carte.
+    const nearby = useMemo(() => findSharedWithinRadius(network.sharedMobility, point, radiusKm), [network.sharedMobility, point, radiusKm]);
+    const stops = useNearbyStops(point, radiusKm, network.version);
+    const weather = network.weather;
 
     return (
         <div className="flex flex-col gap-3 px-4 pb-4">
@@ -114,7 +119,7 @@ export function MobileHomePanel({
                         min={1}
                         step={radius.unit === 'km' ? 1 : 50}
                         value={radius.value}
-                        onChange={(event) => setRadius((current) => ({ ...current, value: Math.max(Number(event.target.value) || 0, 1) }))}
+                        onChange={(event) => setRadius((current) => ({ ...current, value: Math.min(Math.max(Number(event.target.value) || 0, 1), radius.unit === 'km' ? MAX_NEARBY_RADIUS_KM : MAX_NEARBY_RADIUS_KM * 1000) }))}
                         // Hauteur en pixels : la racine du document est à 14 px, une valeur
                         // en rem raterait la cible tactile de 44 px.
                         className="h-[44px] w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground"
@@ -125,7 +130,10 @@ export function MobileHomePanel({
                     Unité
                     <select
                         value={radius.unit}
-                        onChange={(event) => setRadius((current) => ({ ...current, unit: event.target.value as DistanceUnit }))}
+                        onChange={(event) => {
+                            const unit = event.target.value === 'km' ? 'km' : 'm';
+                            setRadius(current => ({ unit, value: Math.min(current.value, unit === 'km' ? MAX_NEARBY_RADIUS_KM : MAX_NEARBY_RADIUS_KM * 1000) }));
+                        }}
                         className="h-[44px] w-full rounded-xl border border-border bg-background px-2 text-sm font-semibold text-foreground"
                         aria-label="Unité de distance"
                     >
@@ -165,16 +173,18 @@ export function MobileHomePanel({
                     `${station.scooters_available} disponible${station.scooters_available > 1 ? 's' : ''}`
                 }
             />
-            <Group
+            {stops.isPending ? <p role="status">Chargement des arrêts proches…</p> : stops.isError ? <p role="status">
+                Arrêts proches indisponibles. <button type="button" className="underline" onClick={() => void stops.refetch()}>Réessayer</button>
+            </p> : stops.data && <Group
                 icon={<TramFront className="size-3" aria-hidden="true" />}
                 label="Arrêts"
                 tone="text-[#1d4ed8]"
-                group={nearby.stop}
+                group={stops.data}
                 nameOf={(stop: NearbyWithin['stop']['items'][number]['item']) => stop.stop_name}
                 availabilityOf={(stop: NearbyWithin['stop']['items'][number]['item']) =>
                     stop.routes.length > 0 ? `Lignes ${stop.routes.join(', ')}` : 'Arrêt de bus'
                 }
-            />
+            />}
 
             <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 p-2.5">
                 {weather.condition === 'wind' ? (

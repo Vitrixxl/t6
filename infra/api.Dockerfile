@@ -33,6 +33,9 @@ RUN bun install --frozen-lockfile --production
 COPY server ./server
 COPY src/types.ts ./src/types.ts
 COPY src/contracts ./src/contracts
+COPY src/lib/planner ./src/lib/planner
+COPY src/lib/transport/feeds ./src/lib/transport/feeds
+COPY data/transport ./data/transport
 # Les règles de récurrence sont partagées avec les services du serveur.
 COPY src/lib/trips/calendar.ts src/lib/trips/routines.ts ./src/lib/trips/
 COPY --from=build /app/dist ./dist

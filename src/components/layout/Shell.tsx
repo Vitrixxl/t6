@@ -1,7 +1,7 @@
 // Module layout desktop : barre laterale (planificateur, calques).
 import { CalendarClock, CircleHelp, Layers3, Navigation, UserRound } from 'lucide-react';
 import { Button } from '../ui/button';
-import type { TransportNetwork } from '../../types';
+import type { TransportContext } from '../../types';
 import { useUser } from '../../queries';
 import { LayerToggle, type LayerState } from '../app/shared';
 import { TripsSidebarSection } from '../planner/trips';
@@ -42,7 +42,7 @@ export function ShellSidebar({
     onStartTutorial }: {
         layers: LayerState;
         onLayersChange: (layers: LayerState) => void;
-        network: TransportNetwork;
+        network: TransportContext;
         onOpenProfile: () => void;
         onStartTutorial: () => void;
     }) {
@@ -118,7 +118,7 @@ export function LayerPanel({
     network }: {
         layers: LayerState;
         onLayersChange: (layers: LayerState) => void;
-        network: TransportNetwork;
+        network: TransportContext;
     }) {
     const stations = network.sharedMobility?.data.stations ?? [];
     // Vélo'v est un service à stations : on compte les stations et les vélos qui
@@ -135,7 +135,7 @@ export function LayerPanel({
             <div className="grid gap-3">
                 <LayerToggle
                     label="Arrêts GTFS"
-                    detail={`${network.gtfs.stops.length} arrêts publics`}
+                    detail={`${network.stopCount} arrêts publics`}
                     active={layers.transitStops}
                     color="bg-[#2563eb]"
                     onClick={() => onLayersChange({ ...layers, transitStops: !layers.transitStops })}

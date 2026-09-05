@@ -5,8 +5,8 @@ import { fetchJson } from './fetch-json';
 import { fetchLiveSharedMobility } from './gbfs';
 import { OPEN_METEO_URL, weatherFromOpenMeteo, type OpenMeteoCurrent } from './weather';
 
-export async function loadTransportNetwork(): Promise<TransportNetwork> {
-    const gtfs = await fetchJson<GtfsFeed>('/data/gtfs-feed.json');
+export async function loadTransportNetwork(feed: GtfsFeed): Promise<TransportNetwork> {
+    const gtfs = { ...feed };
     const sources: NetworkSources = {
         gtfs: gtfs.agency.agency_id === 'ufm-metropole' ? 'local' : 'tcl-odbl',
         weather: 'local',

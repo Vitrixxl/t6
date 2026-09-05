@@ -1,7 +1,7 @@
 // Dispositions de l'écran principal. L'orchestrateur fournit l'état et les
 // actions ; ce module décide uniquement où afficher chaque bloc.
 import type { Dispatch, SetStateAction } from 'react';
-import type { GeoPoint, RouteOption, TransportNetwork } from '../../types';
+import type { GeoPoint, RouteOption, TransportContext } from '../../types';
 import { CarbonPanel } from '../carbon/CarbonPanel';
 import { ShellSidebar } from '../layout/Shell';
 import { MobileActionRail } from '../planner/MobileQuickPanels';
@@ -19,7 +19,7 @@ export interface TripMapState {
     routes: RouteOption[];
     selectedRoute: RouteOption | null;
     transitSelected: boolean;
-    network: TransportNetwork;
+    network: TransportContext;
     layers: LayerState;
     navigationPoint: GeoPoint | null;
     focus: { point: GeoPoint; at: number } | null;

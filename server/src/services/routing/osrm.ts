@@ -10,10 +10,10 @@ import type { GeoPoint, RouteInstruction, RoutableMode } from '../../../../src/t
 import { buildInstructions } from './instructions.ts';
 
 const UPSTREAM_TIMEOUT_MS = 8_000;
-async function requestOsrm(url: string): Promise<Response> {
+async function requestOsrm(url: string, signal?: AbortSignal): Promise<Response> {
     return fetch(url, {
         headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+        signal: AbortSignal.any([AbortSignal.timeout(UPSTREAM_TIMEOUT_MS), ...(signal ? [signal] : [])]),
     });
 }
 
@@ -98,12 +98,13 @@ export async function fetchUpstreamRoute(
     mode: RoutableMode,
     from: Pick<GeoPoint, 'lat' | 'lon'>,
     to: Pick<GeoPoint, 'lat' | 'lon'>,
+    signal?: AbortSignal,
 ): Promise<RouteGeometry | null> {
     const coordinates = `${from.lon},${from.lat};${to.lon},${to.lat}`;
     const url = `${serviceUrl(urls, mode, 'route')}${coordinates}?overview=full&geometries=geojson&steps=true`;
 
     try {
-        const response = await requestOsrm(url);
+        const response = await requestOsrm(url, signal);
         if (!response.ok) {
             return null;
         }
@@ -141,6 +142,7 @@ export async function fetchUpstreamMatrix(
     mode: RoutableMode,
     origins: Array<Pick<GeoPoint, 'lat' | 'lon'>>,
     destinations: Array<Pick<GeoPoint, 'lat' | 'lon'>>,
+    signal?: AbortSignal,
 ): Promise<Array<Array<RouteMeasure | null>> | null> {
     const points = [...origins, ...destinations];
     const coordinates = points.map((point) => `${point.lon},${point.lat}`).join(';');
@@ -150,7 +152,7 @@ export async function fetchUpstreamMatrix(
     const url = `${serviceUrl(urls, mode, 'table')}${coordinates}?${query.toString()}`;
 
     try {
-        const response = await requestOsrm(url);
+        const response = await requestOsrm(url, signal);
         if (!response.ok) {
             return null;
         }

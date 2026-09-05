@@ -71,7 +71,7 @@ it('autorise la page Scalar sans assouplir la politique des réponses JSON', asy
 it('ne publie que les ressources utilisées, sans doublon d’état ni horaires non branchés', async () => {
     const response = await api.call('/api/doc/json');
     const spec = await json<OpenApiSpec>(response);
-    for (const path of ['/api/state', '/api/transit/network', '/api/transit/journeys']) {
+    for (const path of ['/api/state', '/api/transit/network', '/api/transit/journeys', '/api/route', '/api/route-matrix']) {
         expect(Object.keys(spec.paths)).not.toContain(path);
         expect((await api.call(path)).status).toBe(404);
     }

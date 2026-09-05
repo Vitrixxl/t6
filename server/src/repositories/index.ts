@@ -1,6 +1,7 @@
 // Assemblage des dépôts pour le contexte HTTP. Les services transactionnels
 // construisent directement les seuls dépôts dont ils ont besoin, avec la
 // transaction comme exécuteur.
+import { createTransportRepository } from './transport.ts';
 import type { Executor } from '../db/index.ts';
 import { createPlannedTripRepository } from './planned-trips.ts';
 import { createRecurringTripRepository } from './recurring-trips.ts';
@@ -19,6 +20,7 @@ export function createRepositories(db: Executor) {
 
     return {
         users: createUserRepository(db),
+        transport: createTransportRepository(db),
         routeCache: createRouteCacheRepository(db),
         sessions: createSessionRepository(db),
         tripRecords,

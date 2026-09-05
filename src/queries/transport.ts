@@ -1,18 +1,16 @@
-// Le réseau de transport (GTFS, stations partagées, météo) : charge une fois
-// par session, il ne change pas sous les pieds du moteur d'itinéraires.
+// Le contexte léger ne contient ni quais TCL ni tracés : ils ont leurs ressources.
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { loadTransportNetwork } from '../lib/transport';
+import { api, treatyRequest } from '../lib/api/client';
 import { queryKeys } from './keys';
 
-export const transportNetworkQuery = queryOptions({
-    queryKey: queryKeys.transportNetwork,
-    queryFn: loadTransportNetwork,
-    staleTime: Infinity,
-    gcTime: Infinity,
+export const transportContextQuery = queryOptions({
+    queryKey: queryKeys.transportContext,
+    queryFn: ({ signal }) => treatyRequest(api.transport.context.get({ fetch: { signal: AbortSignal.any([signal, AbortSignal.timeout(20_000)]) } })),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
 });
 
-export function useTransportNetwork() {
-    return useQuery(transportNetworkQuery);
+export function useTransportContext(enabled: boolean) {
+    return useQuery({ ...transportContextQuery, enabled });
 }

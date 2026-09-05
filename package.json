@@ -12,6 +12,7 @@
     "typecheck": "tsc -b && tsc -p server",
     "test": "bun test src server ./scripts/bus-import.test.ts",
     "e2e": "bun scripts/e2e-planning.mjs",
+    "e2e:transport": "bun scripts/e2e-transport-map.mjs",
     "e2e:offline": "bun scripts/e2e-offline.mjs",
     "e2e:trips": "bun scripts/e2e-trip-history.mjs",
     "audit:a11y": "bun scripts/audit-a11y.mjs",

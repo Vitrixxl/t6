@@ -7,6 +7,7 @@
 import { Elysia } from 'elysia';
 import type { ServerConfig } from '../config/index.ts';
 import { openDatabase } from '../db/index.ts';
+import { importTransportNetwork } from '../services/transport/import.ts';
 import { createRepositories } from '../repositories/index.ts';
 
 /**
@@ -15,6 +16,7 @@ import { createRepositories } from '../repositories/index.ts';
  */
 export function context(config: ServerConfig) {
     const db = openDatabase(config.databasePath);
+    importTransportNetwork(db);
     const repositories = createRepositories(db);
 
     return new Elysia({ name: 'context' })

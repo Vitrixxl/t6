@@ -13,7 +13,7 @@ export const queryKeys = {
     plannedTrips: ['account', 'plannedTrips'],
     recurringTrips: ['account', 'recurringTrips'],
     savedRoutes: ['account', 'savedRoutes'],
-    transportNetwork: ['transport-network'],
+    transportContext: ['transport-context'],
     // Les extrémités et le profil determinent les options calculées, donc leur
     // mesure ; le libellé d'un point n'y change rien.
     measuredRoutes: (origin: GeoPoint, destination: GeoPoint, profile: MobilityProfile, transitTypes: readonly TransitType[] = ALL_TRANSIT_TYPES) =>

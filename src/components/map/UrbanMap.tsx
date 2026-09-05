@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
-import type { GeoPoint, RouteOption, TransportNetwork } from '../../types';
+import type { GeoPoint, RouteOption, TransportContext } from '../../types';
 import { getRouteColor } from '../../lib/routeColors';
 import type { LayerState } from '../app/shared';
 import type { FeatureCollection } from './geojson';
@@ -12,6 +12,7 @@ import { syncEndpointMarkers } from './endpointMarkers';
 import { installMapLayers } from './layers';
 import { routeViewportPadding } from './viewport';
 import type { SharedStation } from '../../types';
+import { useVisibleMapStops } from './useMapStops';
 import { IS_DEV } from '../../env';
 
 /**
@@ -66,7 +67,7 @@ export function UrbanMap({
     destination: GeoPoint | null;
     routes: RouteOption[];
     selectedRoute: RouteOption | null;
-    network: TransportNetwork;
+    network: TransportContext;
     layers: LayerState;
     /** Position GPS de l'utilisateur ("Ma position"), affichée comme repere. */
     navigationPoint?: GeoPoint | null;
@@ -91,6 +92,7 @@ export function UrbanMap({
     // Centre initial: le départ s'il existe déjà, sinon le centre de la métropole.
     const initialCenterRef = useRef<Pick<GeoPoint, 'lat' | 'lon'>>(origin ?? { lat: 45.758, lon: 4.845 });
     const [loaded, setLoaded] = useState(false);
+    const visibleStops = useVisibleMapStops(mapRef, loaded, layers.transitStops, network.version);
     const selectedLegs = selectedRoute?.legs ?? NO_LEGS;
 
     // Le trajet selectionne est dessine par ses segments (couches `legs`), avec
@@ -159,7 +161,7 @@ export function UrbanMap({
     const stopData = useMemo<FeatureCollection>(
         () => ({
             type: 'FeatureCollection',
-            features: network.gtfs.stops.map((stop) => ({
+            features: visibleStops.stops.map((stop) => ({
                 type: 'Feature',
                 properties: {
                     kind: 'stop',
@@ -169,7 +171,7 @@ export function UrbanMap({
                 geometry: { type: 'Point', coordinates: [stop.stop_lon, stop.stop_lat] },
             })),
         }),
-        [network],
+        [visibleStops.stops],
     );
 
     // Vélo'v et trottinettes sont deux couches distinctes : services différents,
@@ -373,5 +375,11 @@ export function UrbanMap({
         };
     }, [loaded, onPickPoint]);
 
-    return <div ref={containerRef} className="absolute inset-0 h-full w-full" aria-label="Carte des trajets UrbanFlow" />;
+    return <>
+        <div ref={containerRef} className="absolute inset-0 h-full w-full" aria-label="Carte des trajets UrbanFlow" />
+        {visibleStops.message && <div role="status" className="absolute left-3 top-28 z-10 max-w-[75%] lg:top-16 rounded-lg bg-background/95 p-2 text-xs shadow">
+            {visibleStops.message}
+            {visibleStops.failed && <button type="button" onClick={visibleStops.retry} className="ml-2 underline">Réessayer</button>}
+        </div>}
+    </>;
 }

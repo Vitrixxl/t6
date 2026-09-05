@@ -116,8 +116,8 @@ function within<T>(items: T[], point: GeoPoint, radiusKm: number, positionOf: (i
     return { count: matches.length, items: matches.slice(0, LISTED_PER_GROUP) };
 }
 
-export function findWithinRadius(network: TransportNetwork, point: GeoPoint, radiusKm: number): NearbyWithin {
-    const stations = network.sharedMobility?.data.stations ?? [];
+export function findSharedWithinRadius(sharedMobility: TransportNetwork['sharedMobility'], point: GeoPoint, radiusKm: number) {
+    const stations = sharedMobility?.data.stations ?? [];
 
     return {
         velov: within(
@@ -132,6 +132,13 @@ export function findWithinRadius(network: TransportNetwork, point: GeoPoint, rad
             radiusKm,
             stationPosition,
         ),
+
+    };
+}
+
+export function findWithinRadius(network: TransportNetwork, point: GeoPoint, radiusKm: number): NearbyWithin {
+    return {
+        ...findSharedWithinRadius(network.sharedMobility, point, radiusKm),
         stop: within(network.gtfs.stops, point, radiusKm, stopPosition),
     };
 }

@@ -90,7 +90,7 @@ function findMeasure(cache: RouteCacheRepository, mode: RoutableMode, from: Coor
 
 export function createRoutingService(config: ServerConfig, cache: RouteCacheRepository) {
     return {
-        async route(mode: RoutableMode, from: Coordinates, to: Coordinates): Promise<RoutingResult | null> {
+        async route(mode: RoutableMode, from: Coordinates, to: Coordinates, signal?: AbortSignal): Promise<RoutingResult | null> {
             const key = cacheKey(mode, from, to);
             const row = cache.find(key);
             const cached = cachedGeometry(row);
@@ -98,7 +98,7 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
                 return cached;
             }
 
-            const geometry = await fetchUpstreamRoute(config.osrmUrls, mode, from, to);
+            const geometry = await fetchUpstreamRoute(config.osrmUrls, mode, from, to, signal);
             if (!geometry) {
                 // Le calculateur ne répond pas. Une entrée expirée vaut mieux qu'aucune
                 // réponse : la voirie n'a pas changé, et l'alternative serait une carte
@@ -115,6 +115,7 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
             mode: RoutableMode,
             origins: Coordinates[],
             destinations: Coordinates[],
+            signal?: AbortSignal,
         ): Promise<RoutingMatrixResult | null> {
             const known = origins.map((from) => destinations.map((to) => findMeasure(cache, mode, from, to)));
             const cachedMeasures = known.map((row) =>
@@ -125,7 +126,7 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
                 return { measures: cachedMeasures };
             }
 
-            const upstream = await fetchUpstreamMatrix(config.osrmUrls, mode, origins, destinations);
+            const upstream = await fetchUpstreamMatrix(config.osrmUrls, mode, origins, destinations, signal);
             if (!upstream) {
                 return cachedMeasures.some((row) => row.some(Boolean)) ? { measures: cachedMeasures } : null;
             }

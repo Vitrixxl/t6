@@ -3,7 +3,7 @@
 Telecharge le zip GTFS officiel (ressource "Réseau urbain TCL" référencée sur
 transport.data.gouv.fr, distribuee via une URL a jeton fournie par la variable
 d'environnement GTFS_SOURCE_URL), extrait les arrêts et lignes structurantes
-autour du centre de la métropole et génère `public/data/gtfs-feed.json`.
+autour du centre de la métropole et génère `data/transport/gtfs-feed.json`.
 
 Aucune dépendance externe: stdlib uniquement. Aucun secret dans le code.
 """
@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "tmp" / "gtfs" / "lyon_tcl.zip"
-OUTPUT = ROOT / "public" / "data" / "gtfs-feed.json"
+OUTPUT = ROOT / "data" / "transport" / "gtfs-feed.json"
 
 # La ressource GTFS "Réseau urbain TCL" (SYTRAL, ODbL) est référencée sur
 # transport.data.gouv.fr et distribuee via une URL a jeton. Ce jeton est un
@@ -64,7 +64,7 @@ def download_gtfs() -> Path:
             "Définir l'URL du GTFS TCL (voir .env.example), par exemple:\n"
             "  export GTFS_SOURCE_URL='https://.../lyon_tcl.zip?apikey=...'\n"
             "puis relancer: npm run generate:gtfs\n"
-            "Le feed public/data/gtfs-feed.json déjà versionne reste utilisable sans re-telechargement.",
+            "Le feed data/transport/gtfs-feed.json déjà versionne reste utilisable sans re-telechargement.",
             file=sys.stderr,
         )
         raise SystemExit(1)

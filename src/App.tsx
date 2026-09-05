@@ -1,4 +1,4 @@
-import { useSession, useTransportNetwork } from './queries';
+import { useSession, useTransportContext } from './queries';
 import { Card, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { MobilityMapApp } from './components/app/MobilityMapApp';
@@ -6,7 +6,7 @@ import { OfflineBanner } from './components/app/OfflineBanner';
 
 function AppContent() {
     const session = useSession();
-    const network = useTransportNetwork();
+    const network = useTransportContext(Boolean(session.data));
 
     // Tant que la reprise de session n'a pas répondu, on ignore si un cookie
     // valide existe : afficher l'écran de connexion tout de suite le ferait

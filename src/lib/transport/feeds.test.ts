@@ -195,7 +195,7 @@ describe('loadTransportNetwork', () => {
             throw new Error('réseau coupe');
         });
 
-        const network = await loadTransportNetwork();
+        const network = await loadTransportNetwork(gtfsFixture);
 
         expect(network.sources?.gtfs).toBe('tcl-odbl');
         expect(network.sharedMobility).toBeNull();
@@ -241,7 +241,7 @@ describe('loadTransportNetwork', () => {
             throw new Error(`URL inattendue: ${url}`);
         });
 
-        const network = await loadTransportNetwork();
+        const network = await loadTransportNetwork(gtfsFixture);
 
         expect(network.sharedMobility).not.toBeNull();
         expect(network.sources?.weather).toBe('open-meteo');

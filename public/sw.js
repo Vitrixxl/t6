@@ -1,10 +1,9 @@
-const CACHE_NAME = 'urbanflow-shell-v4';
+const CACHE_NAME = 'urbanflow-shell-v5';
 const APP_SHELL = [
     '/',
     '/index.html',
     '/manifest.webmanifest',
     '/offline.html',
-    '/data/gtfs-feed.json',
     '/icons/icon-192.png',
     '/icons/icon-512.png',
 ];

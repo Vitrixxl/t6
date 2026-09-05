@@ -4,7 +4,7 @@
 // que chaque module lit.
 import { useEffect, useState } from 'react';
 import { useSetAtom } from 'jotai';
-import type { GeoPoint, RouteOption, SavedRouteRecord, TransportNetwork } from '../../types';
+import type { GeoPoint, RouteOption, SavedRouteRecord, TransportContext } from '../../types';
 import { haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useRouteOptions } from './hooks/useRouteOptions';
@@ -21,7 +21,7 @@ import { DesktopMobilityLayout, MobileMobilityLayout, type TripMapState } from '
 /** Durée du retour visuel "enregistre" sur le bouton. */
 const SAVE_CONFIRMATION_MS = 1800;
 
-export function MobilityMapApp({ network }: { network: TransportNetwork }) {
+export function MobilityMapApp({ network }: { network: TransportContext }) {
     const profile = useProfile();
     const saveError = useSaveError();
     const persistRoute = useSaveRoute();

@@ -14,7 +14,7 @@ import { useAtom } from 'jotai';
 import { ALL_TRANSIT_TYPES } from '../../../lib/planner/transit-filter';
 import { transitTypesAtom } from '../../../state';
 import { useQuery } from '@tanstack/react-query';
-import type { GeoPoint, MobilityProfile, RouteOption, TransportNetwork } from '../../../types';
+import type { GeoPoint, MobilityProfile, RouteOption, TransportContext } from '../../../types';
 import { preselectRoute } from '../../../lib/planner';
 import { measuredRoutesQuery, type RouteSearch } from '../../../queries';
 
@@ -47,7 +47,7 @@ export function useRouteOptions(input: {
     origin: GeoPoint | null;
     destination: GeoPoint | null;
     profile: MobilityProfile;
-    network: TransportNetwork;
+    network: TransportContext;
 }): RouteOptions {
     const { origin, destination, profile, network } = input;
     const [selectedRouteId, setSelectedRouteId] = useState('');
