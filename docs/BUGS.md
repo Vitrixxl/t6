@@ -1417,6 +1417,62 @@ variable OSRM ; E2E complet réussi. `bun run check` : 205 tests / 24 fichiers.
 de bascule en cas de panne ; **faible** pour le déploiement Docker vérifié.
 
 
+### B46 — Des disponibilités anciennes remplaçaient un flux GBFS en panne
+
+**Symptôme observé** : lorsque le chargement Vélo’v ou Dott échouait, la carte
+et les itinéraires continuaient à utiliser les véhicules d’un fichier local.
+Le panneau signalait le secours, mais les disponibilités restaient exploitables
+par le moteur alors qu’elles ne décrivaient plus nécessairement le service.
+
+**Cause racine** : le bloc catch de `loadTransportNetwork` chargeait
+`/data/shared-mobility.json`. Ce flux avait ensuite la même forme qu’une réponse
+en direct, sans exclusion dans le moteur.
+
+**Correctif** : [e3dff6d](https://github.com/Vitrixxl/t6/commit/e3dff6dd44e23671775849044d7b6109eef9f387). Supprime le fichier et son entrée du service
+worker. Une panne produit `sharedMobility: null`, un bandeau explicite et des
+compteurs « Données indisponibles ». Aucune station partagée ni option
+vélo/trottinette ne sort de cette absence ; marche et transports publics
+restent calculables. Le repli météo reste indépendant. Les appels utilisent
+maintenant fetch directement, sans paramètre d’injection réservé aux tests.
+
+**Où le montrer** : `src/lib/transport/feeds/index.ts`, `src/App.tsx`,
+`src/components/layout/Shell.tsx`, `src/lib/planner/access.ts`,
+`src/lib/transport/feeds.test.ts`, `src/lib/planner/planner.test.ts`.
+
+**Vérification réalisée** : `bun run check` passe (219 tests, 26 fichiers,
+lint, typage et build). Le test du chargement vérifie l’absence de lecture du
+fichier local ; celui du moteur conserve marche/transports publics et exclut
+vélo/trottinette. `bun run e2e:offline` simule la panne GBFS en ligne et
+vérifie le bandeau, les compteurs, l’absence d’appel au secours et d’erreur
+JavaScript à 390 et 1280 px. Le parcours `bun run e2e` passe à 9/9 sur
+une base dédiée et les trois moteurs OSRM locaux.
+
+**Niveau de verrouillage** : **automatisé** pour le chargement, les options
+restantes et les messages vérifiés dans le navigateur ; **faible** pour
+l’apparence des captures relues.
+
+### B47 — Le scénario de redimensionnement lisait encore les boutons mobiles
+
+**Symptôme observé** : `bun run e2e` échouait avec « Durée absente » juste
+après le passage du mobile au bureau, alors que les options étaient calculées.
+
+**Cause racine** : le sélecteur commun `data-tour="routes"` pouvait encore
+viser le panneau mobile avant que React ait monté la disposition bureau. Il
+incluait alors des boutons de commande sans durée.
+
+**Correctif** : [e3dff6d](https://github.com/Vitrixxl/t6/commit/e3dff6dd44e23671775849044d7b6109eef9f387). Le scénario attend le panneau propre au
+bureau avant de lire les options, puis la carte mobile avant de poursuivre.
+Le nouveau contrôle de panne GBFS attend également la disposition demandée.
+
+**Où le montrer** : `scripts/e2e-planning.mjs`, `scripts/e2e-offline.mjs`.
+
+**Vérification réalisée** : scénario planification complet à 9/9 et scénario
+hors ligne/panne GBFS réussis après ces attentes explicites.
+
+**Niveau de verrouillage** : **faible** pour la suppression de cette course
+intermittente ; les scénarios vérifient les écrans mais aucun test distinct
+ne garantit l’ordre des instructions du script de recette.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire
