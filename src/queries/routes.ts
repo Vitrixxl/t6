@@ -15,11 +15,13 @@ import {
 } from '../lib/planner';
 import { enhanceLegsWithLiveRouting, fetchRouteMatrix } from '../lib/transport';
 import { queryKeys } from './keys';
+import { ALL_TRANSIT_TYPES, filterTransitNetwork, type TransitType } from '../lib/planner/transit-filter';
 
 export interface RouteSearch {
     origin: GeoPoint;
     destination: GeoPoint;
     profile: MobilityProfile;
+    transitTypes?: readonly TransitType[];
 }
 
 async function loadMeasuredRoutes(search: RouteSearch, network: TransportNetwork, signal: AbortSignal) {
@@ -32,17 +34,18 @@ async function loadMeasuredRoutes(search: RouteSearch, network: TransportNetwork
         signal,
     ).then((matrix) => createCarbonReference(matrix?.[0]?.[0] ?? null));
 
+    const availableNetwork = filterTransitNetwork(network, search.transitTypes ?? ALL_TRANSIT_TYPES);
     const access = await prepareRoutedAccessPlan(
         {
             origin: search.origin,
             destination: search.destination,
-            network,
+            network: availableNetwork,
             requireAccessible: search.profile.accessibilityNeed,
         },
         (mode, origins, destinations) => fetchRouteMatrix(mode, origins, destinations, signal),
     );
 
-    const options = planRoutes({ ...search, network }, access);
+    const options = planRoutes({ ...search, network: availableNetwork }, access);
     const measuredOptions = await measureRoutes(
         options,
         search.profile,
@@ -54,7 +57,7 @@ async function loadMeasuredRoutes(search: RouteSearch, network: TransportNetwork
 
 export function measuredRoutesQuery(search: RouteSearch | null, network: TransportNetwork) {
     return queryOptions({
-        queryKey: search ? queryKeys.measuredRoutes(search.origin, search.destination, search.profile) : ['measured-routes', null],
+        queryKey: search ? queryKeys.measuredRoutes(search.origin, search.destination, search.profile, search.transitTypes) : ['measured-routes', null],
         queryFn: search ? ({ signal }) => loadMeasuredRoutes(search, network, signal) : skipToken,
         // Le serveur cache les tracés 24 h : remesurer au retour sur l'onglet
         // n'apporterait rien.

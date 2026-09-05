@@ -1,6 +1,9 @@
 // État d'écran du planificateur : le trajet en cours de planification et le
 // hub. Rien ici ne vient du serveur ; l'état du compte vit dans src/queries/.
 import { atom } from 'jotai';
+import { ALL_TRANSIT_TYPES, type TransitType } from '../lib/planner/transit-filter';
+
+export const transitTypesAtom = atom<TransitType[]>(ALL_TRANSIT_TYPES);
 import type { TripSource } from '../lib/trips';
 
 export type TripsHubTab = 'upcoming' | 'recurring' | 'history' | 'saved';

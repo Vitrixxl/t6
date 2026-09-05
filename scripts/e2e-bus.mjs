@@ -35,6 +35,7 @@ try {
     await page.getByRole('button', { name: 'Charger', exact: true }).click();
     console.log('Calcul demandé.');
     await page.getByText(/^Bus TB11/).first().waitFor({ timeout: 60000 });
+    await page.getByText(/^Détails du trajet/).click();
     assert(await page.getByText(/CO₂e : référence bus thermique/).first().isVisible(), 'Hypothèse carbone absente du détail');
     assert(await page.locator('.maplibregl-canvas').count() === 1, 'Carte absente');
     const require = createRequire(import.meta.url);

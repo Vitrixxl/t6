@@ -1,4 +1,6 @@
 // Options, étapes et actions de planification du panneau mobile.
+import { useEffect, useRef } from 'react';
+import { TransitTypeFilters } from './TransitTypeFilters';
 import { formatDuration } from '../../lib/duration';
 import { useSetAtom } from 'jotai';
 import { CalendarClock, CalendarPlus, Check, Route, UserRound, X } from 'lucide-react';
@@ -16,6 +18,7 @@ export function MobileTripPanel({
     destination,
     routes,
     selectedRoute,
+    transitSelected,
     savedRouteId,
     routingStatus,
     coverageWarning,
@@ -27,6 +30,7 @@ export function MobileTripPanel({
         destination: GeoPoint | null;
         routes: RouteOption[];
         selectedRoute: RouteOption | null;
+        transitSelected: boolean;
         savedRouteId: string;
         routingStatus: RoutingStatus;
         coverageWarning: string | null;
@@ -38,7 +42,7 @@ export function MobileTripPanel({
     }) {
     return (
         <section
-            className="absolute inset-x-0 bottom-0 z-30 flex h-auto max-h-[calc(100%-8.5rem)] flex-col overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl"
+            className="absolute inset-x-0 bottom-0 z-30 flex h-auto max-h-[50%] [@media(max-height:500px)]:max-h-[45%] flex-col overflow-hidden rounded-t-[1.6rem] border border-white/80 bg-white/96 pb-[env(safe-area-inset-bottom)] shadow-float backdrop-blur-xl"
             data-tour="routes"
         >
             <MobileTripHeader
@@ -55,7 +59,9 @@ export function MobileTripPanel({
                     </div>
                 ) : null}
 
+                {transitSelected ? <div className="px-4 pb-2"><TransitTypeFilters /></div> : null}
                 <MobileRouteChoices routes={routes} selectedRoute={selectedRoute} onSelectRoute={onSelectRoute} />
+                {transitSelected && !selectedRoute && routingStatus !== 'pending' ? <p role="status" className="px-4 pb-3 text-sm">Aucun trajet en transport en commun avec ces types. Modifie les types autorisés ou choisis une autre option.</p> : null}
                 <MobileRouteSelection
                     routeOption={selectedRoute}
                     savedRouteId={savedRouteId}
@@ -146,7 +152,7 @@ export function MobileRouteChoices({
     }
 
     return (
-        <div role="group" aria-label="Options d’itinéraire" className="grid grid-cols-2 gap-2 px-4 pb-3">
+        <div role="group" aria-label="Options d’itinéraire" className="flex gap-2 overflow-x-auto overscroll-x-contain snap-x snap-proximity px-4 pb-3">
             {routes.map((routeOption) => (
                 <MobileRouteTab
                     key={routeOption.id}
@@ -187,9 +193,10 @@ function MobileRouteSelection({
                     {saved ? 'Enregistré' : 'Enregistrer'}
                 </Button>
             </div>
-            <div className="px-4 pb-3">
+            <details className="mx-4 mb-3 rounded-xl border border-border bg-background">
+                <summary className="cursor-pointer px-3 py-3 text-sm font-semibold">Détails du trajet · {formatDuration(routeOption.durationMinutes)}</summary>
                 <MobileSelectedRouteCard routeOption={routeOption} />
-            </div>
+            </details>
         </>
     );
 }
@@ -204,11 +211,16 @@ export function MobileRouteTab({
         onSelect: () => void;
     }) {
     const Icon = MODE_ICON[routeOption.modes.at(-1) ?? 'walk'];
+    const button = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        if (selected) button.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }, [selected]);
 
     return (
         <button
             type="button"
-            className={`grid min-h-14 min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border/70 bg-background text-foreground'
+            ref={button}
+            className={`grid w-[180px] shrink-0 snap-start min-h-14 min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border/70 bg-background text-foreground'
                 }`}
             onClick={onSelect}
             aria-pressed={selected}

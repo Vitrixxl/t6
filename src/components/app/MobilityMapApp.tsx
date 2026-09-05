@@ -54,7 +54,7 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
         // l'utilisateur qui a refusé.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    const { routes, selectedRoute, setSelectedRouteId, routingStatus } = useRouteOptions({
+    const { routes, selectedRoute, setSelectedRouteId, routingStatus, transitSelected } = useRouteOptions({
         origin,
         destination,
         profile,
@@ -167,6 +167,7 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
         destination,
         routes,
         selectedRoute,
+        transitSelected,
         network,
         layers,
         navigationPoint,

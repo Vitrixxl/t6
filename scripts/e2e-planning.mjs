@@ -118,7 +118,7 @@ async function testMobileSheet() {
     await page.screenshot({ path: 'tmp/screenshots/routes-sorted-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator('[data-tour="mobile-map"]').waitFor();
-    log('panneau mobile : hauteur automatique, défilement, sélection, rotation et tri mobile/bureau vérifiés');
+    log('panneau mobile : hauteur limitée, défilement horizontal, sélection, rotation et tri mobile/bureau vérifiés');
 }
 
 async function testMobileTutorial() {

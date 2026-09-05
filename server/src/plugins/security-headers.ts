@@ -5,15 +5,26 @@
 // en quelques en-têtes. Une dépendance de plus serait une surface d'attaque et
 // une dette de maintenance pour trente lignes.
 //
-// **Deux politiques, parce qu'il y a deux natures de réponse.** Le même serveur
-// rend du JSON et une application : leur imposer la même politique revient soit
-// a autoriser du script sur l'API, soit a interdire au client de charger ses
-// propres fichiers. La seconde erreur a été commise en fusionnant les deux
-// serveurs, et l'application ne s'affichait plus du tout.
+// Le JSON, l'application et la documentation HTML ont des besoins distincts.
+// La documentation est sous /api, mais elle doit pouvoir exécuter Scalar.
 import { Elysia } from 'elysia';
 
 /** L'API ne renvoie que du JSON : rien a exécuter, rien a integrer. */
 const API_POLICY = "default-src 'none'; frame-ancestors 'none'";
+
+// Scalar fournit une page avec des styles intégrés et un script chargé sur son
+// CDN. Son bundle utilise aussi l’évaluation de code. Ces autorisations restent limitées au document, pas au schéma JSON.
+const DOC_POLICY = [
+    "default-src 'none'",
+    "script-src 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+    "style-src 'unsafe-inline'",
+    "connect-src 'self'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'none'",
+    "form-action 'self'",
+].join('; ');
 
 /**
  * Le document, lui, charge ses propres scripts, styles, polices et images, et
@@ -53,6 +64,9 @@ export function securityHeaders(isProduction: boolean) {
     return new Elysia({ name: 'security-headers' })
         .onAfterHandle(({ set, path }) => {
             set.headers['content-security-policy'] = path.startsWith('/api') ? API_POLICY : APP_POLICY;
+            if (path === '/api/doc' || path === '/api/doc/') {
+                set.headers['content-security-policy'] = DOC_POLICY;
+            }
             set.headers['x-content-type-options'] = 'nosniff';
             set.headers['x-frame-options'] = 'DENY';
             set.headers['referrer-policy'] = 'no-referrer';

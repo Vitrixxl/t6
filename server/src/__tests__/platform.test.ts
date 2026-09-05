@@ -52,3 +52,17 @@ it('ne publie plus de remplacement global de l’historique', async () => {
 
     expect(response.status).toBe(404);
 });
+
+it('autorise la page Scalar sans assouplir la politique des réponses JSON', async () => {
+    for (const path of ['/api/doc', '/api/doc/']) {
+        const response = await api.call(path);
+        expect(response.status).toBe(200);
+        expect(await response.text()).toContain('"url":"/api/doc/json"');
+        expect(response.headers.get('content-security-policy')).toContain('https://cdn.jsdelivr.net');
+        expect(response.headers.get('content-security-policy')).toContain("style-src 'unsafe-inline'");
+    }
+    for (const path of ['/api/doc/json', '/api/health']) {
+        const response = await api.call(path);
+        expect(response.headers.get('content-security-policy')).toBe("default-src 'none'; frame-ancestors 'none'");
+    }
+});

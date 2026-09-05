@@ -38,6 +38,7 @@ export function createApp(overrides: Partial<ServerConfig> = {}) {
         .use(
             openapi({
                 path: '/doc',
+                scalar: { url: '/api/doc/json', version: '1.67.0', withDefaultFonts: false, agent: { disabled: true } },
                 mapJsonSchema: { zod: z.toJSONSchema },
                 documentation: {
                     info: {

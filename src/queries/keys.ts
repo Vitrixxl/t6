@@ -2,6 +2,7 @@
 // qu'une lecture et une invalidation désignent la même donnée par deux
 // chaines différentes.
 import type { GeoPoint, MobilityProfile } from '../types';
+import { ALL_TRANSIT_TYPES, type TransitType } from '../lib/planner/transit-filter';
 
 export const queryKeys = {
     session: ['session'],
@@ -15,10 +16,10 @@ export const queryKeys = {
     transportNetwork: ['transport-network'],
     // Les extrémités et le profil determinent les options calculées, donc leur
     // mesure ; le libellé d'un point n'y change rien.
-    measuredRoutes: (origin: GeoPoint, destination: GeoPoint, profile: MobilityProfile) =>
+    measuredRoutes: (origin: GeoPoint, destination: GeoPoint, profile: MobilityProfile, transitTypes: readonly TransitType[] = ALL_TRANSIT_TYPES) =>
         [
             'measured-routes',
-            { origin: { lat: origin.lat, lon: origin.lon }, destination: { lat: destination.lat, lon: destination.lon }, profile },
+            { origin: { lat: origin.lat, lon: origin.lon }, destination: { lat: destination.lat, lon: destination.lon }, profile, transitTypes },
         ],
 } as const;
 

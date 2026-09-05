@@ -5,6 +5,7 @@ import type { GeoPoint, RouteOption, TransportNetwork } from '../../types';
 import { CarbonPanel } from '../carbon/CarbonPanel';
 import { ShellSidebar } from '../layout/Shell';
 import { MobileActionRail } from '../planner/MobileQuickPanels';
+import { TransitTypeFilters } from '../planner/TransitTypeFilters';
 import { MobileTripPanel } from '../planner/MobilePanels';
 import { DesktopRouteStrip, MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
@@ -17,6 +18,7 @@ export interface TripMapState {
     destination: GeoPoint | null;
     routes: RouteOption[];
     selectedRoute: RouteOption | null;
+    transitSelected: boolean;
     network: TransportNetwork;
     layers: LayerState;
     navigationPoint: GeoPoint | null;
@@ -144,6 +146,8 @@ export function DesktopMobilityLayout(props: DesktopMobilityLayoutProps) {
             <aside className="relative z-20 flex min-h-0 flex-col gap-2 overflow-y-auto bg-[var(--shell)] p-3 pl-0" data-tour="route-detail">
                 <SaveErrorBanner message={props.saveError} />
                 <CoverageWarning message={props.coverageWarning} />
+                {map.transitSelected ? <TransitTypeFilters /> : null}
+                {map.transitSelected && !selectedRoute && props.routingStatus !== 'pending' ? <p role="status" className="p-3 text-sm">Aucun trajet en transport en commun avec ces types. Modifie les types autorisés ou choisis une autre option.</p> : null}
                 {selectedRoute ? (
                     <RouteDetailPanel
                         routeOption={selectedRoute}
@@ -226,6 +230,7 @@ export function MobileMobilityLayout(props: MobileMobilityLayoutProps) {
                     destination={map.destination}
                     routes={map.routes}
                     selectedRoute={map.selectedRoute}
+                    transitSelected={map.transitSelected}
                     savedRouteId={props.savedRouteId}
                     routingStatus={props.routingStatus}
                     coverageWarning={props.coverageWarning}

@@ -1,15 +1,18 @@
 // Calcul des itinéraires : OSRM classe d'abord les accès possibles, le moteur
 // assemble les options, puis OSRM mesure tous leurs segments de voirie.
 //
-// **Aucune estimation n'atteint l'interface.** Le calcul local sert uniquement
-// à savoir quelles options existent ; ses chiffres restent dans la requête.
-// Toutes les options sont mesurées, puis affichées ensemble.
+// Les segments de voirie sont mesurés avant affichage. Le transport public
+// suit son tracé publié avec une durée estimée, faute d’horaires branchés.
+// Les types choisis filtrent le réseau avant la recherche des quais.
 //
 // C'est le prix d'une liste comparable. Ne mesurer que l'option sélectionnée
 // coutait trois appels au lieu d'une quinzaine, mais melangeait deux méthodes
 // dans le même tableau : changer de sélection changeait les chiffres (B20). Le
 // surcoût est absorbe par le cache partagé de l'API.
 import { useEffect, useMemo, useState } from 'react';
+import { useAtom } from 'jotai';
+import { ALL_TRANSIT_TYPES } from '../../../lib/planner/transit-filter';
+import { transitTypesAtom } from '../../../state';
 import { useQuery } from '@tanstack/react-query';
 import type { GeoPoint, MobilityProfile, RouteOption, TransportNetwork } from '../../../types';
 import { preselectRoute } from '../../../lib/planner';
@@ -35,6 +38,7 @@ export interface RouteOptions {
     selectedRouteId: string;
     setSelectedRouteId: (id: string) => void;
     routingStatus: RoutingStatus;
+    transitSelected: boolean;
 }
 
 const NO_ROUTES: RouteOption[] = [];
@@ -47,10 +51,11 @@ export function useRouteOptions(input: {
 }): RouteOptions {
     const { origin, destination, profile, network } = input;
     const [selectedRouteId, setSelectedRouteId] = useState('');
+    const [transitTypes, setTransitTypes] = useAtom(transitTypesAtom);
 
     const search = useMemo<RouteSearch | null>(
-        () => (origin && destination ? { origin, destination, profile } : null),
-        [destination, origin, profile],
+        () => (origin && destination ? { origin, destination, profile, transitTypes } : null),
+        [destination, origin, profile, transitTypes],
     );
     // La sélection des accès et la mesure forment une seule requête : changer
     // d'extrémités l'annule, et la liste se vide pendant le nouveau calcul.
@@ -62,9 +67,18 @@ export function useRouteOptions(input: {
     // La sélection manuelle vaut pour la recherche en cours ; une nouvelle
     // recherche repart de la présélection du profil, sans quoi le choix fait sur
     // un trajet précédent se propagerait à tous les suivants.
-    const selectedRoute =
-        routes.find((routeOption) => routeOption.id === selectedRouteId) ??
-        preselectRoute(routes, profile.routePreselection);
+    const selectedTransitFamily = ['transit', 'bike-transit', 'scooter-transit'].includes(selectedRouteId);
+    // Un filtre sans résultat ne doit pas sélectionner silencieusement la marche :
+    // le choix transport reste actif et ses types restent modifiables.
+    const selectedRoute = routes.find(route => route.id === selectedRouteId)
+        ?? (selectedTransitFamily ? null : preselectRoute(routes, profile.routePreselection));
+    const transitSelected = selectedRoute?.modes.includes('transit') ?? selectedTransitFamily;
+    const selectRoute = (id: string) => {
+        setSelectedRouteId(id);
+        if (!routes.find(route => route.id === id)?.modes.includes('transit') && transitTypes.length !== ALL_TRANSIT_TYPES.length) {
+            setTransitTypes(ALL_TRANSIT_TYPES);
+        }
+    };
 
     useEffect(() => {
         setSelectedRouteId('');
@@ -77,5 +91,5 @@ export function useRouteOptions(input: {
         setSelectedRouteId(selectedRoute.id);
     }, [selectedRoute, selectedRouteId]);
 
-    return { routes, selectedRoute, selectedRouteId, setSelectedRouteId, routingStatus };
+    return { routes, selectedRoute, selectedRouteId, setSelectedRouteId: selectRoute, routingStatus, transitSelected };
 }
