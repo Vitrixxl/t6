@@ -404,6 +404,12 @@ toute entrée (les mêmes contrats que les formulaires du client), limitation de
 d'erreur unique à la connexion pour ne pas divulguer l'existence d'un compte. Aucun en-tête CORS n'est émis :
 l'API n'est consommée qu'en même origine.
 
+Dans **Profil et préférences → Exporter mes données**, le bouton télécharge `urbanflow-export.json`
+avec le compte, les préférences, les trajets et leurs lieux, les itinéraires enregistrés et l’historique carbone.
+Un seul appel authentifié récupère les données actuelles ; un échec est affiché et permet de réessayer.
+Le mot de passe et les jetons de session ne sont pas exportés.
+Vérification navigateur : `bun scripts/e2e-account-export.mjs` sur le serveur local.
+
 RGPD : export complet du compte (`GET /api/me/export`, art. 20) et suppression en cascade (`DELETE /api/me`,
 art. 17), historiques bornés à 50 entrées (minimisation), géolocalisation sur action explicite.
 

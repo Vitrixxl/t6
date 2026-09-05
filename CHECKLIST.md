@@ -60,7 +60,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] C5 - Eco-conception: bundle léger, cache offline, limitation des ressources.
 - [x] C6 - Géolocalisation: précision affichée, consentement et fallback manuel.
 - [x] C7 - Accessibilité cible WCAG 2.1 AA: navigation clavier, contrastes, labels et ARIA ; audit formel restant explicite.
-- [x] C8 - RGPD: consentement géolocalisation, minimisation et suppression des données locales.
+- [x] C8 - RGPD : consentement géolocalisation, conservation bornée côté serveur, export JSON depuis le profil et suppression du compte.
 - [x] C9 - Interopérabilité: modèles de données transport compatibles GTFS/GBFS.
 - [x] C10 - Performances: fonctionnement avec connectivite variable, cache et états de chargement.
 - [x] C11 - Sécurité des données de déplacement sensibles: sessions locales et suppression des historiques.
@@ -144,6 +144,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Points d'accès Vélo'v, trottinette et transport classes par durée OSRM sur huit candidats bornes ; test de régression sur l'obstacle piéton.
 - [x] Correspondance entre deux lignes rendue comme étape à pied de 4 min, sans trace intérieur invente en l'absence de `pathways.txt`.
 - [x] Une seule origine : l'API sert le client, pas de mode sans serveur  ; une écriture refusée par le réseau est signalée à l'utilisateur.
+- [x] Export accessible sur mobile et bureau dans « Profil et préférences » : téléchargement JSON, erreur visible et nouvel essai (`bun scripts/e2e-account-export.mjs`).
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17).
 - [x] Documentation OpenAPI générée à partir des schémas des routes (`/api/doc`), donc impossible a désynchroniser du code.
 - [x] Tests d'intégration API via `app.handle` (base :memory:) et tests client sur les opérations pures (trajets, routines, carbone, profil) ; suite complète sous `bun test`.

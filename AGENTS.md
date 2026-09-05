@@ -332,3 +332,9 @@ sans table de pauses ni nettoyage des intervalles sans passage.
 Un ponctuel annulé peut être rétabli depuis l’historique avec « Rétablir » :
 `DELETE /api/trips/planned/:id/cancellation` le remet à venir si sa date est future,
 ou fait avec son bilan daté au départ prévu si elle est passée. La commande est idempotente.
+
+**Export du compte.** « Profil et préférences → Exporter mes données » télécharge
+`urbanflow-export.json` depuis `GET /api/me/export` via Eden, en un appel authentifié.
+Le fichier contient les données actuelles du compte et les lieux des trajets,
+sans mot de passe ni jeton de session. Un échec reste visible dans le profil
+et permet de réessayer. Vérifier avec `bun scripts/e2e-account-export.mjs`.

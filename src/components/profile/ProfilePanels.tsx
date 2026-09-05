@@ -1,4 +1,5 @@
 // Module profil : préférences de mobilité, objectifs carbone et compte.
+import { AccountExport } from './AccountExport';
 import { CarbonReference } from '../carbon/CarbonReference';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -72,6 +73,7 @@ export function ProfileDrawer({
                                 <CircleHelp className="size-4" aria-hidden="true" />
                                 Revoir le tutoriel
                             </Button>
+                            <AccountExport />
                             <div className="grid gap-2 sm:grid-cols-2">
                                 <Button type="button" variant="outline" className="w-full justify-center" onClick={() => setConfirming('logout')}>
                                     <LogOut className="size-4" aria-hidden="true" />
