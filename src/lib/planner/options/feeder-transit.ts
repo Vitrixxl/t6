@@ -19,7 +19,7 @@ interface Feeder {
     detail(station: SharedStation): string;
     /** Temps fixe de prise en main : déverrouillage, sortie de borne. */
     unlockMinutes: number;
-    /** Fiabilité par temps sec, puis sous la pluie ou avec une ligne en retard. */
+    /** Fiabilité, puis avec une ligne en retard. */
     reliability: { clear: number; degraded: number };
 }
 
@@ -46,7 +46,7 @@ const FEEDERS: Record<'bike' | 'scooter', Feeder> = {
 };
 
 export function createFeederTransitOption(
-    { origin, destination, profile, network }: RouteRequest,
+    { origin, destination, profile }: RouteRequest,
     directKm: number,
     mode: 'bike' | 'scooter',
     access: FeederAccess | null,
@@ -72,7 +72,6 @@ export function createFeederTransitOption(
         ? Math.max(haversineDistanceKm(stationToPoint(fromStation), feederDestination) * 1.2, directKm * 0.22)
         : journey.departureAccess.distanceKm;
     const finalWalkKm = journey.arrivalAccess.distanceKm;
-    const rainWarning = network.gtfs.weather.condition.includes('rain');
     const delayed = journey.rides.some((ride) => ride.waitMinutes > 4);
 
     const legs: RouteLeg[] = [
@@ -131,8 +130,7 @@ export function createFeederTransitOption(
         summary: `${Vehicle} jusqu'à ${boarding.stop_name}, puis ligne ${lines}.`,
         modes: ['walk', feeder.mode, 'transit'],
         legs,
-        reliabilityScore: delayed || rainWarning ? feeder.reliability.degraded : feeder.reliability.clear,
-        // RG4 : l'engin est à l'air libre, la pluie s'applique à la portion de rabattement.
-        warnings: rainWarning && profile.avoidRain ? [`Pluie légère détectée sur la portion ${vehicle}.`] : [],
+        reliabilityScore: delayed ? feeder.reliability.degraded : feeder.reliability.clear,
+        warnings: [],
     });
 }

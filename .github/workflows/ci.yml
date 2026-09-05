@@ -3,7 +3,7 @@ name: CI
 # Une seule recette, exécutée à l’identique avant push et sur GitHub.
 # Elle prépare ses trois moteurs OSRM à partir d’un extrait OSM versionné,
 # vérifie leur disponibilité et utilise une base SQLite neuve.
-# BAN, GBFS, météo, tuiles et CDN Scalar restent des services externes.
+# BAN, GBFS, tuiles et CDN Scalar restent des services externes.
 on:
   push:
     branches: [main]

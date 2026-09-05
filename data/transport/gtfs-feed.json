@@ -172117,11 +172117,5 @@
       "realtime_delay_minutes": 0,
       "occupancy": "medium"
     }
-  ],
-  "weather": {
-    "condition": "clear",
-    "temperature_celsius": 21,
-    "wind_kmh": 12,
-    "updated_at": "2026-09-14T08:00:00+02:00"
-  }
+  ]
 }

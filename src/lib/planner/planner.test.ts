@@ -43,12 +43,6 @@ const network = {
                 occupancy: 'low',
             },
         ],
-        weather: {
-            condition: 'clear',
-            temperature_celsius: 20,
-            wind_kmh: 8,
-            updated_at: '2026-09-14T08:00:00+02:00',
-        },
     },
     sharedMobility: {
         last_updated: 1789365900,
@@ -292,26 +286,6 @@ describe('planRoutes', () => {
         expect(standardRoutes.some((route) => route.modes.includes('transit'))).toBe(true);
     });
 
-    it('RG4 : la pluie ajoute un avertissement et penalise le score si la sensibilite est activée', () => {
-        const rainyNetwork: TransportNetwork = {
-            ...network,
-            gtfs: {
-                ...network.gtfs,
-                weather: { ...network.gtfs.weather, condition: 'light_rain' },
-            },
-        };
-        const base = { origin: LANDMARKS[0], destination: LANDMARKS[1], network: rainyNetwork };
-
-        const sensitive = planRoutes({ ...base, profile: { ...DEFAULT_PROFILE, avoidRain: true } });
-        const indifferent = planRoutes({ ...base, profile: { ...DEFAULT_PROFILE, avoidRain: false } });
-
-        const bikeSensitive = sensitive.find((route) => route.id === 'bike');
-        const bikeIndifferent = indifferent.find((route) => route.id === 'bike');
-
-        expect(bikeSensitive?.warnings.some((warning) => /pluie/i.test(warning))).toBe(true);
-        expect(bikeIndifferent?.warnings.some((warning) => /pluie/i.test(warning))).toBe(false);
-        expect(bikeSensitive!.score).toBeLessThan(bikeIndifferent!.score);
-    });
 
     it('borne chaque score sur l\'intervalle 0-100', () => {
         const routes = planRoutes({

@@ -22,7 +22,7 @@ export type {
 import type { GeoPoint, MobilityProfile } from './contracts';
 
 export type {
-    Occupancy, GtfsAgency, GtfsStop, GtfsRoute, GtfsTrip, WeatherSignal,
+    Occupancy, GtfsAgency, GtfsStop, GtfsRoute, GtfsTrip,
     GtfsFeed, SharedStation, SharedMobilityFeed, TransportContext, NetworkSources,
 } from './contracts/transport';
 import type { GtfsFeed, SharedMobilityFeed, NetworkSources } from './contracts/transport';

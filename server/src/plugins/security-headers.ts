@@ -52,7 +52,6 @@ const APP_POLICY = [
         'https://photon.komoot.io',
         'https://api.cyclocity.fr',
         'https://gbfs.api.ridedott.com',
-        'https://api.open-meteo.com',
     ].join(' '),
     "worker-src 'self' blob:",
     "frame-ancestors 'none'",

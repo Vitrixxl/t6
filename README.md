@@ -219,12 +219,11 @@ Recette : `bun run e2e:trips` pour les confirmations et rétablissements ;
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | serveur, chargement mutualisé 60 s |
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | artefact normalisé (`bun run generate:gtfs`), import SQLite au démarrage |
 | Desserte et tracés des lignes | WFS SYTRAL `data.grandlyon.com` (ODbL, sans jeton) | artefact normalisé (`bun run generate:lignes`), import SQLite au démarrage |
-| Météo | Open-Meteo | serveur, contexte actualisé toutes les 60 s |
 
 Les disponibilités Vélo’v et Dott proviennent uniquement des flux en direct.
 Si le groupe GBFS échoue, un bandeau annonce l’indisponibilité : aucun fichier
 de secours, aucune station partagée ni option vélo/trottinette. La marche et les
-transports publics restent calculables. La météo conserve son repli local.
+transports publics restent calculables.
 
 ## Chargement géographique du réseau TCL
 
@@ -245,8 +244,8 @@ quai TCL n’est demandé. Masquer la couche suspend aussi ces requêtes.
 `GET /api/transport/nearby-stops` sert le vrai compte dans le rayon demandé et
 les quatre quais les plus proches : ce parcours reste indépendant du cadrage.
 `GET /api/transport/context` ne contient ni quais ni tracés TCL : seulement les
-métadonnées, le nombre total d’arrêts, la météo et les disponibilités partagées.
-Les appels GBFS et météo sont mutualisés côté serveur pendant 60 secondes ;
+métadonnées, le nombre total d’arrêts et les disponibilités partagées.
+Les appels GBFS sont mutualisés côté serveur pendant 60 secondes ;
 une erreur GBFS après expiration produit `null`, sans réutiliser un ancien flux.
 Le contexte est demandé après la connexion, puis relu chaque minute lorsque l’application est active.
 
@@ -572,7 +571,7 @@ ou de production n’est réutilisé. L’extrait routier OSM et sa provenance s
 `scripts/fixtures/`. Les diagnostics sont dans `tmp/ci/*.log` et les captures
 dans `tmp/screenshots/`, conservés par GitHub en cas d’échec.
 
-La disponibilité de BAN, des flux GBFS, de la météo, des tuiles et du CDN Scalar
+La disponibilité de BAN, des flux GBFS, des tuiles et du CDN Scalar
 reste externe : ce sont toujours les vrais appels. OSRM calcule localement sur
 l’extrait réel versionné ; aucun faux tracé ni service public de routage ne remplace
 un moteur manquant. Attendre une recette locale réussie avant `git push`, puis

@@ -9,5 +9,4 @@ export {
     loadTransportNetwork,
     mapDottVehicles,
     mergeVelovStations,
-    weatherFromOpenMeteo,
 } from './feeds';

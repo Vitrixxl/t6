@@ -86,9 +86,8 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Planificateur: trajets programmés à une date, routines récurrentes (aller-retour, pause/reprise) comptées automatiquement ; historique mixte avec annulation datée par sens, statuts fait/annulé des ponctuels, objectifs d'économie CO2 hebdomadaire et mensuel indépendants avec progression.
 - [x] Recherche géocodée double source (BAN adresses + Photon quartiers/gares/lieux), typée et bornée à la métropole (dept 69).
 - [x] Onboarding spotlight adapte à la disposition : 11 étapes desktop, 9 étapes mobile sur les contrôles réellement présents, auto à la première visite et relançable depuis le profil.
-- [x] Météo live Open-Meteo injectée dans le scoring (pluie/vent).
-- [x] Fallback local pour chaque flux + statut des sources affiche dans l'UI.
-- [x] Tests unitaires sur la fusion GBFS et la classification météo (`src/lib/transport/feeds.test.ts`).
+- [x] Statut des sources affiché dans l'UI ; aucun repli local pour les flux GBFS.
+- [x] Tests unitaires sur la fusion GBFS (`src/lib/transport/feeds.test.ts`).
 - [x] UI retravaillée (identité eco-urbaine, Bricolage Grotesque/Figtree, mobile first) via skill frontend-design.
 - [x] Captures finales automatisées dans output/screens/ et intégrées au dossier.
 - [x] Dossier projet finalise: 30 pages, 15 sections alignées sur la grille, 6 figures, 7 captures, sources officielles et matrice critère vers preuve.
@@ -250,5 +249,5 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 - [x] Calcul complet côté serveur : six familles, filtres avant accès et correspondances, traces et référence voiture mesurées.
 - [x] Panne des cellules explicite et bouton Réessayer ; Autour de moi conserve son vrai compte, indépendant de la carte.
 - [x] Contrats zod, OpenAPI et Eden partagent les requêtes et réponses ; les anciennes routes de matrice et géométrie sont retirées.
-- [x] GBFS et météo mutualisés 60 s côté serveur ; aucun repli sur des disponibilités expirées en cas de panne.
+- [x] GBFS mutualisé 60 s côté serveur ; aucun repli sur des disponibilités expirées en cas de panne.
 - [x] Recette dédiée `bun run e2e:transport` intégrée à `bun run ci` ; comparaison des octets TCL, sans revendication de gain énergétique non mesuré.

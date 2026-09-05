@@ -208,7 +208,6 @@ describe('profil de mobilité', () => {
             displayName: 'Camille',
             preferredModes: ['bike', 'transit'],
             accessibilityNeed: true,
-            avoidRain: false,
             carbonGoalGramsPerWeek: 1800,
             weeklyTripsGoal: 8,
             weeklySavedGoalGrams: 3000,

@@ -51,8 +51,8 @@ même si son contenu devient antérieur au code courant.
 ## Supports de revue — à tenir à jour
 
 Le dépôt est défendu à l'oral à partir de fichiers qui décrivent
-l'application. Ils ne sont pas versionnés (`output/` est ignoré) mais ils sont
-critiques : une phrase qui contredit le code se voit en revue, et c'est le
+l'application. Ils ne sont pas versionnés (`output/` est ignoré, sauf le diaporama
+`output/presentation/`) mais ils sont critiques : une phrase qui contredit le code se voit en revue, et c'est le
 candidat qui la porte.
 
 - `output/soutenance/01-deroule.html` : le déroulé d'oral, ce qu'il faut dire
@@ -210,8 +210,7 @@ laisser une zone de dessin positive, même en paysage ou après redimensionnemen
 **Les disponibilités Vélo’v et Dott exigent les flux en direct.** En cas
 d’échec du groupe GBFS, `sharedMobility` vaut `null` : afficher l’indisponibilité,
 sans fichier de secours ni compteur à zéro présenté comme une mesure. La carte
-et le moteur ne proposent alors aucun véhicule partagé. Le repli météo reste
-indépendant. Vérifier cette panne avec `bun run e2e:offline`.
+et le moteur ne proposent alors aucun véhicule partagé. Vérifier cette panne avec `bun run e2e:offline`.
 
 **Ne jamais afficher un plafond comme une mesure.** Ce fut un vrai bogue
 (B9) : l'interface annonçait « 300 trottinettes » parce que c'était la
@@ -385,7 +384,7 @@ réseau complet : le cadrage ne doit jamais limiter une destination ou une
 correspondance. Les anciennes routes `/api/route` et `/api/route-matrix` sont
 retirées ; l’appel à OSRM reste interne. Les réponses d’options
 sont validées dans `src/contracts/planning.ts`, les flux et ressources de carte
-dans `src/contracts/transport.ts`. GBFS et météo sont mutualisés côté serveur
+dans `src/contracts/transport.ts`. GBFS est mutualisé côté serveur
 pendant 60 s ; le client relit le contexte chaque minute. Une panne après
 expiration n’autorise aucune réutilisation d’un ancien flux GBFS.
 Rejouer `bun run e2e:transport`, la planification et le hors-ligne après une

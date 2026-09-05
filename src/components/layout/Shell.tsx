@@ -158,8 +158,7 @@ export function LayerPanel({
             {network.sharedMobility ? (
                 <div className="mt-4 rounded-lg border border-primary/25 bg-accent px-3 py-2 text-xs text-accent-foreground">
                     Données live: GBFS Vélo'v + Dott ({getFeedFreshness(network.sharedMobility)})
-                    {network.sources?.gtfs === 'tcl-odbl' ? ', GTFS TCL (ODbL)' : ''}
-                    {network.sources?.weather === 'open-meteo' ? ', météo Open-Meteo' : ''}.
+                    {network.sources?.gtfs === 'tcl-odbl' ? ', GTFS TCL (ODbL)' : ''}.
                 </div>
             ) : (
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">

@@ -21,13 +21,9 @@ export const gtfsTrip = z.object({
     trip_id: z.string(), route_id: z.string(), service_id: z.string(),
     headway_minutes: z.number(), realtime_delay_minutes: z.number(), occupancy,
 });
-export const weatherSignal = z.object({
-    condition: z.enum(['clear', 'light_rain', 'heavy_rain', 'wind']),
-    temperature_celsius: z.number(), wind_kmh: z.number(), updated_at: z.string(),
-});
 export const gtfsFeed = z.object({
     agency: gtfsAgency, stops: z.array(gtfsStop), routes: z.array(gtfsRoute),
-    trips: z.array(gtfsTrip), weather: weatherSignal,
+    trips: z.array(gtfsTrip),
 });
 export const sharedStation = z.object({
     station_id: z.string(), kind: z.enum(['velov', 'scooter']), name: z.string(),
@@ -40,8 +36,8 @@ export const sharedMobilityFeed = z.object({
 });
 export const transportContext = z.object({
     version: z.string(), stopCount: z.number().int().nonnegative(), agency: gtfsAgency,
-    weather: weatherSignal, sharedMobility: sharedMobilityFeed.nullable(),
-    sources: z.object({ gtfs: z.enum(['tcl-odbl', 'local']), weather: z.enum(['open-meteo', 'local']) }),
+    sharedMobility: sharedMobilityFeed.nullable(),
+    sources: z.object({ gtfs: z.enum(['tcl-odbl', 'local']) }),
 });
 
 // Des cellules stables se réutilisent entre deux cadrages voisins ; un rectangle
@@ -68,7 +64,6 @@ export type GtfsAgency = z.infer<typeof gtfsAgency>;
 export type GtfsStop = z.infer<typeof gtfsStop>;
 export type GtfsRoute = z.infer<typeof gtfsRoute>;
 export type GtfsTrip = z.infer<typeof gtfsTrip>;
-export type WeatherSignal = z.infer<typeof weatherSignal>;
 export type GtfsFeed = z.infer<typeof gtfsFeed>;
 export type SharedStation = z.infer<typeof sharedStation>;
 export type SharedMobilityFeed = z.infer<typeof sharedMobilityFeed>;

@@ -5,7 +5,7 @@ import { haversineDistanceKm, stationToPoint } from '../geo';
 import { buildOption, createLeg } from '../legs';
 
 export function createBikeOption(
-    { origin, destination, profile, network }: RouteRequest,
+    { origin, destination, profile }: RouteRequest,
     directKm: number,
     access: RouteAccessPlan['bike'],
 ): RouteOption | null {
@@ -15,7 +15,6 @@ export function createBikeOption(
     const fromStation = access.pickup.station;
     const toStation = access.dropoff.station;
 
-    const rainWarning = network.gtfs.weather.condition.includes('rain');
     const firstWalkKm = access.pickup.measure.distanceKm;
     const bikeKm = Math.max(haversineDistanceKm(stationToPoint(fromStation), stationToPoint(toStation)) * 1.1, directKm);
     const lastWalkKm = access.dropoff.measure.distanceKm;
@@ -60,7 +59,7 @@ export function createBikeOption(
         summary: 'Vélo partagé selon les disponibilités des stations proches.',
         modes: ['walk', 'bike'],
         legs,
-        reliabilityScore: rainWarning ? 71 : 86,
-        warnings: rainWarning && profile.avoidRain ? ['Pluie légère détectée, confort dégradé pour le vélo.'] : [],
+        reliabilityScore: 86,
+        warnings: [],
     });
 }

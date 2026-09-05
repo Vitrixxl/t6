@@ -12,7 +12,7 @@ export function transportRoutes(ctx: AppContext, config: ServerConfig) {
     return new Elysia({ prefix: '/transport', tags: ['Transport'] })
         .get('/context', () => transport.context(), {
             response: transportContext,
-            detail: { summary: 'Disponibilités partagées et météo, sans téléchargement du réseau TCL' },
+            detail: { summary: 'Disponibilités partagées, sans téléchargement du réseau TCL' },
         })
         .get('/stops', ({ query, set }) => {
             set.headers['cache-control'] = 'public, max-age=3600';

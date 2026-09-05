@@ -26,7 +26,6 @@ export const mobilityProfile = z.object({
         .regex(/^[^<>]*$/, 'Le nom ne peut pas contenir de chevrons.'),
     preferredModes: requiredModes,
     accessibilityNeed: z.boolean(),
-    avoidRain: z.boolean(),
     carbonGoalGramsPerWeek: z.number().min(250, '250 g au moins.').max(20_000, '20 000 g au plus.'),
     /** Objectifs saisis par l'utilisateur (absents sur les anciens profils). */
     weeklyTripsGoal: z.int().min(1, '1 trajet au moins.').max(60, '60 trajets au plus.').optional(),
@@ -42,7 +41,6 @@ export const DEFAULT_PROFILE: MobilityProfile = {
     displayName: 'Citoyen UrbanFlow',
     preferredModes: ['transit', 'bike', 'walk'],
     accessibilityNeed: false,
-    avoidRain: true,
     carbonGoalGramsPerWeek: 2500,
     weeklyTripsGoal: DEFAULT_WEEKLY_TRIPS_GOAL,
     weeklySavedGoalGrams: DEFAULT_WEEKLY_SAVED_GOAL_GRAMS,

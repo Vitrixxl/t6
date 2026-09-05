@@ -13,7 +13,6 @@ const network: TransportNetwork = {
             { stop_id: 'hub', stop_name: 'Commun', stop_lat: 45.76, stop_lon: 4.84, wheelchair_boarding: 1, routes: ['1', '3'] },
         ],
         trips: [1, 3].map(type => ({ trip_id: String(type), route_id: String(type), service_id: 'test', headway_minutes: 10, realtime_delay_minutes: 0, occupancy: 'low' })),
-        weather: { condition: 'clear', temperature_celsius: 20, wind_kmh: 0, updated_at: '' },
     },
     sharedMobility: null,
 };
@@ -34,7 +33,7 @@ it('autorise plusieurs types ou aucun sans modifier les autres ressources', () =
     expect(empty.gtfs.stops).toEqual([]);
     expect(empty.gtfs.trips).toEqual([]);
     expect(empty.sharedMobility).toBe(network.sharedMobility);
-    expect(empty.gtfs.weather).toBe(network.gtfs.weather);
+    expect(empty.gtfs.agency).toBe(network.gtfs.agency);
 });
 
 it('isole les résultats du cache selon les types autorisés', () => {

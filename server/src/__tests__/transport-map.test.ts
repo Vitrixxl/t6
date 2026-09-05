@@ -63,7 +63,7 @@ it('ne publie aucun réseau complet dans le contexte et mutualise les appels en 
     expect(context.sharedMobility).toBeNull();
     expect(payload).not.toHaveProperty('gtfs');
     expect(payload).not.toHaveProperty('stops');
-    expect(network).toHaveBeenCalledTimes(4);
+    expect(network).toHaveBeenCalledTimes(3);
     expect(transportContext.parse(await responses[1].json()).version).toBe(context.version);
 });
 
@@ -128,11 +128,10 @@ it('ne réutilise pas un ancien flux partagé après une panne à l’expiration
         clock.mockReturnValue(100_000);
         const first = transportContext.parse(await (await api.call('/api/transport/context')).json());
         expect(first.sharedMobility?.data.stations[0].bikes_available).toBe(3);
-        expect(first.sources.weather).toBe('local');
         available = false;
         clock.mockReturnValue(161_000);
         const second = transportContext.parse(await (await api.call('/api/transport/context')).json());
         expect(second.sharedMobility).toBeNull();
-        expect(network).toHaveBeenCalledTimes(8);
+        expect(network).toHaveBeenCalledTimes(6);
     } finally { clock.mockRestore(); }
 });
