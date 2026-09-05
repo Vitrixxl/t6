@@ -1535,6 +1535,67 @@ Les limites d’un audit automatique restent celles décrites dans le README.
 vérifiés ; **faible** pour le rendu visuel et la vérification documentaire de
 la référence statistique, qui reste une donnée historique sourcée.
 
+### B50 — Une annulation partait immédiatement et le passage récurrent restait bloqué
+
+**Symptôme** : cliquer sur « Annuler l’aller », « Annuler le retour » ou
+« Annuler les deux » modifiait immédiatement le bilan. Après une erreur de clic,
+la journée affichait des passages annulés sans commande pour les rétablir.
+Les annulations ponctuelles partaient également sans confirmation.
+
+**Cause racine** : les boutons appelaient directement les mutations ; seul
+l’ajout d’exceptions récurrentes existait dans l’API et l’interface.
+
+**Correctif** : état local de confirmation avant toute annulation ; bouton
+Rétablir pour chaque sens annulé. DELETE retire uniquement l’exception
+(date, sens) du compte courant dans une transaction. Le rejeu est idempotent,
+les autres dates et sens restent intacts et la réponse serveur actualise le
+cache commun aux compteurs et graphiques.
+
+**Commit** : [84cdb78 — suivi et corrections des passages](https://github.com/Vitrixxl/t6/commit/84cdb789b23d7a3579a3c6af177c7b39aa8552c0).
+
+**Où le montrer** : `src/components/planner/trips/lists/HistoryList.tsx`,
+`src/components/planner/trips/CancelTripButton.tsx`,
+`server/src/services/recurring-trips.ts`,
+`server/src/__tests__/cancellations.test.ts`,
+`src/lib/trip-evolution.test.ts`, `scripts/e2e-trip-history.mjs`.
+
+**Vérification** : la recette Chromium renonce à une annulation sans écriture,
+confirme les annulations, rétablit l’aller en conservant le retour annulé,
+puis recharge la page. Le test API couvre le rejeu, la persistance des autres
+exceptions, les paramètres invalides, l’absence de session et le compte voisin.
+Les tests de calcul vérifient l’exclusion des annulations et leur réintégration.
+`bun run check` passe : 224 tests, 642 assertions, 28 fichiers.
+
+**Niveau de verrouillage** : **automatisé** pour ces parcours et les règles
+serveur. Le rétablissement concerne les passages récurrents ; un ponctuel annulé
+reste conservé dans l’historique, hors calculs.
+
+### B51 — Les commandes mobiles se distinguaient mal de la carte
+
+**Symptôme** : sur le fond cartographique chargé, les boutons du bas étaient
+peu visibles et leurs icônes seules n’expliquaient pas leur fonction.
+
+**Cause racine** : deux groupes de petites surfaces claires posées directement
+sur la carte, sans libellé visible ni fond commun qui les sépare des données.
+
+**Correctif** : une barre opaque bordée et ombrée, cinq boutons de hauteur
+minimale 60 px avec libellés visibles et état de focus contrasté. L’attribution
+cartographique remonte au-dessus de la barre et de la zone réservée du téléphone.
+
+**Commit** : [84cdb78 — commandes mobiles lisibles](https://github.com/Vitrixxl/t6/commit/84cdb789b23d7a3579a3c6af177c7b39aa8552c0).
+
+**Où le montrer** : `src/components/planner/MobileQuickPanels.tsx`,
+`src/styles.css`, `scripts/e2e-evolution.mjs`.
+
+**Vérification** : Chromium à 320, 390 et 540 px vérifie cinq commandes avec
+texte visible, des cibles d’au moins 44 × 44 px, une barre dans l’écran et
+l’ouverture des couches. Captures de la barre à 390 px et du graphique relues.
+Le parcours complet de planification passe à 9/9, l’audit axe-core ne détecte
+aucune violation sur ses quatre écrans et sur le hub avec évolution ouverte.
+
+**Niveau de verrouillage** : **faible** pour la lisibilité visuelle, contrôlée
+sur captures ; dimensions, présence des libellés et ouverture sont automatisées.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire
