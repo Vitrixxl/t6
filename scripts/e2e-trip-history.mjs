@@ -118,6 +118,104 @@ try {
     assert((await waitBoth).ok(), 'Annulation des deux sens refusée');
     remote = await state();
     assert(remote.recurringTrips.find((item) => item.id === 'both').cancelledPassages.length === 2, 'Les deux sens ne sont pas annulés ensemble');
+    const deleteRequests = [];
+    page.on('request', (request) => {
+        if (request.method() === 'DELETE') deleteRequests.push(request.url());
+    });
+    for (const target of [
+        { tab: 'Une fois', title: 'Supprimer ce trajet ?', path: '/trips/planned/future', collection: 'plannedTrips', id: 'future', width: 390 },
+        { tab: 'Récurrents', title: 'Supprimer ce trajet récurrent ?', path: '/trips/recurring/work', collection: 'recurringTrips', id: 'work', width: 1280 },
+        { tab: 'Enregistrés', title: 'Supprimer cet itinéraire enregistré ?', path: '/saved-routes/saved', collection: 'savedRoutes', id: 'saved', width: 390 },
+    ]) {
+        await page.setViewportSize({ width: target.width, height: 844 });
+        await tab(target.tab);
+        const name = target.tab === 'Récurrents' ? `Supprimer le trajet récurrent ${trip.label}` : `Supprimer ${trip.label}`;
+        const remove = dialog.getByRole('button', { name, exact: true });
+        const confirmation = page.getByRole('dialog', { name: target.title, exact: true });
+        const before = deleteRequests.length;
+        await remove.click();
+        await confirmation.waitFor();
+        await confirmation.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+        assert((await confirmation.innerText()).includes(trip.label), 'La confirmation doit identifier le trajet');
+        assert(deleteRequests.length === before, 'Suppression déclenchée avant confirmation');
+        const bounds = await confirmation.boundingBox();
+        assert(bounds && bounds.x >= 0 && bounds.x + bounds.width <= target.width && bounds.y >= 0 && bounds.y + bounds.height <= 844, 'Confirmation hors écran');
+        await page.screenshot({ path: `tmp/screenshots/confirmation-${target.id}-${target.width}.png` });
+        await confirmation.getByRole('button', { name: 'Annuler', exact: true }).click();
+        await confirmation.waitFor({ state: 'hidden' });
+        assert((await state())[target.collection].some((item) => item.id === target.id), 'Annuler a supprimé le trajet');
+        await remove.click();
+        await confirmation.waitFor();
+        await confirmation.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+        await confirmation.getByRole('button', { name: 'Annuler', exact: true }).focus();
+        await page.keyboard.press('Escape');
+        await confirmation.waitFor({ state: 'hidden' });
+        await dialog.waitFor();
+        assert(deleteRequests.length === before, 'Annuler ou Échap a envoyé une suppression');
+        await remove.click();
+        const response = page.waitForResponse((result) => result.url().endsWith('/api' + target.path) && result.request().method() === 'DELETE');
+        await confirmation.getByRole('button', { name: 'Supprimer', exact: true }).click();
+        assert((await response).ok(), 'Suppression confirmée refusée');
+        await remove.waitFor({ state: 'hidden' });
+        assert(!(await state())[target.collection].some((item) => item.id === target.id), 'Suppression non persistée');
+        assert(deleteRequests.length === before + 1, 'La confirmation doit envoyer une seule suppression');
+    }
+    await put('/trips/planned/carbon-clear', { ...trip, scheduledFor: createdAt, status: 'planned', completedAt: null });
+    await put('/trips/planned/carbon-clear/completion');
+    await page.setViewportSize({ width: 1280, height: 844 });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.locator('[data-tour="route-detail"]').waitFor();
+    const clear = page.getByRole('button', { name: "Effacer l'historique", exact: true });
+    const clearDialog = page.getByRole('dialog', { name: 'Effacer l’historique carbone ?', exact: true });
+    const beforeClear = deleteRequests.length;
+    await clear.click();
+    await clearDialog.waitFor();
+    await clearDialog.getByRole('button', { name: 'Annuler', exact: true }).click();
+    await clearDialog.waitFor({ state: 'hidden' });
+    assert(deleteRequests.length === beforeClear && (await state()).tripRecords.length > 0, 'Annuler a effacé l’historique');
+    await clear.click();
+    const cleared = page.waitForResponse((response) => response.url().endsWith('/api/trips/history') && response.request().method() === 'DELETE');
+    await clearDialog.getByRole('button', { name: 'Effacer l’historique', exact: true }).click();
+    assert((await cleared).ok(), 'Effacement confirmé refusé');
+    assert((await state()).tripRecords.length === 0, 'Historique non effacé');
+    assert((await state()).recurringTrips.some((item) => item.id === 'both'), 'L’effacement carbone a supprimé une récurrence');
+    console.log('Confirmations : ponctuel, récurrent, enregistré et historique carbone ; annulation sans DELETE, Échap et suppression persistée vérifiés.');
+    const profileResponse = await context.request.put(`${baseURL}/api/me/profile`, {
+        data: { ...(await state()).profile, carbonGoalGramsPerWeek: 250 },
+    });
+    assert(profileResponse.ok(), 'Budget de recette refusé');
+    await put('/trips/planned/budget', { ...trip, label: 'Vérification budget', carbonGrams: 300, carbonSavedGrams: 5000, scheduledFor: createdAt, status: 'planned', completedAt: null });
+    await put('/trips/planned/budget/completion');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload({ waitUntil: 'networkidle' });
+    await openHub();
+    const budget = dialog.getByRole('region', { name: 'Budget carbone de la semaine' });
+    for (const width of [390, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        await budget.scrollIntoViewIfNeeded();
+        assert(await budget.getByTestId('carbon-spent').innerText() === '300 gCO₂e', 'Les économies ne doivent pas être soustraites aux dépenses');
+        assert(await budget.getByTestId('carbon-limit').innerText() === '250 gCO₂e', 'Mauvais maximum hebdomadaire');
+        assert((await budget.getByTestId('carbon-remaining').innerText()).includes('Dépassement de 50 gCO₂e · 120 %'), 'Dépassement mal indiqué');
+        assert(await budget.getByRole('progressbar').getAttribute('aria-valuenow') === '100', 'La barre doit rester bornée au maximum');
+        await page.screenshot({ path: `tmp/screenshots/budget-depasse-${width}.png` });
+    }
+    await budget.locator('summary').click();
+    const reference = budget.getByRole('link', { name: /Source : SDES-Insee/ });
+    assert(await reference.getAttribute('href') === 'https://www.statistiques.developpement-durable.gouv.fr/le-quart-des-menages-les-plus-aises-lorigine-de-35-des-emissions-de-gaz-effet-de-serre-des', 'Source statistique absente');
+    assert((await budget.innerText()).includes('2019'), 'Millésime statistique absent');
+    await page.screenshot({ path: 'tmp/screenshots/budget-reference.png' });
+    await tab('Historique');
+    const budgetTrip = dialog.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Vérification budget', exact: true }) });
+    const cancelledBudget = page.waitForResponse((response) => response.url().endsWith('/api/trips/planned/budget/cancellation') && response.request().method() === 'PUT');
+    await budgetTrip.getByRole('button', { name: 'Annuler', exact: true }).click();
+    assert((await cancelledBudget).ok(), 'Annulation du trajet de recette refusée');
+    await page.waitForFunction(() => [...globalThis.document.querySelectorAll('[data-testid="carbon-spent"]')].every((element) => element.textContent === '0 gCO₂e'));
+    assert((await budget.getByTestId('carbon-remaining').innerText()).includes('250 gCO₂e restants · 0 %'), 'L’annulation ne libère pas le budget');
+    await page.reload({ waitUntil: 'networkidle' });
+    const sidebarBudget = page.locator('[data-tour="route-detail"]').getByRole('region', { name: 'Budget carbone de la semaine' });
+    await sidebarBudget.waitFor();
+    assert(await sidebarBudget.getByTestId('carbon-spent').innerText() === '0 gCO₂e', 'La dépense réapparaît après rechargement');
+    console.log('Budget : plafond persisté, dépenses distinctes des économies, dépassement, référence sourcée et annulation vérifiés.');
     assert(errors.length === 0, `Erreurs navigateur : ${errors.join(', ')}`);
     console.log('Hub : 4 onglets × 5 largeurs sans débordement ; annulations aller/retour/ponctuel persistées après rechargement.');
 } catch (error) {

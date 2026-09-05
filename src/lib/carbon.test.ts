@@ -27,14 +27,14 @@ describe('carbon tracking', () => {
         expect(summary.trips).toBe(1);
         expect(summary.totalCarbonGrams).toBe(20);
         expect(summary.totalSavedGrams).toBe(880);
-        expect(summary.goalUsagePercent).toBe(1);
+        expect(summary.budgetUsagePercent).toBe(1);
     });
 
-    it('plafonne la jauge d\'objectif a 999 % et la neutralise si l\'objectif est nul', () => {
+    it('conserve le pourcentage réel de dépassement et protège un budget nul', () => {
         const bigTrip = { ...makeTripRecord('user-3'), carbonGrams: 100000 };
 
-        expect(summarizeCarbon([bigTrip], [], 2500).goalUsagePercent).toBe(999);
-        expect(summarizeCarbon([bigTrip], [], 0).goalUsagePercent).toBe(0);
+        expect(summarizeCarbon([bigTrip], [], 2500).budgetUsagePercent).toBe(4000);
+        expect(summarizeCarbon([bigTrip], [], 0).budgetUsagePercent).toBe(0);
     });
 
     it('borne l\'historique aux 50 trajets les plus récents, le dernier en tete', () => {

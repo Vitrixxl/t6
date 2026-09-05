@@ -1,5 +1,5 @@
 // Audit d'accessibilité automatise axe-core (WCAG 2.1 A/AA) sur le build de
-// production servi par `vite preview`. Quatre états sont audités : l'écran
+// production servi par le serveur Bun. Quatre états sont audités : l'écran
 // d'authentification, l'écran principal carte/planification, le hub
 // planificateur et le profil.
 // Limite assumée : axe-core ne remplace pas un audit manuel clavier + lecteur

@@ -102,7 +102,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levée.
 - [x] theme-color aligne (index.html/manifest), scripts Bun e2e/screens exposés, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, économie chiffrée, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 219 tests verts (26 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core antérieur : 0 violation WCAG 2.1 A/AA (4 écrans), non rejoué sur cette branche. Le dossier PDF reste gelé.
+- [x] 219 tests verts (26 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core : 0 violation WCAG 2.1 A/AA sur les 4 écrans, rejoué après ajout du suivi du budget. Le dossier PDF reste gelé.
 
 ## 9. Preuves concrètes
 
@@ -117,7 +117,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectée).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et contrôlées en planche-contact et pleine page.
-- Vérification de la simplification : `bun run check` OK (`eslint .`, TypeScript 7 strict, 219 tests, `Bun.build`), audit antérieur `bun run audit:a11y` OK (0 violation sur 4 écrans, non rejoué sur cette branche) et `bun run e2e` OK (9/9).
+- Vérification de la simplification : `bun run check` OK (`eslint .`, TypeScript 7 strict, 219 tests, `Bun.build`), audit `bun run audit:a11y` OK (0 violation sur 4 écrans, rejoué après ajout du suivi du budget) et `bun run e2e` OK (9/9).
 
 ## 10. Backend (ajout post-audit)
 
@@ -165,7 +165,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Tests client / métier : 142 tests verts dans `src/`.
 - [x] Tests d'API : `bun test server`, 77 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) exécutés par Bun.
-- [x] Vérifications de simplification : `bun run check` complet (219 tests), E2E 9/9, `e2e:trips` et `e2e:offline` réussis. L’audit axe-core précédent reste à 0 violation sur 4 écrans ; il n’a pas été rejoué ici.
+- [x] Vérifications de simplification : `bun run check` complet (219 tests), E2E 9/9, `e2e:trips` et `e2e:offline` réussis. L’audit axe-core rejoué après ajout du suivi du budget reste à 0 violation sur 4 écrans. Le scénario `e2e:trips` vérifie aussi les confirmations et la dépense face au maximum.
 - [x] Limite assumée : l'ingestion GTFS et la génération du dossier restent en Python, faute d'équivalent JavaScript.
 
 ## Correctif du hub et des annulations
@@ -198,6 +198,9 @@ Les estimations actuelles restent utilisées par l’interface. Détails :
 `docs/PLAN-ATTENTE-GTFS.md`.
 
 ## Simplification pour l’apprentissage
+
+- [x] Confirmations explicites avant suppression des trajets et effacement de l’historique carbone.
+- [x] Budget carbone visible dans le suivi des trajets : émissions, maximum, reste ou dépassement ; repère SDES-Insee sourcé avec millésime et périmètre.
 
 - [x] Tests directement sur `bun:test`, sans passerelle de compatibilité ni vocabulaire `vi`.
 

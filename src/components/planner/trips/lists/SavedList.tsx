@@ -1,4 +1,6 @@
 // Itinéraires enregistrés : reprogrammer ou supprimer.
+import { useState } from 'react';
+import { ConfirmDialog } from '../../../ui/confirm-dialog';
 import { formatDuration } from '../../../../lib/duration';
 import { CalendarPlus, Route, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/button';
@@ -16,6 +18,7 @@ export function SavedList({
     onPlan: (route: SavedRouteRecord) => void;
     onDelete: (id: string) => void;
 }) {
+    const [pendingDelete, setPendingDelete] = useState<SavedRouteRecord | null>(null);
     if (routes.length === 0) {
         return (
             <EmptyState
@@ -27,41 +30,54 @@ export function SavedList({
     }
 
     return (
-        <ul className="grid min-w-0 grid-cols-1 gap-2">
-            {routes.map((route) => (
-                <li key={route.id} className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
-                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
-                        <div className="min-w-0 max-w-full">
-                            <h3 className="truncate text-sm font-semibold">{route.routeTitle}</h3>
-                            <OriginDestination origin={route.origin.label} destination={route.destination.label} />
+        <>
+            <ul className="grid min-w-0 grid-cols-1 gap-2">
+                {routes.map((route) => (
+                    <li key={route.id} className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
+                        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
+                            <div className="min-w-0 max-w-full">
+                                <h3 className="truncate text-sm font-semibold">{route.routeTitle}</h3>
+                                <OriginDestination origin={route.origin.label} destination={route.destination.label} />
+                            </div>
+                            <span className="font-mono text-[11px] text-muted-foreground">
+                                {formatDuration(route.durationMinutes)} · {route.distanceKm.toFixed(1)} km · {route.carbonGrams} gCO₂e
+                            </span>
                         </div>
-                        <span className="font-mono text-[11px] text-muted-foreground">
-                            {formatDuration(route.durationMinutes)} · {route.distanceKm.toFixed(1)} km · {route.carbonGrams} gCO₂e
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <Button type="button" size="sm" className="h-7 px-2.5 text-[11px]" onClick={() => onPlan(route)}>
-                            <CalendarPlus className="size-3.5" aria-hidden="true" />
-                            Planifier
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" className="h-7 px-2.5 text-[11px]" onClick={() => onLoad(route)}>
-                            <Route className="size-3.5" aria-hidden="true" />
-                            Charger
-                        </Button>
-                        <span className="flex-1" aria-hidden="true" />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="compactIcon"
-                            className="h-7 w-7 text-muted-foreground"
-                            onClick={() => onDelete(route.id)}
-                            aria-label={`Supprimer ${route.routeTitle}`}
-                        >
-                            <Trash2 className="size-3.5" aria-hidden="true" />
-                        </Button>
-                    </div>
-                </li>
-            ))}
-        </ul>
+                        <div className="flex items-center gap-1.5">
+                            <Button type="button" size="sm" className="h-7 px-2.5 text-[11px]" onClick={() => onPlan(route)}>
+                                <CalendarPlus className="size-3.5" aria-hidden="true" />
+                                Planifier
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" className="h-7 px-2.5 text-[11px]" onClick={() => onLoad(route)}>
+                                <Route className="size-3.5" aria-hidden="true" />
+                                Charger
+                            </Button>
+                            <span className="flex-1" aria-hidden="true" />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="compactIcon"
+                                className="h-7 w-7 text-muted-foreground"
+                                onClick={() => setPendingDelete(route)}
+                                aria-label={`Supprimer ${route.routeTitle}`}
+                            >
+                                <Trash2 className="size-3.5" aria-hidden="true" />
+                            </Button>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+            {pendingDelete && (
+                <ConfirmDialog
+                    open
+                    onOpenChange={() => setPendingDelete(null)}
+                    title="Supprimer cet itinéraire enregistré ?"
+                    description={`« ${pendingDelete.routeTitle} » — Cet itinéraire sera retiré de tes enregistrements. Les trajets déjà planifiés à partir de celui-ci seront conservés.`}
+                    confirmLabel="Supprimer"
+                    destructive
+                    onConfirm={() => onDelete(pendingDelete.id)}
+                />
+            )}
+        </>
     );
 }

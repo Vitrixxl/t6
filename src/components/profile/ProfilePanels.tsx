@@ -205,7 +205,7 @@ export function ProfilePanel() {
                     </span>
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-carbon-goal">
-                    Budget carbone hebdomadaire (g)
+                    Maximum carbone hebdomadaire (gCO₂e)
                     <Input
                         id="profile-carbon-goal"
                         type="number"
@@ -216,6 +216,7 @@ export function ProfilePanel() {
                         {...form.register('carbonGoalGramsPerWeek', { valueAsNumber: true })}
                     />
                     <FieldError message={errors.carbonGoalGramsPerWeek?.message} />
+                    <span className="text-xs font-normal text-muted-foreground">Ton plafond personnel d’émissions pour les trajets suivis. Consulte la dépense et le reste disponible dans le suivi des trajets.</span>
                 </label>
                 <fieldset className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3">
                     <legend className="px-1 text-sm font-semibold">Objectifs d&apos;économie de CO₂e</legend>

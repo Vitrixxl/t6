@@ -220,7 +220,7 @@ export interface CarbonSummary {
     totalDistanceKm: number;
     totalCarbonGrams: number;
     totalSavedGrams: number;
-    goalUsagePercent: number;
+    budgetUsagePercent: number;
 }
 
 export interface TripActivitySummary {

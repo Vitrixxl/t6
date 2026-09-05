@@ -68,13 +68,13 @@ const DESKTOP_STEPS: TourStep[] = [
         id: 'carbon',
         target: 'carbon',
         title: 'Suivi carbone',
-        body: "Ton budget carbone hebdomadaire et le CO₂e évité par rapport à une référence voiture mesurée, alimentés par les trajets faits. Les objectifs se règlent dans ton profil.",
+        body: "Consulte tes émissions de la semaine, ton maximum et le reste disponible ou le dépassement. Les économies comparées à la voiture sont affichées séparément.",
     },
     {
         id: 'profile',
         target: 'profile',
         title: 'Profil et préférences',
-        body: "Modes préférés, priorité PMR, budget carbone : tout influence directement le calcul et le score des itinéraires.",
+        body: "Les modes préférés et la priorité PMR influencent les itinéraires. Le maximum carbone sert au suivi de tes dépenses dans la semaine ; il ne filtre pas les trajets.",
     },
     {
         id: 'done',

@@ -1,7 +1,7 @@
 // Dialogue de confirmation pour les actions sans retour en arriere.
 //
-// Déconnexion et suppression de compte partagent la même forme, mais pas les
-// mêmes consequences : le libellé du bouton d'action dit ce qui va se passer
+// Les actions partagent la même forme, mais pas les mêmes conséquences :
+// le libellé du bouton d’action dit ce qui va se passer
 // ("Supprimer le compte"), jamais "Oui" ou "Confirmer", pour qu'un utilisateur
 // qui ne lit que le bouton comprenne quand même ce qu'il déclenche.
 import { Button } from './button';
@@ -26,7 +26,12 @@ export function ConfirmDialog({
 }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-sm">
+            <DialogContent className="max-w-sm" onEscapeKeyDown={(event) => {
+                // Échap ferme la confirmation sans fermer le dialogue parent.
+                event.preventDefault();
+                event.stopPropagation();
+                onOpenChange(false);
+            }}>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>

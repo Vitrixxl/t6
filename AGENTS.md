@@ -262,6 +262,16 @@ En revanche le nom de ligne **est** affiché depuis l'intégration de la dessert
 publiée : une ligne n'est proposée que si elle dessert réellement les deux
 stations du segment.
 
+Toute suppression de trajet ponctuel, récurrent ou enregistré et tout effacement
+de l’historique carbone passent par une confirmation explicite. Annuler, fermer
+ou presser Échap ne déclenche aucune écriture. Utiliser le dialogue existant.
+
+Le maximum carbone hebdomadaire porte sur les émissions des trajets suivis,
+jamais sur les économies comparées à la voiture. Afficher le reste ou le
+dépassement réel ; seul le remplissage graphique se borne à 100 %. Ce maximum
+ne filtre pas les itinéraires et ne change pas leur score. Tout repère national
+a une source, un millésime et un périmètre explicites.
+
 Les objectifs d'économie de CO2 hebdomadaire et mensuel sont deux valeurs de
 profil indépendantes. Le mensuel ne se dérive pas du premier : chaque période
 est comparée à son propre objectif persisté par l'API.

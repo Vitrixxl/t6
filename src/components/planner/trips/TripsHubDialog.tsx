@@ -25,6 +25,7 @@ import {
 } from '../../../queries';
 import { planSourceAtom, tripsHubAtom, type TripsHubTab } from '../../../state';
 import { Metric } from '../../app/shared';
+import { CarbonBudget } from '../../carbon/CarbonBudget';
 import { TripGoalsCard } from './TripGoalsCard';
 import { HistoryList } from './lists/HistoryList';
 import { RecurringList } from './lists/RecurringList';
@@ -109,6 +110,7 @@ export function TripsHubDialog({
                         <Metric label="Récurrents actifs" value={String(summary.recurringActiveCount)} compact />
                     </div>
 
+                    <CarbonBudget />
                     <TripGoalsCard />
 
                     <Button type="button" className="h-auto min-h-11 w-full justify-center whitespace-normal rounded-xl py-2 text-center" onClick={onNewTrip}>

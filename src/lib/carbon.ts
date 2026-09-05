@@ -19,7 +19,7 @@ import { startOfWeek } from './week';
 export function summarizeCarbon(
     allRecords: TripRecord[],
     recurring: RecurringTrip[],
-    weeklyGoalGrams: number,
+    weeklyBudgetGrams: number,
     now: Date = new Date(),
 ): CarbonSummary {
     const weekFloor = startOfWeek(now);
@@ -36,7 +36,7 @@ export function summarizeCarbon(
         totalDistanceKm,
         totalCarbonGrams,
         totalSavedGrams,
-        goalUsagePercent: weeklyGoalGrams > 0 ? Math.min(Math.round((totalCarbonGrams / weeklyGoalGrams) * 100), 999) : 0,
+        budgetUsagePercent: weeklyBudgetGrams > 0 ? Math.round((totalCarbonGrams / weeklyBudgetGrams) * 100) : 0,
     };
 }
 

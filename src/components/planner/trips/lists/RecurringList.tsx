@@ -3,6 +3,8 @@
 // Une routine n'a pas d'occurrences à cocher : chaque passage déjà échu compte
 // de lui-même. La carte le montre en annonçant le prochain passage et le
 // nombre de passages comptes cette semaine.
+import { useState } from 'react';
+import { ConfirmDialog } from '../../../ui/confirm-dialog';
 import { Pause, Play, Repeat, Trash2 } from 'lucide-react';
 import { useNow } from '../../../../state/clock';
 import { Button } from '../../../ui/button';
@@ -20,6 +22,7 @@ export function RecurringList({
     onTogglePaused: (trip: RecurringTrip) => void;
     onDelete: (trip: RecurringTrip) => void;
 }) {
+    const [pendingDelete, setPendingDelete] = useState<RecurringTrip | null>(null);
     const now = useNow();
     if (trips.length === 0) {
         return (
@@ -34,83 +37,96 @@ export function RecurringList({
     const weekFloor = startOfWeek(now);
 
     return (
-        <div className="grid min-w-0 grid-cols-1 gap-3">
-            <p className="text-xs text-muted-foreground">Les passages sont comptés automatiquement. Pour annuler un aller ou un retour passé, ouvre l’onglet Historique.</p>
-            <ul className="grid min-w-0 grid-cols-1 gap-2">
-                {trips.map((trip) => {
-                    const paused = isRoutinePaused(trip);
-                    const next = nextOccurrence(trip, now);
-                    const thisWeek = countOccurrences(trip, weekFloor, now);
-                    return (
-                        <li
-                            key={trip.id}
-                            className={`grid min-w-0 grid-cols-1 gap-2.5 rounded-xl border p-3 transition ${paused ? 'border-border/60 bg-muted/30 opacity-80' : 'border-border/70 bg-background'
-                                }`}
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 max-w-full">
-                                    <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
-                                        <span className="min-w-0 truncate">{trip.label}</span>
-                                        {paused ? (
-                                            <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
-                                                en pause
-                                            </span>
-                                        ) : null}
-                                    </h3>
-                                    <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />
-                                    <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                                        Départ {trip.departureTime}
-                                        {trip.returnTime ? ` · retour ${trip.returnTime}` : ''}
-                                    </p>
-                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                        {next ? `Prochain passage : ${formatScheduleLabel(next.toISOString(), now)}` : 'Aucun passage prévu'}
-                                        {` · ${thisWeek} passage${thisWeek > 1 ? 's' : ''} cette semaine`}
-                                    </p>
+        <>
+            <div className="grid min-w-0 grid-cols-1 gap-3">
+                <p className="text-xs text-muted-foreground">Les passages sont comptés automatiquement. Pour annuler un aller ou un retour passé, ouvre l’onglet Historique.</p>
+                <ul className="grid min-w-0 grid-cols-1 gap-2">
+                    {trips.map((trip) => {
+                        const paused = isRoutinePaused(trip);
+                        const next = nextOccurrence(trip, now);
+                        const thisWeek = countOccurrences(trip, weekFloor, now);
+                        return (
+                            <li
+                                key={trip.id}
+                                className={`grid min-w-0 grid-cols-1 gap-2.5 rounded-xl border p-3 transition ${paused ? 'border-border/60 bg-muted/30 opacity-80' : 'border-border/70 bg-background'
+                                    }`}
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 max-w-full">
+                                        <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                                            <span className="min-w-0 truncate">{trip.label}</span>
+                                            {paused ? (
+                                                <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                                                    en pause
+                                                </span>
+                                            ) : null}
+                                        </h3>
+                                        <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />
+                                        <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                                            Départ {trip.departureTime}
+                                            {trip.returnTime ? ` · retour ${trip.returnTime}` : ''}
+                                        </p>
+                                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                            {next ? `Prochain passage : ${formatScheduleLabel(next.toISOString(), now)}` : 'Aucun passage prévu'}
+                                            {` · ${thisWeek} passage${thisWeek > 1 ? 's' : ''} cette semaine`}
+                                        </p>
+                                    </div>
+                                    <ModeIconRow trip={trip} />
                                 </div>
-                                <ModeIconRow trip={trip} />
-                            </div>
-                            <div className="flex items-center gap-1" aria-label="Jours actifs">
-                                {[1, 2, 3, 4, 5, 6, 0].map((day) => (
-                                    <span
-                                        key={day}
-                                        className={`grid h-6 w-7 place-items-center rounded-md text-[10px] font-bold ${trip.daysOfWeek.includes(day)
-                                            ? paused
-                                                ? 'bg-muted text-muted-foreground'
-                                                : 'bg-primary/10 text-primary'
-                                            : 'text-muted-foreground/40'
-                                            }`}
+                                <div className="flex items-center gap-1" aria-label="Jours actifs">
+                                    {[1, 2, 3, 4, 5, 6, 0].map((day) => (
+                                        <span
+                                            key={day}
+                                            className={`grid h-6 w-7 place-items-center rounded-md text-[10px] font-bold ${trip.daysOfWeek.includes(day)
+                                                ? paused
+                                                    ? 'bg-muted text-muted-foreground'
+                                                    : 'bg-primary/10 text-primary'
+                                                : 'text-muted-foreground/40'
+                                                }`}
+                                        >
+                                            {WEEKDAY_LABELS[day][0]}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <Button
+                                        type="button"
+                                        variant={paused ? 'default' : 'outline'}
+                                        size="sm"
+                                        className="h-7 px-2.5 text-[11px]"
+                                        onClick={() => onTogglePaused(trip)}
                                     >
-                                        {WEEKDAY_LABELS[day][0]}
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <Button
-                                    type="button"
-                                    variant={paused ? 'default' : 'outline'}
-                                    size="sm"
-                                    className="h-7 px-2.5 text-[11px]"
-                                    onClick={() => onTogglePaused(trip)}
-                                >
-                                    {paused ? <Play className="size-3.5" aria-hidden="true" /> : <Pause className="size-3.5" aria-hidden="true" />}
-                                    {paused ? 'Reprendre' : 'Mettre en pause'}
-                                </Button>
-                                <span className="flex-1" aria-hidden="true" />
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="compactIcon"
-                                    className="h-7 w-7 text-muted-foreground"
-                                    onClick={() => onDelete(trip)}
-                                    aria-label={`Supprimer le trajet récurrent ${trip.label}`}
-                                >
-                                    <Trash2 className="size-3.5" aria-hidden="true" />
-                                </Button>
-                            </div>
-                        </li>
-                    );
-                })}
-            </ul>
-        </div>
+                                        {paused ? <Play className="size-3.5" aria-hidden="true" /> : <Pause className="size-3.5" aria-hidden="true" />}
+                                        {paused ? 'Reprendre' : 'Mettre en pause'}
+                                    </Button>
+                                    <span className="flex-1" aria-hidden="true" />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="compactIcon"
+                                        className="h-7 w-7 text-muted-foreground"
+                                        onClick={() => setPendingDelete(trip)}
+                                        aria-label={`Supprimer le trajet récurrent ${trip.label}`}
+                                    >
+                                        <Trash2 className="size-3.5" aria-hidden="true" />
+                                    </Button>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
+            {pendingDelete && (
+                <ConfirmDialog
+                    open
+                    onOpenChange={() => setPendingDelete(null)}
+                    title="Supprimer ce trajet récurrent ?"
+                    description={`« ${pendingDelete.label} » — Cette récurrence et tous ses passages seront retirés de l’historique et des calculs carbone. Pour interrompre seulement les prochains passages, utilise la mise en pause.`}
+                    confirmLabel="Supprimer"
+                    destructive
+                    onConfirm={() => onDelete(pendingDelete)}
+                />
+            )}
+        </>
     );
 }

@@ -223,12 +223,29 @@ consultation vivent ensemble dans `src/lib/planner/emissions.ts`. Le type
 
 ## Objectifs carbone personnels
 
+Le suivi des trajets affiche les émissions de la semaine, le maximum personnel
+et le reste disponible ou le dépassement, sur mobile comme sur bureau. Il
+compte les trajets faits et les passages récurrents échus, hors annulations ;
+les économies par rapport à la voiture ne sont jamais soustraites aux émissions.
+Le budget ne filtre ni ne classe les itinéraires.
+
 Le profil distingue trois notions : le budget carbone hebdomadaire, l'objectif
 d'économie hebdomadaire et l'objectif d'économie mensuel. Les deux objectifs
 d'économie sont indépendants : le mensuel n'est pas une multiplication arbitraire
 du chiffre hebdomadaire. Ils sont validés par le contrat partagé, persistés avec
 `PUT /api/me/profile`, puis comparés aux mêmes agrégats semaine/mois que le suivi
 carbone dans le planificateur.
+
+Le repère national vient du [SDES-Insee, enquête mobilité 2019](https://www.statistiques.developpement-durable.gouv.fr/le-quart-des-menages-les-plus-aises-lorigine-de-35-des-emissions-de-gaz-effet-de-serre-des)
+(publication 2023) : 1,45 tCO₂e/personne/an, soit environ 27 885 gCO₂e/semaine
+après division par 52. Champ : personnes de 6 ans et plus en France métropolitaine,
+déplacements locaux et longue distance, émissions pendant les déplacements.
+Ce périmètre diffère des trajets et facteurs suivis dans UrbanFlow : aucune
+comparaison de performance ni recommandation de plafond n’en est déduite.
+
+Les suppressions de trajets ponctuels, récurrents et enregistrés, ainsi que
+l’effacement de l’historique carbone, demandent une confirmation nommant
+l’action et ses conséquences. Annuler ou fermer ne déclenche aucune écriture.
 
 Le tutoriel de première visite suit la disposition courante. Sur mobile, il
 montre successivement la recherche, la carte, le GPS, les disponibilités a
