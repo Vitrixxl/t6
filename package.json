@@ -22,6 +22,8 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "generate:gtfs": "python3 scripts/fetch_gtfs.py",
+    "sync:gtfs": "bun scripts/sync-timetable.ts",
+    "import:gtfs": "bun scripts/import-timetable.ts",
     "generate:lignes": "python3 scripts/fetch_tcl_lines.py",
     "generate:icons": ".venv/bin/python scripts/generate_icons.py",
     "generate:pdf": "bun scripts/build-metrics.mjs && .venv/bin/python scripts/generate_dossier.py"

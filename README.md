@@ -304,3 +304,38 @@ l'API n'est consommée qu'en même origine.
 
 RGPD : export complet du compte (`GET /api/me/export`, art. 20) et suppression en cascade (`DELETE /api/me`,
 art. 17), historiques bornés à 50 entrées (minimisation), géolocalisation sur action explicite.
+
+
+## Préparation des horaires GTFS — branche de travail
+
+Le service horaire côté serveur est développé, mais **le client utilise encore
+les estimations d’attente actuelles**. Son branchement attend la validation d’une
+archive TCL récente et de la correspondance entre ses quais et les tracés publiés.
+Le [plan d’intégration](docs/PLAN-ATTENTE-GTFS.md) suit ce travail.
+
+- `bun run sync:gtfs` télécharge l’archive désignée par `GTFS_SOURCE_URL`,
+  la normalise en Python puis l’active via Bun et Drizzle.
+- `bun run sync:gtfs --archive /chemin/GTFS_TCL.zip` utilise une archive locale.
+- `bun run import:gtfs /chemin/timetable.json` active un fichier normalisé.
+
+Le jeton reste dans `.env`. Les fichiers normalisés restent dans `tmp/gtfs/`.
+L’activation est transactionnelle et idempotente par empreinte de l’archive ;
+un échec conserve la version précédente. La commande refuse une archive expirée.
+L’import exige des horaires et un tracé ordonné exploitable pour chaque course :
+il n’invente ni passage ni géométrie. Les transferts spécifiques à une ligne ou
+une course et les transferts à bord nécessitent encore un traitement dédié ;
+ils provoquent un refus explicite de l’import.
+
+`GET /api/transit/network` décrit le réseau importé et sa validité.
+`GET /api/transit/journeys` reçoit le paramètre JSON `search`, décrit dans
+l’OpenAPI : instant de départ, accessibilité, quais candidats et mesures d’accès.
+Le service cherche les courses de la journée demandée et leurs prolongements
+nocturnes, avec au plus une correspondance. Il compare les arrivées finales,
+respecte l’ordre des quais, les calendriers et les transferts. Les fréquences
+sans départs fixes restent étiquetées `frequency`. Une correspondance sans durée
+publiée porte une marge de quatre minutes explicitement estimée.
+
+Sans import, le service retourne `unavailable` ; une date non couverte retourne
+`outside-coverage`. `no-service` signifie qu’aucune course admissible n’a été
+trouvée dans le périmètre demandé. Ces résultats ne sont pas encore consommés
+par le client. Aucun nouveau déploiement ni import de production n’a été réalisé.

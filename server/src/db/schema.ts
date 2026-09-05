@@ -8,6 +8,7 @@ import { desc, sql } from 'drizzle-orm';
 import { check, index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { PLANNED_TRIP_STATUSES, type CancelledPassage } from '../../../src/contracts/trips.ts';
 import type { MobilityMode, MobilityProfile, RoutinePeriod } from '../../../src/types.ts';
+import type { TimetableMetadata, TimetableTrip, TransitNetwork, TimetableTransfer } from '../../../src/contracts/transit.ts';
 
 export const users = sqliteTable('users', {
     id: text('id').primaryKey(),
@@ -169,3 +170,38 @@ export const routeCache = sqliteTable(
     },
     (t) => [index('idx_route_cache_date').on(t.createdAt)],
 );
+
+export const transitFeeds = sqliteTable('transit_feeds', {
+    id: text('id').primaryKey(),
+    active: integer('active', { mode: 'boolean' }).notNull().default(false),
+    metadata: text('metadata', { mode: 'json' }).$type<TimetableMetadata>().notNull(),
+    network: text('network', { mode: 'json' }).$type<TransitNetwork>().notNull(),
+    transfers: text('transfers', { mode: 'json' }).$type<TimetableTransfer[]>().notNull(),
+});
+
+export const transitServiceDays = sqliteTable('transit_service_days', {
+    feedId: text('feed_id').notNull().references(() => transitFeeds.id, { onDelete: 'cascade' }),
+    serviceId: text('service_id').notNull(),
+    date: text('date').notNull(),
+}, (t) => [primaryKey({ columns: [t.feedId, t.serviceId, t.date] }), index('idx_transit_date').on(t.feedId, t.date)]);
+
+export const transitTrips = sqliteTable('transit_trips', {
+    feedId: text('feed_id').notNull().references(() => transitFeeds.id, { onDelete: 'cascade' }),
+    id: text('id').notNull(),
+    serviceId: text('service_id').notNull(),
+    // Les passages d'une course se lisent ensemble après sélection par quai.
+    trip: text('trip', { mode: 'json' }).$type<TimetableTrip>().notNull(),
+}, (t) => [primaryKey({ columns: [t.feedId, t.id] })]);
+
+export const transitBoardings = sqliteTable('transit_boardings', {
+    feedId: text('feed_id').notNull().references(() => transitFeeds.id, { onDelete: 'cascade' }),
+    tripId: text('trip_id').notNull(),
+    stopId: text('stop_id').notNull(),
+    departure: integer('departure').notNull(),
+}, (t) => [index('idx_transit_boarding').on(t.feedId, t.stopId, t.departure)]);
+
+export const transitShapes = sqliteTable('transit_shapes', {
+    feedId: text('feed_id').notNull().references(() => transitFeeds.id, { onDelete: 'cascade' }),
+    id: text('id').notNull(),
+    points: text('points', { mode: 'json' }).$type<[number, number][]>().notNull(),
+}, (t) => [primaryKey({ columns: [t.feedId, t.id] })]);

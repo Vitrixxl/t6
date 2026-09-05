@@ -17,3 +17,4 @@ export * from './trips';
 export * from './collections';
 export * from './state';
 export * from './routing';
+export * from './transit';

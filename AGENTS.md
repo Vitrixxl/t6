@@ -237,6 +237,12 @@ heuristique et il n'y a pas de graphe horaire GTFS : les fréquences sont des
 moyennes, pas des horaires. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
+Un service horaire est préparé dans `server/src/services/transit/`, avec
+`GET /api/transit/network` et `GET /api/transit/journeys`. Il n’est pas encore
+branché au client : ne pas présenter les horaires comme livrés. L’import réel
+attend une archive TCL récente et des tracés compatibles. Le suivi est dans
+`docs/PLAN-ATTENTE-GTFS.md` ; aucun horaire fictif des tests ne doit être activé.
+
 En revanche le nom de ligne **est** affiché depuis l'intégration de la desserte
 publiée : une ligne n'est proposée que si elle dessert réellement les deux
 stations du segment.

@@ -11,6 +11,7 @@ import { routingRoutes } from './routing.ts';
 import { savedRouteRoutes } from './saved-routes.ts';
 import { stateRoutes } from './state.ts';
 import { tripHistoryRoutes } from './trip-history.ts';
+import { transitRoutes } from './transit.ts';
 
 export function routes(ctx: AppContext, config: ServerConfig) {
     return new Elysia({ name: 'routes' })
@@ -22,5 +23,6 @@ export function routes(ctx: AppContext, config: ServerConfig) {
         .use(recurringTripRoutes(ctx))
         .use(tripHistoryRoutes(ctx))
         .use(savedRouteRoutes(ctx))
+        .use(transitRoutes(ctx))
         .use(routingRoutes(ctx, config));
 }

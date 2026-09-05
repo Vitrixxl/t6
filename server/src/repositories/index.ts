@@ -13,6 +13,7 @@ import { createSessionRepository } from './sessions.ts';
 import { createStateReader } from './state.ts';
 import { createTripRecordRepository } from './trip-records.ts';
 import { createUserRepository } from './users.ts';
+import { createTransitRepository } from './transit.ts';
 
 export function createRepositories(db: Executor) {
     const tripRecords = createTripRecordRepository(db);
@@ -22,6 +23,7 @@ export function createRepositories(db: Executor) {
 
     return {
         users: createUserRepository(db),
+        transit: createTransitRepository(db),
         routeCache: createRouteCacheRepository(db),
         sessions: createSessionRepository(db),
         tripRecords,

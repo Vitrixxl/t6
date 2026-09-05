@@ -183,3 +183,16 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] B41–B42 : moteurs OSRM locaux, profil vélo `bicycle.lua`, accès piétons en étoile ; six options vérifiées vers Cuvier. Panneau mobile de hauteur automatique sous la recherche, sans commandes de taille ; E2E planification 9/9 et scénario hors ligne réussis.
 
 - [x] B43–B44 : options triées par durée réelle croissante sur mobile et bureau, même si les mesures inversent les estimations. OSRM exclusivement local, adresses par défaut et panne sans bascule vérifiées.
+
+
+## Intégration horaire GTFS en cours
+
+- [x] Contrats, migration, import transactionnel et lecture GET du réseau horaire.
+- [x] Tests du calendrier, des quais, des départs manqués, des correspondances,
+  des fréquences et du changement d’heure ; archives d’ingestion miniatures.
+- [ ] Valider une archive TCL récente et le lien entre quais et tracés WFS / GTFS.
+- [ ] Brancher les recherches, les rabattements et la planification datée.
+- [ ] Automatiser le renouvellement et réaliser la recette navigateur complète.
+
+Les estimations actuelles restent utilisées par l’interface. Détails :
+`docs/PLAN-ATTENTE-GTFS.md`.
