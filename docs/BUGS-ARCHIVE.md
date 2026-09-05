@@ -1697,6 +1697,18 @@ L’inspection visuelle des captures reste un contrôle faible.
 
 **Test et niveau de verrouillage : automatisé.** Le test serveur a d’abord échoué sur la politique reçue, puis passe avec les deux URL HTML et le JSON strict. Le scénario Chromium attend le titre et les routes et échoue sur tout événement securitypolicyviolation. Les deux URL sont vérifiées sans blocage. Le CDN reste nécessaire au chargement de Scalar.
 
+### B58 — La CI attendait un trajet sans disposer des moteurs de routage
+
+**Symptôme observé.** La [CI du 5 septembre](https://github.com/Vitrixxl/t6/actions/runs/33965279201) échoue après la recherche : le bouton « Planifier » reste absent pendant 30 secondes. Lint, typage, tests, build et audit étaient pourtant verts.
+
+**Cause racine.** Le workflow démarrait uniquement l’application. Aucun moteur ne répondait aux adresses par défaut `osrm-foot`, `osrm-bike` et `osrm-car`. La vérification locale précédente utilisait les moteurs déjà actifs sur le poste ; elle ne reproduisait pas les prérequis manquants du runner. Sur une base locale vide avec la configuration du workflow, les routes de calcul répondent 503 et le scénario échoue de la même façon.
+
+**Correctif.** [Commit 112f62b](https://github.com/Vitrixxl/t6/commit/112f62b) : `bun run ci` devient l’unique recette locale et GitHub. Elle prépare trois moteurs OSRM dédiés sur un petit extrait réel OSM versionné, avec image fixée par digest et ports isolés, puis vérifie un calcul avant de démarrer le serveur et les tests. La base part vide et les processus sont nettoyés à la fin. Le port applicatif occupé est refusé. Le navigateur utilise localhost pour conserver les cookies Secure aussi dans le client HTTP Playwright ; la sécurité de l’application ne change pas. Les captures d’échec de calcul et les logs des services sont conservés.
+
+**Où le montrer.** `.github/workflows/ci.yml`, `scripts/ci.ts`, `scripts/fixtures/README.md`, `scripts/e2e-planning.mjs`. La consigne avant push est inscrite dans `AGENTS.md` et le README.
+
+**Test et niveau de verrouillage : automatisé.** Reproduction locale rouge avec 503 et expiration de l’attente du bouton, puis recette complète isolée verte : 239 tests, 715 assertions, 32 fichiers ; axe sur quatre écrans sans violation ; planification 9/9 ; scénarios types/mobile et Scalar réussis. La recette utilise les vrais moteurs et échoue si un service requis manque. BAN, GBFS, météo, tuiles et CDN Scalar restent externes ; le petit extrait OSM couvre les parcours de recette, pas toute la métropole. Le banc de performance reste indicatif.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire
