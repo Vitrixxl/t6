@@ -203,6 +203,6 @@ Les estimations actuelles restent utilisées par l’interface. Détails :
 - [x] La pause transforme une seule récurrence ; les anciennes opérations client de complétion sans appelant réel sont retirées.
 - [x] Les services construisent uniquement les dépôts utilisés par leur transaction.
 - [x] Les deux variantes de rabattement partagent un seul fichier ; le contrôle de géométrie complète appartient au planner.
-- [x] Revue locale réécrite en huit séances sur deux jours : appels, symboles, exercices, limites et questions d’oral.
+- [x] Revue locale organisée en parcours continu : fichiers et fonctions expliqués, données échangées, exemples concrets, moteur, compte, stockage, limites et outillage.
 - [x] Contrats HTTP et schéma SQLite conservés ; aucune migration ni nouvelle dépendance.
 - [x] Recette sur une base dédiée : planification 9/9, historique/annulations et hors ligne réussis ; guide HTML relu à 390 et 1280 px, chemins et ancres vérifiés.
