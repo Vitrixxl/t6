@@ -28,8 +28,8 @@ export function createTransportService(repository: TransportRepository) {
             const current = await network();
             return {
                 version, stopCount: gtfs.stops.length, agency: gtfs.agency,
-                weather: current.gtfs.weather, sharedMobility: current.sharedMobility,
-                sources: current.sources ?? { gtfs: 'tcl-odbl', weather: 'local' },
+                sharedMobility: current.sharedMobility,
+                sources: current.sources ?? { gtfs: 'tcl-odbl' },
             };
         },
         stops(x: number, y: number) {

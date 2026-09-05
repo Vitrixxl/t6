@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
-import { fetchJson, loadTransportNetwork, mapDottVehicles, mergeVelovStations, weatherFromOpenMeteo } from './feeds';
+import { fetchJson, loadTransportNetwork, mapDottVehicles, mergeVelovStations } from './feeds';
 import type { GtfsFeed } from '../../types';
 
 let fetchSpy: Mock<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>;
@@ -88,39 +88,6 @@ describe('mapDottVehicles', () => {
     });
 });
 
-describe('weatherFromOpenMeteo', () => {
-    it('classe une pluie soutenue en heavy_rain', () => {
-        const weather = weatherFromOpenMeteo({
-            temperature_2m: 14.6,
-            wind_speed_10m: 12,
-            precipitation: 3.4,
-            weather_code: 63,
-            time: '2026-09-14T08:00',
-        });
-
-        expect(weather.condition).toBe('heavy_rain');
-        expect(weather.temperature_celsius).toBe(15);
-    });
-
-    it('classe un ciel calme en clear et un vent fort en wind', () => {
-        expect(
-            weatherFromOpenMeteo({ temperature_2m: 21, wind_speed_10m: 8, precipitation: 0, weather_code: 1, time: 't' })
-                .condition,
-        ).toBe('clear');
-        expect(
-            weatherFromOpenMeteo({ temperature_2m: 21, wind_speed_10m: 42, precipitation: 0, weather_code: 1, time: 't' })
-                .condition,
-        ).toBe('wind');
-    });
-
-    it('classe une bruine sans cumul mesurable en light_rain via le code météo', () => {
-        expect(
-            weatherFromOpenMeteo({ temperature_2m: 12, wind_speed_10m: 10, precipitation: 0, weather_code: 51, time: 't' })
-                .condition,
-        ).toBe('light_rain');
-    });
-});
-
 describe('mergeVélovStations - périmètre', () => {
     it('retient toutes les stations du périmètre, sans plafond d’affichage', () => {
         // Le nombre annonce dans l'interface doit être le nombre réellement
@@ -170,7 +137,6 @@ const gtfsFixture: GtfsFeed = {
     stops: [],
     routes: [],
     trips: [],
-    weather: { condition: 'clear', temperature_celsius: 18, wind_kmh: 5, updated_at: 't' },
 };
 
 describe('fetchJson', () => {
@@ -200,10 +166,9 @@ describe('loadTransportNetwork', () => {
         expect(network.sources?.gtfs).toBe('tcl-odbl');
         expect(network.sharedMobility).toBeNull();
         expect(urls.some((url) => url.includes("shared-mobility.json"))).toBe(false);
-        expect(network.sources?.weather).toBe('local');
     });
 
-    it('marque les sources live quand GBFS et Open-Meteo repondent', async () => {
+    it('marque les sources live quand GBFS répond', async () => {
         fetchSpy.mockImplementation(async (input: RequestInfo | URL) => {
             const url = String(input);
             if (url.includes('gtfs-feed.json')) {
@@ -233,19 +198,12 @@ describe('loadTransportNetwork', () => {
             if (url.includes('free_bike_status')) {
                 return Response.json({ data: { bikes: [] } });
             }
-            if (url.includes('open-meteo')) {
-                return Response.json({
-                    current: { temperature_2m: 19.4, wind_speed_10m: 9, precipitation: 0, weather_code: 1, time: 't' },
-                });
-            }
             throw new Error(`URL inattendue: ${url}`);
         });
 
         const network = await loadTransportNetwork(gtfsFixture);
 
         expect(network.sharedMobility).not.toBeNull();
-        expect(network.sources?.weather).toBe('open-meteo');
         expect(network.sharedMobility?.data.stations[0].name).toBe("Vélo'v BELLECOUR");
-        expect(network.gtfs.weather.temperature_celsius).toBe(19);
     });
 });

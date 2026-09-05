@@ -5,20 +5,13 @@
 // selectionnable parce qu'on ne raisonne pas en kilomètres pour une distance
 // de quartier, ni en mètres pour une distance de ville.
 import { useMemo, useState } from 'react';
-import { Bike, CloudRain, TramFront, Wind, Zap } from 'lucide-react';
-import type { GeoPoint, TransportContext, WeatherSignal } from '../../types';
+import { Bike, TramFront, Zap } from 'lucide-react';
+import type { GeoPoint, TransportContext } from '../../types';
 import { formatDistance, walkMinutes, type NearbyWithin } from '../../lib/planner';
 
 import { findSharedWithinRadius } from '../../lib/planner/nearby';
 import { useNearbyStops } from '../../queries/nearby-stops';
 import { MAX_NEARBY_RADIUS_KM } from '../../contracts/transport';
-
-const WEATHER_LABEL: Record<WeatherSignal['condition'], string> = {
-    clear: 'Dégagé',
-    light_rain: 'Pluie légère',
-    heavy_rain: 'Forte pluie',
-    wind: 'Vent',
-};
 
 type DistanceUnit = 'm' | 'km';
 
@@ -107,7 +100,6 @@ export function MobileHomePanel({
     // séparément au serveur, sans dépendre des cellules visibles de la carte.
     const nearby = useMemo(() => findSharedWithinRadius(network.sharedMobility, point, radiusKm), [network.sharedMobility, point, radiusKm]);
     const stops = useNearbyStops(point, radiusKm, network.version);
-    const weather = network.weather;
 
     return (
         <div className="flex flex-col gap-3 px-4 pb-4">
@@ -185,20 +177,6 @@ export function MobileHomePanel({
                     stop.routes.length > 0 ? `Lignes ${stop.routes.join(', ')}` : 'Arrêt de bus'
                 }
             />}
-
-            <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 p-2.5">
-                {weather.condition === 'wind' ? (
-                    <Wind className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                ) : (
-                    <CloudRain className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                )}
-                <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold leading-tight">
-                        {weather.temperature_celsius}&deg;C &middot; {WEATHER_LABEL[weather.condition]}
-                    </p>
-                    <p className="text-[0.7rem] text-muted-foreground">Vent {weather.wind_kmh} km/h</p>
-                </div>
-            </div>
         </div>
     );
 }

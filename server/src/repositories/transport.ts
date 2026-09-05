@@ -14,7 +14,7 @@ export function createTransportRepository(db: Executor) {
             const meta = db.select().from(transportMetadata).get();
             if (!meta) throw new Error('Réseau TCL non importé.');
             return {
-                agency: meta.agency, weather: meta.weather,
+                agency: meta.agency,
                 stops: db.select().from(transportStops).all().map(row => row.payload),
                 routes: db.select().from(transportRoutes).all().map(row => row.payload),
                 trips: db.select().from(transportTrips).all().map(row => row.payload),
@@ -42,8 +42,8 @@ export function createTransportRepository(db: Executor) {
             }
             for (const route of feed.routes) db.insert(transportRoutes).values({ id: route.route_id, payload: route }).run();
             for (const trip of feed.trips) db.insert(transportTrips).values({ id: trip.trip_id, payload: trip }).run();
-            db.insert(transportMetadata).values({ id: 1, version, agency: feed.agency, weather: feed.weather })
-                .onConflictDoUpdate({ target: transportMetadata.id, set: { version, agency: feed.agency, weather: feed.weather } }).run();
+            db.insert(transportMetadata).values({ id: 1, version, agency: feed.agency })
+                .onConflictDoUpdate({ target: transportMetadata.id, set: { version, agency: feed.agency } }).run();
         },
         hasVersion(version: string) {
             return Boolean(db.select({ id: transportMetadata.id }).from(transportMetadata).where(eq(transportMetadata.version, version)).get());

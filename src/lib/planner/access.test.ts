@@ -18,12 +18,6 @@ const network: TransportNetwork = {
         stops: [],
         routes: [],
         trips: [],
-        weather: {
-            condition: 'clear',
-            temperature_celsius: 20,
-            wind_kmh: 5,
-            updated_at: '2026-09-04T08:00:00+02:00',
-        },
     },
     sharedMobility: {
         last_updated: 1788508800,

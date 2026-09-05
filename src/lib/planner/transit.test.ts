@@ -43,7 +43,6 @@ const network: TransportNetwork = {
             { trip_id: 'nord-1', route_id: 'nord', service_id: 'weekday', headway_minutes: 4, realtime_delay_minutes: 0, occupancy: 'low' },
             { trip_id: 'est-1', route_id: 'est', service_id: 'weekday', headway_minutes: 8, realtime_delay_minutes: 0, occupancy: 'low' },
         ],
-        weather: { condition: 'clear', temperature_celsius: 20, wind_kmh: 8, updated_at: '2026-09-14T08:00:00+02:00' },
     },
     sharedMobility: { last_updated: 0, ttl: 60, version: '3.0', data: { stations: [] } },
 };

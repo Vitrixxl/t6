@@ -12,7 +12,6 @@ const feed: GtfsFeed = {
     ],
     routes: [{ route_id: 'bus:aller', route_short_name: 'C1', route_long_name: 'Départ - Arrivée', route_type: 3, route_color: '004F9F', route_text_color: 'FFFFFF', shape: [[4.80, 45.75], [4.82, 45.755], [4.84, 45.75]], stopSequence: ['a', 'b'], wheelchairAccessible: true }],
     trips: [{ trip_id: 'estimate', route_id: 'bus:aller', service_id: 'estimated', headway_minutes: 15, realtime_delay_minutes: 0, occupancy: 'medium' }],
-    weather: { condition: 'clear', temperature_celsius: 20, wind_kmh: 0, updated_at: '' },
 };
 const network: TransportNetwork = { gtfs: feed, sharedMobility: null };
 const departure = { label: 'Départ', lat: 45.75, lon: 4.80 };

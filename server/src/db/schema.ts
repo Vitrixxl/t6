@@ -1,4 +1,4 @@
-import type { GtfsAgency, GtfsStop, GtfsRoute, GtfsTrip, WeatherSignal } from '../../../src/types';
+import type { GtfsAgency, GtfsStop, GtfsRoute, GtfsTrip } from '../../../src/types';
 // Schéma de la base, source unique pour Drizzle.
 //
 // Chaque table est déclarée une fois ici ; drizzle-kit en dérive les
@@ -191,7 +191,6 @@ export const transportMetadata = sqliteTable('transport_metadata', {
     id: integer('id').primaryKey(),
     version: text('version').notNull(),
     agency: text('agency', { mode: 'json' }).$type<GtfsAgency>().notNull(),
-    weather: text('weather', { mode: 'json' }).$type<WeatherSignal>().notNull(),
 });
 export const transportStops = sqliteTable('transport_stops', {
     id: integer('id').primaryKey(),

@@ -62,7 +62,7 @@ const DESKTOP_STEPS: TourStep[] = [
         id: 'layers',
         target: 'layers',
         title: 'Couches temps réel',
-        body: "Active ou masque les arrêts GTFS et les vélos et trottinettes partagés (flux GBFS live). La météo temps réel influence aussi le score des options vélo.",
+        body: "Active ou masque les arrêts GTFS et les vélos et trottinettes partagés (flux GBFS live).",
     },
     {
         id: 'carbon',

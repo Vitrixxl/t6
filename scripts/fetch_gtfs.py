@@ -157,12 +157,6 @@ def build_feed(archive: zipfile.ZipFile) -> dict:
         "stops": stops,
         "routes": routes,
         "trips": trips,
-        "weather": {
-            "condition": "clear",
-            "temperature_celsius": 21,
-            "wind_kmh": 12,
-            "updated_at": "2026-09-14T08:00:00+02:00",
-        },
     }
 
 

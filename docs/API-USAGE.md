@@ -19,7 +19,7 @@ n’est pas considérée comme utilisée par l’application.
 | `PUT /api/trips/recurring/:id/cancellations/:date`, `DELETE /api/trips/recurring/:id/cancellations/:date/:direction` | Même client : exceptions d’annulation et rétablissement d’un sens. |
 | `GET /api/trips/history`, `DELETE /api/trips/history` | `src/lib/api/trip-history.ts` et `src/queries/trip-records.ts` : lecture et effacement explicite de l’historique carbone. |
 | `GET /api/saved-routes`, `PUT /api/saved-routes/:id`, `DELETE /api/saved-routes/:id` | `src/lib/api/saved-routes.ts` et sa requête : itinéraires enregistrés. |
-| `GET /api/transport/context` | `src/queries/transport.ts` : métadonnées, disponibilités GBFS et météo, sans réseau TCL complet. |
+| `GET /api/transport/context` | `src/queries/transport.ts` : métadonnées et disponibilités GBFS, sans réseau TCL complet. |
 | `GET /api/transport/stops` | `src/queries/map-stops.ts` : tous les quais des cellules visibles de la carte, en cache par version. |
 | `GET /api/transport/nearby-stops` | `src/queries/nearby-stops.ts` : compte réel et quatre quais les plus proches dans le rayon choisi. |
 | `POST /api/transport/journeys` | `src/queries/routes.ts` : calcul complet côté serveur, filtres de transport avant accès et mesure de toutes les options. |
