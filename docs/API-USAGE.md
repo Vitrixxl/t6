@@ -28,7 +28,7 @@ Supprimés :
 
 - `GET /api/route` et `POST /api/route-matrix` : les mesures sont appelées directement
   par `server/src/services/planning.ts` ; aucun navigateur ne consomme plus ces routes.
-  Les tests du cache et des segments portent désormais sur les services serveur.
+  Les tests des appels OSRM et des segments portent sur les services serveur.
 
 - `GET /api/state` : aucun appel du client ; la connexion et la reprise de session
   rendent déjà cet état. Les tests lisent désormais la session ou les ressources

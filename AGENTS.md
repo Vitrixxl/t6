@@ -146,8 +146,8 @@ Les moteurs OSRM sont appelés directement depuis l'API : `OSRM_FOOT_URL`,
 `OSRM_BIKE_URL` et `OSRM_CAR_URL`, avec une adresse configurable pour chaque moteur local.
 Compose fournit les noms des trois services internes, sans Caddy ni port OSRM
 publié. Ces moteurs locaux sont les seules sources de routage : aucun défaut
-public, aucune bascule externe ni file de quota public. En cas de panne, seules
-les mesures réelles du cache peuvent être réutilisées ; sinon l’API répond 503. La trottinette partage le moteur vélo ; la voiture reste une référence.
+public, aucune bascule externe ni file de quota public. En cas de panne d’un
+moteur, l’API répond 503. La trottinette partage le moteur vélo ; la voiture reste une référence.
 
 Un fichier, une raison de changer. Ce n'est pas un seuil de lignes : un fichier
 long mais cohésif reste préférable à trois fichiers qui se renvoient la balle.
@@ -383,7 +383,7 @@ le vrai compte du rayon et ses quatre résultats les plus proches.
 `POST /api/transport/journeys` calcule toutes les options côté serveur sur le
 réseau complet : le cadrage ne doit jamais limiter une destination ou une
 correspondance. Les anciennes routes `/api/route` et `/api/route-matrix` sont
-retirées ; le service OSRM et son cache restent internes. Les réponses d’options
+retirées ; l’appel à OSRM reste interne. Les réponses d’options
 sont validées dans `src/contracts/planning.ts`, les flux et ressources de carte
 dans `src/contracts/transport.ts`. GBFS et météo sont mutualisés côté serveur
 pendant 60 s ; le client relit le contexte chaque minute. Une panne après

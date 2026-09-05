@@ -83,7 +83,6 @@ function routedMeasure(_from: GeoPoint, to: GeoPoint): RouteMeasure {
     return {
         distanceMeters: slow ? 390 : 120,
         durationSeconds: slow ? 720 : 110,
-        source: 'upstream',
     };
 }
 

@@ -36,7 +36,6 @@ describe('référence carbone voiture', () => {
         const reference = createCarbonReference({
             distanceMeters: 3000,
             durationSeconds: 600,
-            source: 'upstream',
         });
 
         expect(CAR_REFERENCE_FACTOR.gramsCo2ePerPassengerKm).toBe(142);
@@ -48,7 +47,7 @@ describe('référence carbone voiture', () => {
     });
 
     it('applique exactement la même référence a des options de distances diffèrentes', () => {
-        const reference = createCarbonReference({ distanceMeters: 3000, durationSeconds: 600, source: 'cache' });
+        const reference = createCarbonReference({ distanceMeters: 3000, durationSeconds: 600 });
         const [shortOption, longOption] = applyCarbonReference(
             [option('court', 2, 100), option('long', 5, 500)],
             reference,
@@ -94,7 +93,7 @@ describe('référence carbone voiture', () => {
         );
         const [compared] = applyCarbonReference(
             [measured],
-            createCarbonReference({ distanceMeters: 3000, durationSeconds: 600, source: 'upstream' }),
+            createCarbonReference({ distanceMeters: 3000, durationSeconds: 600 }),
         );
 
         expect(estimated.distanceKm).toBe(2);

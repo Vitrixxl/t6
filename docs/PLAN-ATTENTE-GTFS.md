@@ -100,7 +100,6 @@ conserver une estimation clairement distincte dans ce cas.
 Ajouter un départ explicite, « maintenant » par défaut, à l’état de recherche,
 au contrat et à la clé React Query. Le figer pour un calcul cohérent, puis
 recalculer quand l’utilisateur change l’heure ou qu’un départ devient caduc.
-Conserver le cache long des géométries indépendamment du cache horaire.
 
 Afficher la ligne, la direction, le départ prévu, l’attente et l’arrivée ;
 utiliser `src/lib/duration.ts`. Exemple : « Arrivée au quai 8 h 12 · départ prévu
@@ -124,8 +123,8 @@ exception, dernier service, passage après minuit, changement d’heure,
 correspondance ratée, transport express plus rapide, rabattement vélo ou
 trottinette, données expirées, panne d’import et service en fréquence.
 
-Vérifier l’API et les migrations, le rafraîchissement du cache et la cohérence
-entre durée affichée et étapes. Dans Chromium, exercer maintenant/départ futur,
+Vérifier l’API et les migrations, ainsi que la cohérence entre durée
+affichée et étapes. Dans Chromium, exercer maintenant/départ futur,
 planification, changements d’heure de recherche et panne de données sur mobile
 et bureau. Relancer `bun run check`, `bun run e2e`, `bun run e2e:trips` et
 `bun run e2e:offline`. Mesurer volume importé, mémoire et latence de recherche

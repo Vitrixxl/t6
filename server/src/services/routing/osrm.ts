@@ -6,7 +6,7 @@
 // vélo ; chaque moteur possède sa propre adresse configurable.
 import { z } from 'zod';
 import type { ServerConfig } from '../../config/index.ts';
-import type { GeoPoint, RouteInstruction, RoutableMode } from '../../../../src/types.ts';
+import type { GeoPoint, RouteInstruction, RouteMeasure, RoutableMode } from '../../../../src/types.ts';
 import { buildInstructions } from './instructions.ts';
 
 const UPSTREAM_TIMEOUT_MS = 8_000;
@@ -55,11 +55,6 @@ export interface RouteGeometry {
     instructions: RouteInstruction[];
 }
 
-export interface RouteMeasure {
-    distanceMeters: number;
-    durationSeconds: number;
-}
-
 function routeMeasure(distanceMeters: number | null | undefined, durationSeconds: number | null | undefined): RouteMeasure | null {
     const valid = distanceMeters !== null
         && durationSeconds !== null
@@ -93,7 +88,7 @@ function serviceUrl(urls: ServerConfig['osrmUrls'], mode: RoutableMode, service:
     return `${baseUrl}/${service}/v1/${name}/`;
 }
 
-export async function fetchUpstreamRoute(
+export async function fetchOsrmRoute(
     urls: ServerConfig['osrmUrls'],
     mode: RoutableMode,
     from: Pick<GeoPoint, 'lat' | 'lon'>,
@@ -137,7 +132,7 @@ export async function fetchUpstreamRoute(
  * Une seule requête remplace jusqu'à huit appels individuels lors du choix
  * d'une station. Les valeurs `null` d'OSRM signalent un couple inaccessible.
  */
-export async function fetchUpstreamMatrix(
+export async function fetchOsrmMatrix(
     urls: ServerConfig['osrmUrls'],
     mode: RoutableMode,
     origins: Array<Pick<GeoPoint, 'lat' | 'lon'>>,

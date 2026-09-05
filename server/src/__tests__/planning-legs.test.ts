@@ -2,22 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { hasCompleteGeometry } from '../../../src/lib/planner/legs';
 import type { RouteLeg } from '../../../src/types';
 import { measureLeg } from '../services/planning';
-import { openDatabase } from '../db';
 import { loadConfig } from '../config';
-import { createRoutingService } from '../services/routing';
-import { createRouteCacheRepository } from '../repositories/route-cache';
 const origin = { label: 'Bellecour', lat: 45.7578, lon: 4.832 };
 const destination = { label: 'Part-Dieu', lat: 45.7606, lon: 4.8594 };
-let db: ReturnType<typeof openDatabase>;
-let routing: ReturnType<typeof createRoutingService>;
+const osrm = loadConfig({}).osrmUrls;
 let fetchSpy: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
 beforeEach(() => {
-    db = openDatabase(':memory:');
-    routing = createRoutingService(loadConfig({}), createRouteCacheRepository(db));
     fetchSpy = spyOn(globalThis, 'fetch');
     fetchSpy.mockRejectedValue(new Error('Réseau inattendu'));
 });
-afterEach(() => { fetchSpy.mockRestore(); db.$client.close(); });
+afterEach(() => { fetchSpy.mockRestore(); });
 
 describe('mesure des segments côté serveur', () => {
     // Un segment de voirie quelconque : ce qui est teste ici est la reprise des
@@ -48,7 +42,7 @@ describe('mesure des segments côté serveur', () => {
             legs: [{ steps: [] }],
         }] }));
 
-        const [enhanced] = await Promise.all([measureLeg(roadLeg, routing)]);
+        const [enhanced] = await Promise.all([measureLeg(roadLeg, osrm)]);
 
         expect(enhanced.distanceKm).toBe(3);
         // 10 min de parcours x 1.2 de congestion + 6 min de temps fixe.
@@ -60,7 +54,7 @@ describe('mesure des segments côté serveur', () => {
     it("laisse le segment sans géométrie quand le routage echoue, sans inventer de tracé", async () => {
         fetchSpy.mockRejectedValue(new Error('réseau coupé'));
 
-        const [enhanced] = await Promise.all([measureLeg({ ...roadLeg, path: [origin, destination] }, routing)]);
+        const [enhanced] = await Promise.all([measureLeg({ ...roadLeg, path: [origin, destination] }, osrm)]);
 
         expect(enhanced.path).toEqual([]);
     });
@@ -68,7 +62,7 @@ describe('mesure des segments côté serveur', () => {
     it("n'envoie pas un segment de transport public au routage routier", async () => {
 
         const transitPath = [origin, destination];
-        const [enhanced] = await Promise.all([measureLeg({ ...roadLeg, id: 'ride', mode: 'transit', path: transitPath }, routing)]);
+        const [enhanced] = await Promise.all([measureLeg({ ...roadLeg, id: 'ride', mode: 'transit', path: transitPath }, osrm)]);
 
         expect(fetchSpy).not.toHaveBeenCalled();
         expect(enhanced.path).toBe(transitPath);
@@ -86,7 +80,7 @@ describe('mesure des segments côté serveur', () => {
             transfer: true,
         };
 
-        const [enhanced] = await Promise.all([measureLeg(transfer, routing)]);
+        const [enhanced] = await Promise.all([measureLeg(transfer, osrm)]);
 
         expect(fetchSpy).not.toHaveBeenCalled();
         expect(enhanced).toBe(transfer);

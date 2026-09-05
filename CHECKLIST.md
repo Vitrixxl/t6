@@ -117,7 +117,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - F2 planificateur multimodal + géolocalisation temps réel: `src/lib/planner/`, `src/components/app/MobilityMapApp.tsx`, `src/components/app/hooks/useGeolocation.ts`.
 - Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, route sélectionnée, alternatives, position utilisateur, destination, arrêts GTFS et stations partagées.
 - UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `src/styles.css`.
-- APIs réelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM appelé par le service serveur de `/api/transport/journeys`, avec cache SQLite partagé, profil driving de référence et aucune géométrie inventée.
+- APIs réelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM appelé par le service serveur de `/api/transport/journeys`, avec profil driving de référence et aucune géométrie inventée.
 - F3 intégration transport: `src/lib/transport/feeds/`, `data/transport/gtfs-feed.json`.
 - Option carbone: `src/lib/carbon.ts`, `src/components/planner/trips/TripGoalsCard.tsx`, `src/components/profile/ProfilePanels.tsx` (objectifs hebdomadaire et mensuel indépendants).
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
@@ -127,7 +127,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 ## 10. Backend (ajout post-audit)
 
-- [x] Appels directs aux trois moteurs OSRM via `OSRM_FOOT_URL`, `OSRM_BIKE_URL`, `OSRM_CAR_URL` ; aucun conteneur Caddy, aucun port OSRM publié par défaut. Tests des destinations locales et des préfixes publics, cache et contrats HTTP conservés.
+- [x] Appels directs aux trois moteurs OSRM via `OSRM_FOOT_URL`, `OSRM_BIKE_URL`, `OSRM_CAR_URL` ; aucun conteneur Caddy, aucun port OSRM publié par défaut. Tests des destinations locales et des préfixes publics, contrats HTTP conservés.
 
 - [x] API HTTP dédiée (`server/`) : Elysia sur Bun + SQLite via `bun:sqlite`, aucune dépendance native, aucune étape de compilation.
 - [x] Schéma relationnel migre au démarrage (users, sessions, trip_records, planned_trips, recurring_trips, saved_routes) avec clés étrangères et suppression en cascade.
@@ -181,7 +181,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Aucun bouton Fait/Annuler sur les récurrences à venir ; historique des passages échus calculé à la lecture.
 - [x] Exceptions persistées par date et sens, aller seul, retour seul ou les deux ; migration avec fuseau horaire.
 - [x] Annulation d’un ponctuel terminé et retrait de sa contribution carbone dans une seule transaction.
-- [x] Tests métier, API et cache : recalcul, idempotence, pauses, isolement des comptes, fuseaux et refus visibles.
+- [x] Tests métier et API : recalcul, idempotence, pauses, isolement des comptes, fuseaux et refus visibles.
 - [x] Vérification navigateur du hub avec `bun run e2e:trips` : quatre onglets, cinq largeurs et persistance après rechargement.
 
 - [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, six options mobiles sans troncature et hauteur automatique du panneau, avec défilement du contenu long et fermeture toujours accessible. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.

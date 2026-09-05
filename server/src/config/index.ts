@@ -37,12 +37,6 @@ export interface ServerConfig {
      */
     tlsCertPath: string;
     tlsKeyPath: string;
-    /**
-     * Durée de validité d'un tracé en cache. La voirie ne bouge pas d'un jour à
-     * l'autre : une journée évite de redemander mille fois le même trajet sans
-     * risquer de servir une géométrie obsolète.
-     */
-    routeCacheTtlMs: number;
 }
 
 /**
@@ -81,6 +75,5 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
             bike: text(env.OSRM_BIKE_URL, 'http://osrm-bike:5000').replace(/\/+$/, ''),
             car: text(env.OSRM_CAR_URL, 'http://osrm-car:5000').replace(/\/+$/, ''),
         },
-        routeCacheTtlMs: positiveInteger('ROUTE_CACHE_TTL_MS', env.ROUTE_CACHE_TTL_MS, 24 * 60 * 60 * 1000),
     };
 }

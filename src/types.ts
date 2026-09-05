@@ -12,8 +12,6 @@ export type {
     PlannedTripStatus,
     RecurringTrip,
     RouteInstruction,
-    RouteMatrix,
-    RouteMeasure,
     RoutePreselection,
     RoutableMode,
     RoutinePeriod,
@@ -34,6 +32,12 @@ export interface TransportNetwork {
     gtfs: GtfsFeed;
     sharedMobility: SharedMobilityFeed | null;
     sources?: NetworkSources;
+}
+
+/** Distance et durée réelles d'un couple de points, telles que mesurées par OSRM. */
+export interface RouteMeasure {
+    distanceMeters: number;
+    durationSeconds: number;
 }
 
 export interface RouteRequest {

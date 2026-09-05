@@ -90,7 +90,7 @@ Trois cas : Paris ne propose aucune trottinette ; une destination locale conserv
 
 ### Corriger
 
-Mesurer toutes les options dans `measureRoutes`, écarter celles dont la géométrie est incomplète, puis recalculer leur classement. Liste et détail utilisent les mêmes options mesurées. Le cache partagé limite les requêtes répétées.
+Mesurer toutes les options dans `measureRoutes`, écarter celles dont la géométrie est incomplète, puis recalculer leur classement. Liste et détail utilisent les mêmes options mesurées.
 
 **Où le montrer :** `src/queries/routes.ts` → `POST /api/transport/journeys` → `server/src/services/planning.ts` → appel de `measureRoutes` ; `src/lib/planner/index.ts` → `measureRoutes`, puis `rankRoutes` ; `src/lib/planner/legs.ts` → `applyRoutedLegs`, `hasCompleteGeometry` ; `src/lib/planner/planner.test.ts` → suite « measureRoutes ».
 
