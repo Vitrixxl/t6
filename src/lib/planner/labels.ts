@@ -13,6 +13,7 @@ export const MODE_LABELS: Record<MobilityMode, string> = {
 const ROUTE_KIND: Record<number, string> = {
     0: 'Tram',
     1: 'Métro',
+    3: 'Bus',
     7: 'Funiculaire',
 };
 

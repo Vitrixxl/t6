@@ -333,6 +333,13 @@ Un ponctuel annulé peut être rétabli depuis l’historique avec « Rétablir 
 `DELETE /api/trips/planned/:id/cancellation` le remet à venir si sa date est future,
 ou fait avec son bilan daté au départ prévu si elle est passée. La commande est idempotente.
 
+**Bus TCL.** Les bus réguliers vérifiés sont intégrés par `scripts/fetch_tcl_bus.py`.
+Conserver les quais physiques et les tracés par sens ; `stopSequence` interdit le
+contresens. Pas de transfert inventé entre quais distincts. La vitesse 15 km/h et
+l’intervalle 15 min sont des hypothèses affichées, sans horaires réels. La référence
+carbone bus thermique ADEME (122 gCO₂e/passager-km) reste une approximation explicite
+lorsque la motorisation est inconnue. PMR exige le quai et la ligne accessibles.
+
 **Export du compte.** « Profil et préférences → Exporter mes données » télécharge
 `urbanflow-export.json` depuis `GET /api/me/export` via Eden, en un appel authentifié.
 Le fichier contient les données actuelles du compte et les lieux des trajets,

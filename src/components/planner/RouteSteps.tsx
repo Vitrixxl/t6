@@ -11,7 +11,7 @@
 import { formatDuration } from '../../lib/duration';
 import type { RouteLeg, RouteOption } from '../../types';
 import { formatDistance, visibleLegs } from '../../lib/planner';
-import { legColor } from '../map/legStyle';
+import { legColor, legTextColor } from '../map/legStyle';
 import { MODE_ICON } from '../app/shared';
 
 function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
@@ -26,7 +26,7 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
             <div className="flex flex-col items-center">
                 <span
                     className="grid size-7 shrink-0 place-items-center rounded-lg text-white"
-                    style={{ background: color }}
+                    style={{ background: color, color: legTextColor(leg) }}
                 >
                     <Icon className="size-3.5" aria-hidden="true" />
                 </span>
@@ -41,7 +41,7 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
                         {leg.mapLabel ? (
                             <span
                                 className="mr-1.5 inline-block rounded px-1.5 py-0.5 align-middle text-[0.62rem] font-bold uppercase tracking-wide text-white"
-                                style={{ background: color }}
+                                style={{ background: color, color: legTextColor(leg) }}
                             >
                                 {leg.mapLabel}
                             </span>
@@ -60,6 +60,7 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
                 <p className="mt-0.5 truncate text-[0.72rem] leading-4 text-muted-foreground">
                     {leg.from} <span aria-hidden="true">&rarr;</span> {leg.to}
                 </p>
+                {leg.mode === 'transit' ? <p className="mt-1 text-[0.72rem] leading-4 text-muted-foreground">{leg.detail}</p> : null}
             </div>
         </li>
     );

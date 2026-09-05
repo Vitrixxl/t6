@@ -82,7 +82,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Routage local : OSRM (profils foot/bike/driving ; trottinette sur bike, voiture uniquement comme référence invisible), matrice de choix des accès puis tracés et instructions traduites. Aucun recours à une API publique.
 - [x] GBFS live Vélo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
-- [x] GTFS statique réel TCL/SYTRAL (ODbL) intègre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 2435 arrêts et 13 lignes structurantes avec leur desserte et leur tracé réel (métropole entière, rayon 16 km).
+- [x] GTFS statique réel TCL/SYTRAL (ODbL) intègre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 5 366 entrées d’arrêts (stations rail et quais bus) et 204 tracés, dont 191 pour 92 lignes de bus régulières, avec desserte et tracé réel (métropole entière, rayon 16 km).
 - [x] Planificateur: trajets programmés à une date, routines récurrentes (aller-retour, pause/reprise) comptées automatiquement ; historique mixte avec annulation datée par sens, statuts fait/annulé des ponctuels, objectifs d'économie CO2 hebdomadaire et mensuel indépendants avec progression.
 - [x] Recherche géocodée double source (BAN adresses + Photon quartiers/gares/lieux), typée et bornée à la métropole (dept 69).
 - [x] Onboarding spotlight adapte à la disposition : 11 étapes desktop, 9 étapes mobile sur les contrôles réellement présents, auto à la première visite et relançable depuis le profil.
@@ -232,3 +232,5 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 - [x] Ponctuels automatiquement comptabilisés après leur date, sauf annulation ; commande manuelle supprimée, rafraîchissement à 30 secondes.
 
 - [x] Annulation confirmée des ponctuels et rétablissement possible, sans doublon carbone.
+
+- [x] Bus WFS par sens, ordre des quais, accessibilité quai/ligne, hypothèses affichées et recette TB11 mobile/bureau.

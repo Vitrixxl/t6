@@ -72,7 +72,7 @@ export const ROAD_EMISSION_FACTORS: Record<Exclude<MobilityMode, 'transit'>, Emi
     },
 };
 
-const TRANSIT_EMISSION_FACTORS: Record<0 | 1 | 7, EmissionFactor> = {
+const TRANSIT_EMISSION_FACTORS: Record<0 | 1 | 3 | 7, EmissionFactor> = {
     0: {
         id: 'ademe-impactco2-2025-tramway',
         gramsCo2ePerPassengerKm: 3.8,
@@ -93,6 +93,17 @@ const TRANSIT_EMISSION_FACTORS: Record<0 | 1 | 7, EmissionFactor> = {
         modelYear: 2025,
         consultedOn: CONSULTED_ON,
     },
+    3: {
+        id: 'ademe-impactco2-2026-bus-thermique-122',
+        gramsCo2ePerPassengerKm: 122,
+        unit: 'gCO2e/passager-km',
+        scope: 'Bus thermique, construction et usage, par passager-kilomètre',
+        source: 'ADEME Base Empreinte, Impact CO₂',
+        sourceUrl: 'https://impactco2.fr/outils/transport/busthermique',
+        modelYear: 2026,
+        consultedOn: '2026-09-05',
+        approximation: 'Motorisation non fournie par le WFS : référence bus thermique appliquée, y compris aux trolleybus.',
+    },
     7: {
         id: 'ademe-impactco2-2025-funicular-as-metro',
         gramsCo2ePerPassengerKm: 4.2,
@@ -106,9 +117,9 @@ const TRANSIT_EMISSION_FACTORS: Record<0 | 1 | 7, EmissionFactor> = {
     },
 };
 
-/** Le feed ne conserve que les route_type GTFS 0, 1 et 7. */
+/** Types GTFS importés : tram, métro, bus et funiculaire. */
 export function transitEmissionFactor(routeType: number): EmissionFactor {
-    if (routeType === 0 || routeType === 1 || routeType === 7) {
+    if (routeType === 0 || routeType === 1 || routeType === 3 || routeType === 7) {
         return TRANSIT_EMISSION_FACTORS[routeType];
     }
     // Garde-fou pour un feed futur : une ligne inconnue reprend le facteur métro

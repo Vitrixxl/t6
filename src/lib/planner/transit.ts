@@ -7,7 +7,7 @@
 // et le libellé affiché n'avait donc aucun rapport avec le trajet (B12).
 //
 // Ici on part de la desserte publiée : on ne retient que les stations
-// desservies par une ligne structurante, et on ne propose un trajet que si une
+// desservies par une ligne publiée, et on ne propose un trajet que si une
 // ligne relie effectivement la montée à la descente — directement, ou par une
 // correspondance à une station commune aux deux lignes.
 import type { GeoPoint, GtfsRoute, GtfsStop, RouteLeg, TransportNetwork } from '../../types';
@@ -61,9 +61,14 @@ export interface TransitAccess {
     arrivals: ReadonlyMap<string, AccessMeasure>;
 }
 
-/** Seules les stations desservies par une ligne structurante sont exploitables. */
+/** Seuls les arrêts dont la desserte est publiée sont exploitables. */
 function servedStations(network: TransportNetwork, requireAccessible: boolean): GtfsStop[] {
-    return network.gtfs.stops.filter(
+    const accessibleLines = new Set(network.gtfs.routes
+        .filter(route => route.route_type !== 3 || route.wheelchairAccessible === true)
+        .map(route => route.route_id));
+    return network.gtfs.stops
+        .map(stop => requireAccessible ? { ...stop, routes: stop.routes.filter(id => accessibleLines.has(id)) } : stop)
+        .filter(
         (stop) => stop.routes.length > 0 && (!requireAccessible || stop.wheelchair_boarding === 1),
     );
 }
@@ -86,9 +91,16 @@ function walkMinutes(distanceKm: number): number {
     return (distanceKm / SPEED_KMH.walk) * 60;
 }
 
+function servesInOrder(route: GtfsRoute, boarding: GtfsStop, alighting: GtfsStop): boolean {
+    if (route.route_type !== 3) return true;
+    const sequence = route.stopSequence ?? [];
+    const start = sequence.indexOf(boarding.stop_id);
+    return start >= 0 && sequence.indexOf(alighting.stop_id) > start;
+}
+
 function buildRide(network: TransportNetwork, routeId: string, boarding: GtfsStop, alighting: GtfsStop): TransitRide | null {
     const route = network.gtfs.routes.find((item) => item.route_id === routeId);
-    if (!route || boarding.stop_id === alighting.stop_id) {
+    if (!route || boarding.stop_id === alighting.stop_id || !servesInOrder(route, boarding, alighting)) {
         return null;
     }
 
@@ -113,8 +125,13 @@ function buildRide(network: TransportNetwork, routeId: string, boarding: GtfsSto
     };
 }
 
+// Hypothèse urbaine explicite : 15 km/h pour le bus, sans données de circulation.
+function transitSpeed(route: GtfsRoute): number {
+    return route.route_type === 3 ? 15 : SPEED_KMH.transit;
+}
+
 function rideMinutes(ride: TransitRide): number {
-    return (ride.distanceKm / SPEED_KMH.transit) * 60 + ride.waitMinutes;
+    return (ride.distanceKm / transitSpeed(ride.route)) * 60 + ride.waitMinutes;
 }
 
 /** Stations desservies à la fois par `first` et par `second`. */
@@ -256,7 +273,8 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
                 from: stopToPoint(ride.boarding),
                 to: stopToPoint(ride.alighting),
                 distanceKm: ride.distanceKm,
-                accessible: ride.boarding.wheelchair_boarding === 1 && ride.alighting.wheelchair_boarding === 1,
+                accessible: ride.boarding.wheelchair_boarding === 1 && ride.alighting.wheelchair_boarding === 1
+                    && (ride.route.route_type !== 3 || ride.route.wheelchairAccessible === true),
                 // Seule géométrie réelle disponible sans appel réseau : le tracé
                 // publie de la ligne, déjà decoupe entre les deux stations.
                 path: ride.path,
@@ -264,12 +282,16 @@ export function transitLegs(journey: TransitJourney, idPrefix: string): RouteLeg
                 // suivre la distance. La correspondance est un segment separe.
                 estimate: {
                     overheadMinutes: ride.waitMinutes,
+                    travelFactor: SPEED_KMH.transit / transitSpeed(ride.route),
                     carbonGramsPerKm: transitEmissionFactor(ride.route.route_type).gramsCo2ePerPassengerKm,
                 },
             }),
+            // Arrondir après le calcul à bord + attente, comme pour le classement.
+            durationMinutes: Math.max(1, Math.round(rideMinutes(ride))),
             mapLabel: label,
             mapColor: `#${ride.route.route_color}`,
-            detail: `${label} au départ de ${ride.boarding.stop_name}, attente estimée ${ride.waitMinutes} min.`,
+            detail: `${label} au départ de ${ride.boarding.stop_name}, attente estimée ${ride.waitMinutes} min.`
+                + (ride.route.route_type === 3 ? ' Bus : durée modélisée à 15 km/h, intervalle supposé de 15 min ; horaires non disponibles. CO₂e : référence bus thermique, motorisation inconnue.' : ''),
         };
         return [...transfer, transitLeg];
     });

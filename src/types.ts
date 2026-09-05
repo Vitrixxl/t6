@@ -40,9 +40,8 @@ export interface GtfsStop {
     stop_lon: number;
     wheelchair_boarding: 0 | 1 | 2;
     /**
-     * Lignes structurantes desservant l'arrêt (`['B', 'T1']`), issues du champ
-     * `desserte` du portail open data. Vide pour un arrêt uniquement bus : le
-     * moteur d'itinéraires ne peut alors pas y faire monter le voyageur.
+     * Lignes desservant cet arrêt, issues du champ `desserte` publié.
+     * Un bus conserve son quai physique et ses identifiants de tracés par sens.
      */
     routes: string[];
 }
@@ -60,6 +59,10 @@ export interface GtfsRoute {
      * être dessine qu'en approximation routière, ce qui l'envoie ailleurs.
      */
     shape: [number, number][];
+    /** Quais ordonnés sur le tracé bus publié ; interdit de le prendre à contresens. */
+    stopSequence?: string[];
+    /** Accessibilité de la ligne bus publiée, en plus de celle du quai. */
+    wheelchairAccessible?: boolean;
 }
 
 export interface GtfsTrip {

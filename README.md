@@ -469,3 +469,46 @@ connexion du compte rempli, remise à zéro de ses essais, compte voisin conserv
 Un ponctuel annulé peut être rétabli depuis l’historique avec « Rétablir » :
 `DELETE /api/trips/planned/:id/cancellation` le remet à venir si sa date est future,
 ou fait avec son bilan daté au départ prévu si elle est passée. La commande est idempotente.
+
+## Bus TCL dans le calcul d’itinéraires
+
+Le feed livré contient 92 lignes de bus régulières (191 tracés par sens, 2 931 quais),
+en plus des 13 lignes métro/tram/funiculaire : 5 366 entrées d’arrêts et 204 tracés au total.
+Ce sont des stations regroupées pour le rail et des quais physiques pour le bus, pas
+5 366 lieux uniques. Les données bus ont été téléchargées le 5 septembre 2026 depuis
+le [WFS SYTRAL](https://www.data.gouv.fr/datasets/lignes-de-bus-du-reseau-transports-en-commun-lyonnais)
+(couche `sytral:tcl_sytral.tcllignebus_2_0_0`, licence ouverte indiquée par la fiche).
+
+`bun run generate:lignes` reconstruit le rail puis les bus ; `bun run generate:bus`
+actualise seulement les bus. Dans `scripts/fetch_tcl_bus.py`, `active_regular` filtre
+les variantes régulières de type NOM/NOR, leur période publiée et leur sens.
+`route_stops` croise la desserte ligne:sens des quais avec le tracé (projection à
+50 m au plus). Les terminus contrôlent son orientation ; les quais sont conservés
+séparément et ordonnés dans `stopSequence`. Les variantes sans sens/terminus
+vérifiables, les boucles de même terminus, les morceaux discontinus et les services
+spéciaux ne sont pas importés. Le rayon de 16 km reste celui du produit.
+
+Dans `src/lib/planner/transit.ts`, `servesInOrder` exige une montée avant la
+descente dans cette séquence : le retour doit disposer de son propre tracé.
+Le moteur commun propose le bus seul ou en rabattement vélo/trottinette. Une
+correspondance demande toujours un arrêt commun ; les transferts entre deux quais
+distincts, notamment bus/métro, ne sont pas encore recherchés. La limite de huit
+arrêts candidats par extrémité reste une heuristique, pas une recherche exhaustive.
+Le filtre PMR exige l’accessibilité publiée du quai et de la ligne bus.
+
+Les horaires ne sont pas intégrés : vitesse supposée de 15 km/h, intervalle supposé
+de 15 minutes, donc attente arrondie à 8 minutes, sans retard réel. Ces hypothèses
+figurent dans les étapes, sur mobile et bureau. Le bus utilise une référence
+[bus thermique ADEME Impact CO₂](https://impactco2.fr/outils/transport/busthermique)
+de 122 gCO₂e/passager-km (construction et usage, valeur consultée le 5 septembre 2026).
+Le WFS n’indique pas la motorisation : cette approximation est affichée et s’applique
+aussi aux trolleybus ; ce n’est pas un facteur moyen mesuré de la flotte TCL.
+Les badges de ligne adaptent leur texte à la luminance de la couleur officielle.
+
+Validation : `bun run check` (235 tests, 693 assertions, 31 fichiers), dont
+`src/lib/planner/bus.test.ts` et `scripts/bus-import.test.ts`. Le second exécute
+l’ingestion Python avec de petits jeux de données, puis vérifie son JSON sous Bun.
+`E2E_BASE_URL=https://localhost:4000 bun scripts/e2e-bus.mjs` vérifie une recherche
+réelle Gare Saint-Paul → Laurent Bonnevay (TB11) à 390/1280 px. Le parcours général
+`bun run e2e` reste à 9/9. Le service horaire préparé dans `server/src/services/transit/`
+reste séparé et non branché au client ; ses contrats ne sont pas étendus par cet import WFS.
