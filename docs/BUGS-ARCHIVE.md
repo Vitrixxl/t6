@@ -1721,6 +1721,18 @@ L’inspection visuelle des captures reste un contrôle faible.
 
 **Test et niveau de verrouillage : automatisé.** Les trois URL répondent 404 et sont absentes du schéma OpenAPI dans le test plateforme. La recette complète passe avec 239 tests, 714 assertions et 32 fichiers, axe sur quatre écrans, planification 9/9, filtres mobiles et Scalar. Les recettes dédiées d’annulation/rétablissement et d’export passent aussi avec les accès restants. L’inventaire des 28 méthodes/chemins conservés et de leurs appelants est une vérification de code, à maintenir lorsqu’un usage change.
 
+### B60 — Une API supprimée devenait une page HTML en production
+
+**Symptôme observé.** Après le retrait des trois routes, elles étaient absentes du schéma mais leur URL renvoyait encore la page React en 200 sur Docker. OpenAPI présentait aussi la route attrape-tout `/*` du site.
+
+**Cause racine.** Les tests de l’API seule vérifiaient bien les 404. Le montage complet ajoute ensuite `staticSite`, dont le repli vers `index.html` acceptait aussi les chemins `/api` inconnus. Monter le site après l’API ne suffisait pas à exclure ces URL.
+
+**Correctif.** [Commit 26cc752](https://github.com/Vitrixxl/t6/commit/26cc752) : le service du site refuse `/api` et `/api/…` avant toute résolution de fichier, avec une erreur JSON 404. Sa route attrape-tout reste disponible pour le client mais est masquée dans OpenAPI.
+
+**Où le montrer.** `server/src/plugins/static-site.ts` et `server/src/__tests__/static-site.test.ts` : les tests montent l’API et le site ensemble, avec un document HTML réellement présent.
+
+**Test et niveau de verrouillage : automatisé.** Les deux nouveaux tests échouaient avec « Expected 404 / Received 200 » et la présence de `/*` dans le schéma. Ils passent après correction et vérifient aussi que les URL du client et la sonde API restent accessibles. Le contrôle HTTP et le rendu de la documentation sont ensuite rejoués sur Docker.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire

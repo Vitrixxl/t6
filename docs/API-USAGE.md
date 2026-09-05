@@ -36,3 +36,7 @@ Supprimés :
 `server/src/__tests__/platform.test.ts` vérifie que les trois anciennes URL
 répondent 404 et sont absentes du schéma OpenAPI généré. Il n’y a aucun alias
 conservé pour les anciens tests.
+
+Le montage de production est aussi vérifié par `server/src/__tests__/static-site.test.ts` :
+le repli vers `index.html` refuse tous les chemins `/api` inconnus avec une erreur
+JSON 404. La route `/*` sert le client et reste masquée dans OpenAPI.
