@@ -199,6 +199,8 @@ Les estimations actuelles restent utilisées par l’interface. Détails :
 
 ## Simplification pour l’apprentissage
 
+- [x] Tests directement sur `bun:test`, sans passerelle de compatibilité ni vocabulaire `vi`.
+
 - [x] Aucun secours GBFS : absence représentée par `null`, bandeau explicite et aucune option partagée calculée depuis des données anciennes.
 
 - [x] Chargement des flux par `fetch` directement, sans paramètre d’injection transmis entre fonctions ; réponses réseau simulées uniquement dans les tests.

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '../test/harness';
+import { describe, expect, it } from 'bun:test';
 import { recordTrip, summarizeCarbon } from './carbon';
 import type { PlannedTrip, RecurringTrip, TripRecord } from '../types';
 import { summarizeTripActivity } from './trips';

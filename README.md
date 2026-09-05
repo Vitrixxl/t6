@@ -313,6 +313,8 @@ bun run e2e              # tutoriel mobile + planification (Playwright, 8 assert
 
 **Toute la chaîne tourne sous Bun, sans exception** : gestionnaire de paquets, exécution du serveur,
 regroupement du client (`Bun.build`), tests du client et de l'API (`bun test`), scripts d'outillage.
+Les tests importent directement `bun:test` ; les simulations réseau utilisent
+`spyOn` et sont restaurées après chaque test. Aucune passerelle de compatibilité.
 Aucun bundler ni lanceur de tests tiers. Seules l'ingestion GTFS et la génération du dossier restent en
 Python, faute d'équivalent dans l'écosystème JavaScript.
 

@@ -1,7 +1,7 @@
 // Cache du compte et commandes granulaires, testes sans React. Chaque cas suit
 // directement la requête d'une ressource puis la réponse appliquée à son cache.
 import { MutationObserver, QueryObserver, type MutationObserverOptions, type QueryClient } from '@tanstack/react-query';
-import { afterEach, beforeEach, describe, expect, it, vi } from '../test/harness';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
 import { DEFAULT_PROFILE, type Session } from '../contracts';
 import { summarizeCarbon } from '../lib/carbon';
 import { createPlannedTrip, createRecurringTrip, isRoutinePaused, setRecurringPaused, upcomingTrips } from '../lib/trips';
@@ -68,7 +68,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 type FetchHandler = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-type FetchMock = ReturnType<typeof vi.fn<FetchHandler>>;
+type FetchMock = Mock<FetchHandler>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -148,13 +148,13 @@ let fetchSpy: FetchMock;
 
 beforeEach(() => {
     client = createQueryClient();
-    fetchSpy = vi.fn(resourceServer);
-    vi.stubGlobal('fetch', fetchSpy);
+    fetchSpy = spyOn(globalThis, 'fetch');
+    fetchSpy.mockImplementation(resourceServer);
 });
 
 afterEach(() => {
     client.clear();
-    vi.unstubAllGlobals();
+    mock.restore();
 });
 
 function write<Result, Variables, Context>(options: MutationObserverOptions<Result, Error, Variables, Context>, variables: Variables): Promise<void> {

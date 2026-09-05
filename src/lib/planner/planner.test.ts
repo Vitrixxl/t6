@@ -1,4 +1,4 @@
-import { describe, expect, it } from '../../test/harness';
+import { describe, expect, it } from 'bun:test';
 import { DEFAULT_PROFILE } from '../../contracts';
 import { haversineDistanceKm, measureRoutes, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS } from './index';
 import type { TransportNetwork } from '../../types';

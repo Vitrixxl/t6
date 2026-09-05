@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from '../../test/harness';
+import { afterEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { DEFAULT_PROFILE, type SessionUser } from '../../contracts';
 import { deleteAccount, loginUser, logoutUser } from './auth';
 
@@ -9,13 +9,13 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 afterEach(() => {
-    vi.restoreAllMocks();
+    mock.restore();
 });
 
 describe('session', () => {
     it('la connexion rend le compte et son état tels que le serveur les envoie', async () => {
         const state = { profile: DEFAULT_PROFILE, tripRecords: [], plannedTrips: [], recurringTrips: [], savedRoutes: [] };
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ user: USER, state }));
+        const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ user: USER, state }));
 
         const session = await loginUser({ email: ' a@b.fr ', password: 'UrbanFlow2026!' });
 
@@ -27,13 +27,13 @@ describe('session', () => {
     });
 
     it('une connexion refusée remonte le message du serveur', async () => {
-        vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Identifiants invalides.' }, 401));
+        spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ error: 'Identifiants invalides.' }, 401));
 
         await expect(loginUser({ email: 'a@b.fr', password: 'faux' })).rejects.toThrow('Identifiants invalides.');
     });
 
     it('la déconnexion révoque la session côté serveur', async () => {
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
+        const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
 
         await logoutUser();
 
@@ -41,7 +41,7 @@ describe('session', () => {
     });
 
     it("l'effacement du compte passe par le serveur, qui supprime en cascade (RGPD art. 17)", async () => {
-        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
+        const fetchSpy = spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({ ok: true }));
 
         await deleteAccount();
 

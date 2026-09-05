@@ -1,4 +1,4 @@
-import { describe, expect, it } from '../../test/harness';
+import { describe, expect, it } from 'bun:test';
 import type { GtfsRoute, GtfsStop, TransportNetwork } from '../../types';
 import { findTransitJourney, transitLegs, type TransitJourney } from './transit';
 import { midpointOfPath, pathLengthKm, sliceShape } from './shape';

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '../../test/harness';
+import { describe, expect, it } from 'bun:test';
 import type { PlannedTrip } from '../../types';
 import {
     countOccurrences,

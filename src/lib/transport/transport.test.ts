@@ -1,5 +1,5 @@
 import { hasCompleteGeometry } from '../planner/legs';
-import { afterEach, describe, expect, it, vi } from '../../test/harness';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
 import { enhanceLegsWithLiveRouting, searchPlaces } from './index';
 import type { RouteLeg } from '../../types';
 
@@ -15,23 +15,23 @@ function jsonResponse(payload: unknown): Response {
 
 // La recherche interroge deux geocodeurs: on route les stubs fetch par URL.
 function stubGeocoders(banPayload: unknown, photonPayload: unknown = { features: [] }) {
-    vi.stubGlobal(
-        'fetch',
-        vi.fn(async (url: RequestInfo | URL) =>
-            jsonResponse(String(url).includes('photon.komoot.io') ? photonPayload : banPayload),
-        ),
-    );
+    fetchSpy.mockImplementation(async (url: RequestInfo | URL) =>
+        jsonResponse(String(url).includes('photon.komoot.io') ? photonPayload : banPayload));
 }
 
+let fetchSpy: Mock<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>;
+
+beforeEach(() => {
+    fetchSpy = spyOn(globalThis, 'fetch');
+    fetchSpy.mockRejectedValue(new Error('Appel réseau inattendu dans le test.'));
+});
+
 afterEach(() => {
-    vi.unstubAllGlobals();
+    mock.restore();
 });
 
 describe('searchPlaces', () => {
     it('ne déclenche aucun appel réseau sous 2 caractères', async () => {
-        const fetchSpy = vi.fn();
-        vi.stubGlobal('fetch', fetchSpy);
-
         expect(await searchPlaces(' a ')).toEqual([]);
         expect(fetchSpy).not.toHaveBeenCalled();
     });
@@ -113,22 +113,18 @@ describe('searchPlaces', () => {
     });
 
     it("retombe sur la BAN seule quand Photon est en échec", async () => {
-        vi.stubGlobal(
-            'fetch',
-            vi.fn(async (url: RequestInfo | URL) =>
-                String(url).includes('photon.komoot.io')
-                    ? ({ ok: false, status: 502 } as Response)
-                    : jsonResponse({
-                        features: [
-                            {
-                                type: 'Feature',
-                                properties: { id: 'ban-1', label: 'Place Bellecour, Lyon', context: '69, Rhone', type: 'street' },
-                                geometry: { type: 'Point', coordinates: [4.832, 45.7578] },
-                            },
-                        ],
-                    }),
-            ),
-        );
+        fetchSpy.mockImplementation(async (url: RequestInfo | URL) =>
+            String(url).includes('photon.komoot.io')
+                ? new Response(null, { status: 502 })
+                : jsonResponse({
+                    features: [
+                        {
+                            type: 'Feature',
+                            properties: { id: 'ban-1', label: 'Place Bellecour, Lyon', context: '69, Rhone', type: 'street' },
+                            geometry: { type: 'Point', coordinates: [4.832, 45.7578] },
+                        },
+                    ],
+                }));
 
         const results = await searchPlaces('Bellecour');
         expect(results).toHaveLength(1);
@@ -136,7 +132,7 @@ describe('searchPlaces', () => {
     });
 
     it('remonte une erreur explicite si les deux geocodeurs echouent', async () => {
-        vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503 }) as Response));
+        fetchSpy.mockResolvedValue(new Response(null, { status: 503 }));
 
         await expect(searchPlaces('Bellecour')).rejects.toThrow(/indisponible \(503\)/);
     });
@@ -165,21 +161,16 @@ describe('enhanceLegsWithLiveRouting', () => {
     };
 
     it('reprend distance, durée et CO2 du réseau routier en gardant les hypothèses du segment', async () => {
-        vi.stubGlobal(
-            'fetch',
-            vi.fn(async () =>
-                jsonResponse({
-                    path: [
-                        [4.832, 45.7578],
-                        [4.8594, 45.7606],
-                    ],
-                    distanceMeters: 3000,
-                    durationSeconds: 600,
-                    instructions: [],
-                    source: 'upstream',
-                }),
-            ),
-        );
+        fetchSpy.mockResolvedValue(jsonResponse({
+            path: [
+                [4.832, 45.7578],
+                [4.8594, 45.7606],
+            ],
+            distanceMeters: 3000,
+            durationSeconds: 600,
+            instructions: [],
+            source: 'upstream',
+        }));
 
         const [enhanced] = await enhanceLegsWithLiveRouting([roadLeg]);
 
@@ -191,12 +182,7 @@ describe('enhanceLegsWithLiveRouting', () => {
     });
 
     it("laisse le segment sans géométrie quand le routage echoue, sans inventer de tracé", async () => {
-        vi.stubGlobal(
-            'fetch',
-            vi.fn(async () => {
-                throw new Error('réseau coupe');
-            }),
-        );
+        fetchSpy.mockRejectedValue(new Error('réseau coupé'));
 
         const [enhanced] = await enhanceLegsWithLiveRouting([{ ...roadLeg, path: [origin, destination] }]);
 
@@ -204,21 +190,17 @@ describe('enhanceLegsWithLiveRouting', () => {
     });
 
     it("n'envoie pas un segment de transport public au routage routier", async () => {
-        const stub = vi.fn(async () => jsonResponse({}));
-        vi.stubGlobal('fetch', stub);
 
         const transitPath = [origin, destination];
         const [enhanced] = await enhanceLegsWithLiveRouting([
             { ...roadLeg, id: 'ride', mode: 'transit', path: transitPath },
         ]);
 
-        expect(stub).not.toHaveBeenCalled();
+        expect(fetchSpy).not.toHaveBeenCalled();
         expect(enhanced.path).toBe(transitPath);
     });
 
     it("n'envoie pas une correspondance intérieure à OSRM et accepte son absence de tracé", async () => {
-        const stub = vi.fn(async () => jsonResponse({}));
-        vi.stubGlobal('fetch', stub);
         const transfer: RouteLeg = {
             ...roadLeg,
             id: 'transfer',
@@ -232,7 +214,7 @@ describe('enhanceLegsWithLiveRouting', () => {
 
         const [enhanced] = await enhanceLegsWithLiveRouting([transfer]);
 
-        expect(stub).not.toHaveBeenCalled();
+        expect(fetchSpy).not.toHaveBeenCalled();
         expect(enhanced).toBe(transfer);
         expect(hasCompleteGeometry([transfer])).toBe(true);
     });

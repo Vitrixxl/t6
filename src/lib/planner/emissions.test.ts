@@ -1,4 +1,4 @@
-import { describe, expect, it } from '../../test/harness';
+import { describe, expect, it } from 'bun:test';
 import { DEFAULT_PROFILE } from '../../contracts';
 import type { RouteOption } from '../../types';
 import { measureRoutes } from '.';

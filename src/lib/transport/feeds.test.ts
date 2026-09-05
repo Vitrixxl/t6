@@ -1,9 +1,16 @@
-import { afterEach, describe, expect, it, vi } from '../../test/harness';
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
 import { fetchJson, loadTransportNetwork, mapDottVehicles, mergeVelovStations, weatherFromOpenMeteo } from './feeds';
 import type { GtfsFeed } from '../../types';
 
+let fetchSpy: Mock<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>;
+
+beforeEach(() => {
+    fetchSpy = spyOn(globalThis, 'fetch');
+    fetchSpy.mockRejectedValue(new Error('Appel réseau inattendu dans le test.'));
+});
+
 afterEach(() => {
-    vi.unstubAllGlobals();
+    mock.restore();
 });
 
 describe('mergeVelovStations', () => {
@@ -168,7 +175,7 @@ const gtfsFixture: GtfsFeed = {
 
 describe('fetchJson', () => {
     it('remonte une erreur explicite avec URL et statut si le flux répond en échec', async () => {
-        vi.stubGlobal('fetch', async () => new Response(null, { status: 429 }));
+        fetchSpy.mockResolvedValue(new Response(null, { status: 429 }));
 
         await expect(fetchJson('https://flux.test/gbfs.json')).rejects.toThrow(
             'Flux indisponible: https://flux.test/gbfs.json (429)',
@@ -179,7 +186,7 @@ describe('fetchJson', () => {
 describe('loadTransportNetwork', () => {
     it('signale les disponibilités absentes sans charger de secours quand le live échoue', async () => {
         const urls: string[] = [];
-        vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+        fetchSpy.mockImplementation(async (input: RequestInfo | URL) => {
             urls.push(String(input));
             const url = String(input);
             if (url.includes('gtfs-feed.json')) {
@@ -197,7 +204,7 @@ describe('loadTransportNetwork', () => {
     });
 
     it('marque les sources live quand GBFS et Open-Meteo repondent', async () => {
-        vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+        fetchSpy.mockImplementation(async (input: RequestInfo | URL) => {
             const url = String(input);
             if (url.includes('gtfs-feed.json')) {
                 return Response.json(gtfsFixture);

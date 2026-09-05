@@ -1,4 +1,4 @@
-import { describe, expect, it } from '../test/harness';
+import { describe, expect, it } from 'bun:test';
 import { formatCarbonComparison, formatCarbonComparisonCompact } from './carbon-comparison';
 
 describe('formatCarbonComparison', () => {
