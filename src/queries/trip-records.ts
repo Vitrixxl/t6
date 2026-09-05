@@ -1,7 +1,6 @@
 // Historique carbone : lecture et effacement explicite de la collection.
 // Les lignes individuelles sont créées par la complétion d'un trajet programmé.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import type { TripRecord } from '../types';
 import { clearTripHistory, fetchTripRecords } from '../lib/api/trip-history';
 import { mutationKeys, queryKeys } from './keys';
@@ -45,5 +44,5 @@ export function useTripRecords(): TripRecord[] {
 export function useClearTripHistory(): () => void {
     const client = useQueryClient();
     const clear = useMutation(clearTripHistoryOptions(client));
-    return useCallback(() => clear.mutate(), [clear]);
+    return clear.mutate;
 }

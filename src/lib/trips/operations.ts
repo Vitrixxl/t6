@@ -1,35 +1,14 @@
 // Opérations pures sur les vues locales des trajets programmés et routines.
-// Elles projettent immédiatement une commande granulaire dans le cache ; elles
-// ne definissent ni requête HTTP ni stockage.
-import type { PlannedTrip, PlannedTripStatus, RecurringTrip } from '../../types';
+// Les réponses du serveur actualisent les collections du cache. La pause prépare
+// une seule ressource à envoyer ; aucune fonction ici ne stocke ni ne fait de HTTP.
+import type { PlannedTrip, RecurringTrip } from '../../types';
 import { PLANNED_LIMIT } from '../../contracts/limits';
 import { isRoutinePaused } from './routines';
 
-export function sortPlanned(trips: PlannedTrip[]): PlannedTrip[] {
-    return trips.slice().sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
-}
-
-/** Trie et borne : la forme sous laquelle la liste est toujours rendue. */
-export function boundPlanned(trips: PlannedTrip[]): PlannedTrip[] {
-    const sorted = sortPlanned(trips);
-    return sorted.length > PLANNED_LIMIT ? sorted.slice(sorted.length - PLANNED_LIMIT) : sorted;
-}
-
 export function upsertPlanned(trips: PlannedTrip[], trip: PlannedTrip): PlannedTrip[] {
-    return boundPlanned([trip, ...trips.filter((item) => item.id !== trip.id)]);
-}
-
-export function setPlannedStatus(
-    trips: PlannedTrip[],
-    tripId: string,
-    status: PlannedTripStatus,
-    now: Date = new Date(),
-): PlannedTrip[] {
-    return boundPlanned(
-        trips.map((trip) =>
-            trip.id === tripId ? { ...trip, status, completedAt: status === 'done' ? now.toISOString() : null } : trip,
-        ),
-    );
+    return [trip, ...trips.filter((item) => item.id !== trip.id)]
+        .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))
+        .slice(-PLANNED_LIMIT);
 }
 
 export function removePlanned(trips: PlannedTrip[], tripId: string): PlannedTrip[] {
@@ -41,27 +20,24 @@ export function upsertRecurring(trips: RecurringTrip[], trip: RecurringTrip): Re
 }
 
 /**
- * Pause : la période d'activite courante se clôt, les passages suivants ne
+ * Pause : la période d’activité courante se clôt, les passages suivants ne
  * comptent plus. Reprise : une nouvelle période s'ouvre, et les passages
- * tombes pendant la pause restent hors compte. Sans effet si la routine est
- * déjà dans l'état demande.
+ * tombés pendant la pause restent hors compte. Sans effet si la routine est
+ * déjà dans l'état demandé.
  */
 export function setRecurringPaused(
-    trips: RecurringTrip[],
-    tripId: string,
+    trip: RecurringTrip,
     paused: boolean,
     now: Date = new Date(),
-): RecurringTrip[] {
+): RecurringTrip {
+    if (isRoutinePaused(trip) === paused) {
+        return trip;
+    }
     const at = now.toISOString();
-    return trips.map((trip) => {
-        if (trip.id !== tripId || isRoutinePaused(trip) === paused) {
-            return trip;
-        }
-        const periods = paused
-            ? trip.periods.map((period, index) => (index === trip.periods.length - 1 ? { ...period, to: at } : period))
-            : [...trip.periods, { from: at, to: null }];
-        return { ...trip, periods };
-    });
+    const periods = paused
+        ? trip.periods.map((period, index) => index === trip.periods.length - 1 ? { ...period, to: at } : period)
+        : [...trip.periods, { from: at, to: null }];
+    return { ...trip, periods };
 }
 
 export function removeRecurring(trips: RecurringTrip[], tripId: string): RecurringTrip[] {

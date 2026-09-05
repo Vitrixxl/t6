@@ -1,5 +1,6 @@
+import { hasCompleteGeometry } from '../planner/legs';
 import { afterEach, describe, expect, it, vi } from '../../test/harness';
-import { enhanceLegsWithLiveRouting, hasCompleteGeometry, searchPlaces } from './index';
+import { enhanceLegsWithLiveRouting, searchPlaces } from './index';
 import type { RouteLeg } from '../../types';
 
 const origin = { label: 'Bellecour', lat: 45.7578, lon: 4.832 };

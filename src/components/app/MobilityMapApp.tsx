@@ -97,14 +97,6 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
         });
     };
 
-    const selectOrigin = (point: GeoPoint) => {
-        setOrigin(point);
-    };
-
-    const selectDestination = (point: GeoPoint) => {
-        setDestination(point);
-    };
-
     // Le départ bascule sur la position courante quand il n'a jamais été saisi :
     // inverser un trajet dont un bout est implicite doit rester possible.
     const swapEndpoints = () => {
@@ -199,8 +191,8 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
                     onOpenProfile={() => setProfileOpen(true)}
                     onStartTutorial={() => setTutorialSignal((value) => value + 1)}
                     onCurrentPositionRequest={requestCurrentPosition}
-                    onOriginSelect={selectOrigin}
-                    onDestinationSelect={selectDestination}
+                    onOriginSelect={setOrigin}
+                    onDestinationSelect={setDestination}
                     onSelectRoute={setSelectedRouteId}
                     onSaveRoute={saveRoute}
                     onPlanRoute={planRoute}
@@ -218,8 +210,8 @@ export function MobilityMapApp({ network }: { network: TransportNetwork }) {
                     onOpenProfile={() => setProfileOpen(true)}
                     onLocate={locateAndFocus}
                     onCurrentPositionRequest={requestCurrentPosition}
-                    onOriginSelect={selectOrigin}
-                    onDestinationSelect={selectDestination}
+                    onOriginSelect={setOrigin}
+                    onDestinationSelect={setDestination}
                     onSwap={swapEndpoints}
                     onSelectRoute={setSelectedRouteId}
                     onSaveRoute={saveRoute}

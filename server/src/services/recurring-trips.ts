@@ -3,16 +3,16 @@
 import { atCalendarTime, nextCalendarDate } from '../../../src/lib/trips/calendar.ts';
 import { routinePassagesBetween } from '../../../src/lib/trips/routines.ts';
 import type { Db } from '../db/index.ts';
-import { createRepositories } from '../repositories/index.ts';
+import { createRecurringTripRepository } from '../repositories/recurring-trips.ts';
 import { RECURRING_LIMIT, type RecurringTrip, type TripDirection } from '../../../src/contracts/index.ts';
 
 export function saveRecurringTrip(db: Db, trip: Omit<RecurringTrip, 'cancelledPassages'>): RecurringTrip | null {
     return db.transaction((tx) => {
-        const repository = createRepositories(tx).recurringTrips;
-        if (!repository.findById(trip.userId, trip.id) && repository.count(trip.userId) >= RECURRING_LIMIT) {
+        const repository = createRecurringTripRepository(tx);
+        const current = repository.findById(trip.userId, trip.id);
+        if (!current && repository.count(trip.userId) >= RECURRING_LIMIT) {
             return null;
         }
-        const current = repository.findById(trip.userId, trip.id);
         repository.upsert({ ...trip, cancelledPassages: current?.cancelledPassages ?? [] });
         return repository.findById(trip.userId, trip.id);
     });
@@ -28,7 +28,7 @@ export function cancelRecurringDate(
     now = new Date(),
 ): RecurringTrip | null {
     return db.transaction((tx) => {
-        const repository = createRepositories(tx).recurringTrips;
+        const repository = createRecurringTripRepository(tx);
         const routine = repository.findById(userId, id);
         if (!routine || !hasPastPassages(routine, date, directions, now)) {
             return null;

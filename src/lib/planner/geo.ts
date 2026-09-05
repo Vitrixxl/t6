@@ -30,7 +30,6 @@ export function toRadians(value: number): number {
  */
 export function stationCandidates(stations: SharedStation[], point: GeoPoint): SharedStation[] {
     return stations
-        .slice()
         .map((station) => ({ station, distanceKm: haversineDistanceKm(stationToPoint(station), point) }))
         .filter(({ distanceKm }) => distanceKm <= MAX_STATION_ACCESS_KM)
         .sort((a, b) => a.distanceKm - b.distanceKm)

@@ -1,10 +1,7 @@
 // Géométrie réelle segment par segment.
 //
 // Chaque segment est route avec le profil qui lui correspond : le segment
-// piéton suit les trottoirs, le segment vélo les pistes cyclables. Le coût est
-// borne — on n'enrichit que l'itinéraire selectionne, soit trois a quatre
-// appels, et seulement quand la sélection change.
-//
+// piéton suit les trottoirs, le segment vélo les pistes cyclables.
 // Toutes les options candidates sont mesurées avant affichage. Le cache partagé
 // absorbe les segments identiques entre options et utilisateurs.
 //
@@ -48,9 +45,4 @@ export async function enhanceLegsWithLiveRouting(legs: RouteLeg[], signal?: Abor
             };
         }),
     );
-}
-
-/** Un itinéraire est prêt a être dessine quand tous ses segments ont un tracé. */
-export function hasCompleteGeometry(legs: RouteLeg[]): boolean {
-    return legs.length > 0 && legs.every((leg) => leg.transfer || leg.path.length >= 2);
 }

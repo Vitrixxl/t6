@@ -1,6 +1,5 @@
 // Profil de mobilité : une ressource unique, lue et remplacée telle quelle.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { DEFAULT_PROFILE, type MobilityProfile } from '../contracts';
 import { fetchProfile, saveProfile } from '../lib/api/profile';
 import { mutationKeys, queryKeys } from './keys';
@@ -36,5 +35,5 @@ export function useProfile(): MobilityProfile {
 export function useUpdateProfile(): (profile: MobilityProfile) => void {
     const client = useQueryClient();
     const save = useMutation(saveProfileOptions(client));
-    return useCallback((profile: MobilityProfile) => save.mutate(profile), [save]);
+    return save.mutate;
 }

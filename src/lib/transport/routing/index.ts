@@ -7,5 +7,5 @@
 // désormais route avec son propre profil, et les mesures de l'option sont la
 // somme de celles de ses segments.
 
-export { enhanceLegsWithLiveRouting, hasCompleteGeometry } from './legs';
+export { enhanceLegsWithLiveRouting } from './legs';
 export { fetchRouteMatrix } from './osrm';

@@ -81,11 +81,16 @@ horloge injectée :
 2. bascule du lundi : le même trajet compte le dimanche soir, plus le lundi matin ;
 3. borne inférieure : un trajet fait lundi a 00:00 est dans la semaine.
 
-Un quatrième test verrouille la cause racine plutôt que son symptôme : il
-construit des trajets planifies, les convertit en enregistrements par le chemin
-réel (`plannedTripToRecord`), et exige que **les deux agrégats annoncent le même
-CO2 évité**. C'est celui-la qui empeche les deux écrans de rediverger ; les
-trois premiers ne verrouillent que le calcul.
+Un quatrième test verrouille la cohérence entre les deux agrégats : pour les
+mêmes dates et économies, le suivi carbone et les objectifs doivent annoncer
+le même CO2 évité. Il utilise maintenant des fixtures de trajets et
+d’enregistrements dans `src/lib/carbon.test.ts`.
+
+Au moment du correctif, ce test passait par `plannedTripToRecord`. Cette
+ancienne conversion client a été retirée lors de la simplification : la
+création réelle de l’historique appartient au serveur. Le test d’agrégats ne
+prouve donc pas la transaction ; celle-ci est couverte séparément dans
+`server/src/__tests__/state.test.ts` et par `bun run e2e`.
 
 **Validation** : les deux premiers tests vus **rouges** avant le correctif
 (`expected 2 to be 1`, `expected 1 to be +0`), **verts** après. Suite complète

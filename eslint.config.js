@@ -24,7 +24,7 @@ export default [
     },
     js.configs.recommended,
     {
-        // Scripts d'outillage exécutés par Node : leurs globales ne sont pas celles
+        // Scripts d'outillage exécutés par Bun : leurs globales ne sont pas celles
         // du navigateur.
         files: ['scripts/**/*.mjs'],
         languageOptions: {

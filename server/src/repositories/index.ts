@@ -1,9 +1,6 @@
-// Assemblage des dépôts. Un seul point de construction : les plugins et les
-// tests reçoivent l'ensemble cohérent, sans jamais instancier un dépôt isole.
-//
-// L'argument est un `Executor` : la base elle-même, ou une transaction en
-// cours. Une transition multi-ressource construit ainsi des dépôts liés à sa
-// transaction, sans que les dépôts aient a le savoir.
+// Assemblage des dépôts pour le contexte HTTP. Les services transactionnels
+// construisent directement les seuls dépôts dont ils ont besoin, avec la
+// transaction comme exécuteur.
 import type { Executor } from '../db/index.ts';
 import { createPlannedTripRepository } from './planned-trips.ts';
 import { createRecurringTripRepository } from './recurring-trips.ts';

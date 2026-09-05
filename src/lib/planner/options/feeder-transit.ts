@@ -12,7 +12,7 @@ import { MODE_LABELS } from '../labels';
 import { buildOption, createLeg } from '../legs';
 import { transitLegs } from '../transit';
 
-export interface Feeder {
+interface Feeder {
     id: 'bike-transit' | 'scooter-transit';
     mode: Extract<MobilityMode, 'bike' | 'scooter'>;
     title: string;
@@ -23,13 +23,36 @@ export interface Feeder {
     reliability: { clear: number; degraded: number };
 }
 
+// Les deux modes partagent le parcours ; leurs différences tiennent dans ces valeurs.
+const FEEDERS: Record<'bike' | 'scooter', Feeder> = {
+    bike: {
+        id: 'bike-transit',
+        mode: 'bike',
+        title: 'Vélo + transport en commun',
+        detail: (station) => `${station.bikes_available} vélos disponibles pour rejoindre la correspondance.`,
+        // Sortie de borne et remise en station.
+        unlockMinutes: 2,
+        reliability: { clear: 90, degraded: 78 },
+    },
+    scooter: {
+        id: 'scooter-transit',
+        mode: 'scooter',
+        title: 'Trottinette + transport en commun',
+        detail: (station) => `${station.scooters_available} trottinettes disponibles pour rejoindre la correspondance.`,
+        // Déverrouillage par l'application.
+        unlockMinutes: 1,
+        reliability: { clear: 84, degraded: 72 },
+    },
+};
+
 export function createFeederTransitOption(
     { origin, destination, profile, network }: RouteRequest,
     directKm: number,
-    feeder: Feeder,
+    mode: 'bike' | 'scooter',
     access: FeederAccess | null,
 ): RouteOption | null {
-    const vehicle = MODE_LABELS[feeder.mode];
+    const feeder = FEEDERS[mode];
+    const vehicle = MODE_LABELS[mode];
     const Vehicle = vehicle.charAt(0).toUpperCase() + vehicle.slice(1);
     if (!access) {
         return null;

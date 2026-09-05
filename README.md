@@ -96,7 +96,7 @@ commande pas la création d'un module.
 
 | Dossier | Rôle |
 | --- | --- |
-| `lib/planner/` | moteur d'itinéraires : un générateur par mode dans `options/`, plus scoring et règles |
+| `lib/planner/` | moteur d'itinéraires : générateurs dans `options/` (rabattements vélo/trottinette réunis), scoring et règles |
 | `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
 | `contracts/` | schémas zod partagés avec l'API : validation, types derives, OpenAPI |
 | `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une commande par ressource du compte |
@@ -108,10 +108,39 @@ commande pas la création d'un module.
 | `components/app/` | orchestration de l'écran, dispositions desktop/mobile et hooks de géolocalisation/routage |
 | `components/tutorial/` | parcours de découverte distincts : 11 étapes desktop et 9 étapes ciblant les contrôles réellement présents sur mobile |
 
-Pour une revue de code, l'ordre de lecture le plus court : `server/src/routes/auth.ts` (sécurité),
-`server/src/routes/planned-trips.ts`, `server/src/services/planned-trips.ts`, `src/lib/api/planned-trips.ts`
-et `src/queries/planned-trips.ts` (commande granulaire de bout en bout), puis
-`src/queries/routes.ts` et `src/lib/planner/index.ts` (moteur d'itinéraires).
+### Comprendre le code en deux jours
+
+Le guide détaillé est [la revue de code locale](output/revue-code.html) : fichiers
+et symboles dans l’ordre des appels, exercices et questions d’oral. Ce support
+reste ignoré par Git, comme les autres fichiers de soutenance.
+
+**Jour 1 — suivre les données** (quatre séances de 60 à 90 minutes) :
+
+1. Démarrage : `server/src/index.ts` → `server/src/app.ts`, puis
+   `src/main.tsx` → `src/App.tsx`.
+2. Connexion : `AuthScreen` → `src/queries/session.ts` → `src/lib/api/auth.ts`
+   → `server/src/routes/auth.ts` → session serveur → cache client.
+3. Trajet : `usePlanSubmission` → `src/queries/planned-trips.ts` →
+   `src/lib/api/planned-trips.ts` → route → service → dépôt du même nom.
+   Lire ensuite la complétion et sa transaction trajet + historique carbone.
+4. Calcul : `src/queries/routes.ts` → `prepareRoutedAccessPlan` → `planRoutes`
+   → `measureRoutes` → `applyCarbonReference`.
+
+**Jour 2 — expliquer les garanties** :
+
+1. Affichage : `MobilityMapApp` → `useRouteOptions` → `MobilityLayouts`
+   → `UrbanMap`, ses sources et son cadrage.
+2. Récurrences : `src/lib/trips/operations.ts` (pause d’une seule routine),
+   `routines.ts` (passages), `history.ts` (annulations), puis les services serveur.
+3. Pannes : callbacks de mutation dans `src/queries/`, `save-error.ts`,
+   service de routage et bandeau hors ligne. Lire `docs/PLAN-ATTENTE-GTFS.md`
+   pour distinguer le moteur affiché du chantier horaire non activé.
+4. Sans notes, retrouver un parcours de connexion, de complétion et de recherche,
+   puis expliquer un test de chaque parcours.
+
+Pour chaque fonction : identifier ses entrées, sa sortie et ses effets, puis
+suivre le prochain appel. Les contrats, transactions et dépôts ont des rôles
+distincts ; un simple relais n’a pas besoin de son propre fichier.
 
 ## Livrables
 

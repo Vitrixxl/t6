@@ -31,22 +31,14 @@ export function savedRoutesQuery(client: QueryClient) {
     });
 }
 
-function updateSavedRoutes(client: QueryClient, update: (routes: SavedRouteRecord[]) => SavedRouteRecord[]): void {
-    client.setQueryData(queryKeys.savedRoutes, update(readSavedRoutes(client)));
-}
-
-function reloadSavedRoutes(client: QueryClient): Promise<void> {
-    return client.invalidateQueries({ queryKey: queryKeys.savedRoutes }).then(() => undefined);
-}
-
 export function saveSavedRouteOptions(client: QueryClient) {
     return mutationOptions({
         mutationKey: mutationKeys.savedRouteSave,
         scope: { id: 'account' },
         mutationFn: saveSavedRoute,
         onMutate: () => client.cancelQueries({ queryKey: queryKeys.savedRoutes }),
-        onSuccess: (saved) => updateSavedRoutes(client, (routes) => addSavedRoute(routes, saved)),
-        onError: () => reloadSavedRoutes(client),
+        onSuccess: (saved) => client.setQueryData(queryKeys.savedRoutes, addSavedRoute(readSavedRoutes(client), saved)),
+        onError: () => client.invalidateQueries({ queryKey: queryKeys.savedRoutes }),
         gcTime: Infinity,
     });
 }
@@ -57,8 +49,8 @@ export function deleteSavedRouteOptions(client: QueryClient) {
         scope: { id: 'account' },
         mutationFn: deleteSavedRoute,
         onMutate: () => client.cancelQueries({ queryKey: queryKeys.savedRoutes }),
-        onSuccess: (_result, id) => updateSavedRoutes(client, (routes) => removeSavedRoute(routes, id)),
-        onError: () => reloadSavedRoutes(client),
+        onSuccess: (_result, id) => client.setQueryData(queryKeys.savedRoutes, removeSavedRoute(readSavedRoutes(client), id)),
+        onError: () => client.invalidateQueries({ queryKey: queryKeys.savedRoutes }),
         gcTime: Infinity,
     });
 }
@@ -82,5 +74,5 @@ export function useSaveRoute(): (input: SaveRouteInput) => void {
 export function useDeleteSavedRoute(): (recordId: string) => void {
     const client = useQueryClient();
     const remove = useMutation(deleteSavedRouteOptions(client));
-    return useCallback((recordId: string) => remove.mutate(recordId), [remove]);
+    return remove.mutate;
 }

@@ -1,19 +1,18 @@
 // Moteur d'itinéraires : produit les options multimodales candidates, puis les
 // classe de la plus rapide à la plus lente.
 //
-// Chaque mode à son générateur dans options/ ; ce fichier ne fait que les
-// appeler et trier le résultat. Ajouter un mode revient donc a ajouter un
-// fichier, sans toucher à la logique de classement.
+// Les générateurs vivent dans options/ ; vélo + transport et trottinette +
+// transport partagent le même parcours dans feeder-transit.ts. Ce fichier
+// assemble les six familles puis classe les options calculables.
 import type { MobilityProfile, RouteLeg, RouteOption, RouteRequest } from '../../types';
 import { estimateRouteAccessPlan, type RouteAccessPlan } from './access';
 import { haversineDistanceKm } from './geo';
 import { createBikeOption } from './options/bike';
-import { createBikeTransitOption } from './options/bike-transit';
+import { createFeederTransitOption } from './options/feeder-transit';
 import { createScooterOption } from './options/scooter';
-import { createScooterTransitOption } from './options/scooter-transit';
 import { createTransitOption } from './options/transit';
 import { createWalkOption } from './options/walk';
-import { applyRoutedLegs } from './legs';
+import { applyRoutedLegs, hasCompleteGeometry } from './legs';
 import { scoreOption } from './scoring';
 
 export function planRoutes(
@@ -28,8 +27,8 @@ export function planRoutes(
     const directKm = Math.max(haversineDistanceKm(request.origin, request.destination), 0.15);
     const candidates = [
         createTransitOption(request, access.transit),
-        createBikeTransitOption(request, directKm, access.bikeTransit),
-        createScooterTransitOption(request, directKm, access.scooterTransit),
+        createFeederTransitOption(request, directKm, 'bike', access.bikeTransit),
+        createFeederTransitOption(request, directKm, 'scooter', access.scooterTransit),
         createBikeOption(request, directKm, access.bike),
         createScooterOption(request, directKm, access.scooter),
         createWalkOption(request, directKm),
@@ -67,9 +66,7 @@ export async function measureRoutes(
     // supposerait de retomber sur son estimation, donc de remettre deux méthodes
     // dans la même liste.
     return rankRoutes(
-        measured.filter((option) =>
-            option.legs.length > 0 && option.legs.every((leg) => leg.transfer || leg.path.length >= 2),
-        ),
+        measured.filter((option) => hasCompleteGeometry(option.legs)),
         profile,
     );
 }
@@ -86,7 +83,7 @@ export {
     type Nearby,
     type NearbyWithin,
 } from './nearby';
-export { applyRoutedLegs } from './legs';
+export { applyRoutedLegs, hasCompleteGeometry } from './legs';
 export { applyCarbonReference, createCarbonReference } from './emissions';
 export { midpointOfPath } from './shape';
 export { prepareRoutedAccessPlan, type RouteAccessPlan, type RouteMatrixMeasurer } from './access';

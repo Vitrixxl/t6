@@ -7,9 +7,7 @@ import {
     isRoutinePaused,
     nextOccurrence,
     occurrencesBetween,
-    plannedTripToRecord,
     removeRecurring,
-    setPlannedStatus,
     setRecurringPaused,
     summarizeTripActivity,
     upcomingTrips,
@@ -35,21 +33,14 @@ const NOW = new Date(2026, 6, 15, 7, 0);
 const LATER = new Date(2026, 6, 21, 12, 0);
 
 describe('planned trips', () => {
-    it('crée un trajet et le passe a fait avec horodatage', () => {
+    it('crée un trajet à faire avec sa date et ses mesures', () => {
         const trip = createPlannedTrip(USER_ID, SOURCE, new Date(2026, 6, 16, 8, 30), NOW);
 
-        const done = setPlannedStatus(upsertPlanned([], trip), trip.id, 'done', new Date(2026, 6, 16, 9, 0));
-        expect(done).toHaveLength(1);
-        expect(done[0].status).toBe('done');
-        expect(done[0].completedAt).toBe(new Date(2026, 6, 16, 9, 0).toISOString());
-
-        const record = plannedTripToRecord(done[0]);
-        expect(record.routeTitle).toBe(SOURCE.label);
-        expect(record.carbonSavedGrams).toBe(SOURCE.carbonSavedGrams);
-        // Un trajet marqué fait porte forcement sa date d'achevement : l'affirmer
-        // avant la comparaison évite de comparer a `null` sans s'en apercevoir.
-        expect(done[0].completedAt).not.toBeNull();
-        expect(record.createdAt).toBe(done[0].completedAt as string);
+        expect(trip.status).toBe('planned');
+        expect(trip.completedAt).toBeNull();
+        expect(trip.scheduledFor).toBe(new Date(2026, 6, 16, 8, 30).toISOString());
+        expect(trip.label).toBe(SOURCE.label);
+        expect(trip.carbonSavedGrams).toBe(SOURCE.carbonSavedGrams);
     });
 
     it('upcomingTrips ne retourne que les trajets à faire, tries par date', () => {
@@ -102,20 +93,20 @@ describe('routines — passages comptes à la lecture', () => {
         expect(isRoutinePaused(created)).toBe(false);
 
         // Pause jeudi 16 : seuls les passages du mercredi 15 restent comptes.
-        const paused = setRecurringPaused([created], created.id, true, new Date(2026, 6, 16, 9, 0));
-        expect(isRoutinePaused(paused[0])).toBe(true);
-        expect(countOccurrences(paused[0], new Date(0), LATER)).toBe(2);
-        expect(nextOccurrence(paused[0], LATER)).toBeNull();
+        const paused = setRecurringPaused(created, true, new Date(2026, 6, 16, 9, 0));
+        expect(isRoutinePaused(paused)).toBe(true);
+        expect(countOccurrences(paused, new Date(0), LATER)).toBe(2);
+        expect(nextOccurrence(paused, LATER)).toBeNull();
 
         // Reprise lundi 20 a 07:00 : le vendredi 17 reste hors compte, le lundi
         // compte à nouveau.
-        const resumed = setRecurringPaused(paused, created.id, false, new Date(2026, 6, 20, 7, 0));
-        expect(isRoutinePaused(resumed[0])).toBe(false);
-        expect(resumed[0].periods).toHaveLength(2);
-        expect(countOccurrences(resumed[0], new Date(0), LATER)).toBe(4);
+        const resumed = setRecurringPaused(paused, false, new Date(2026, 6, 20, 7, 0));
+        expect(isRoutinePaused(resumed)).toBe(false);
+        expect(resumed.periods).toHaveLength(2);
+        expect(countOccurrences(resumed, new Date(0), LATER)).toBe(4);
 
         // Demander l'état déjà en place ne change rien.
-        expect(setRecurringPaused(resumed, created.id, false)[0]).toBe(resumed[0]);
+        expect(setRecurringPaused(resumed, false)).toBe(resumed);
     });
 
     it('annonce le prochain passage d’une routine active', () => {

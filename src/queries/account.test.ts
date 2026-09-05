@@ -267,7 +267,7 @@ describe('commandes granulaires', () => {
     it('crée, met en pause puis supprime une routine seule', async () => {
         const routine = createRecurringTrip('user-1', SOURCE, EVERY_DAY);
         await write(saveRecurringTripOptions(client), routine);
-        const paused = setRecurringPaused([routine], routine.id, true)[0] ?? routine;
+        const paused = setRecurringPaused(routine, true);
         await write(saveRecurringTripOptions(client), paused);
         expect(isRoutinePaused(readRecurringTrips(client)[0])).toBe(true);
         await write(deleteRecurringTripOptions(client), paused);

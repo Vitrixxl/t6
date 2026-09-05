@@ -32,22 +32,14 @@ export function recurringTripsQuery(client: QueryClient) {
     });
 }
 
-function updateRecurringTrips(client: QueryClient, update: (trips: RecurringTrip[]) => RecurringTrip[]): void {
-    client.setQueryData(queryKeys.recurringTrips, update(readRecurringTrips(client)));
-}
-
-function reloadRecurringTrips(client: QueryClient): Promise<void> {
-    return client.invalidateQueries({ queryKey: queryKeys.recurringTrips }).then(() => undefined);
-}
-
 export function saveRecurringTripOptions(client: QueryClient) {
     return mutationOptions({
         mutationKey: mutationKeys.recurringSave,
         scope: { id: 'account' },
         mutationFn: saveRecurringTrip,
         onMutate: () => client.cancelQueries({ queryKey: queryKeys.recurringTrips }),
-        onSuccess: (saved) => updateRecurringTrips(client, (trips) => upsertRecurring(trips, saved)),
-        onError: () => reloadRecurringTrips(client),
+        onSuccess: (saved) => client.setQueryData(queryKeys.recurringTrips, upsertRecurring(readRecurringTrips(client), saved)),
+        onError: () => client.invalidateQueries({ queryKey: queryKeys.recurringTrips }),
         gcTime: Infinity,
     });
 }
@@ -58,8 +50,8 @@ export function deleteRecurringTripOptions(client: QueryClient) {
         scope: { id: 'account' },
         mutationFn: (routine: RecurringTrip) => deleteRecurringTrip(routine.id),
         onMutate: () => client.cancelQueries({ queryKey: queryKeys.recurringTrips }),
-        onSuccess: (_result, routine) => updateRecurringTrips(client, (trips) => removeRecurring(trips, routine.id)),
-        onError: () => reloadRecurringTrips(client),
+        onSuccess: (_result, routine) => client.setQueryData(queryKeys.recurringTrips, removeRecurring(readRecurringTrips(client), routine.id)),
+        onError: () => client.invalidateQueries({ queryKey: queryKeys.recurringTrips }),
         gcTime: Infinity,
     });
 }
@@ -84,7 +76,7 @@ export function useToggleRoutinePaused(): (routine: RecurringTrip) => void {
     const client = useQueryClient();
     const save = useMutation(saveRecurringTripOptions(client));
     return useCallback((routine: RecurringTrip) => {
-        const updated = setRecurringPaused([routine], routine.id, !isRoutinePaused(routine))[0] ?? routine;
+        const updated = setRecurringPaused(routine, !isRoutinePaused(routine));
         save.mutate(updated);
     }, [save]);
 }
@@ -92,7 +84,7 @@ export function useToggleRoutinePaused(): (routine: RecurringTrip) => void {
 export function useRemoveRoutine(): (routine: RecurringTrip) => void {
     const client = useQueryClient();
     const remove = useMutation(deleteRecurringTripOptions(client));
-    return useCallback((routine: RecurringTrip) => remove.mutate(routine), [remove]);
+    return remove.mutate;
 }
 
 export interface CancelRoutineDate {
@@ -107,8 +99,8 @@ export function cancelRecurringDateOptions(client: QueryClient) {
         scope: { id: 'account' },
         mutationFn: ({ id, date, directions }: CancelRoutineDate) => cancelRecurringDate(id, date, directions),
         onMutate: () => client.cancelQueries({ queryKey: queryKeys.recurringTrips }),
-        onSuccess: (saved) => updateRecurringTrips(client, (trips) => upsertRecurring(trips, saved)),
-        onError: () => reloadRecurringTrips(client),
+        onSuccess: (saved) => client.setQueryData(queryKeys.recurringTrips, upsertRecurring(readRecurringTrips(client), saved)),
+        onError: () => client.invalidateQueries({ queryKey: queryKeys.recurringTrips }),
         gcTime: Infinity,
     });
 }
@@ -116,5 +108,5 @@ export function cancelRecurringDateOptions(client: QueryClient) {
 export function useCancelRoutineDate(): (input: CancelRoutineDate) => void {
     const client = useQueryClient();
     const cancel = useMutation(cancelRecurringDateOptions(client));
-    return useCallback((input: CancelRoutineDate) => cancel.mutate(input), [cancel]);
+    return cancel.mutate;
 }

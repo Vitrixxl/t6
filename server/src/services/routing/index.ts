@@ -103,10 +103,7 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
                 // Le calculateur ne répond pas. Une entrée expirée vaut mieux qu'aucune
                 // réponse : la voirie n'a pas changé, et l'alternative serait une carte
                 // vide. C'est le seul cas où l'on sert une donnée périmée.
-                if (cached) {
-                    return cached;
-                }
-                return null;
+                return cached;
             }
 
             cache.save(key, mode, JSON.stringify(geometry));
@@ -120,21 +117,17 @@ export function createRoutingService(config: ServerConfig, cache: RouteCacheRepo
             destinations: Coordinates[],
         ): Promise<RoutingMatrixResult | null> {
             const known = origins.map((from) => destinations.map((to) => findMeasure(cache, mode, from, to)));
+            const cachedMeasures = known.map((row) =>
+                row.map((entry): RoutingMeasure | null => entry ? { ...entry.measure, source: 'cache' } : null),
+            );
             const allFresh = known.every((row) => row.every((entry) => entry && entry.ageMs < config.routeCacheTtlMs));
             if (allFresh) {
-                return {
-                    measures: known.map((row) =>
-                        row.map((entry): RoutingMeasure | null => entry ? { ...entry.measure, source: 'cache' } : null),
-                    ),
-                };
+                return { measures: cachedMeasures };
             }
 
             const upstream = await fetchUpstreamMatrix(config.osrmUrls, mode, origins, destinations);
             if (!upstream) {
-                const measures = known.map((row) =>
-                    row.map((entry): RoutingMeasure | null => entry ? { ...entry.measure, source: 'cache' } : null),
-                );
-                return measures.some((row) => row.some(Boolean)) ? { measures } : null;
+                return cachedMeasures.some((row) => row.some(Boolean)) ? { measures: cachedMeasures } : null;
             }
 
             const measures = upstream.map((row, originIndex) =>

@@ -1,10 +1,9 @@
 import { describe, expect, it } from '../test/harness';
 import { recordTrip, summarizeCarbon } from './carbon';
 import type { PlannedTrip, RecurringTrip, TripRecord } from '../types';
-import { plannedTripToRecord, summarizeTripActivity } from './trips';
+import { summarizeTripActivity } from './trips';
 
-// Les enregistrements sont produits en pratique par plannedTripToRecord
-// quand un trajet planifié est marqué fait.
+// Le serveur crée les enregistrements carbone à la complétion d’un trajet.
 function makeTripRecord(userId: string, createdAt: Date = new Date()): TripRecord {
     return {
         id: crypto.randomUUID(),
@@ -100,7 +99,10 @@ describe('cohérence entre le suivi carbone et les objectifs', () => {
             // Semaine précédente : ni l'un ni l'autre ne doit la compter.
             makePlannedTrip('done', new Date(2026, 7, 27, 8, 0), 999),
         ];
-        const records = trajets.map((trip) => plannedTripToRecord(trip, jeudi));
+        const records = trajets.map((trip): TripRecord => ({
+            ...makeTripRecord(trip.userId, new Date(trip.completedAt ?? trip.scheduledFor)),
+            carbonSavedGrams: trip.carbonSavedGrams,
+        }));
         // Routine des jours ouvrés, créée le lundi 31 aout a 07:00 : lundi, mardi,
         // mercredi et jeudi matin sont déjà passes, soit 4 passages de 100 g.
         const routines = [makeRoutine(new Date(2026, 7, 31, 7, 0), 100)];

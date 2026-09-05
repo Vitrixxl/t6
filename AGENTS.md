@@ -32,6 +32,10 @@ code produit sans comprendre ce qu'il fait.
 - Un changement de conception se propage partout où il est décrit : code,
   tests, README, CHECKLIST, OpenAPI, ce fichier, et les supports de revue
   maintenus (section ci-dessous).
+- Pour faciliter l’apprentissage, préférer les appels directs aux relais qui
+  ne font que transmettre des arguments. Transformer une ressource seule sur
+  un objet, sans collection temporaire. Regrouper les variantes qui partagent
+  le même parcours ; ne pas créer de framework générique pour quelques actions.
 - Avant de proposer, se demander comment un relecteur exigeant verrait le
   code. Si la réponse est « bricolé », ne pas le proposer.
 
@@ -147,14 +151,17 @@ couche dépôt interroge la base (Drizzle sur `bun:sqlite`, jamais `sql.raw` sur
 une entrée), et les contrats zod de `src/contracts/` valident la requête,
 typent le gestionnaire et génèrent l'OpenAPI depuis une source unique. Une
 collection se lit par GET ; chaque ressource s'écrit ou se retire par son URL.
-Aucun dépôt ne remplace une collection complète.
+Aucun dépôt ne remplace une collection complète. Les services transactionnels
+construisent directement leurs seuls dépôts utiles avec la transaction ;
+`createRepositories` assemble ceux du contexte HTTP.
 
 Le schéma vit dans `server/src/db/schema.ts`. Toute modification passe par
 `bun run db:generate`, et la migration produite dans `server/drizzle/` se
 committe avec le schéma : elle est appliquée au démarrage, y compris sur la
 base `:memory:` des tests.
 
-**Client** (`src/`) : `lib/planner/` (un générateur par mode dans `options/`),
+**Client** (`src/`) : `lib/planner/` (générateurs dans `options/`, rabattements vélo et
+trottinette réunis dans `feeder-transit.ts`),
 `lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
 authentification, une commande par ressource du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa

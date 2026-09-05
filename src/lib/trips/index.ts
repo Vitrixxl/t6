@@ -4,9 +4,7 @@ export { WEEKDAY_LABELS, createPlannedTrip, createRecurringTrip, type TripSource
 export {
     removePlanned,
     removeRecurring,
-    setPlannedStatus,
     setRecurringPaused,
-    sortPlanned,
     upsertPlanned,
     upsertRecurring,
 } from './operations';
@@ -19,7 +17,6 @@ export {
     type RoutineTotals,
 } from './routines';
 export {
-    plannedTripToRecord,
     summarizeTripActivity,
     upcomingTrips,
 } from './summary';

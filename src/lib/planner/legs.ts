@@ -181,3 +181,8 @@ export function buildFallbackInstructions(legs: RouteLeg[]): RouteInstruction[] 
         },
     ];
 }
+
+/** Une correspondance intérieure sans tracé reste valide ; les parcours doivent être mesurés. */
+export function hasCompleteGeometry(legs: RouteLeg[]): boolean {
+    return legs.length > 0 && legs.every((leg) => leg.transfer || leg.path.length >= 2);
+}

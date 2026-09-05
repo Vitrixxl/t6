@@ -3,14 +3,13 @@
 //
 // Les routines n'existent pas sous forme de trajets : leurs passages déjà
 // échus sont ajoutés ici, au moment de compter (voir routines.ts).
-import type { PlannedTrip, RecurringTrip, TripActivitySummary, TripRecord } from '../../types';
+import type { PlannedTrip, RecurringTrip, TripActivitySummary } from '../../types';
 import { startOfWeek } from '../week';
 import { BEGINNING_OF_TIME, isRoutinePaused, sumRoutines } from './routines';
 
-export function upcomingTrips(trips: PlannedTrip[], now: Date = new Date(), graceHours = 0): PlannedTrip[] {
-    const floor = now.getTime() - graceHours * 3_600_000;
+export function upcomingTrips(trips: PlannedTrip[], now: Date = new Date()): PlannedTrip[] {
     return trips
-        .filter((trip) => trip.status === 'planned' && new Date(trip.scheduledFor).getTime() >= floor)
+        .filter((trip) => trip.status === 'planned' && new Date(trip.scheduledFor).getTime() >= now.getTime())
         .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor));
 }
 
@@ -47,22 +46,7 @@ export function summarizeTripActivity(
     };
 }
 
-/** Convertit un trajet fait en enregistrement carbone (même forme que TripRecord). */
-export function plannedTripToRecord(trip: PlannedTrip, now: Date = new Date()): TripRecord {
-    return {
-        id: `trip:${trip.id}`,
-        userId: trip.userId,
-        routeTitle: trip.label,
-        modes: trip.modes,
-        distanceKm: trip.distanceKm,
-        durationMinutes: trip.durationMinutes,
-        carbonGrams: trip.carbonGrams,
-        carbonSavedGrams: trip.carbonSavedGrams,
-        createdAt: (trip.completedAt ?? now.toISOString()),
-    };
-}
-
-export function round(value: number, decimals: number): number {
+function round(value: number, decimals: number): number {
     const factor = 10 ** decimals;
     return Math.round(value * factor) / factor;
 }
