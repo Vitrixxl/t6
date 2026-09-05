@@ -33,4 +33,8 @@ if [ ! -f "$CERT" ] || [ ! -f "$KEY" ]; then
   echo "Certificat génère pour : $ALT"
 fi
 
+# Le compte réservé repart avec ses données de recette à chaque démarrage.
+# set -e empêche de servir une application dont le peuplement aurait échoué.
+bun run seed:test
+
 exec "$@"

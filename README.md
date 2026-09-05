@@ -13,8 +13,8 @@ Deux briques, une seule origine pour le navigateur :
 Le serveur est la seule source de vérité : comptes en SQLite (argon2id), session par cookie `httpOnly` revocable
 en base, état du compte rendu à la connexion, puis collections lues par `GET`. Chaque trajet, routine ou
 itinéraire enregistré s'ecrit seul par `PUT /api/.../:id` et se retire par `DELETE /api/.../:id` ; aucun corps HTTP
-ne contient une collection complète. `PUT /api/trips/planned/:id/completion` termine le trajet et crée son entrée
-carbone dans une seule transaction idempotente. Seul `DELETE /api/trips/history` efface volontairement tout
+ne contient une collection complète. À la lecture du compte ou des trajets, `completeDueTrips` comptabilise les ponctuels dont la date
+prévue est passée et qui ne sont pas annulés, avec leur historique carbone dans une transaction. Seul `DELETE /api/trips/history` efface volontairement tout
 l'historique. Les envois sont sérialisés. Pas de cache local persistant : les vues vivent dans le cache React Query
 (`src/queries/`) le temps de la session, et une écriture refusée est signalée à l'utilisateur, la vue concernée
 étant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
@@ -49,8 +49,8 @@ la hauteur de son contenu, dans l’espace disponible sous la recherche. Le cont
 long défile ; l’en-tête et la fermeture restent accessibles. Aucun réglage de taille.
 
 Le hub comporte quatre onglets : **Une fois**, **Récurrents**, **Historique** et
-**Enregistrés**. Les trajets ponctuels futurs se marquent « Fait » ; les ponctuels
-passés restent accessibles dans l’historique pour confirmation ou annulation.
+**Enregistrés**. Les trajets ponctuels futurs n’ont pas de bouton « Fait ». Après leur date prévue,
+ils sont comptabilisés automatiquement sauf annulation, puis accessibles dans l’historique.
 Les récurrences n’ont aucun bouton « Fait » : leurs passages échus comptent
 sur leurs périodes d’activité, dans leur fuseau horaire enregistré.
 
@@ -128,7 +128,7 @@ fonctions de l’application.
    → `server/src/routes/auth.ts` → session serveur → cache client.
 3. Trajet : `usePlanSubmission` → `src/queries/planned-trips.ts` →
    `src/lib/api/planned-trips.ts` → route → service → dépôt du même nom.
-   Lire ensuite la complétion et sa transaction trajet + historique carbone.
+   Lire ensuite `completeDueTrips` et sa transaction trajet + historique carbone.
 4. Calcul : `src/queries/routes.ts` → `prepareRoutedAccessPlan` → `planRoutes`
    → `measureRoutes` → `applyCarbonReference`.
 
@@ -155,18 +155,20 @@ distincts ; un simple relais n’a pas besoin de son propre fichier.
 
 `bun run seed:test` crée ou réinitialise **uniquement** le compte réservé
 `test@urbanflow.local`. Mot de passe hors production : `UrbanFlow2026!`,
-ou la valeur de `TEST_PASSWORD` (obligatoire en production).
+ou la valeur de `TEST_PASSWORD`. L’image Docker fournit ce mot de passe de recette
+par défaut ; Compose permet de le surcharger avec `TEST_PASSWORD`. Hors Docker,
+le script demande explicitement cette variable lorsque `NODE_ENV=production`.
 Le script utilise `DATABASE_PATH`, comme le serveur. Exemple sur une base dédiée :
 
 `DATABASE_PATH=/tmp/urbanflow-recette.db bun run seed:test`
 
-Il prépare 35 ponctuels (27 faits, 5 annulés, 1 passé à confirmer, 2 futurs),
+Il prépare 35 ponctuels (28 faits, 5 annulés, 2 futurs),
 3 récurrences et 1 itinéraire enregistré. Les dates sont relatives au jour
 d’exécution, sur huit semaines passées, dans le fuseau Europe/Paris. Une routine
 quotidienne aller-retour contient des exceptions à J−2 et J−3 ; une autre a une
 pause puis une reprise ; la troisième est en pause. Les mesures sont **fictives**,
-réservées à la recette, et tous les libellés portent « Test ». Rien n’est lancé
-au démarrage. Relancer la commande efface les essais de ce seul compte, en une
+réservées à la recette, et tous les libellés portent « Test ». Dans Docker, `infra/entrypoint.sh` lance
+ce peuplement avant le serveur à **chaque démarrage**, puis sert le client et l’API. Relancer la commande efface les essais de ce seul compte, en une
 transaction ; les autres comptes sont conservés. `seed:demo` garde son rôle
 séparé de compte vide pour le scénario de planification.
 
@@ -443,3 +445,21 @@ par le client. Aucun nouveau déploiement ni import de production n’a été r�
 La barre mobile affiche cinq libellés sous les icônes, sur un fond opaque, avec
 des cibles tactiles de 60 px de haut. L’attribution cartographique reste au-dessus.
 La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
+
+Les lectures des ponctuels et de l’historique carbone sont rafraîchies toutes les 30 secondes
+pendant que l’écran est ouvert. La date du bilan est la date prévue, même si le compte
+n’est rouvert que plus tard. La route manuelle `/completion` est retirée. Les anciennes
+réalisations anticipées sont remises à venir ; un historique volontairement effacé reste effacé.
+
+Le repère national et le lien SDES-Insee sont visibles directement dans le profil,
+sous le maximum hebdomadaire, et dans le suivi. `CarbonReference` centralise le chiffre
+et sa source. Le calcul détaillé et son périmètre restent dépliables. La moyenne
+d’émissions n’est pas un objectif d’économies par rapport à la voiture.
+
+`bun run test:docker:seed` vérifie le peuplement et le redémarrage d’une image construite
+(`DOCKER_TEST_IMAGE`, défaut `urbanflow:seed-reference`) dans un conteneur jetable :
+connexion du compte rempli, remise à zéro de ses essais, compte voisin conservé.
+
+Un ponctuel annulé peut être rétabli depuis l’historique avec « Rétablir » :
+`DELETE /api/trips/planned/:id/cancellation` le remet à venir si sa date est future,
+ou fait avec son bilan daté au départ prévu si elle est passée. La commande est idempotente.

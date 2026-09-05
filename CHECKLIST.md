@@ -147,7 +147,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17).
 - [x] Documentation OpenAPI générée à partir des schémas des routes (`/api/doc`), donc impossible a désynchroniser du code.
 - [x] Tests d'intégration API via `app.handle` (base :memory:) et tests client sur les opérations pures (trajets, routines, carbone, profil) ; suite complète sous `bun test`.
-- [x] Vérification bout en bout en navigateur : tutoriel mobile complet, connexion, calcul d'options, planification, marquage fait, persistance et déconnexion, 9/9 assertions.
+- [x] Vérification bout en bout en navigateur : tutoriel mobile complet, connexion, calcul d'options, planification, réalisation automatique à la date prévue, persistance et déconnexion, 9/9 assertions.
 
 ## 11. Architecture de fichiers (revue de code)
 
@@ -225,3 +225,9 @@ Les estimations actuelles restent utilisées par l’interface. Détails :
 La barre mobile affiche cinq libellés sous les icônes, sur un fond opaque, avec
 des cibles tactiles de 60 px de haut. L’attribution cartographique reste au-dessus.
 La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
+
+- [x] Repère sourcé visible dans le profil et le suivi, source et millésime accessibles sans déplier.
+- [x] Docker exécute le seed du compte réservé avant le serveur à chaque démarrage.
+- [x] Ponctuels automatiquement comptabilisés après leur date, sauf annulation ; commande manuelle supprimée, rafraîchissement à 30 secondes.
+
+- [x] Annulation confirmée des ponctuels et rétablissement possible, sans doublon carbone.

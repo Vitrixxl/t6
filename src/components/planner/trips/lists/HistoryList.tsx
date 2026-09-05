@@ -5,7 +5,7 @@ import type { PlannedTrip } from '../../../../types';
 import type { TripDirection } from '../../../../contracts';
 import type { RoutineHistoryDay, TripHistoryEntry } from '../../../../lib/trips/history';
 import { formatCarbonComparison } from '../../../../lib/carbon-comparison';
-import { useCancelRoutineDate, useRestoreRoutinePassage, useMarkTripDone } from '../../../../queries';
+import { useRestoreTrip, useCancelRoutineDate, useRestoreRoutinePassage } from '../../../../queries';
 import { ConfirmDialog } from '../../../ui/confirm-dialog';
 import { CancelTripButton } from '../CancelTripButton';
 import { Button } from '../../../ui/button';
@@ -13,7 +13,7 @@ import { EmptyState, OriginDestination } from '../atoms';
 import { formatScheduleLabel } from '../format';
 
 function OnceHistoryCard({ trip }: { trip: PlannedTrip }) {
-    const markDone = useMarkTripDone();
+    const restore = useRestoreTrip();
     const cancelled = trip.status === 'cancelled';
     return (
         <li className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
@@ -21,17 +21,13 @@ function OnceHistoryCard({ trip }: { trip: PlannedTrip }) {
             <h3 className="truncate text-sm font-semibold">{trip.label}</h3>
             <OriginDestination origin={trip.origin.label} destination={trip.destination.label} />
             <p className="text-xs text-muted-foreground">
-                {cancelled ? 'Annulé · exclu des calculs CO₂e' : trip.status === 'done'
-                    ? `Fait · ${formatCarbonComparison(trip.carbonSavedGrams)}` : 'Passé · à confirmer, hors calculs CO₂e'}
+                {cancelled ? 'Annulé · exclu des calculs CO₂e' : `Fait automatiquement · ${formatCarbonComparison(trip.carbonSavedGrams)}`}
             </p>
-            {!cancelled ? (
+            {cancelled ? <Button size="sm" variant="outline" onClick={() => restore(trip)}>Rétablir</Button> : (
                 <div className="flex flex-wrap gap-2">
-                    {trip.status === 'planned' ? (
-                        <Button size="sm" onClick={() => markDone(trip)}><Check className="size-3.5" aria-hidden="true" />Fait</Button>
-                    ) : null}
                     <CancelTripButton trip={trip} />
                 </div>
-            ) : null}
+            )}
         </li>
     );
 }

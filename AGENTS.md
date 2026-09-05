@@ -216,8 +216,8 @@ annoncé reste le nombre réel.
 ni cache local persistant : c'est l'API qui sert le client, l'état du compte
 est reçu à la connexion et amorce le cache de requêtes (React Query,
 `src/queries/`). Chaque commande transporte une ressource, jamais la collection
-complète ; les envois sont sérialisés. La complétion d'un trajet et la création
-de son historique forment une seule transaction serveur. Une préférence ne
+complète ; les envois sont sérialisés. La comptabilisation automatique d’un ponctuel passé non annulé et la création
+de son historique forment une seule transaction serveur, datée au départ prévu. Une préférence ne
 réécrit aucun trajet. Une écriture refusée se dit à l'utilisateur, elle ne se
 masque pas : seule la vue concernée est relue depuis son GET, l'écran revient à
 ce que le serveur tient, et l'action est à rejouer.
@@ -241,7 +241,7 @@ dans une seule transaction. Vérifier ce parcours avec `bun run e2e:trips`.
 
 **Recette et évolution.** `bun run seed:test` réinitialise seulement le compte
 réservé `test@urbanflow.local`, avec des données fictives datées relativement
-au jour d’exécution. Aucun peuplement automatique au démarrage. Le suivi propose
+au jour d’exécution. Docker le lance avant le serveur à chaque démarrage, y compris après un redémarrage. Les autres comptes restent intacts. Le suivi propose
 huit semaines civiles (fuseau appareil), dont la dernière incomplète, à partir
 des enregistrements carbone conservés et des passages récurrents échus. La limite
 de 50 ponctuels est annoncée ; le maximum affiché reste celui du profil actuel.
@@ -312,7 +312,7 @@ navigateur**, pas au compilateur. `bun run check` ne prouve pas qu'une carte
 s'affiche ni qu'un bouton fait ce qu'il annonce.
 
 Le scénario `bun run e2e` couvre le parcours critique : connexion, GPS, calcul
-d'options, planification, marquage « fait ». Le relancer après toute
+d'options, planification, comptabilisation automatique après la date prévue. Le relancer après toute
 modification qui touche ce chemin.
 
 ## Git
@@ -321,3 +321,14 @@ Messages en français, avec les accents. Le corps explique le **problème résol
 avant la solution — ces messages sont lus en revue et servent de trace de
 raisonnement. Ne jamais committer `.env`, la base SQLite, ni le dossier
 `output/`.
+
+**Ponctuels automatiques.** Aucun bouton ni endpoint de réalisation manuelle.
+`completeDueTrips` synchronise le compte lors des lectures : seuls les ponctuels
+passés non annulés comptent. Les ressources sont relues toutes les 30 secondes
+côté client. Ne pas recréer un historique volontairement effacé. Les pauses des
+récurrences restent des intervalles entre leurs périodes d’activité en JSON,
+sans table de pauses ni nettoyage des intervalles sans passage.
+
+Un ponctuel annulé peut être rétabli depuis l’historique avec « Rétablir » :
+`DELETE /api/trips/planned/:id/cancellation` le remet à venir si sa date est future,
+ou fait avec son bilan daté au départ prévu si elle est passée. La commande est idempotente.

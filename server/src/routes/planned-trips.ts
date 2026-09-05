@@ -4,7 +4,6 @@ import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
 import {
-    completedPlannedTrip,
     errorResponse,
     okResponse,
     plannedTrip,
@@ -12,12 +11,15 @@ import {
     plannedTrips,
     resourceIdParams,
 } from '../../../src/contracts/index.ts';
-import { cancelPlannedTrip, completePlannedTrip, savePlannedTrip } from '../services/planned-trips.ts';
+import { cancelPlannedTrip, restorePlannedTrip, completeDueTrips, savePlannedTrip } from '../services/planned-trips.ts';
 
 export function plannedTripRoutes(ctx: AppContext) {
     return new Elysia({ prefix: '/trips/planned', tags: ['Trajets programmés'] })
         .use(authGuard(ctx))
-        .get('', ({ userId, repositories }) => repositories.plannedTrips.list(userId), {
+        .get('', ({ userId, repositories, db }) => {
+            completeDueTrips(db, userId);
+            return repositories.plannedTrips.list(userId);
+        }, {
             response: { 200: plannedTrips, 401: errorResponse },
             detail: { summary: 'Lire les trajets programmés' },
         })
@@ -35,18 +37,6 @@ export function plannedTripRoutes(ctx: AppContext) {
             },
         )
         .put(
-            '/:id/completion',
-            ({ userId, params, db, status }) => {
-                const completed = completePlannedTrip(db, userId, params.id);
-                return completed ?? status(404, { error: 'Trajet programmé introuvable.' });
-            },
-            {
-                params: resourceIdParams,
-                response: { 200: completedPlannedTrip, 401: errorResponse, 404: errorResponse, 422: errorResponse },
-                detail: { summary: 'Marquer un trajet fait et alimenter l’historique (idempotent)' },
-            },
-        )
-        .put(
             '/:id/cancellation',
             ({ userId, params, db, status }) => {
                 const cancelled = cancelPlannedTrip(db, userId, params.id);
@@ -56,6 +46,18 @@ export function plannedTripRoutes(ctx: AppContext) {
                 params: resourceIdParams,
                 response: { 200: plannedTrip, 401: errorResponse, 404: errorResponse, 422: errorResponse },
                 detail: { summary: 'Annuler un trajet, même terminé, et retirer sa contribution carbone (idempotent)' },
+            },
+        )
+        .delete(
+            '/:id/cancellation',
+            ({ userId, params, db, status }) => {
+                const restored = restorePlannedTrip(db, userId, params.id);
+                return restored ?? status(404, { error: 'Trajet programmé introuvable.' });
+            },
+            {
+                params: resourceIdParams,
+                response: { 200: plannedTrip, 401: errorResponse, 404: errorResponse, 422: errorResponse },
+                detail: { summary: 'Rétablir un trajet annulé ; sa date décide de sa réalisation (idempotent)' },
             },
         )
         .delete(

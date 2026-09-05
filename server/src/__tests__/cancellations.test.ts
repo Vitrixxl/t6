@@ -88,7 +88,7 @@ describe('annulation d’un trajet ponctuel terminé', () => {
     it('conserve le trajet annulé et retire son historique carbone, même au rejeu', async () => {
         const cookie = await api.register();
         await api.putResource(cookie, '/api/trips/planned/once', PLANNED_TRIP);
-        await api.call('/api/trips/planned/once/completion', { method: 'PUT', cookie });
+        await api.call('/api/state', { cookie });
         expect((await api.putResource(cookie, '/api/trips/planned/once', PLANNED_TRIP)).status).toBe(409);
         for (let repeat = 0; repeat < 2; repeat += 1) {
             const response = await api.call('/api/trips/planned/once/cancellation', { method: 'PUT', cookie });
@@ -105,7 +105,7 @@ describe('annulation d’un trajet ponctuel terminé', () => {
         const other = await api.register('voisin@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/once', PLANNED_TRIP);
         await api.putResource(cookie, '/api/trips/planned/keep', PLANNED_TRIP);
-        await api.call('/api/trips/planned/keep/completion', { method: 'PUT', cookie });
+        await api.call('/api/state', { cookie });
         expect((await api.call('/api/trips/planned/once/cancellation', { method: 'PUT', cookie: other })).status).toBe(404);
         await api.call('/api/trips/planned/once/cancellation', { method: 'PUT', cookie });
         const state = accountState.parse(await (await api.call('/api/state', { cookie })).json());

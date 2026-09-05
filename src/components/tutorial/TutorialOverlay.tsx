@@ -50,13 +50,13 @@ const DESKTOP_STEPS: TourStep[] = [
         id: 'trips',
         target: 'trips',
         title: 'Mes trajets — le planificateur',
-        body: "Le cœur de l'application : tes trajets à venir (à marquer « Fait » ou à annuler), tes routines récurrentes (ex: aller-retour au travail, mise en pause possible), ton historique et tes itinéraires enregistrés.",
+        body: "Le cœur de l'application : tes trajets à venir (comptés automatiquement après leur date, sauf annulation), tes routines récurrentes (ex: aller-retour au travail, mise en pause possible), ton historique et tes itinéraires enregistrés.",
     },
     {
         id: 'goals',
         target: 'trips',
         title: 'Objectifs et progression',
-        body: "Dans le planificateur, fixe tes objectifs hebdomadaires et mensuels de CO₂e évité puis suis leur progression. Chaque trajet marqué « Fait » alimente tes statistiques.",
+        body: "Dans le planificateur, fixe tes objectifs hebdomadaires et mensuels de CO₂e évité puis suis leur progression. Chaque trajet passé et non annulé alimente automatiquement tes statistiques.",
     },
     {
         id: 'layers',

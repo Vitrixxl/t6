@@ -47,7 +47,7 @@ export const plannedTrip = z.object({
     completedAt: isoDate.nullable(),
 });
 export const plannedTripInput = plannedTrip.omit({ id: true, userId: true }).extend({
-    // L'état `done` passe exclusivement par la transition atomique complétion.
+    // Le serveur détermine `done` automatiquement à partir de la date prévue.
     status: z.enum(['planned', 'cancelled']),
     completedAt: z.null(),
 });
@@ -120,10 +120,6 @@ export type SavedRouteRecord = z.infer<typeof savedRoute>;
 
 /** Identifiant d'une ressource appartenant au compte courant. */
 export const resourceIdParams = z.object({ id: identifier });
-
-/** Réponse atomique de la transition qui alimente le suivi carbone. */
-export const completedPlannedTrip = z.object({ plannedTrip, tripRecord });
-export type CompletedPlannedTrip = z.infer<typeof completedPlannedTrip>;
 
 /** Une annulation désigne une journée de la routine, jamais sa collection d’exceptions. */
 export const recurringCancellationParams = resourceIdParams.extend({ date: z.iso.date() });

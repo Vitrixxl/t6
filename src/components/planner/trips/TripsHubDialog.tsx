@@ -13,7 +13,6 @@ import { useNow } from '../../../state/clock';
 import {
     useActivitySummary,
     useDeleteSavedRoute,
-    useMarkTripDone,
     usePlannedTrips,
     useRecurringTrips,
     useRemoveRoutine,
@@ -55,7 +54,6 @@ export function TripsHubDialog({
     const savedRoutes = useSavedRoutes();
     const summary = useActivitySummary();
     const upcoming = useUpcomingTrips();
-    const markDone = useMarkTripDone();
     const removeTrip = useRemoveTrip();
     const togglePaused = useToggleRoutinePaused();
     const removeRecurring = useRemoveRoutine();
@@ -138,7 +136,7 @@ export function TripsHubDialog({
                     </div>
 
                     {tab === 'upcoming' ? (
-                        <UpcomingList trips={upcoming} onMarkDone={markDone} onDeleteTrip={removeTrip} />
+                        <UpcomingList trips={upcoming} onDeleteTrip={removeTrip} />
                     ) : null}
                     {tab === 'recurring' ? (
                         <RecurringList trips={recurringTrips} onTogglePaused={togglePaused} onDelete={removeRecurring} />

@@ -27,7 +27,7 @@ it('publie une documentation OpenAPI decrivant les routes', async () => {
     expect(Object.keys(spec.paths)).toContain('/api/state');
     expect(Object.keys(spec.paths)).toContain('/api/trips/planned');
     expect(Object.keys(spec.paths)).toContain('/api/trips/planned/{id}');
-    expect(Object.keys(spec.paths)).toContain('/api/trips/planned/{id}/completion');
+    expect(Object.keys(spec.paths)).not.toContain('/api/trips/planned/{id}/completion');
     expect(Object.keys(spec.paths)).toContain('/api/me/profile');
 });
 

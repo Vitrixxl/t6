@@ -1,6 +1,7 @@
 // Inscription, connexion, déconnexion, reprise de session.
 // Le navigateur ne detient qu'un cookie httpOnly : ni le mot de passe ni son
 // empreinte ne quittent le serveur.
+import { completeDueTrips } from '../services/planned-trips.ts';
 import { Elysia } from 'elysia';
 import type { ServerConfig } from '../config/index.ts';
 import { authGuard } from '../plugins/auth.ts';
@@ -53,7 +54,7 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
         )
         .post(
             '/login',
-            async ({ body, cookie, repositories, status }) => {
+            async ({ body, cookie, repositories, status, db }) => {
                 const { users, sessions, state } = repositories;
                 const row = users.findByEmail(body.email);
 
@@ -68,6 +69,7 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
                 }
 
                 openSession(cookie, sessions, config, row.id);
+                completeDueTrips(db, row.id);
                 const user = toSessionUser(row);
                 return { user, state: state.fullState(row.id, user.profile) };
             },
@@ -96,12 +98,13 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
         .use(authGuard(ctx))
         .get(
             '/session',
-            ({ userId, repositories, status }) => {
+            ({ userId, repositories, status, db }) => {
                 const row = repositories.users.findById(userId);
                 if (!row) {
                     return status(401, { error: 'Session expirée.' });
                 }
                 const user = toSessionUser(row);
+                completeDueTrips(db, userId);
                 return { user, state: repositories.state.fullState(user.id, user.profile) };
             },
             {

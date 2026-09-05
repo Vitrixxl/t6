@@ -1,5 +1,5 @@
 // Test E2E planification : recherche d'itinéraire, planification datée,
-// marquage "fait" et alimentation des statistiques (mobile 390x844).
+// réalisation automatique à la date prévue et alimentation des statistiques (mobile 390x844).
 import { chromium } from 'playwright-core';
 
 const ORIGIN = { latitude: 45.7578, longitude: 4.832 };
@@ -261,44 +261,37 @@ if (!/planificateur de trajets/i.test(text)) {
 if (!(await page.getByRole('button', { name: 'Modifier les objectifs', exact: true }).count())) {
     failures.push("l'action des objectifs n'indique pas explicitement ce qu'elle modifie");
 }
-const hasUpcoming = await page.getByRole('button', { name: /^fait$/i }).count();
-if (!hasUpcoming) {
-    failures.push('aucune occurrence "à venir" avec action Fait');
+if (await page.getByRole('button', { name: /^fait$/i }).count()) {
+    failures.push('Un bouton Fait permet encore une réalisation manuelle');
 }
 await page.screenshot({ path: 'tmp/screenshots/plan-upcoming.png' });
 
-// 7. Marquer le trajet fait -> stats et historique alimentés
-// L'écoute du PUT est posee avant le clic : la commande atomique suit l'action
-// de près. Le serveur termine le trajet et crée son historique dans la même
-// transaction ; le navigateur n'envoie aucune collection.
-const stateSync = page
-    .waitForResponse((response) => response.url().endsWith('/completion') && response.request().method() === 'PUT', {
-        timeout: 10000,
-    })
-    .then((response) => response.status())
-    .catch(() => null);
-await page.getByRole('button', { name: /^fait$/i }).first().click();
-await page.waitForTimeout(1200);
-text = await bodyText();
-const doneCountMatch = /Fait \/ semaine\s*\n?\s*(\d+)/i.exec(text);
-if (!doneCountMatch || Number(doneCountMatch[1]) < 1) {
-    failures.push('le compteur "Fait / semaine" ne s\'incremente pas après le marquage');
-}
+// La recette avance l’échéance du trajet créé ; seule la lecture serveur décide ensuite qu’il est passé.
+const syncStatus = await page.evaluate(async () => {
+    const state = await (await fetch('/api/state')).json();
+    const trip = state.plannedTrips.find((item) => item.status === 'planned');
+    if (!trip) return 404;
+    const { id, userId, ...body } = trip;
+    void userId;
+    const saved = await fetch('/api/trips/planned/' + id, { method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...body, scheduledFor: new Date(Date.now() + 2000).toISOString() }) });
+    return saved.status;
+});
+if (syncStatus !== 200) failures.push('Impossible de préparer l’échéance de recette');
+await page.waitForFunction(async () => {
+    const state = await (await fetch('/api/state')).json();
+    return state.plannedTrips.some((trip) => trip.status === 'done');
+}, undefined, { timeout: 10000 });
+await page.waitForFunction(() => {
+    const match = /Fait \/ semaine\s*\n?\s*(\d+)/i.exec(globalThis.document.body.innerText);
+    return match && Number(match[1]) >= 1;
+}, undefined, { timeout: 40000 });
 await page.screenshot({ path: 'tmp/screenshots/plan-done.png' });
-log('trajet marqué fait, stats mises à jour');
-
-// 8. La commande part au serveur dès l'action : fermer l'onglet juste après
-// ne doit rien perdre.
-const syncStatus = await stateSync;
-if (syncStatus !== 200) {
-    failures.push(`la complétion n'est pas enregistrée par le serveur (réponse : ${syncStatus ?? 'aucune'})`);
-} else {
-    const remote = await page.evaluate(() => fetch('/api/state').then((response) => response.json()));
-    if (!remote.tripRecords?.length || !remote.plannedTrips?.length) {
-        failures.push("l'état serveur ne contient pas le trajet planifié et realise");
-    }
-}
-log('complétion enregistrée sur le serveur');
+log('échéance passée : trajet comptabilisé automatiquement, sans clic Fait');
+const remote = await page.evaluate(() => fetch('/api/state').then((response) => response.json()));
+if (!remote.tripRecords?.length || !remote.plannedTrips?.length) failures.push('Le serveur ne conserve pas le trajet passé et son bilan');
+log('réalisation et historique enregistrés à la date prévue');
 
 // 9. Déconnexion : la session doit être morte pour le navigateur aussi, pas
 // seulement en base. Le service worker servait /api/state depuis son cache

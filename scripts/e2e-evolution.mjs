@@ -30,11 +30,30 @@ try {
         assert(box && box.x >= 0 && box.x + box.width <= width, 'Barre hors écran');
         await page.screenshot({ path: 'tmp/screenshots/actions-' + width + '.png' });
     }
+    await rail.getByRole('button', { name: 'Ouvrir le profil', exact: true }).click();
+    const profile = page.getByRole('dialog', { name: 'Profil et préférences', exact: true });
+    const profileReference = profile.getByRole('complementary', { name: 'Repère carbone national' });
+    const source = profileReference.getByRole('link', { name: /Source : SDES-Insee/ });
+    await source.scrollIntoViewIfNeeded();
+    assert(await source.isVisible(), 'Source cachée dans le profil');
+    assert((await profileReference.innerText()).includes('27') && (await profileReference.innerText()).includes('2019'), 'Repère ou millésime absent');
+    const sourceURL = await source.getAttribute('href');
+    for (const width of [320, 390, 1280]) {
+        await page.setViewportSize({ width, height: 844 });
+        await profileReference.scrollIntoViewIfNeeded();
+        assert(await profileReference.evaluate((element) => element.scrollWidth <= element.clientWidth + 1), 'Repère hors écran');
+        await page.screenshot({ path: 'tmp/screenshots/reference-profil-' + width + '.png' });
+    }
+    await profile.getByRole('button', { name: 'Fermer', exact: true }).click();
+    await page.setViewportSize({ width: 390, height: 844 });
     await rail.getByRole('button', { name: 'Couches de la carte', exact: true }).click();
     await page.getByRole('dialog', { name: 'Couches', exact: true }).waitFor();
     await page.keyboard.press('Escape');
     await page.locator('[data-tour="mobile-trips"]:visible').first().click();
     const hub = page.getByRole('dialog', { name: 'Planificateur de trajets' });
+    const budgetReference = hub.getByRole('complementary', { name: 'Repère carbone national' });
+    assert(await budgetReference.getByRole('link').getAttribute('href') === sourceURL, 'Les sources du profil et du suivi divergent');
+    assert(await budgetReference.getByRole('link').isVisible(), 'Source cachée dans le suivi');
     await hub.getByRole('button', { name: 'Voir l’évolution', exact: true }).click();
     const evolution = hub.locator('#trip-evolution');
     await evolution.getByText('Voir les valeurs par semaine', { exact: true }).click();

@@ -1,10 +1,10 @@
-// Commandes des trajets programmés. La complétion est une transition métier
-// atomique : elle modifie le trajet et crée son entrée carbone dans la même
-// transaction, y compris lors d'un rejeu après une réponse perdue.
+// Trajets programmés : la lecture comptabilise les échéances passées.
+// Le statut et son entrée carbone sont persistés ensemble pour éviter les
+// doublons et respecter un effacement volontaire de l’historique.
 import type { Db } from '../db/index.ts';
 import { createPlannedTripRepository } from '../repositories/planned-trips.ts';
 import { createTripRecordRepository } from '../repositories/trip-records.ts';
-import type { CompletedPlannedTrip, PlannedTrip, TripRecord } from '../../../src/contracts/index.ts';
+import type { PlannedTrip, TripRecord } from '../../../src/contracts/index.ts';
 
 function toTripRecord(trip: PlannedTrip): TripRecord {
     return {
@@ -39,25 +39,31 @@ export function savePlannedTrip(db: Db, trip: PlannedTrip): PlannedTrip | null {
     });
 }
 
-export function completePlannedTrip(db: Db, userId: string, id: string, now = new Date()): CompletedPlannedTrip | null {
-    return db.transaction((tx) => {
+/** La date prévue décide de la réalisation ; la transaction garde l’historique cohérent. */
+export function completeDueTrips(db: Db, userId: string, now = new Date()): void {
+    db.transaction((tx) => {
         const plannedTrips = createPlannedTripRepository(tx);
         const tripRecords = createTripRecordRepository(tx);
-        const current = plannedTrips.findById(userId, id);
-        if (!current) {
-            return null;
+        for (const trip of plannedTrips.list(userId)) {
+            if (trip.status === 'cancelled') continue;
+            const due = new Date(trip.scheduledFor) < now;
+            if (!due) {
+                // Corrige aussi les anciens trajets cochés manuellement avant leur date.
+                if (trip.status === 'done') {
+                    plannedTrips.upsert({ ...trip, status: 'planned', completedAt: null });
+                    tripRecords.deleteById(userId, 'trip:' + trip.id);
+                }
+                continue;
+            }
+            if (trip.status === 'done' && trip.completedAt === trip.scheduledFor) continue;
+            const completed: PlannedTrip = { ...trip, status: 'done', completedAt: trip.scheduledFor };
+            plannedTrips.upsert(completed);
+            // Un historique volontairement effacé ne doit pas réapparaître.
+            if (trip.status === 'planned' || tripRecords.findById(userId, 'trip:' + trip.id)) {
+                tripRecords.upsert(toTripRecord(completed));
+            }
         }
-
-        const plannedTrip: PlannedTrip =
-            current.status === 'done' && current.completedAt
-                ? current
-                : { ...current, status: 'done', completedAt: current.completedAt ?? now.toISOString() };
-        const tripRecord = toTripRecord(plannedTrip);
-
-        plannedTrips.upsert(plannedTrip);
-        tripRecords.upsert(tripRecord);
         tripRecords.prune(userId);
-        return { plannedTrip, tripRecord };
     });
 }
 
@@ -74,5 +80,23 @@ export function cancelPlannedTrip(db: Db, userId: string, id: string): PlannedTr
         plannedTrips.upsert(cancelled);
         tripRecords.deleteById(userId, `trip:${id}`);
         return cancelled;
+    });
+}
+
+/** Rétablir retire l’annulation ; la date décide si le trajet revient dans le bilan. */
+export function restorePlannedTrip(db: Db, userId: string, id: string, now = new Date()): PlannedTrip | null {
+    return db.transaction((tx) => {
+        const plannedTrips = createPlannedTripRepository(tx);
+        const tripRecords = createTripRecordRepository(tx);
+        const current = plannedTrips.findById(userId, id);
+        if (!current || current.status !== 'cancelled') return current;
+        const due = new Date(current.scheduledFor) < now;
+        const restored: PlannedTrip = { ...current, status: due ? 'done' : 'planned', completedAt: due ? current.scheduledFor : null };
+        plannedTrips.upsert(restored);
+        if (due) {
+            tripRecords.upsert(toTripRecord(restored));
+            tripRecords.prune(userId);
+        }
+        return restored;
     });
 }

@@ -1,4 +1,5 @@
 // Module profil : préférences de mobilité, objectifs carbone et compte.
+import { CarbonReference } from '../carbon/CarbonReference';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -218,6 +219,7 @@ export function ProfilePanel() {
                     <FieldError message={errors.carbonGoalGramsPerWeek?.message} />
                     <span className="text-xs font-normal text-muted-foreground">Ton plafond personnel d’émissions pour les trajets suivis. Consulte la dépense et le reste disponible dans le suivi des trajets.</span>
                 </label>
+                <CarbonReference />
                 <fieldset className="grid gap-3 rounded-xl border border-border bg-muted/30 p-3">
                     <legend className="px-1 text-sm font-semibold">Objectifs d&apos;économie de CO₂e</legend>
                     <p className="text-xs leading-5 text-muted-foreground">
@@ -225,7 +227,7 @@ export function ProfilePanel() {
                     </p>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-weekly-saved-goal">
-                            Par semaine (g)
+                            Par semaine (gCO₂e)
                             <Input
                                 id="profile-weekly-saved-goal"
                                 type="number"
@@ -238,7 +240,7 @@ export function ProfilePanel() {
                             <FieldError message={errors.weeklySavedGoalGrams?.message} />
                         </label>
                         <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-monthly-saved-goal">
-                            Par mois (g)
+                            Par mois (gCO₂e)
                             <Input
                                 id="profile-monthly-saved-goal"
                                 type="number"

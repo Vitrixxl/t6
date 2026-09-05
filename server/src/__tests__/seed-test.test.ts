@@ -20,7 +20,7 @@ it('recrée seulement le compte de test et fournit huit semaines cohérentes', a
         const routines = repos.recurringTrips.list(id);
         const records = repos.tripRecords.list(id);
         expect(trips).toHaveLength(35);
-        expect(records).toHaveLength(27);
+        expect(records).toHaveLength(28);
         expect(routines).toHaveLength(3);
         expect(repos.savedRoutes.list(id)).toHaveLength(1);
         expect(records.every((record) => new Date(record.createdAt) < now)).toBe(true);

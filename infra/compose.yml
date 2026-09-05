@@ -21,6 +21,7 @@ services:
     environment:
       # Le calculateur est visé par son nom de service : le réseau du compose
       # fait la résolution, aucun port OSRM n'a besoin d'être publié.
+      TEST_PASSWORD: ${TEST_PASSWORD:-UrbanFlow2026!}
       OSRM_FOOT_URL: http://osrm-foot:5000
       OSRM_BIKE_URL: http://osrm-bike:5000
       OSRM_CAR_URL: http://osrm-car:5000

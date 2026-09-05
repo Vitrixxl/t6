@@ -66,7 +66,7 @@ try {
         timeZone: 'Europe/Paris', periods: [{ from: createdAt, to: `${yesterday}T23:59:00.000Z` }],
     });
     await put('/trips/planned/past', { ...trip, scheduledFor: `${yesterday}T09:00:00.000Z`, status: 'planned', completedAt: null });
-    await put('/trips/planned/past/completion');
+    await state();
     await put('/trips/planned/future', { ...trip, scheduledFor: new Date(today.getTime() + 86_400_000).toISOString(), status: 'planned', completedAt: null });
     await put('/saved-routes/saved', { ...trip, routeId: 'bike', routeTitle: trip.label, score: 80 });
     await page.goto(baseURL, { waitUntil: 'networkidle' });
@@ -184,8 +184,8 @@ try {
         assert(!(await state())[target.collection].some((item) => item.id === target.id), 'Suppression non persistée');
         assert(deleteRequests.length === before + 1, 'La confirmation doit envoyer une seule suppression');
     }
-    await put('/trips/planned/carbon-clear', { ...trip, scheduledFor: createdAt, status: 'planned', completedAt: null });
-    await put('/trips/planned/carbon-clear/completion');
+    await put('/trips/planned/carbon-clear', { ...trip, scheduledFor: new Date(Date.now() - 1000).toISOString(), status: 'planned', completedAt: null });
+    await state();
     await page.setViewportSize({ width: 1280, height: 844 });
     await page.reload({ waitUntil: 'networkidle' });
     await page.locator('[data-tour="route-detail"]').waitFor();
@@ -209,7 +209,7 @@ try {
     });
     assert(profileResponse.ok(), 'Budget de recette refusé');
     await put('/trips/planned/budget', { ...trip, label: 'Vérification budget', carbonGrams: 300, carbonSavedGrams: 5000, scheduledFor: createdAt, status: 'planned', completedAt: null });
-    await put('/trips/planned/budget/completion');
+    await state();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'networkidle' });
     await openHub();
@@ -236,6 +236,21 @@ try {
     assert((await cancelledBudget).ok(), 'Annulation du trajet de recette refusée');
     await page.waitForFunction(() => [...globalThis.document.querySelectorAll('[data-testid="carbon-spent"]')].every((element) => element.textContent === '0 gCO₂e'));
     assert((await budget.getByTestId('carbon-remaining').innerText()).includes('250 gCO₂e restants · 0 %'), 'L’annulation ne libère pas le budget');
+    const restoredBudget = page.waitForResponse((response) => response.url().endsWith('/api/trips/planned/budget/cancellation') && response.request().method() === 'DELETE');
+    await budgetTrip.getByRole('button', { name: 'Rétablir', exact: true }).click();
+    assert((await restoredBudget).ok(), 'Rétablissement du ponctuel refusé');
+    await page.waitForFunction(() => [...globalThis.document.querySelectorAll('[data-testid="carbon-spent"]')].every((element) => element.textContent === '300 gCO₂e'));
+    assert((await budgetTrip.innerText()).includes('Fait automatiquement'), 'Le ponctuel rétabli n’est pas automatiquement fait');
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openHub();
+    await tab('Historique');
+    assert((await budgetTrip.innerText()).includes('Fait automatiquement'), 'Rétablissement perdu après rechargement');
+    const recancel = page.waitForResponse((response) => response.url().endsWith('/api/trips/planned/budget/cancellation') && response.request().method() === 'PUT');
+    await budgetTrip.getByRole('button', { name: 'Annuler', exact: true }).click();
+    await confirmCancellation();
+    assert((await recancel).ok(), 'Nouvelle annulation refusée');
+    await page.setViewportSize({ width: 1280, height: 844 });
     await page.reload({ waitUntil: 'networkidle' });
     const sidebarBudget = page.locator('[data-tour="route-detail"]').getByRole('region', { name: 'Budget carbone de la semaine' });
     await sidebarBudget.waitFor();

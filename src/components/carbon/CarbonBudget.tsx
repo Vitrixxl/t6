@@ -3,11 +3,7 @@
 import { useCarbonSummary, useProfile } from '../../queries';
 import { formatCarbonFootprint } from '../../lib/carbon-comparison';
 
-// SDES-Insee, enquête mobilité des personnes 2019, publication du 6 juillet 2023.
-// Moyenne annuelle par personne, ramenée à 52 semaines pour donner un repère.
-const ANNUAL_MOBILITY_GRAMS = 1_450_000;
-const SOURCE_URL = 'https://www.statistiques.developpement-durable.gouv.fr/le-quart-des-menages-les-plus-aises-lorigine-de-35-des-emissions-de-gaz-effet-de-serre-des';
-const weeklyReference = Math.round(ANNUAL_MOBILITY_GRAMS / 52);
+import { CarbonReference } from './CarbonReference';
 
 export function CarbonBudget() {
     const summary = useCarbonSummary();
@@ -47,18 +43,7 @@ export function CarbonBudget() {
                 {` · ${summary.budgetUsagePercent} % du budget utilisé`}
             </p>
             <p className="text-xs text-muted-foreground">Ton plafond personnel se règle dans le profil. Seuls les trajets suivis dans UrbanFlow sont comptés.</p>
-            <details className="rounded-lg bg-muted/40 p-2.5 text-xs">
-                <summary className="cursor-pointer font-medium">Repère national (2019) : ≈ {weeklyReference.toLocaleString('fr-FR')} gCO₂e par semaine</summary>
-                <p className="mt-2 leading-5">
-                    Moyenne par personne en France métropolitaine, 6 ans et plus, en 2019.
-                    Le SDES publie 1,45 tCO₂e par an pour les déplacements locaux et longue distance ;
-                    divisées par 52, cela donne environ 27 885 gCO₂e par semaine.
-                </p>
-                <p className="mt-1 leading-5">Ce repère couvre les émissions pendant les déplacements, hors fabrication des véhicules. Son périmètre diffère des trajets et des facteurs suivis ici : ce n’est ni ton empreinte totale ni un plafond recommandé.</p>
-                <a className="mt-2 inline-block font-medium text-primary underline underline-offset-2" href={SOURCE_URL} target="_blank" rel="noreferrer">
-                    Source : SDES-Insee, enquête mobilité 2019 (publication 2023)
-                </a>
-            </details>
+            <CarbonReference />
         </section>
     );
 }

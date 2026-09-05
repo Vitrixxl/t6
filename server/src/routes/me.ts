@@ -1,4 +1,5 @@
 // Routes du compte : profil de mobilité, portabilite et effacement (RGPD).
+import { completeDueTrips } from '../services/planned-trips.ts';
 import { Elysia } from 'elysia';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
@@ -46,11 +47,12 @@ export function meRoutes(ctx: AppContext) {
         // appel tout ce que le serveur detient sur lui, dans un format ouvert.
         .get(
             '/export',
-            ({ userId, repositories, set, status }) => {
+            ({ userId, repositories, set, status, db }) => {
                 const row = repositories.users.findById(userId);
                 if (!row) {
                     return status(401, { error: 'Session expirée.' });
                 }
+                completeDueTrips(db, userId);
                 const user = toSessionUser(row);
                 set.headers['content-disposition'] = 'attachment; filename="urbanflow-export.json"';
 

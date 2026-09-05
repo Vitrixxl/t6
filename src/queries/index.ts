@@ -5,7 +5,7 @@ export { createQueryClient } from './client';
 export { useDeleteAccount, useLogin, useLogout, useRegister, useSession } from './session';
 export { useUser } from './user';
 export { useProfile, useUpdateProfile } from './profile';
-export { useCancelTrip, useMarkTripDone, usePlanTrip, usePlannedTrips, useRemoveTrip, useUpcomingTrips } from './planned-trips';
+export { useRestoreTrip, useCancelTrip, usePlanTrip, usePlannedTrips, useRemoveTrip, useUpcomingTrips } from './planned-trips';
 export { useRestoreRoutinePassage, useCancelRoutineDate, useCreateRoutine, useRecurringTrips, useRemoveRoutine, useToggleRoutinePaused, type RoutineSchedule } from './recurring-trips';
 export { useClearTripHistory, useTripRecords } from './trip-records';
 export { useDeleteSavedRoute, useSaveRoute, useSavedRoutes, type SaveRouteInput } from './saved-routes';

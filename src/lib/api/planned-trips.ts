@@ -1,4 +1,4 @@
-import type { CompletedPlannedTrip, PlannedTrip } from '../../contracts';
+import type { PlannedTrip } from '../../contracts';
 import { api, treatyRequest } from './client';
 
 export function fetchPlannedTrips(): Promise<PlannedTrip[]> {
@@ -9,13 +9,9 @@ export function savePlannedTrip(record: PlannedTrip): Promise<PlannedTrip> {
     const { id, userId, ...body } = record;
     void userId;
     if (body.status === 'done' || body.completedAt !== null) {
-        throw new Error('Un trajet terminé passe par la commande de complétion.');
+        throw new Error('La réalisation d’un trajet est déterminée par le serveur à sa date prévue.');
     }
     return treatyRequest(api.trips.planned({ id }).put({ ...body, status: body.status, completedAt: null }));
-}
-
-export function completePlannedTrip(id: string): Promise<CompletedPlannedTrip> {
-    return treatyRequest(api.trips.planned({ id }).completion.put());
 }
 
 export async function deletePlannedTrip(id: string): Promise<void> {
@@ -24,4 +20,8 @@ export async function deletePlannedTrip(id: string): Promise<void> {
 
 export function cancelPlannedTrip(id: string): Promise<PlannedTrip> {
     return treatyRequest(api.trips.planned({ id }).cancellation.put());
+}
+
+export function restorePlannedTrip(id: string): Promise<PlannedTrip> {
+    return treatyRequest(api.trips.planned({ id }).cancellation.delete());
 }

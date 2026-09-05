@@ -47,6 +47,8 @@ ENV DATABASE_PATH=/data/urbanflow.db
 # Sans cela le serveur n'ecouterait que la boucle locale du conteneur.
 ENV API_HOST=0.0.0.0
 ENV API_PORT=4000
+# Compte de recette réservé ; surcharge possible avec -e TEST_PASSWORD.
+ENV TEST_PASSWORD=UrbanFlow2026!
 ENV NODE_ENV=production
 ENV WEB_ROOT=/app/dist
 ENV TLS_CERT_PATH=/certs/cert.pem

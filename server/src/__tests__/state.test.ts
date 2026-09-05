@@ -118,12 +118,12 @@ describe('ressources du compte', () => {
         expect((await readState(cookie)).plannedTrips.map((trip) => trip.id)).toEqual(['trip-1']);
     });
 
-    it('termine le trajet et crée l’historique dans une seule transition idempotente', async () => {
+    it('comptabilise un trajet passé à la lecture, une seule fois et à sa date prévue', async () => {
         const cookie = await api.register('completion@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
 
-        const first = await api.call('/api/trips/planned/trip-1/completion', { method: 'PUT', cookie });
-        const replay = await api.call('/api/trips/planned/trip-1/completion', { method: 'PUT', cookie });
+        const first = await api.call('/api/state', { cookie });
+        const replay = await api.call('/api/state', { cookie });
 
         expect(first.status).toBe(200);
         expect(replay.status).toBe(200);
@@ -156,7 +156,7 @@ describe('ressources du compte', () => {
     it('efface l’historique uniquement par la commande explicite DELETE', async () => {
         const cookie = await api.register('historique@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
-        await api.call('/api/trips/planned/trip-1/completion', { method: 'PUT', cookie });
+        await api.call('/api/state', { cookie });
 
         expect((await api.call('/api/trips/history', { method: 'PUT', cookie, body: [] })).status).toBe(404);
         expect((await api.call('/api/trips/history', { method: 'DELETE', cookie })).status).toBe(200);
@@ -173,7 +173,7 @@ describe('ressources du compte', () => {
 
         expect(planned).toHaveLength(1);
         expect(planned[0].userId).toBeDefined();
-        expect(history).toHaveLength(0);
+        expect(history).toHaveLength(1);
         expect((await api.call('/api/trips/planned')).status).toBe(401);
     });
 

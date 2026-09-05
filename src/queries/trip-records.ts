@@ -1,5 +1,5 @@
 // Historique carbone : lecture et effacement explicite de la collection.
-// Les lignes individuelles sont créées par la complétion d'un trajet programmé.
+// Les lignes individuelles sont créées automatiquement après la date prévue d’un trajet non annulé.
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { TripRecord } from '../types';
 import { clearTripHistory, fetchTripRecords } from '../lib/api/trip-history';
@@ -20,7 +20,8 @@ export function tripRecordsQuery(client: QueryClient) {
         queryFn: fetchTripRecords,
         initialData: () => readSession(client)?.state.tripRecords ?? EMPTY_TRIP_RECORDS,
         initialDataUpdatedAt: () => client.getQueryState(queryKeys.session)?.dataUpdatedAt,
-        staleTime: 60_000,
+        staleTime: 30_000,
+        refetchInterval: 30_000,
     });
 }
 

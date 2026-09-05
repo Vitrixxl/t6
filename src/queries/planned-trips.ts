@@ -3,8 +3,7 @@
 import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import type { PlannedTrip } from '../types';
-import { recordTrip } from '../lib/carbon';
-import { cancelPlannedTrip, completePlannedTrip, deletePlannedTrip, fetchPlannedTrips, savePlannedTrip } from '../lib/api/planned-trips';
+import { restorePlannedTrip, cancelPlannedTrip, deletePlannedTrip, fetchPlannedTrips, savePlannedTrip } from '../lib/api/planned-trips';
 import { createPlannedTrip, removePlanned, upcomingTrips, upsertPlanned, type TripSource } from '../lib/trips';
 import { useNow } from '../state/clock';
 import { mutationKeys, queryKeys } from './keys';
@@ -25,7 +24,8 @@ export function plannedTripsQuery(client: QueryClient) {
         queryFn: fetchPlannedTrips,
         initialData: () => readSession(client)?.state.plannedTrips ?? EMPTY_PLANNED_TRIPS,
         initialDataUpdatedAt: () => client.getQueryState(queryKeys.session)?.dataUpdatedAt,
-        staleTime: 60_000,
+        staleTime: 30_000,
+        refetchInterval: 30_000,
     });
 }
 
@@ -35,29 +35,14 @@ export function savePlannedTripOptions(client: QueryClient) {
         scope: { id: 'account' },
         mutationFn: savePlannedTrip,
         onMutate: () => client.cancelQueries({ queryKey: queryKeys.plannedTrips }),
-        onSuccess: (saved) => client.setQueryData(queryKeys.plannedTrips, upsertPlanned(readPlannedTrips(client), saved)),
-        onError: () => client.invalidateQueries({ queryKey: queryKeys.plannedTrips }),
-        gcTime: Infinity,
-    });
-}
-
-export function completePlannedTripOptions(client: QueryClient) {
-    return mutationOptions({
-        mutationKey: mutationKeys.plannedComplete,
-        scope: { id: 'account' },
-        mutationFn: (trip: PlannedTrip) => completePlannedTrip(trip.id),
-        onMutate: () => Promise.all([
-            client.cancelQueries({ queryKey: queryKeys.plannedTrips }),
-            client.cancelQueries({ queryKey: queryKeys.tripRecords }),
-        ]),
-        onSuccess: ({ plannedTrip, tripRecord }) => {
-            client.setQueryData(queryKeys.plannedTrips, upsertPlanned(readPlannedTrips(client), plannedTrip));
-            client.setQueryData(queryKeys.tripRecords, recordTrip(readTripRecords(client), tripRecord));
+        onSuccess: (saved) => {
+            client.setQueryData(queryKeys.plannedTrips, upsertPlanned(readPlannedTrips(client), saved));
+            return Promise.all([
+                client.invalidateQueries({ queryKey: queryKeys.plannedTrips }),
+                client.invalidateQueries({ queryKey: queryKeys.tripRecords }),
+            ]);
         },
-        onError: () => Promise.all([
-            client.invalidateQueries({ queryKey: queryKeys.plannedTrips }),
-            client.invalidateQueries({ queryKey: queryKeys.tripRecords }),
-        ]),
+        onError: () => client.invalidateQueries({ queryKey: queryKeys.plannedTrips }),
         gcTime: Infinity,
     });
 }
@@ -118,12 +103,6 @@ export function usePlanTrip(): (source: TripSource, scheduledFor: Date) => void 
     }, [save, userId]);
 }
 
-export function useMarkTripDone(): (trip: PlannedTrip) => void {
-    const client = useQueryClient();
-    const complete = useMutation(completePlannedTripOptions(client));
-    return complete.mutate;
-}
-
 export function useCancelTrip(): (trip: PlannedTrip) => void {
     const client = useQueryClient();
     const cancel = useMutation(cancelPlannedTripOptions(client));
@@ -134,4 +113,27 @@ export function useRemoveTrip(): (trip: PlannedTrip) => void {
     const client = useQueryClient();
     const remove = useMutation(deletePlannedTripOptions(client));
     return remove.mutate;
+}
+
+export function useRestoreTrip() {
+    const client = useQueryClient();
+    const restore = useMutation({
+        mutationKey: mutationKeys.plannedRestore,
+        scope: { id: 'account' },
+        mutationFn: (trip: PlannedTrip) => restorePlannedTrip(trip.id),
+        onMutate: () => Promise.all([
+            client.cancelQueries({ queryKey: queryKeys.plannedTrips }),
+            client.cancelQueries({ queryKey: queryKeys.tripRecords }),
+        ]),
+        onSuccess: (saved) => {
+            client.setQueryData(queryKeys.plannedTrips, upsertPlanned(readPlannedTrips(client), saved));
+            return client.invalidateQueries({ queryKey: queryKeys.tripRecords });
+        },
+        onError: () => Promise.all([
+            client.invalidateQueries({ queryKey: queryKeys.plannedTrips }),
+            client.invalidateQueries({ queryKey: queryKeys.tripRecords }),
+        ]),
+        gcTime: Infinity,
+    });
+    return restore.mutate;
 }

@@ -3,7 +3,6 @@
 import { MutationObserver, QueryObserver, type MutationObserverOptions, type QueryClient } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
 import { DEFAULT_PROFILE, type Session } from '../contracts';
-import { summarizeCarbon } from '../lib/carbon';
 import { createPlannedTrip, createRecurringTrip, isRoutinePaused, setRecurringPaused, upcomingTrips } from '../lib/trips';
 import { createSavedRouteRecord } from '../lib/savedRoutes';
 import type { PlannedTrip, RecurringTrip, RouteOption } from '../types';
@@ -11,7 +10,6 @@ import { createQueryClient } from './client';
 import { mutationKeys } from './keys';
 import {
     cancelPlannedTripOptions,
-    completePlannedTripOptions,
     deletePlannedTripOptions,
     plannedTripsQuery,
     readPlannedTrips,
@@ -98,27 +96,6 @@ const resourceServer: FetchHandler = (input, init) => {
     }
     if (url.endsWith('/api/me/profile')) {
         return Promise.resolve(jsonResponse(parsedBody(init)));
-    }
-    if (url.endsWith('/completion')) {
-        const id = decodeURIComponent(url.split('/').at(-2) ?? '');
-        const completedAt = '2026-09-02T07:00:00.000Z';
-        const plannedTrip = { ...futureTrip(), id, status: 'done', completedAt };
-        return Promise.resolve(
-            jsonResponse({
-                plannedTrip,
-                tripRecord: {
-                    id: `trip:${id}`,
-                    userId: 'user-1',
-                    routeTitle: plannedTrip.label,
-                    modes: plannedTrip.modes,
-                    distanceKm: plannedTrip.distanceKm,
-                    durationMinutes: plannedTrip.durationMinutes,
-                    carbonGrams: plannedTrip.carbonGrams,
-                    carbonSavedGrams: plannedTrip.carbonSavedGrams,
-                    createdAt: completedAt,
-                },
-            }),
-        );
     }
     return Promise.resolve(jsonResponse({ id: lastPathPart(url), userId: 'user-1', ...parsedBody(init) }));
 };
@@ -229,22 +206,6 @@ describe('commandes granulaires', () => {
         expect(request.path).toBe(`/api/trips/planned/${trip.id}`);
         expect(request.body).not.toHaveProperty('id');
         expect(request.body).not.toHaveProperty('userId');
-    });
-
-    it('termine un trajet par un seul endpoint et réconcilie les deux vues', async () => {
-        const trip = futureTrip();
-        openSession(client, session({ plannedTrips: [trip] }));
-
-        await write(completePlannedTripOptions(client), trip);
-
-        const plannedTrips = readPlannedTrips(client);
-        const tripRecords = readTripRecords(client);
-        expect(plannedTrips[0].status).toBe('done');
-        expect(tripRecords).toHaveLength(1);
-        expect(summarizeCarbon(tripRecords, [], DEFAULT_PROFILE.carbonGoalGramsPerWeek).totalSavedGrams).toBe(336);
-        expect(sentRequests(fetchSpy)).toEqual([
-            { path: `/api/trips/planned/${trip.id}/completion`, method: 'PUT', body: null },
-        ]);
     });
 
     it('annule puis supprime sans jamais envoyer la collection', async () => {

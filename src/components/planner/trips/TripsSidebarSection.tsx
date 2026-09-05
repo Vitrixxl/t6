@@ -1,8 +1,7 @@
 // Bloc trajets du rail latéral : raccourcis vers le hub et prochaines échéances.
 import { useSetAtom } from 'jotai';
-import { CalendarClock, Check, ChevronRight } from 'lucide-react';
-import { Button } from '../../ui/button';
-import { useActivitySummary, useMarkTripDone, useUpcomingTrips } from '../../../queries';
+import { CalendarClock, ChevronRight } from 'lucide-react';
+import { useActivitySummary, useUpcomingTrips } from '../../../queries';
 import { openHubAtom } from '../../../state';
 import { Metric } from '../../app/shared';
 import { formatScheduleLabel } from './format';
@@ -10,7 +9,6 @@ import { formatScheduleLabel } from './format';
 export function TripsSidebarSection() {
     const summary = useActivitySummary();
     const upcoming = useUpcomingTrips();
-    const markDone = useMarkTripDone();
     const openHub = useSetAtom(openHubAtom);
 
     return (
@@ -50,17 +48,6 @@ export function TripsSidebarSection() {
                                 </p>
                                 <p className="truncate text-xs font-semibold">{trip.label}</p>
                             </div>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="compactIcon"
-                                className="h-7 w-7 shrink-0 text-primary"
-                                onClick={() => markDone(trip)}
-                                aria-label={`Marquer fait : ${trip.label}`}
-                                title="Marquer fait"
-                            >
-                                <Check className="size-4" aria-hidden="true" />
-                            </Button>
                         </li>
                     ))}
                 </ul>

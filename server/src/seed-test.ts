@@ -4,7 +4,7 @@ import { loadConfig } from './config/index.ts';
 import { openDatabase, type Db } from './db/index.ts';
 import { createRepositories } from './repositories/index.ts';
 import { hashPassword } from './security/password.ts';
-import { DEFAULT_PROFILE, plannedTrip, recurringTrip, savedRoute } from '../../src/contracts/index.ts';
+import { DEFAULT_PROFILE, plannedTrip, recurringTrip, savedRoute, type PlannedTrip } from '../../src/contracts/index.ts';
 import { atCalendarTime, calendarDate } from '../../src/lib/trips/calendar.ts';
 
 export const TEST_EMAIL = 'test@urbanflow.local';
@@ -32,6 +32,12 @@ export async function seedTestAccount(db: Db, password: string, now = new Date()
             modes: ['bike'], distanceKm: 4, durationMinutes: 18,
             carbonGrams: 40, carbonSavedGrams: 600, createdAt,
         };
+        const addPlannedTrip = (trip: PlannedTrip) => {
+            repositories.plannedTrips.upsert(trip);
+            if (trip.status === 'done') repositories.tripRecords.upsert({
+                ...trip, id: 'trip:' + trip.id, routeTitle: trip.label, createdAt: trip.scheduledFor,
+            });
+        };
         // Quatre ponctuels par semaine : variations, annulations et référence absente.
         for (let index = 0; index < 32; index += 1) {
             const scheduledFor = dateAt(-56 + Math.floor(index / 4) * 7 + index % 4);
@@ -42,13 +48,13 @@ export async function seedTestAccount(db: Db, password: string, now = new Date()
                 carbonSavedGrams: index % 9 === 0 ? null : 200 + (index % 5) * 150,
                 scheduledFor, status: cancelled ? 'cancelled' : 'done', completedAt: cancelled ? null : scheduledFor,
             });
-            repositories.plannedTrips.upsert(trip);
-            if (!cancelled) repositories.tripRecords.upsert({ ...trip, id: `trip:${trip.id}`, routeTitle: trip.label, createdAt: scheduledFor });
+            addPlannedTrip(trip);
         }
         for (const offset of [-1, 1, 3]) {
-            repositories.plannedTrips.upsert(plannedTrip.parse({ ...journey, id: crypto.randomUUID(),
-                label: offset < 0 ? 'Test · passé à confirmer' : `Test · à venir J+${offset}`,
-                scheduledFor: dateAt(offset), status: 'planned', completedAt: null }));
+            const trip = plannedTrip.parse({ ...journey, id: crypto.randomUUID(),
+                label: offset < 0 ? 'Test · ponctuel passé' : 'Test · à venir J+' + offset,
+                scheduledFor: dateAt(offset), status: offset < 0 ? 'done' : 'planned', completedAt: offset < 0 ? dateAt(offset) : null });
+            addPlannedTrip(trip);
         }
         const daily = recurringTrip.parse({ ...journey, id: crypto.randomUUID(), label: 'Test · quotidien aller-retour',
             daysOfWeek: [0, 1, 2, 3, 4, 5, 6], timeZone: 'Europe/Paris', departureTime: '08:30', returnTime: '18:00',
