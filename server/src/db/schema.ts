@@ -150,28 +150,6 @@ export const savedRoutes = sqliteTable(
     (t) => [primaryKey({ columns: [t.userId, t.id] })],
 );
 
-// Traces de voirie déjà calculés. Le cache est partagé par tous les clients :
-// une recherche frequente n'atteint la source qu'une fois, ce qui protege le
-// quota du fournisseur et rend l'application utilisable quand il refuse de
-// répondre (eco-conception, et B13).
-//
-// La clé porte les coordonnées arrondies a cinq décimales, soit environ un
-// mètre : deux départs distants d'un mètre suivent la même rue, inutile de
-// calculer deux fois.
-export const routeCache = sqliteTable(
-    'route_cache',
-    {
-        cacheKey: text('cache_key').primaryKey(),
-        mode: text('mode').notNull(),
-        // Blob opaque pour la couche dépôt : c'est le service de routage qui en
-        // connaît la forme.
-        payloadJson: text('payload_json').notNull(),
-        /** Horodatage en millisecondes (Date.now()), compare au TTL. */
-        createdAt: integer('created_at').notNull(),
-    },
-    (t) => [index('idx_route_cache_date').on(t.createdAt)],
-);
-
 export const transitFeeds = sqliteTable('transit_feeds', {
     id: text('id').primaryKey(),
     active: integer('active', { mode: 'boolean' }).notNull().default(false),

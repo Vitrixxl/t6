@@ -6,15 +6,16 @@ import { applyCarbonReference, createCarbonReference, measureRoutes, planRoutes,
 import { filterTransitNetwork } from '../../../src/lib/planner/transit-filter.ts';
 import { legDuration } from '../../../src/lib/planner/legs.ts';
 import { round } from '../../../src/lib/planner/metrics.ts';
-import type { createRoutingService } from './routing/index.ts';
+import type { ServerConfig } from '../config/index.ts';
+import { fetchOsrmMatrix, fetchOsrmRoute } from './routing/osrm.ts';
 import type { TransportService } from './transport/index.ts';
 
-type RoutingService = ReturnType<typeof createRoutingService>;
+type OsrmUrls = ServerConfig['osrmUrls'];
 
-export async function measureLeg(leg: RouteLeg, routing: RoutingService, signal?: AbortSignal): Promise<RouteLeg> {
+export async function measureLeg(leg: RouteLeg, osrm: OsrmUrls, signal?: AbortSignal): Promise<RouteLeg> {
     // Le rail porte son tracé publié ; une correspondance intérieure n'est pas routée sur la voirie.
     if (leg.mode === 'transit' || leg.transfer) return leg;
-    const geometry = await routing.route(leg.mode, leg.fromPoint, leg.toPoint, signal);
+    const geometry = await fetchOsrmRoute(osrm, leg.mode, leg.fromPoint, leg.toPoint, signal);
     if (!geometry || geometry.path.length < 2) return { ...leg, path: [] };
     const distanceKm = round(geometry.distanceMeters / 1000, 2);
     return {
@@ -28,7 +29,7 @@ export async function measureLeg(leg: RouteLeg, routing: RoutingService, signal?
     };
 }
 
-export async function searchRoutes(search: RouteSearchRequest, transport: TransportService, routing: RoutingService, signal?: AbortSignal) {
+export async function searchRoutes(search: RouteSearchRequest, transport: TransportService, osrm: OsrmUrls, signal?: AbortSignal) {
     signal?.throwIfAborted();
     const fullNetwork = await transport.network();
     signal?.throwIfAborted();
@@ -36,14 +37,14 @@ export async function searchRoutes(search: RouteSearchRequest, transport: Transp
         ...fullNetwork,
         sharedMobility: search.sharedMobilityAvailable ? fullNetwork.sharedMobility : null,
     }, search.transitTypes);
-    const reference = routing.matrix('car', [search.origin], [search.destination], signal)
-        .then(matrix => createCarbonReference(matrix?.measures[0]?.[0] ?? null));
+    const reference = fetchOsrmMatrix(osrm, 'car', [search.origin], [search.destination], signal)
+        .then(matrix => createCarbonReference(matrix?.[0]?.[0] ?? null));
     const access = await prepareRoutedAccessPlan({
         origin: search.origin, destination: search.destination, network,
         requireAccessible: search.profile.accessibilityNeed,
-    }, async (mode, origins, destinations) => (await routing.matrix(mode, origins, destinations, signal))?.measures ?? null);
+    }, (mode, origins, destinations) => fetchOsrmMatrix(osrm, mode, origins, destinations, signal));
     signal?.throwIfAborted();
     const candidates = planRoutes({ ...search, network }, access);
-    const measured = await measureRoutes(candidates, search.profile, legs => Promise.all(legs.map(leg => measureLeg(leg, routing, signal))));
+    const measured = await measureRoutes(candidates, search.profile, legs => Promise.all(legs.map(leg => measureLeg(leg, osrm, signal))));
     return applyCarbonReference(measured, await reference);
 }

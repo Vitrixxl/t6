@@ -5,7 +5,6 @@ import { createTransportRepository } from './transport.ts';
 import type { Executor } from '../db/index.ts';
 import { createPlannedTripRepository } from './planned-trips.ts';
 import { createRecurringTripRepository } from './recurring-trips.ts';
-import { createRouteCacheRepository } from './route-cache.ts';
 import { createSavedRouteRepository } from './saved-routes.ts';
 import { createSessionRepository } from './sessions.ts';
 import { createStateReader } from './state.ts';
@@ -21,7 +20,6 @@ export function createRepositories(db: Executor) {
     return {
         users: createUserRepository(db),
         transport: createTransportRepository(db),
-        routeCache: createRouteCacheRepository(db),
         sessions: createSessionRepository(db),
         tripRecords,
         plannedTrips,

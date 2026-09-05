@@ -1,4 +1,4 @@
-// Contrat de la route de calcul d'itinéraire.
+// Modes mesurables par OSRM et instructions de guidage d'une option.
 import { z } from 'zod';
 
 /** Modes qui empruntent la voirie et peuvent donc être mesures par OSRM. */
@@ -15,25 +15,3 @@ export const routeInstruction = z.object({
     kind: z.enum(['turn', 'roundabout', 'depart', 'arrive', 'transfer', 'continue']),
 });
 export type RouteInstruction = z.infer<typeof routeInstruction>;
-
-export const routeGeometry = z.object({
-    path: z.array(z.tuple([z.number(), z.number()])),
-    distanceMeters: z.number().min(0),
-    durationSeconds: z.number().min(0),
-    instructions: z.array(routeInstruction),
-    /** D'où vient la réponse : utile en revue, et pour mesurer le cache. */
-    source: z.enum(['cache', 'upstream']),
-});
-export type RouteGeometry = z.infer<typeof routeGeometry>;
-
-export const routeMeasure = z.object({
-    distanceMeters: z.number().min(0),
-    durationSeconds: z.number().min(0),
-    source: z.enum(['cache', 'upstream']),
-});
-export type RouteMeasure = z.infer<typeof routeMeasure>;
-
-export const routeMatrix = z.object({
-    measures: z.array(z.array(routeMeasure.nullable())),
-});
-export type RouteMatrix = z.infer<typeof routeMatrix>;

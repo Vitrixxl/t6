@@ -1,5 +1,5 @@
 // Même recette avant push et sur GitHub : base vide et moteurs dédiés,
-// sans dépendre des conteneurs ou du cache SQLite du poste de développement.
+// sans dépendre des conteneurs ni de la base SQLite du poste de développement.
 import { $ } from 'bun';
 import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';

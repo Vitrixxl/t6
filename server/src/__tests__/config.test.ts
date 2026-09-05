@@ -22,8 +22,8 @@ describe('loadConfig', () => {
         expect(loadConfig({ OSRM_FOOT_URL: 'http://osrm-foot:5000' }).osrmUrls.bike).toBe('http://osrm-bike:5000');
     });
 
-    it('refuse une durée de cache absurde plutôt que de la subir en requête', () => {
-        expect(() => loadConfig({ ROUTE_CACHE_TTL_MS: '-1' })).toThrow();
-        expect(() => loadConfig({ ROUTE_CACHE_TTL_MS: 'plus tard' })).toThrow();
+    it('refuse un port absurde plutôt que de le subir au démarrage', () => {
+        expect(() => loadConfig({ API_PORT: '-1' })).toThrow();
+        expect(() => loadConfig({ API_PORT: 'plus tard' })).toThrow();
     });
 });

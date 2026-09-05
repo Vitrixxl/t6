@@ -93,7 +93,7 @@ commande pas la création d'un module.
 | `config/` | lecture et validation des variables d'environnement |
 | `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
 | `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
-| `services/` | règles métier qui composent plusieurs opérations : complétion, sessions, routage et son cache |
+| `services/` | règles métier qui composent plusieurs opérations : complétion, sessions, routage |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
 
@@ -214,7 +214,7 @@ Recette : `bun run e2e:trips` pour les confirmations et rétablissements ;
 | --- | --- | --- |
 | Géocodage adresses | `api-adresse.data.gouv.fr` (BAN) | live navigateur |
 | Géocodage lieux/quartiers | Photon (`photon.komoot.io`, OSM) | live navigateur |
-| Routage | OSRM (foot/bike ; trottinette sur bike, voiture invisible sur driving), auto-hébergeable | service serveur appelé par `/api/transport/journeys`, cache SQLite partagé |
+| Routage | OSRM (foot/bike ; trottinette sur bike, voiture invisible sur driving), auto-hébergeable | appelé par le serveur à chaque recherche de `/api/transport/journeys` |
 | Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | serveur, chargement mutualisé 60 s |
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | serveur, chargement mutualisé 60 s |
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | artefact normalisé (`bun run generate:gtfs`), import SQLite au démarrage |
@@ -268,7 +268,7 @@ Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le
 3. Le moteur assemble les options, puis le service OSRM mesure et trace chaque segment de voirie avant affichage.
 4. Quand toutes les options portent leurs mesures réelles, la même référence voiture leur est appliquée, puis elles sont affichées de la plus rapide à la plus lente.
 
-Les mesures de matrice et les géométries utilisent le même cache SQLite partagé entre tous les clients. Une mesure de matrice peut réutiliser un tracé déjà connu, et inversement le cache évite de redemander les mêmes couples de points à OSRM. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopie dans le front.
+Chaque recherche interroge les moteurs OSRM locaux : rien n'est conservé côté serveur, une mesure vient toujours d'un calcul frais. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopie dans le front.
 
 Une correspondance entre deux lignes apparaît comme une étape piétonne de quatre minutes. Le temps est explicite, mais aucun trait intérieur n'est inventé : le GTFS publie la desserte et les tracés des lignes, pas les cheminements entre quais.
 
@@ -355,8 +355,7 @@ OSRM_CAR_URL=http://127.0.0.1:5003
 
 Chaque variable absente ou vide utilise son service Docker local :
 `http://osrm-foot:5000`, `http://osrm-bike:5000` ou `http://osrm-car:5000`.
-En cas de panne, une mesure réelle déjà en cache reste utilisable ; sinon
-l’API répond 503. Aucune file ni limitation de débit propre à un service public
+En cas de panne d’un moteur, l’API répond 503. Aucune file ni limitation de débit propre à un service public
 n’est conservée.
 
 Migration : remplacer l'ancienne variable `OSRM_BASE_URL` par ces trois variables. Après mise à jour d'une pile existante, `docker compose -f infra/compose.yml up -d --build --remove-orphans` retire aussi l'ancien conteneur Caddy.

@@ -7,8 +7,8 @@
 //
 // C'est le prix d'une liste comparable. Ne mesurer que l'option sélectionnée
 // coutait trois appels au lieu d'une quinzaine, mais melangeait deux méthodes
-// dans le même tableau : changer de sélection changeait les chiffres (B20). Le
-// surcoût est absorbe par le cache partagé de l'API.
+// dans le même tableau : changer de sélection changeait les chiffres (B20). Les
+// moteurs OSRM sont locaux à l'API : la quinzaine d'appels reste bon marché.
 import { useEffect, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
 import { ALL_TRANSIT_TYPES } from '../../../lib/planner/transit-filter';
