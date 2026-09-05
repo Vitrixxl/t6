@@ -151,6 +151,46 @@ Pour chaque fonction : identifier ses entrées, sa sortie et ses effets, puis
 suivre le prochain appel. Les contrats, transactions et dépôts ont des rôles
 distincts ; un simple relais n’a pas besoin de son propre fichier.
 
+## Compte de test et évolution des trajets
+
+`bun run seed:test` crée ou réinitialise **uniquement** le compte réservé
+`test@urbanflow.local`. Mot de passe hors production : `UrbanFlow2026!`,
+ou la valeur de `TEST_PASSWORD` (obligatoire en production).
+Le script utilise `DATABASE_PATH`, comme le serveur. Exemple sur une base dédiée :
+
+`DATABASE_PATH=/tmp/urbanflow-recette.db bun run seed:test`
+
+Il prépare 35 ponctuels (27 faits, 5 annulés, 1 passé à confirmer, 2 futurs),
+3 récurrences et 1 itinéraire enregistré. Les dates sont relatives au jour
+d’exécution, sur huit semaines passées, dans le fuseau Europe/Paris. Une routine
+quotidienne aller-retour contient des exceptions à J−2 et J−3 ; une autre a une
+pause puis une reprise ; la troisième est en pause. Les mesures sont **fictives**,
+réservées à la recette, et tous les libellés portent « Test ». Rien n’est lancé
+au démarrage. Relancer la commande efface les essais de ce seul compte, en une
+transaction ; les autres comptes sont conservés. `seed:demo` garde son rôle
+séparé de compte vide pour le scénario de planification.
+
+Dans le hub, **Voir l’évolution** ouvre huit semaines et quatre indicateurs :
+émissions, économies CO₂e, distance et nombre de passages. Le tableau donne les
+valeurs exactes ; la moyenne porte sur les sept semaines terminées. Les semaines
+suivent le fuseau de l’appareil ; la dernière s’arrête à maintenant. La ligne de
+budget représente le maximum actuel du profil, sans inventer ses valeurs passées.
+Le calcul reprend les sources du suivi carbone : au plus 50 ponctuels conservés
+et les passages des routines conservées, hors pauses et annulations. Une semaine
+sans données n’atteste pas une absence réelle de déplacements. Une référence
+voiture absente est exclue des économies, une économie négative reste négative.
+
+L’annulation d’un ponctuel ou de passages récurrents ouvre une confirmation.
+Dans l’historique récurrent, **Rétablir l’aller/le retour** retire uniquement
+l’exception choisie via
+`DELETE /api/trips/recurring/:id/cancellations/:date/:direction`.
+L’action est idempotente et les compteurs se recalculent à réception du serveur.
+Elle préserve les autres sens et dates, même si la routine est en pause.
+
+Recette : `bun run e2e:trips` pour les confirmations et rétablissements ;
+`bun run e2e:evolution` après `seed:test` pour les graphiques sur le même serveur
+(`E2E_BASE_URL` configurable). Le script de graphiques ne modifie pas le compte.
+
 ## Livrables
 
 - `src/` : application fonctionnelle (auth + profils, planificateur multimodal, trajets programmés et routines, objectifs, suivi carbone).
@@ -399,3 +439,7 @@ Sans import, le service retourne `unavailable` ; une date non couverte retourne
 `outside-coverage`. `no-service` signifie qu’aucune course admissible n’a été
 trouvée dans le périmètre demandé. Ces résultats ne sont pas encore consommés
 par le client. Aucun nouveau déploiement ni import de production n’a été réalisé.
+
+La barre mobile affiche cinq libellés sous les icônes, sur un fond opaque, avec
+des cibles tactiles de 60 px de haut. L’attribution cartographique reste au-dessus.
+La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.

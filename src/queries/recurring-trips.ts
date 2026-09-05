@@ -3,7 +3,7 @@ import { mutationOptions, queryOptions, useMutation, useQuery, useQueryClient, t
 import { useCallback } from 'react';
 import type { TripDirection } from '../contracts';
 import type { RecurringTrip } from '../types';
-import { cancelRecurringDate, deleteRecurringTrip, fetchRecurringTrips, saveRecurringTrip } from '../lib/api/recurring-trips';
+import { restoreRecurringPassage, cancelRecurringDate, deleteRecurringTrip, fetchRecurringTrips, saveRecurringTrip } from '../lib/api/recurring-trips';
 import { createRecurringTrip, isRoutinePaused, removeRecurring, setRecurringPaused, upsertRecurring, type TripSource } from '../lib/trips';
 import { mutationKeys, queryKeys } from './keys';
 import { readSession } from './session';
@@ -109,4 +109,18 @@ export function useCancelRoutineDate(): (input: CancelRoutineDate) => void {
     const client = useQueryClient();
     const cancel = useMutation(cancelRecurringDateOptions(client));
     return cancel.mutate;
+}
+
+export function useRestoreRoutinePassage() {
+    const client = useQueryClient();
+    const restore = useMutation({
+        mutationKey: mutationKeys.recurringRestore,
+        scope: { id: 'account' },
+        mutationFn: ({ id, date, direction }: { id: string; date: string; direction: TripDirection }) => restoreRecurringPassage(id, date, direction),
+        onMutate: () => client.cancelQueries({ queryKey: queryKeys.recurringTrips }),
+        onSuccess: (saved) => client.setQueryData(queryKeys.recurringTrips, upsertRecurring(readRecurringTrips(client), saved)),
+        onError: () => client.invalidateQueries({ queryKey: queryKeys.recurringTrips }),
+        gcTime: Infinity,
+    });
+    return restore.mutate;
 }

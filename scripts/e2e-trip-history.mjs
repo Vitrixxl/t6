@@ -27,6 +27,10 @@ async function openHub() {
     await page.locator('[data-tour="mobile-trips"]:visible').first().click();
     await page.getByRole('dialog', { name: 'Planificateur de trajets' }).waitFor();
 }
+async function confirmCancellation() {
+    const confirmation = page.getByRole('dialog', { name: /^Annuler (ces passages|ce trajet)/ });
+    await confirmation.getByRole('button', { name: 'Confirmer l’annulation', exact: true }).click();
+}
 async function tab(name) {
     await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click();
     await page.getByRole('tab', { name: new RegExp(`^${name}`), selected: true }).waitFor();
@@ -83,8 +87,13 @@ try {
     await dialog.getByRole('button', { name: 'Annuler les deux', exact: true }).scrollIntoViewIfNeeded();
     await page.waitForTimeout(600);
     await page.screenshot({ path: 'tmp/screenshots/trips-history-mobile.png' });
+    await dialog.getByRole('button', { name: 'Annuler l’aller', exact: true }).click();
+    const undoDialog = page.getByRole('dialog', { name: 'Annuler ces passages ?', exact: true });
+    await undoDialog.getByRole('button', { name: 'Annuler', exact: true }).click();
+    assert((await state()).recurringTrips[0].cancelledPassages.length === 0, 'Une annulation a été envoyée sans confirmation');
     const waitCancel = page.waitForResponse((response) => response.url().includes('/cancellations/') && response.request().method() === 'PUT');
     await dialog.getByRole('button', { name: 'Annuler l’aller', exact: true }).click();
+    await confirmCancellation();
     assert((await waitCancel).ok(), 'Annulation aller refusée');
     let remote = await state();
     assert(remote.recurringTrips[0].cancelledPassages.length === 1, 'L’aller n’est pas persisté seul');
@@ -95,9 +104,11 @@ try {
     assert(await dialog.getByRole('button', { name: 'Annuler l’aller', exact: true }).count() === 0, 'L’annulation aller disparaît au rechargement');
     const waitReturn = page.waitForResponse((response) => response.url().includes('/cancellations/') && response.request().method() === 'PUT');
     await dialog.getByRole('button', { name: 'Annuler le retour', exact: true }).click();
+    await confirmCancellation();
     assert((await waitReturn).ok(), 'Annulation retour refusée');
     const waitOnce = page.waitForResponse((response) => response.url().endsWith('/past/cancellation'));
     await dialog.getByRole('button', { name: 'Annuler', exact: true }).click();
+    await confirmCancellation();
     assert((await waitOnce).ok(), 'Annulation ponctuelle refusée');
     remote = await state();
     assert(remote.recurringTrips[0].cancelledPassages.length === 2, 'Les deux sens ne sont pas conservés');
@@ -115,9 +126,22 @@ try {
     await tab('Historique');
     const waitBoth = page.waitForResponse((response) => response.url().includes('/both/cancellations/'));
     await dialog.getByRole('button', { name: 'Annuler les deux', exact: true }).click();
+    await confirmCancellation();
     assert((await waitBoth).ok(), 'Annulation des deux sens refusée');
     remote = await state();
     assert(remote.recurringTrips.find((item) => item.id === 'both').cancelledPassages.length === 2, 'Les deux sens ne sont pas annulés ensemble');
+    const bothCard = dialog.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Annulation groupée', exact: true }) });
+    const restored = page.waitForResponse((response) => response.url().includes('/both/cancellations/') && response.request().method() === 'DELETE');
+    await bothCard.getByRole('button', { name: 'Rétablir l’aller', exact: true }).click();
+    assert((await restored).ok(), 'Rétablissement refusé');
+    remote = await state();
+    assert(remote.recurringTrips.find((item) => item.id === 'both').cancelledPassages.length === 1, 'Le retour a été rétabli avec l’aller');
+    await page.reload({ waitUntil: 'networkidle' });
+    await openHub();
+    await tab('Historique');
+    assert(await bothCard.getByRole('button', { name: 'Annuler l’aller', exact: true }).count() === 1, 'Rétablissement perdu au rechargement');
+    // La recette du budget part ensuite sans contribution des routines.
+    await put(`/trips/recurring/both/cancellations/${yesterday}`, { directions: ['outbound'] });
     const deleteRequests = [];
     page.on('request', (request) => {
         if (request.method() === 'DELETE') deleteRequests.push(request.url());
@@ -208,6 +232,7 @@ try {
     const budgetTrip = dialog.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Vérification budget', exact: true }) });
     const cancelledBudget = page.waitForResponse((response) => response.url().endsWith('/api/trips/planned/budget/cancellation') && response.request().method() === 'PUT');
     await budgetTrip.getByRole('button', { name: 'Annuler', exact: true }).click();
+    await confirmCancellation();
     assert((await cancelledBudget).ok(), 'Annulation du trajet de recette refusée');
     await page.waitForFunction(() => [...globalThis.document.querySelectorAll('[data-testid="carbon-spent"]')].every((element) => element.textContent === '0 gCO₂e'));
     assert((await budget.getByTestId('carbon-remaining').innerText()).includes('250 gCO₂e restants · 0 %'), 'L’annulation ne libère pas le budget');

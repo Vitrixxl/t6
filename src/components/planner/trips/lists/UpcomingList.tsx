@@ -1,8 +1,9 @@
 // Trajets dates à venir : marquer fait, annuler, supprimer.
+import { CancelTripButton } from '../CancelTripButton';
 import { useState } from 'react';
 import { ConfirmDialog } from '../../../ui/confirm-dialog';
 import { formatDuration } from '../../../../lib/duration';
-import { CalendarClock, Check, Leaf, Trash2, X } from 'lucide-react';
+import { CalendarClock, Check, Leaf, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/button';
 import type { PlannedTrip } from '../../../../types';
 import { formatCarbonComparison } from '../../../../lib/carbon-comparison';
@@ -12,12 +13,10 @@ import { formatScheduleLabel } from '../format';
 export function UpcomingList({
     trips,
     onMarkDone,
-    onCancelTrip,
     onDeleteTrip,
 }: {
     trips: PlannedTrip[];
     onMarkDone: (trip: PlannedTrip) => void;
-    onCancelTrip: (trip: PlannedTrip) => void;
     onDeleteTrip: (trip: PlannedTrip) => void;
 }) {
     const [pendingDelete, setPendingDelete] = useState<PlannedTrip | null>(null);
@@ -61,16 +60,7 @@ export function UpcomingList({
                                 <Check className="size-3.5" aria-hidden="true" />
                                 Fait
                             </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-7 px-2.5 text-[11px]"
-                                onClick={() => onCancelTrip(trip)}
-                            >
-                                <X className="size-3.5" aria-hidden="true" />
-                                Annuler
-                            </Button>
+                            <CancelTripButton trip={trip} />
                             <span className="flex-1" aria-hidden="true" />
                             <Button
                                 type="button"

@@ -49,3 +49,16 @@ function hasPastPassages(routine: RecurringTrip, date: string, directions: TripD
     const passages = routinePassagesBetween(routine, from, until);
     return directions.every((direction) => passages.some((passage) => passage.direction === direction));
 }
+
+/** Retirer uniquement l’exception visée préserve les annulations des autres sens et dates. */
+export function restoreRecurringPassage(db: Db, userId: string, id: string, date: string, direction: TripDirection): RecurringTrip | null {
+    return db.transaction((tx) => {
+        const repository = createRecurringTripRepository(tx);
+        const routine = repository.findById(userId, id);
+        if (!routine) return null;
+        const updated = { ...routine, cancelledPassages: routine.cancelledPassages.filter((item) =>
+            item.date !== date || item.direction !== direction) };
+        repository.upsert(updated);
+        return updated;
+    });
+}

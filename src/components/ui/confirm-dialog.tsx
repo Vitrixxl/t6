@@ -1,4 +1,4 @@
-// Dialogue de confirmation pour les actions sans retour en arriere.
+// Dialogue de confirmation des actions qui modifient ou retirent des données.
 //
 // Les actions partagent la même forme, mais pas les mêmes conséquences :
 // le libellé du bouton d’action dit ce qui va se passer

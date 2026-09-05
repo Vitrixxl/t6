@@ -12,7 +12,6 @@ import { tripHistory } from '../../../lib/trips/history';
 import { useNow } from '../../../state/clock';
 import {
     useActivitySummary,
-    useCancelTrip,
     useDeleteSavedRoute,
     useMarkTripDone,
     usePlannedTrips,
@@ -26,6 +25,7 @@ import {
 import { planSourceAtom, tripsHubAtom, type TripsHubTab } from '../../../state';
 import { Metric } from '../../app/shared';
 import { CarbonBudget } from '../../carbon/CarbonBudget';
+import { TripEvolution } from './TripEvolution';
 import { TripGoalsCard } from './TripGoalsCard';
 import { HistoryList } from './lists/HistoryList';
 import { RecurringList } from './lists/RecurringList';
@@ -56,7 +56,6 @@ export function TripsHubDialog({
     const summary = useActivitySummary();
     const upcoming = useUpcomingTrips();
     const markDone = useMarkTripDone();
-    const cancelTrip = useCancelTrip();
     const removeTrip = useRemoveTrip();
     const togglePaused = useToggleRoutinePaused();
     const removeRecurring = useRemoveRoutine();
@@ -112,6 +111,7 @@ export function TripsHubDialog({
 
                     <CarbonBudget />
                     <TripGoalsCard />
+                    <TripEvolution />
 
                     <Button type="button" className="h-auto min-h-11 w-full justify-center whitespace-normal rounded-xl py-2 text-center" onClick={onNewTrip}>
                         <Search className="size-4" aria-hidden="true" />
@@ -138,7 +138,7 @@ export function TripsHubDialog({
                     </div>
 
                     {tab === 'upcoming' ? (
-                        <UpcomingList trips={upcoming} onMarkDone={markDone} onCancelTrip={cancelTrip} onDeleteTrip={removeTrip} />
+                        <UpcomingList trips={upcoming} onMarkDone={markDone} onDeleteTrip={removeTrip} />
                     ) : null}
                     {tab === 'recurring' ? (
                         <RecurringList trips={recurringTrips} onTogglePaused={togglePaused} onDelete={removeRecurring} />

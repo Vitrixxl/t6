@@ -2,6 +2,12 @@
 
 Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBILITY'.pdf`
 
+### Recette des trajets et évolution
+
+- [x] `seed:test` : compte réservé, 35 ponctuels, 3 récurrences, dates glissantes et données fictives explicites ; réinitialisation atomique isolée testée.
+- [x] Vue d’évolution sur huit semaines, quatre indicateurs, moyenne des sept semaines terminées et tableau accessible ; conservation limitée annoncée.
+- [x] Confirmation des annulations et rétablissement d’un sens récurrent par DELETE de son exception ; isolation et idempotence testées.
+
 ## 1. Cadrage et livrables
 
 - [x] Identifier les objectifs client et besoins utilisateurs d'une métropole de 500 000 habitants.
@@ -215,3 +221,7 @@ Les estimations actuelles restent utilisées par l’interface. Détails :
 - [x] Revue locale organisée en parcours continu : fichiers et fonctions expliqués, données échangées, exemples concrets, moteur, compte, stockage, limites et outillage.
 - [x] Contrats HTTP et schéma SQLite conservés ; aucune migration ni nouvelle dépendance.
 - [x] Recette sur une base dédiée : planification 9/9, historique/annulations et hors ligne réussis ; guide HTML relu à 390 et 1280 px, chemins et ancres vérifiés.
+
+La barre mobile affiche cinq libellés sous les icônes, sur un fond opaque, avec
+des cibles tactiles de 60 px de haut. L’attribution cartographique reste au-dessus.
+La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.

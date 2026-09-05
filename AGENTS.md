@@ -239,6 +239,15 @@ de trajets matérialisés. Une annulation exclut le passage de tous les agrégat
 un ponctuel, même fait, conserve sa trace et retire son historique carbone
 dans une seule transaction. Vérifier ce parcours avec `bun run e2e:trips`.
 
+**Recette et évolution.** `bun run seed:test` réinitialise seulement le compte
+réservé `test@urbanflow.local`, avec des données fictives datées relativement
+au jour d’exécution. Aucun peuplement automatique au démarrage. Le suivi propose
+huit semaines civiles (fuseau appareil), dont la dernière incomplète, à partir
+des enregistrements carbone conservés et des passages récurrents échus. La limite
+de 50 ponctuels est annoncée ; le maximum affiché reste celui du profil actuel.
+Une annulation se confirme. Chaque sens récurrent annulé peut être rétabli par
+suppression de son exception ; les autres dates et sens restent intacts.
+
 **Jamais de géométrie approchée.** Un tracé faux se lit comme un itinéraire
 réel et envoie l'utilisateur ailleurs ; un tracé absent se voit. Tant qu'une
 source réelle n'a pas répondu, un segment n'a pas de tracé, la carte n'affiche

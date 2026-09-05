@@ -31,6 +31,7 @@ export const mutationKeys = {
     plannedCancel: ['account', 'planned-cancel'],
     plannedComplete: ['account', 'planned-complete'],
     plannedDelete: ['account', 'planned-delete'],
+    recurringRestore: ['account', 'recurring-restore'],
     recurringCancel: ['account', 'recurring-cancel'],
     recurringSave: ['account', 'recurring-save'],
     recurringDelete: ['account', 'recurring-delete'],

@@ -1,12 +1,4 @@
-// Barre d'actions permanente de l'écran mobile.
-//
-// La carte est l'écran principal : rien ne la recouvre tant que l'utilisateur
-// ne le demande pas. Les actions vivent donc dans deux groupes ancres en bas,
-// dans la zone que le pouce atteint sans changer de prise sur le téléphone.
-//
-// Le regroupement suit la nature de l'action, pas l'ordre d'apparition : a
-// gauche ce qui appartient à l'utilisateur (son profil, ses trajets), à droite
-// ce qui agit sur la carte (se localiser, choisir les calques, regarder autour).
+// Barre mobile opaque : libellés visibles, cibles tactiles et contraste sur la carte.
 import { useState } from 'react';
 import { useSetAtom } from 'jotai';
 import { Layers, LocateFixed, Radar, Route, UserRound } from 'lucide-react';
@@ -19,12 +11,14 @@ import { MobileHomePanel } from './MobileHomePanel';
 
 function ActionButton({
     label,
+    caption,
     badge,
     tourTarget,
     onClick,
     children,
 }: {
     label: string;
+    caption: string;
     badge?: number;
     tourTarget: string;
     onClick: () => void;
@@ -38,9 +32,10 @@ function ActionButton({
             data-tour={tourTarget}
             // Taille en pixels, pas en rem : la racine du document est à 14 px, une
             // valeur en rem donnerait 42 px et raterait la cible tactile de 44 px.
-            className="pointer-events-auto relative grid size-[52px] place-items-center rounded-2xl border border-white/80 bg-white/95 text-foreground shadow-float backdrop-blur-xl transition-transform active:scale-[0.94]"
+            className="relative flex min-h-[60px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-primary/20 bg-primary/5 px-1 text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:bg-primary/20"
         >
             {children}
+            <span className="text-[11px] font-semibold leading-tight">{caption}</span>
             {badge && badge > 0 ? (
                 <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground">
                     {Math.min(badge, 9)}
@@ -75,27 +70,23 @@ export function MobileActionRail({
 
     return (
         <>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-end justify-between px-3 pb-[calc(env(safe-area-inset-bottom)+0.85rem)]">
-                <div className="flex items-end gap-2">
-                    <ActionButton label="Ouvrir le profil" tourTarget="mobile-profile" onClick={onOpenProfile}>
-                        <UserRound className="size-5" aria-hidden="true" />
-                    </ActionButton>
-                    <ActionButton label="Trajets enregistrés" badge={savedCount} tourTarget="mobile-trips" onClick={onOpenSavedTrips}>
-                        <Route className="size-5" aria-hidden="true" />
-                    </ActionButton>
-                </div>
+            <div role="group" aria-label="Actions de la carte" className="absolute inset-x-2 bottom-[calc(env(safe-area-inset-bottom)+8px)] z-40 grid grid-cols-5 gap-1 rounded-2xl border border-primary/25 bg-background p-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+                <ActionButton label="Ouvrir le profil" caption="Profil" tourTarget="mobile-profile" onClick={onOpenProfile}>
+                    <UserRound className="size-5" aria-hidden="true" />
+                </ActionButton>
+                <ActionButton label="Trajets enregistrés" caption="Trajets" badge={savedCount} tourTarget="mobile-trips" onClick={onOpenSavedTrips}>
+                    <Route className="size-5" aria-hidden="true" />
+                </ActionButton>
 
-                <div className="flex items-end gap-2">
-                    <ActionButton label="Ma position" tourTarget="mobile-location" onClick={onLocate}>
-                        <LocateFixed className="size-5" aria-hidden="true" />
-                    </ActionButton>
-                    <ActionButton label="Couches de la carte" tourTarget="mobile-layers" onClick={() => setLayersOpen(true)}>
-                        <Layers className="size-5" aria-hidden="true" />
-                    </ActionButton>
-                    <ActionButton label="Autour de moi" tourTarget="mobile-nearby" onClick={() => setNearbyOpen(true)}>
-                        <Radar className="size-5" aria-hidden="true" />
-                    </ActionButton>
-                </div>
+                <ActionButton label="Ma position" caption="Position" tourTarget="mobile-location" onClick={onLocate}>
+                    <LocateFixed className="size-5" aria-hidden="true" />
+                </ActionButton>
+                <ActionButton label="Couches de la carte" caption="Couches" tourTarget="mobile-layers" onClick={() => setLayersOpen(true)}>
+                    <Layers className="size-5" aria-hidden="true" />
+                </ActionButton>
+                <ActionButton label="Autour de moi" caption="Autour" tourTarget="mobile-nearby" onClick={() => setNearbyOpen(true)}>
+                    <Radar className="size-5" aria-hidden="true" />
+                </ActionButton>
             </div>
 
             <Drawer open={nearbyOpen} onOpenChange={setNearbyOpen}>

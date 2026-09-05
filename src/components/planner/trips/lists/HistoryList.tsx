@@ -1,17 +1,18 @@
 // Historique mixte : une annulation conserve la trace et corrige les compteurs.
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { PlannedTrip } from '../../../../types';
 import type { TripDirection } from '../../../../contracts';
 import type { RoutineHistoryDay, TripHistoryEntry } from '../../../../lib/trips/history';
 import { formatCarbonComparison } from '../../../../lib/carbon-comparison';
-import { useCancelRoutineDate, useCancelTrip, useMarkTripDone } from '../../../../queries';
+import { useCancelRoutineDate, useRestoreRoutinePassage, useMarkTripDone } from '../../../../queries';
+import { ConfirmDialog } from '../../../ui/confirm-dialog';
+import { CancelTripButton } from '../CancelTripButton';
 import { Button } from '../../../ui/button';
 import { EmptyState, OriginDestination } from '../atoms';
 import { formatScheduleLabel } from '../format';
 
 function OnceHistoryCard({ trip }: { trip: PlannedTrip }) {
-    const cancel = useCancelTrip();
     const markDone = useMarkTripDone();
     const cancelled = trip.status === 'cancelled';
     return (
@@ -28,9 +29,7 @@ function OnceHistoryCard({ trip }: { trip: PlannedTrip }) {
                     {trip.status === 'planned' ? (
                         <Button size="sm" onClick={() => markDone(trip)}><Check className="size-3.5" aria-hidden="true" />Fait</Button>
                     ) : null}
-                    <Button size="sm" variant="outline" onClick={() => cancel(trip)}>
-                        <X className="size-3.5" aria-hidden="true" />Annuler
-                    </Button>
+                    <CancelTripButton trip={trip} />
                 </div>
             ) : null}
         </li>
@@ -41,9 +40,6 @@ const DIRECTION_LABEL: Record<TripDirection, string> = { outbound: 'Aller', retu
 const DAY_FORMAT = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' });
 
 function RoutineHistoryCard({ day }: { day: RoutineHistoryDay }) {
-    const cancel = useCancelRoutineDate();
-    const remaining = day.passages.filter((passage) => !passage.cancelled).map((passage) => passage.direction);
-    const cancelDirections = (directions: TripDirection[]) => cancel({ id: day.routine.id, date: day.date, directions });
     return (
         <li className="grid min-w-0 grid-cols-1 gap-2 rounded-xl border border-border/70 bg-background p-3">
             <p className="text-xs text-muted-foreground">Récurrent · {DAY_FORMAT.format(new Date(`${day.date}T12:00:00Z`))}</p>
@@ -59,19 +55,34 @@ function RoutineHistoryCard({ day }: { day: RoutineHistoryDay }) {
                     </li>
                 ))}
             </ul>
-            {remaining.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                    {remaining.map((direction) => (
-                        <Button key={direction} size="sm" variant="outline" onClick={() => cancelDirections([direction])}>
-                            Annuler {direction === 'outbound' ? 'l’aller' : 'le retour'}
-                        </Button>
-                    ))}
-                    {remaining.length === 2 ? (
-                        <Button size="sm" variant="outline" onClick={() => cancelDirections(remaining)}>Annuler les deux</Button>
-                    ) : null}
-                </div>
-            ) : null}
+            <RoutineHistoryActions day={day} />
         </li>
+    );
+}
+
+function RoutineHistoryActions({ day }: { day: RoutineHistoryDay }) {
+    const cancel = useCancelRoutineDate();
+    const restore = useRestoreRoutinePassage();
+    const [pending, setPending] = useState<TripDirection[]>([]);
+    const remaining = day.passages.filter((passage) => !passage.cancelled).map((passage) => passage.direction);
+    const cancelled = day.passages.filter((passage) => passage.cancelled);
+    const selection = pending.map((direction) => DIRECTION_LABEL[direction].toLowerCase()).join(' et ');
+    return (
+        <div className="flex flex-wrap gap-2">
+            {remaining.map((direction) => <Button key={direction} size="sm" variant="outline" onClick={() => setPending([direction])}>
+                Annuler {direction === 'outbound' ? 'l’aller' : 'le retour'}
+            </Button>)}
+            {remaining.length === 2 ? <Button size="sm" variant="outline" onClick={() => setPending(remaining)}>Annuler les deux</Button> : null}
+            {cancelled.map(({ direction }) => <Button key={direction} size="sm" variant="outline"
+                onClick={() => restore({ id: day.routine.id, date: day.date, direction })}>
+                Rétablir {direction === 'outbound' ? 'l’aller' : 'le retour'}
+            </Button>)}
+            {pending.length > 0 ? <ConfirmDialog open onOpenChange={(open) => { if (!open) setPending([]); }}
+                title="Annuler ces passages ?"
+                description={day.routine.label + " — " + DAY_FORMAT.format(new Date(day.date + "T12:00:00Z")) + " : " + selection + ". Ces passages seront exclus du bilan. Tu pourras les rétablir depuis cet historique."}
+                confirmLabel="Confirmer l’annulation" destructive
+                onConfirm={() => cancel({ id: day.routine.id, date: day.date, directions: pending })} /> : null}
+        </div>
     );
 }
 

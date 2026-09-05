@@ -112,3 +112,21 @@ describe('annulation d’un trajet ponctuel terminé', () => {
         expect(state.tripRecords.map((record) => record.id)).toEqual(['trip:keep']);
     });
 });
+
+it('rétablit un seul sens, de façon idempotente et isolée par compte', async () => {
+    const cookie = await api.register();
+    await createRoutine(cookie);
+    await api.putResource(cookie, cancellation, { directions: ['outbound', 'return'] });
+    await api.putResource(cookie, `${path}/cancellations/2026-08-31`, { directions: ['outbound'] });
+    const other = await api.register('autre@lyon.fr');
+    expect((await api.call(`${cancellation}/outbound`, { method: 'DELETE', cookie: other })).status).toBe(404);
+    expect((await api.call(`${cancellation}/outbound`, { method: 'DELETE' })).status).toBe(401);
+    expect((await api.call(`${cancellation}/bad`, { method: 'DELETE', cookie })).status).toBe(422);
+    for (let repeat = 0; repeat < 2; repeat += 1) {
+        const response = await api.call(`${cancellation}/outbound`, { method: 'DELETE', cookie });
+        expect(response.status).toBe(200);
+        expect(recurringTrip.parse(await response.json()).cancelledPassages).toEqual([
+            { date: '2026-09-01', direction: 'return' }, { date: '2026-08-31', direction: 'outbound' },
+        ]);
+    }
+});

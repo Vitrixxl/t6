@@ -237,7 +237,7 @@ body {
    la carte remontent au-dessus d'elle plutôt que de passer dessous. */
 @media (max-width: 1023px) {
   .maplibregl-ctrl-bottom-right {
-    bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
+    bottom: calc(env(safe-area-inset-bottom) + 86px);
   }
 }
 

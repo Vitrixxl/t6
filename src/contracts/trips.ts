@@ -127,3 +127,4 @@ export type CompletedPlannedTrip = z.infer<typeof completedPlannedTrip>;
 
 /** Une annulation désigne une journée de la routine, jamais sa collection d’exceptions. */
 export const recurringCancellationParams = resourceIdParams.extend({ date: z.iso.date() });
+export const recurringRestorationParams = recurringCancellationParams.extend({ direction: tripDirection });

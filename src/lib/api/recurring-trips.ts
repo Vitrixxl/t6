@@ -15,6 +15,10 @@ export async function deleteRecurringTrip(id: string): Promise<void> {
     await treatyRequest(api.trips.recurring({ id }).delete());
 }
 
+export function restoreRecurringPassage(id: string, date: string, direction: TripDirection): Promise<RecurringTrip> {
+    return treatyRequest(api.trips.recurring({ id }).cancellations({ date })({ direction }).delete());
+}
+
 export function cancelRecurringDate(id: string, date: string, directions: TripDirection[]): Promise<RecurringTrip> {
     return treatyRequest(api.trips.recurring({ id }).cancellations({ date }).put({ directions }));
 }

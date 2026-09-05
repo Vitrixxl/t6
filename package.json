@@ -26,7 +26,9 @@
     "import:gtfs": "bun scripts/import-timetable.ts",
     "generate:lignes": "python3 scripts/fetch_tcl_lines.py",
     "generate:icons": ".venv/bin/python scripts/generate_icons.py",
-    "generate:pdf": "bun scripts/build-metrics.mjs && .venv/bin/python scripts/generate_dossier.py"
+    "generate:pdf": "bun scripts/build-metrics.mjs && .venv/bin/python scripts/generate_dossier.py",
+    "seed:test": "bun server/src/seed-test.ts",
+    "e2e:evolution": "bun scripts/e2e-evolution.mjs"
   },
   "dependencies": {
     "@elysia/eden": "^1.4.10",
