@@ -18,7 +18,7 @@ prévue est passée et qui ne sont pas annulés, avec leur historique carbone da
 l'historique. Les envois sont sérialisés. Pas de cache local persistant : les vues vivent dans le cache React Query
 (`src/queries/`) le temps de la session, et une écriture refusée est signalée à l'utilisateur, la vue concernée
 étant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
-socle et des flux transport par le service worker, états de chargement explicites, erreurs réseau propres.
+socle par le service worker ; cellules TCL en cache mémoire, états de chargement explicites, erreurs réseau propres.
 Un bandeau commun aux écrans de chargement, de connexion et de carte signale la
 perte de connexion détectée par le navigateur, sur mobile et bureau. Il précise
 qu’Internet est nécessaire pour rechercher des itinéraires et enregistrer des
@@ -102,7 +102,7 @@ commande pas la création d'un module.
 | Dossier | Rôle |
 | --- | --- |
 | `lib/planner/` | moteur d'itinéraires : générateurs dans `options/` (rabattements vélo/trottinette réunis), scoring et règles |
-| `lib/transport/` | intégration open data : `geocoding/`, `routing/`, `feeds/` |
+| `lib/transport/` | intégration open data : `geocoding/`, `feeds/`, cellules cartographiques |
 | `contracts/` | schémas zod partagés avec l'API : validation, types derives, OpenAPI |
 | `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une commande par ressource du compte |
 | `queries/` | ressources servies par l'API dans le cache React Query : une ressource par fichier, sa requête et ses actions |
@@ -121,7 +121,7 @@ et choix de conception. Le parcours se lit en continu, sans découpage horaire. 
 reste ignoré par Git, comme les autres fichiers de soutenance.
 
 Le chargement du transport se lit dans `src/lib/transport/feeds/index.ts` :
-`loadTransportNetwork()` appelle les flux partagés et `fetchJson(url)`, qui utilise
+`loadTransportNetwork(feed)` appelle les flux partagés et `fetchJson(url)`, qui utilise
 directement `fetch`. Les tests simulent le réseau sans ajouter de paramètre aux
 fonctions de l’application.
 
@@ -134,7 +134,8 @@ fonctions de l’application.
 3. Trajet : `usePlanSubmission` → `src/queries/planned-trips.ts` →
    `src/lib/api/planned-trips.ts` → route → service → dépôt du même nom.
    Lire ensuite `completeDueTrips` et sa transaction trajet + historique carbone.
-4. Calcul : `src/queries/routes.ts` → `prepareRoutedAccessPlan` → `planRoutes`
+4. Calcul : `src/queries/routes.ts` → `POST /api/transport/journeys`
+   → `server/src/services/planning.ts` → `prepareRoutedAccessPlan` → `planRoutes`
    → `measureRoutes` → `applyCarbonReference`.
 
 **Comprendre le fonctionnement des écrans et les garanties** :
@@ -213,28 +214,61 @@ Recette : `bun run e2e:trips` pour les confirmations et rétablissements ;
 | --- | --- | --- |
 | Géocodage adresses | `api-adresse.data.gouv.fr` (BAN) | live navigateur |
 | Géocodage lieux/quartiers | Photon (`photon.komoot.io`, OSM) | live navigateur |
-| Routage | OSRM (foot/bike ; trottinette sur bike, voiture invisible sur driving), auto-hébergeable | relais API `/api/route` et `/api/route-matrix` (cache SQLite partagé) |
-| Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | live navigateur |
-| Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | live navigateur |
-| Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | intégré au build (`bun run generate:gtfs`) |
-| Desserte et tracés des lignes | WFS SYTRAL `data.grandlyon.com` (ODbL, sans jeton) | intégré au build (`bun run generate:lignes`) |
-| Météo | Open-Meteo | live navigateur |
+| Routage | OSRM (foot/bike ; trottinette sur bike, voiture invisible sur driving), auto-hébergeable | service serveur appelé par `/api/transport/journeys`, cache SQLite partagé |
+| Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | serveur, chargement mutualisé 60 s |
+| Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | serveur, chargement mutualisé 60 s |
+| Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | artefact normalisé (`bun run generate:gtfs`), import SQLite au démarrage |
+| Desserte et tracés des lignes | WFS SYTRAL `data.grandlyon.com` (ODbL, sans jeton) | artefact normalisé (`bun run generate:lignes`), import SQLite au démarrage |
+| Météo | Open-Meteo | serveur, contexte actualisé toutes les 60 s |
 
 Les disponibilités Vélo’v et Dott proviennent uniquement des flux en direct.
 Si le groupe GBFS échoue, un bandeau annonce l’indisponibilité : aucun fichier
 de secours, aucune station partagée ni option vélo/trottinette. La marche et les
 transports publics restent calculables. La météo conserve son repli local.
 
+## Chargement géographique du réseau TCL
+
+`data/transport/gtfs-feed.json` est un artefact d’import réservé au serveur.
+Au démarrage, son empreinte SHA-256 est comparée à la version SQLite ; une
+nouvelle version importe quais, lignes et fréquences dans une seule transaction.
+L’index R*Tree des quais suit les insertions, modifications et suppressions par
+triggers. Les migrations sont dans `server/drizzle/` ; aucune extension native
+supplémentaire n’est nécessaire dans Bun.
+
+La carte demande `GET /api/transport/stops?x=…&y=…&version=…` pour les cellules
+visibles de 0,05 degré, après 180 ms sans mouvement. Chaque cellule fournit tous
+ses quais, sans tracés de lignes. React Query réutilise les cellules communes,
+les garde 30 minutes après leur dernière utilisation et les renouvelle si la
+version du réseau change. Sous le zoom 11, un message invite à zoomer et aucun
+quai TCL n’est demandé. Masquer la couche suspend aussi ces requêtes.
+
+`GET /api/transport/nearby-stops` sert le vrai compte dans le rayon demandé et
+les quatre quais les plus proches : ce parcours reste indépendant du cadrage.
+`GET /api/transport/context` ne contient ni quais ni tracés TCL : seulement les
+métadonnées, le nombre total d’arrêts, la météo et les disponibilités partagées.
+Les appels GBFS et météo sont mutualisés côté serveur pendant 60 secondes ;
+une erreur GBFS après expiration produit `null`, sans réutiliser un ancien flux.
+Le contexte est demandé après la connexion, puis relu chaque minute lorsque l’application est active.
+
+Les six familles d’itinéraires restent calculées côté serveur sur tout le réseau.
+Seules les options mesurées et leurs tracés sont envoyés au client. Les horaires
+TCL restent estimés : ce changement n’active pas le chantier horaire préparatoire.
+Les anciennes routes `/api/route` et `/api/route-matrix` n’ont plus d’appelant et
+sont retirées. `bun run e2e:transport` vérifie le volume TCL initial, l’absence de
+fichier global, le cache au déplacement, le zoom régional et la reprise après
+une panne. Les gains mesurés portent sur les transferts TCL, pas sur une mesure
+d’énergie ou l’ensemble du trafic (fond OSM et GBFS restent distincts).
+
 ## Calcul d'itinéraires
 
-Le navigateur n'appelle jamais le calculateur directement. Une recherche se déroule en quatre temps :
+Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur utilise le réseau complet, indépendamment de la carte visible :
 
 1. Haversine ne garde que huit stations ou arrêts proches, afin de borner le coût.
-2. Deux matrices piétonnes en étoile via `POST /api/route-matrix` mesurent les accès depuis le départ et vers l’arrivée, sans croiser les stations entre elles ; le moteur choisit donc l'accès le plus rapide à pied ou à vélo, pas le point géométriquement le plus proche. En parallèle, une matrice voiture `1 x 1` mesure la référence carbone entre les deux extrémités.
-3. Le moteur assemble les options, puis `GET /api/route` mesure et trace chaque segment de voirie avant affichage.
+2. Deux matrices piétonnes en étoile dans le service serveur OSRM mesurent les accès depuis le départ et vers l’arrivée, sans croiser les stations entre elles ; le moteur choisit donc l'accès le plus rapide à pied ou à vélo, pas le point géométriquement le plus proche. En parallèle, une matrice voiture `1 x 1` mesure la référence carbone entre les deux extrémités.
+3. Le moteur assemble les options, puis le service OSRM mesure et trace chaque segment de voirie avant affichage.
 4. Quand toutes les options portent leurs mesures réelles, la même référence voiture leur est appliquée, puis elles sont affichées de la plus rapide à la plus lente.
 
-Les deux routes utilisent le même cache SQLite partagé entre tous les clients. Une mesure de matrice peut réutiliser un tracé déjà connu, et inversement le cache évite de redemander les mêmes couples de points à OSRM. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopie dans le front.
+Les mesures de matrice et les géométries utilisent le même cache SQLite partagé entre tous les clients. Une mesure de matrice peut réutiliser un tracé déjà connu, et inversement le cache évite de redemander les mêmes couples de points à OSRM. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopie dans le front.
 
 Une correspondance entre deux lignes apparaît comme une étape piétonne de quatre minutes. Le temps est explicite, mais aucun trait intérieur n'est inventé : le GTFS publie la desserte et les tracés des lignes, pas les cheminements entre quais.
 
@@ -397,7 +431,7 @@ suffit. La surface spécifique à Bun se limite à trois fichiers (`db/index.ts`
 `config/index.ts`) : le portage vers Node se ferait via `@elysiajs/node`, le driver `drizzle-orm/better-sqlite3`
 (les dépôts ne changent pas) et scrypt.
 
-Le feed `public/data/gtfs-feed.json` est déjà versionné : `GTFS_SOURCE_URL` ne sert qu'à le régénérer.
+Le feed `data/transport/gtfs-feed.json` est déjà versionné : `GTFS_SOURCE_URL` ne sert qu'à le régénérer.
 Chemin Chromium des scripts configurable via `CHROME_BIN`.
 
 ## Sécurité / RGPD

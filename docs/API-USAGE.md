@@ -1,6 +1,6 @@
 # Endpoints conservés et leurs appelants
 
-Audit du 5 septembre 2026 : 28 couples méthode/chemin, dont les deux ressources
+Audit du 5 septembre 2026 : 30 couples méthode/chemin, dont les deux ressources
 HTML/JSON de documentation. Une route appelée seulement par ses propres tests
 n’est pas considérée comme utilisée par l’application.
 
@@ -19,9 +19,16 @@ n’est pas considérée comme utilisée par l’application.
 | `PUT /api/trips/recurring/:id/cancellations/:date`, `DELETE /api/trips/recurring/:id/cancellations/:date/:direction` | Même client : exceptions d’annulation et rétablissement d’un sens. |
 | `GET /api/trips/history`, `DELETE /api/trips/history` | `src/lib/api/trip-history.ts` et `src/queries/trip-records.ts` : lecture et effacement explicite de l’historique carbone. |
 | `GET /api/saved-routes`, `PUT /api/saved-routes/:id`, `DELETE /api/saved-routes/:id` | `src/lib/api/saved-routes.ts` et sa requête : itinéraires enregistrés. |
-| `GET /api/route`, `POST /api/route-matrix` | `src/lib/transport/routing/osrm.ts` : géométries et matrices mesurées, via les moteurs locaux du serveur. |
+| `GET /api/transport/context` | `src/queries/transport.ts` : métadonnées, disponibilités GBFS et météo, sans réseau TCL complet. |
+| `GET /api/transport/stops` | `src/queries/map-stops.ts` : tous les quais des cellules visibles de la carte, en cache par version. |
+| `GET /api/transport/nearby-stops` | `src/queries/nearby-stops.ts` : compte réel et quatre quais les plus proches dans le rayon choisi. |
+| `POST /api/transport/journeys` | `src/queries/routes.ts` : calcul complet côté serveur, filtres de transport avant accès et mesure de toutes les options. |
 
 Supprimés :
+
+- `GET /api/route` et `POST /api/route-matrix` : les mesures sont appelées directement
+  par `server/src/services/planning.ts` ; aucun navigateur ne consomme plus ces routes.
+  Les tests du cache et des segments portent désormais sur les services serveur.
 
 - `GET /api/state` : aucun appel du client ; la connexion et la reprise de session
   rendent déjà cet état. Les tests lisent désormais la session ou les ressources
@@ -33,7 +40,7 @@ Supprimés :
   le service préparatoire restent isolés, sans endpoint publié ; leur suivi est
   dans `docs/PLAN-ATTENTE-GTFS.md`.
 
-`server/src/__tests__/platform.test.ts` vérifie que les trois anciennes URL
+`server/src/__tests__/platform.test.ts` vérifie que les cinq anciennes URL
 répondent 404 et sont absentes du schéma OpenAPI généré. Il n’y a aucun alias
 conservé pour les anciens tests.
 

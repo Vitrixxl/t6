@@ -1733,6 +1733,55 @@ L’inspection visuelle des captures reste un contrôle faible.
 
 **Test et niveau de verrouillage : automatisé.** Les deux nouveaux tests échouaient avec « Expected 404 / Received 200 » et la présence de `/*` dans le schéma. Ils passent après correction et vérifient aussi que les URL du client et la sonde API restent accessibles. Le contrôle HTTP et le rendu de la documentation sont ensuite rejoués sur Docker.
 
+### B61 — Le rechargement hors ligne bloquait ensuite l’ouverture de la carte
+
+**Symptôme observé.** Pendant `bun run e2e:offline`, après rechargement sans réseau,
+retour Internet et connexion réussie, l’écran restait sur « Chargement UrbanFlow —
+Serveur UrbanFlow injoignable ». Le scénario expirait en attendant la carte.
+
+**Cause racine.** React Query initialise son gestionnaire réseau à `true`.
+Après un chargement déjà hors ligne, la nouvelle lecture du contexte transport
+échouait avant de connaître la coupure ; l’événement online ne changeait pas cet
+état et ne reprenait donc pas immédiatement la lecture.
+
+**Correctif.** [Commit f183772](https://github.com/Vitrixxl/t6/commit/f1837721d7b202c920b4a074e5db03bf8dd54cef) (local, non poussé lors de cette validation) :
+initialiser `onlineManager` avec `navigator.onLine` avant de créer le client de
+requêtes. Les lectures commencent suspendues hors ligne, puis reprennent au
+retour de la connexion. Le contexte transport est demandé après authentification.
+
+**Où le montrer.** `src/main.tsx`, `src/queries/transport.ts`, `src/App.tsx` et
+`scripts/e2e-offline.mjs`.
+
+**Test et niveau de verrouillage : automatisé.** Scénario navigateur rouge avec
+expiration de l’attente et capture de l’écran bloqué, puis vert après correction.
+Le rejeu couvre connexion, carte, rechargement, retour réseau, trois largeurs et
+paysage, ainsi que l’indisponibilité GBFS. Une panne API ne devient pas une fausse
+coupure Internet. Aucun test n’active d’horaire GTFS fictif.
+
+### B62 — La barre de recherche recouvrait le bouton de reprise des quais
+
+**Symptôme observé.** Lors d’une panne des cellules TCL, « Réessayer » existait
+mais le clic échouait : Playwright signalait que le champ de destination
+interceptait les événements. Le message de zoom régional était également masqué.
+
+**Cause racine.** Le nouveau statut était positionné en haut à gauche de la carte,
+au même endroit que les contrôles de recherche superposés par la disposition.
+
+**Correctif.** [Commit f183772](https://github.com/Vitrixxl/t6/commit/f1837721d7b202c920b4a074e5db03bf8dd54cef) (local, non poussé lors de cette validation) :
+positionner le statut sous la recherche, avec des positions adaptées au mobile
+et au bureau. Les cellules échouées se relancent depuis leur bouton de reprise.
+
+**Où le montrer.** `src/components/map/UrbanMap.tsx`,
+`src/components/map/useMapStops.ts` et `scripts/e2e-transport-map.mjs`.
+
+**Test et niveau de verrouillage : automatisé pour le parcours bureau.**
+La recette échouait sur le clic intercepté ; elle passe après déplacement du
+statut. Elle interrompt réellement les réponses des cellules dans le navigateur,
+rétablit le réseau, clique sans forcer et attend la disparition de l’erreur.
+Elle vérifie aussi les nouvelles cellules lors d’un vrai déplacement dans le
+canvas, leur réutilisation au retour et l’absence de requêtes au zoom régional.
+Les positions sur les autres tailles restent une garantie visuelle plus faible.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire

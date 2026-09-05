@@ -82,7 +82,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Routage local : OSRM (profils foot/bike/driving ; trottinette sur bike, voiture uniquement comme référence invisible), matrice de choix des accès puis tracés et instructions traduites. Aucun recours à une API publique.
 - [x] GBFS live Vélo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
-- [x] GTFS statique réel TCL/SYTRAL (ODbL) intègre au build: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 5 366 entrées d’arrêts (stations rail et quais bus) et 204 tracés, dont 191 pour 92 lignes de bus régulières, avec desserte et tracé réel (métropole entière, rayon 16 km).
+- [x] GTFS statique réel TCL/SYTRAL (ODbL) normalisé puis importé dans SQLite au démarrage: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 5 366 entrées d’arrêts (stations rail et quais bus) et 204 tracés, dont 191 pour 92 lignes de bus régulières, avec desserte et tracé réel (métropole entière, rayon 16 km).
 - [x] Planificateur: trajets programmés à une date, routines récurrentes (aller-retour, pause/reprise) comptées automatiquement ; historique mixte avec annulation datée par sens, statuts fait/annulé des ponctuels, objectifs d'économie CO2 hebdomadaire et mensuel indépendants avec progression.
 - [x] Recherche géocodée double source (BAN adresses + Photon quartiers/gares/lieux), typée et bornée à la métropole (dept 69).
 - [x] Onboarding spotlight adapte à la disposition : 11 étapes desktop, 9 étapes mobile sur les contrôles réellement présents, auto à la première visite et relançable depuis le profil.
@@ -117,8 +117,8 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - F2 planificateur multimodal + géolocalisation temps réel: `src/lib/planner/`, `src/components/app/MobilityMapApp.tsx`, `src/components/app/hooks/useGeolocation.ts`.
 - Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, route sélectionnée, alternatives, position utilisateur, destination, arrêts GTFS et stations partagées.
 - UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `src/styles.css`.
-- APIs réelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM uniquement derrière `/api/route-matrix` et `/api/route`, avec cache SQLite partagé, profil driving de référence et aucune géométrie inventée.
-- F3 intégration transport: `src/lib/transport/feeds/`, `public/data/gtfs-feed.json`.
+- APIs réelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM appelé par le service serveur de `/api/transport/journeys`, avec cache SQLite partagé, profil driving de référence et aucune géométrie inventée.
+- F3 intégration transport: `src/lib/transport/feeds/`, `data/transport/gtfs-feed.json`.
 - Option carbone: `src/lib/carbon.ts`, `src/components/planner/trips/TripGoalsCard.tsx`, `src/components/profile/ProfilePanels.tsx` (objectifs hebdomadaire et mensuel indépendants).
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectée).
@@ -155,7 +155,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] API découpée par responsabilité : `config/`, `db/`, `repositories/`, `services/`, `plugins/`, `routes/`, contrats zod dans `src/contracts/` ; un fichier garde une seule raison de changer, sans seuil de lignes artificiel.
 - [x] Module trajets eclate : 955 lignes -> 11 fichiers (hub, quatre listes, formulaire, objectifs, briques, formats).
 - [x] Moteur d’itinéraires : générateurs cohérents dans `options/` ; vélo + transport et trottinette + transport partagent `feeder-transit.ts`, sans fichiers relais.
-- [x] Couche transport éclatée : 780 lignes -> 14 fichiers (`geocoding/`, `routing/`, `feeds/`), une source externe par fichier.
+- [x] Couche transport éclatée : 780 lignes -> 14 fichiers (`geocoding/`, `feeds/` ; routage dans les services serveur), une source externe par fichier.
 - [x] Module d'authentification : appels API, cache de session, normalisation du profil.
 - [x] Carte éclatée : cycle de vie dans `UrbanMap`, définitions dans `layers`, données GeoJSON, popups et marqueurs isoles.
 - [x] Écran principal separe : `MobilityMapApp` tient l'état et les actions ; `MobilityLayouts` porte uniquement les dispositions desktop/mobile.
@@ -240,4 +240,15 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 
 - [x] Avant push : `bun run ci`, identique au workflow GitHub, avec trois OSRM dédiés sur extrait réel versionné, base vide, disponibilité contrôlée, audit et trois recettes navigateur bloquantes.
 
-- [x] Surface API auditée : trois GET non consommés retirés, 28 méthodes/chemins conservés avec leurs appelants dans `docs/API-USAGE.md` ; absence vérifiée dans OpenAPI et en HTTP.
+- [x] Surface API auditée : trois GET non consommés retirés, 30 méthodes/chemins conservés avec leurs appelants dans `docs/API-USAGE.md` ; absence vérifiée dans OpenAPI et en HTTP.
+
+## Réseau TCL chargé par zone
+
+- [x] Artefact TCL retiré de `public/` et du service worker ; import serveur versionné et transactionnel.
+- [x] Quais dans SQLite avec index R*Tree, cellules de 0,05 degré et limites exactes sans doublon aux frontières.
+- [x] Carte : cellules visibles seulement, cache réutilisé, requêtes après mouvement, aucune requête sous le zoom 11 ou couche masquée.
+- [x] Calcul complet côté serveur : six familles, filtres avant accès et correspondances, traces et référence voiture mesurées.
+- [x] Panne des cellules explicite et bouton Réessayer ; Autour de moi conserve son vrai compte, indépendant de la carte.
+- [x] Contrats zod, OpenAPI et Eden partagent les requêtes et réponses ; les anciennes routes de matrice et géométrie sont retirées.
+- [x] GBFS et météo mutualisés 60 s côté serveur ; aucun repli sur des disponibilités expirées en cas de panne.
+- [x] Recette dédiée `bun run e2e:transport` intégrée à `bun run ci` ; comparaison des octets TCL, sans revendication de gain énergétique non mesuré.

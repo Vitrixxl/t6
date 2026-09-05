@@ -169,7 +169,7 @@ base `:memory:` des tests.
 
 **Client** (`src/`) : `lib/planner/` (générateurs dans `options/`, rabattements vélo et
 trottinette réunis dans `feeder-transit.ts`),
-`lib/transport/` (`geocoding/`, `routing/`, `feeds/`), `lib/api/` (client HTTP,
+`lib/transport/` (`geocoding/`, `feeds/`, cellules cartographiques), `lib/api/` (client HTTP,
 authentification, une commande par ressource du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa
 requête et ses actions), `state/` (l'état d'écran partagé entre modules, en
@@ -368,4 +368,26 @@ Un échec se corrige avant de considérer la livraison terminée.
 **Surface API.** Ne pas réintroduire GET /api/state : la session rend déjà cet
 état initial et chaque ressource possède son GET. Les anciens endpoints horaires
 restent absents tant qu’aucun parcours client ne les consomme. Les appelants des
-28 méthodes/chemins conservés sont documentés dans `docs/API-USAGE.md`.
+30 méthodes/chemins conservés sont documentés dans `docs/API-USAGE.md`.
+
+
+**Transport et écoconception.** Le réseau TCL normalisé vit dans
+`data/transport/gtfs-feed.json`, jamais dans `public/` ni le service worker.
+`importTransportNetwork` le valide et l’importe en transaction SQLite lorsque
+son empreinte change ; le dépôt transport porte les requêtes et l’index R*Tree.
+La carte charge uniquement les cellules visibles par `GET /api/transport/stops`,
+après le mouvement, avec cache React Query par cellule et version. Sous le zoom
+11, demander de zoomer sans télécharger les quais. Ne pas confondre le nombre
+total d’arrêts du contexte et le sous-ensemble affiché. `nearby-stops` conserve
+le vrai compte du rayon et ses quatre résultats les plus proches.
+`POST /api/transport/journeys` calcule toutes les options côté serveur sur le
+réseau complet : le cadrage ne doit jamais limiter une destination ou une
+correspondance. Les anciennes routes `/api/route` et `/api/route-matrix` sont
+retirées ; le service OSRM et son cache restent internes. Les réponses d’options
+sont validées dans `src/contracts/planning.ts`, les flux et ressources de carte
+dans `src/contracts/transport.ts`. GBFS et météo sont mutualisés côté serveur
+pendant 60 s ; le client relit le contexte chaque minute. Une panne après
+expiration n’autorise aucune réutilisation d’un ancien flux GBFS.
+Rejouer `bun run e2e:transport`, la planification et le hors-ligne après une
+modification de ce parcours ; annoncer les octets mesurés, pas une économie
+d’énergie supposée. Le moteur horaire préparatoire reste non activé.
