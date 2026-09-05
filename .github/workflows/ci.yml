@@ -1,16 +1,9 @@
 name: CI
 
-# Chaîne de vérification bloquante. Elle execute `bun run check` — exactement la
-# commande utilisée en local, pas une variante qui pourrait diverger — puis les
-# deux contrôles qui exigent un navigateur et un serveur.
-#
-# Un seul serveur porte l'API et le client construit : il n'y à plus de serveur
-# de développement ni de relais a demarrer. Toute la chaîne tient sous Bun.
-#
-# L'audit et le scénario de bout en bout dépendent de services tiers (géocodage
-# BAN, calculateur OSRM), ce qui les rend sensibles à une panne externe — limite
-# connue, consignee en O6. Ils restent bloquants malgre tout : un contrôle qu'on
-# autorise a échouer ne contrôle rien.
+# Une seule recette, exécutée à l’identique avant push et sur GitHub.
+# Elle prépare ses trois moteurs OSRM à partir d’un extrait OSM versionné,
+# vérifie leur disponibilité et utilise une base SQLite neuve.
+# BAN, GBFS, météo, tuiles et CDN Scalar restent des services externes.
 on:
   push:
     branches: [main]
@@ -21,9 +14,7 @@ jobs:
   quality:
     name: Vérification complète
     runs-on: ubuntu-latest
-    env:
-      # Base ephemere : le runner est jetable, rien n'a besoin de survivre au job.
-      DATABASE_PATH: /tmp/urbanflow-ci.db
+    timeout-minutes: 15
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
@@ -31,19 +22,8 @@ jobs:
       - name: Installer Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: '1.4.0'
 
-      - name: Installer les dépendances
-        run: bun install --frozen-lockfile
-
-      - name: Lint, typage, tests et build
-        run: bun run check
-
-      - name: Metriques du build (tailles gzip des artefacts)
-        run: bun run metrics:build
-
-      # Le chemin du navigateur dépend de l'image du runner. Le resoudre plutôt
-      # que de le coder en dur évite un échec opaque le jour où l'image change.
       - name: Localiser le navigateur
         run: |
           for candidate in google-chrome chromium chromium-browser; do
@@ -54,34 +34,18 @@ jobs:
               exit 0
             fi
           done
-          echo "Aucun navigateur trouve sur le runner." >&2
+          echo "Aucun navigateur trouvé sur le runner." >&2
           exit 1
 
-      - name: Demarrer le serveur et créer le compte de démonstration
-        run: |
-          bun run start &
-          for _ in $(seq 1 30); do
-            curl -sf http://127.0.0.1:4000/api/health > /dev/null && break
-            sleep 1
-          done
-          bun run seed:demo
+      - name: Recette complète (qualité, OSRM, accessibilité et navigateur)
+        run: bun run ci
 
-      - name: Audit accessibilité axe-core (WCAG 2.1 A/AA, bloquant)
-        run: bun run audit:a11y
-
-      - name: Scénario E2E planification (7 assertions bloquantes)
-        run: |
-          mkdir -p tmp/screenshots
-          bun run e2e
-
-      - name: Conserver les captures en cas d'échec
+      - name: Conserver les diagnostics en cas d’échec
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: captures-echec
-          path: tmp/screenshots/
+          name: diagnostics-echec
+          path: |
+            tmp/screenshots/
+            tmp/ci/*.log
           if-no-files-found: ignore
-
-      - name: Banc de performance (indicatif, non bloquant)
-        continue-on-error: true
-        run: bun run bench:perf

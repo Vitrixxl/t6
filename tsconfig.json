@@ -23,5 +23,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "scripts/build.ts", "scripts/dev.ts", "drizzle.config.ts"]
+  "include": ["src", "scripts/build.ts", "scripts/dev.ts", "scripts/ci.ts", "drizzle.config.ts"]
 }

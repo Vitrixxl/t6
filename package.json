@@ -30,7 +30,8 @@
     "seed:test": "bun server/src/seed-test.ts",
     "e2e:evolution": "bun scripts/e2e-evolution.mjs",
     "test:docker:seed": "bun scripts/test-docker-seed.ts",
-    "generate:bus": "python3 scripts/fetch_tcl_bus.py"
+    "generate:bus": "python3 scripts/fetch_tcl_bus.py",
+    "ci": "bun scripts/ci.ts"
   },
   "dependencies": {
     "@elysia/eden": "^1.4.10",

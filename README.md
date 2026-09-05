@@ -521,3 +521,27 @@ reste séparé et non branché au client ; ses contrats ne sont pas étendus par
 La documentation `/api/doc` utilise Scalar 1.67.0 et une politique CSP limitée à cette page.
 Le JSON `/api/doc/json` conserve `default-src 'none'`. Vérification navigateur :
 `bun scripts/e2e-api-doc.mjs`. Filtres et mobile : `bun scripts/e2e-mobile-transit.mjs`.
+
+## Vérifier avant de pousser
+
+`bun run ci` est la commande utilisée aussi par `.github/workflows/ci.yml`.
+Elle installe les dépendances avec le lockfile figé, lance `check` et les métriques,
+prépare puis démarre trois moteurs OSRM dédiés, crée une base SQLite vide et le
+compte de démonstration, puis exécute axe-core, la planification (9 assertions),
+les filtres TC mobiles et la documentation Scalar. Le banc de performance reste
+indicatif. Une erreur bloquante interrompt la recette ; les moteurs et le serveur
+sont arrêtés à la fin.
+
+Prérequis : Bun 1.4.0, Docker accessible et Chromium (`CHROME_BIN` si nécessaire).
+Le serveur de recette utilise le port 4101 ; `CI_API_PORT` permet de le changer.
+Un port déjà occupé est refusé pour ne jamais tester un autre serveur par erreur.
+La base et les index sont temporaires ; aucun compte ni moteur de développement
+ou de production n’est réutilisé. L’extrait routier OSM et sa provenance sont dans
+`scripts/fixtures/`. Les diagnostics sont dans `tmp/ci/*.log` et les captures
+dans `tmp/screenshots/`, conservés par GitHub en cas d’échec.
+
+La disponibilité de BAN, des flux GBFS, de la météo, des tuiles et du CDN Scalar
+reste externe : ce sont toujours les vrais appels. OSRM calcule localement sur
+l’extrait réel versionné ; aucun faux tracé ni service public de routage ne remplace
+un moteur manquant. Attendre une recette locale réussie avant `git push`, puis
+contrôler le résultat GitHub.

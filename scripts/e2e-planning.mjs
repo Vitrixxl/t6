@@ -219,10 +219,18 @@ if (!(await destButton.count())) {
 }
 await destButton.click();
 // Attendre la fin du calcul et du chargement des flux, sans délai arbitraire.
-await page.getByRole('button', { name: /^planifier$/i }).first().waitFor({
-    state: 'visible',
-    timeout: 30000,
-});
+try {
+    await page.getByRole('button', { name: /^planifier$/i }).first().waitFor({
+        state: 'visible',
+        timeout: 30000,
+    });
+} catch (error) {
+    console.log('ÉCHEC : aucun itinéraire planifiable après le calcul.');
+    console.log(await page.locator('body').innerText());
+    await page.screenshot({ path: 'tmp/screenshots/plan-fail-routing.png' });
+    await browser.close();
+    throw error;
+}
 log('destination définie, options calculées');
 
 // La destination choisie, la barre passe a deux champs et le départ doit

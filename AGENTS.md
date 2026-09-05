@@ -131,6 +131,7 @@ bun run dev          # serveur + reconstruction du client, un seul Ctrl+C
 bun run build        # construit le client dans dist/
 bun run start        # sert le build de production
 bun run check        # lint + typage + tests + build
+bun run ci           # recette complète identique à GitHub, moteurs OSRM isolés
 bun run test         # tests du client et de l'API (src/ et server/)
 bun run e2e          # scénario de planification (Playwright)
 bun run audit:a11y   # axe-core sur quatre écrans
@@ -356,3 +357,10 @@ uniquement si la famille sélectionnée contient transit, même si le filtre ne 
 aucun résultat. Choisir une option sans transit remet les types à Tous. Le réseau
 est filtré avant les accès et correspondances. `/api/doc` et `/api/doc/` ont une
 CSP propre à Scalar ; `/api/doc/json` conserve la politique JSON stricte.
+
+**Avant chaque push.** Exécuter `bun run ci` sur le code qui sera envoyé et
+attendre sa réussite. `bun run check` seul ne suffit pas : la recette prépare
+trois moteurs OSRM dédiés, une base vide, puis lance l’audit et les scénarios
+navigateur. Docker et Chromium sont nécessaires ; `CI_API_PORT` change le port
+local (4101 par défaut). Après le push, vérifier la conclusion du run GitHub.
+Un échec se corrige avant de considérer la livraison terminée.
