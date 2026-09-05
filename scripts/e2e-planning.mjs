@@ -276,8 +276,8 @@ await page.screenshot({ path: 'tmp/screenshots/plan-upcoming.png' });
 
 // La recette avance l’échéance du trajet créé ; seule la lecture serveur décide ensuite qu’il est passé.
 const syncStatus = await page.evaluate(async () => {
-    const state = await (await fetch('/api/state')).json();
-    const trip = state.plannedTrips.find((item) => item.status === 'planned');
+    const trips = await (await fetch('/api/trips/planned')).json();
+    const trip = trips.find((item) => item.status === 'planned');
     if (!trip) return 404;
     const { id, userId, ...body } = trip;
     void userId;
@@ -288,8 +288,8 @@ const syncStatus = await page.evaluate(async () => {
 });
 if (syncStatus !== 200) failures.push('Impossible de préparer l’échéance de recette');
 await page.waitForFunction(async () => {
-    const state = await (await fetch('/api/state')).json();
-    return state.plannedTrips.some((trip) => trip.status === 'done');
+    const trips = await (await fetch('/api/trips/planned')).json();
+    return trips.some((trip) => trip.status === 'done');
 }, undefined, { timeout: 10000 });
 await page.waitForFunction(() => {
     const match = /Fait \/ semaine\s*\n?\s*(\d+)/i.exec(globalThis.document.body.innerText);
@@ -297,12 +297,12 @@ await page.waitForFunction(() => {
 }, undefined, { timeout: 40000 });
 await page.screenshot({ path: 'tmp/screenshots/plan-done.png' });
 log('échéance passée : trajet comptabilisé automatiquement, sans clic Fait');
-const remote = await page.evaluate(() => fetch('/api/state').then((response) => response.json()));
-if (!remote.tripRecords?.length || !remote.plannedTrips?.length) failures.push('Le serveur ne conserve pas le trajet passé et son bilan');
+const recorded = await page.evaluate(() => fetch('/api/trips/history').then((response) => response.json()));
+if (!recorded.length) failures.push('Le serveur ne conserve pas le trajet passé et son bilan');
 log('réalisation et historique enregistrés à la date prévue');
 
 // 9. Déconnexion : la session doit être morte pour le navigateur aussi, pas
-// seulement en base. Le service worker servait /api/state depuis son cache
+// seulement en base. Le service worker servait une réponse API depuis son cache
 // après la déconnexion, et pouvait ressusciter la session d'un compte
 // précédent au rechargement.
 await page.keyboard.press('Escape');
@@ -317,9 +317,9 @@ if ((await logoutResponse).status() !== 200) {
     failures.push('la requête de déconnexion echoue');
 }
 await page.waitForTimeout(300);
-const stateAfterLogout = await page.evaluate(() => fetch('/api/state').then((response) => response.status));
-if (stateAfterLogout !== 401) {
-    failures.push(`après déconnexion, /api/state répond encore ${stateAfterLogout} au navigateur`);
+const tripsAfterLogout = await page.evaluate(() => fetch('/api/trips/planned').then((response) => response.status));
+if (tripsAfterLogout !== 401) {
+    failures.push(`après déconnexion, /api/trips/planned répond encore ${tripsAfterLogout} au navigateur`);
 }
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(1500);

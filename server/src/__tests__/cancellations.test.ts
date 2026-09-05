@@ -1,6 +1,6 @@
 // Les annulations sont rejouables, isolées par compte et persistées par l’API.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { recurringTrip, plannedTrip, accountState } from '../../../src/contracts/index.ts';
+import { recurringTrip, plannedTrip, session } from '../../../src/contracts/index.ts';
 import { cancelRecurringDate } from '../services/recurring-trips.ts';
 import { createRepositories } from '../repositories/index.ts';
 import { createTestApi, PLANNED_TRIP, TRIP_SHAPE, type TestApi } from './helpers.ts';
@@ -32,7 +32,7 @@ describe('annulations de passages récurrents', () => {
         for (const directions of [['outbound'], ['outbound'], ['return']]) {
             expect((await api.putResource(cookie, cancellation, { directions })).status).toBe(200);
         }
-        const state = accountState.parse(await (await api.call('/api/state', { cookie })).json());
+        const state = session.parse(await (await api.call('/api/auth/session', { cookie })).json()).state;
         expect(state.recurringTrips[0]?.cancelledPassages).toEqual([
             { date: '2026-09-01', direction: 'outbound' }, { date: '2026-09-01', direction: 'return' },
         ]);
@@ -88,14 +88,14 @@ describe('annulation d’un trajet ponctuel terminé', () => {
     it('conserve le trajet annulé et retire son historique carbone, même au rejeu', async () => {
         const cookie = await api.register();
         await api.putResource(cookie, '/api/trips/planned/once', PLANNED_TRIP);
-        await api.call('/api/state', { cookie });
+        await api.call('/api/trips/planned', { cookie });
         expect((await api.putResource(cookie, '/api/trips/planned/once', PLANNED_TRIP)).status).toBe(409);
         for (let repeat = 0; repeat < 2; repeat += 1) {
             const response = await api.call('/api/trips/planned/once/cancellation', { method: 'PUT', cookie });
             expect(response.status).toBe(200);
             expect(plannedTrip.parse(await response.json()).status).toBe('cancelled');
         }
-        const state = accountState.parse(await (await api.call('/api/state', { cookie })).json());
+        const state = session.parse(await (await api.call('/api/auth/session', { cookie })).json()).state;
         expect(state.plannedTrips).toHaveLength(1);
         expect(state.tripRecords).toHaveLength(0);
     });
@@ -105,10 +105,10 @@ describe('annulation d’un trajet ponctuel terminé', () => {
         const other = await api.register('voisin@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/once', PLANNED_TRIP);
         await api.putResource(cookie, '/api/trips/planned/keep', PLANNED_TRIP);
-        await api.call('/api/state', { cookie });
+        await api.call('/api/trips/planned', { cookie });
         expect((await api.call('/api/trips/planned/once/cancellation', { method: 'PUT', cookie: other })).status).toBe(404);
         await api.call('/api/trips/planned/once/cancellation', { method: 'PUT', cookie });
-        const state = accountState.parse(await (await api.call('/api/state', { cookie })).json());
+        const state = session.parse(await (await api.call('/api/auth/session', { cookie })).json()).state;
         expect(state.tripRecords.map((record) => record.id)).toEqual(['trip:keep']);
     });
 });

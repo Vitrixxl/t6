@@ -104,13 +104,13 @@ describe('connexion', () => {
 describe('session', () => {
     it('révoque la session côté serveur a la déconnexion', async () => {
         const cookie = await api.register('deco@lyon.fr');
-        expect((await api.call('/api/state', { cookie })).status).toBe(200);
+        expect((await api.call('/api/trips/planned', { cookie })).status).toBe(200);
 
         await api.call('/api/auth/logout', { method: 'POST', cookie });
 
         // Le jeton vole après coup ne vaut plus rien : la révocation est en base,
         // pas seulement dans le navigateur.
-        expect((await api.call('/api/state', { cookie })).status).toBe(401);
+        expect((await api.call('/api/trips/planned', { cookie })).status).toBe(401);
     });
 
     it('reprend la session portée par le cookie', async () => {
@@ -122,12 +122,12 @@ describe('session', () => {
     });
 
     it('refuse toute route protégée sans session', async () => {
-        for (const path of ['/api/state', '/api/me/export', '/api/auth/session']) {
+        for (const path of ['/api/trips/planned', '/api/me/export', '/api/auth/session']) {
             expect((await api.call(path)).status).toBe(401);
         }
     });
 
     it('refuse un jeton de session invente', async () => {
-        expect((await api.call('/api/state', { cookie: 'ufm_session=jeton-invente' })).status).toBe(401);
+        expect((await api.call('/api/trips/planned', { cookie: 'ufm_session=jeton-invente' })).status).toBe(401);
     });
 });

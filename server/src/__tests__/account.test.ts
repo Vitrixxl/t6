@@ -18,7 +18,7 @@ describe('RGPD', () => {
     it('exporte l’integralite des données du compte (art. 20)', async () => {
         const cookie = await api.register('export@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
-        await api.call('/api/state', { cookie });
+        await api.call('/api/trips/planned', { cookie });
 
         const response = await api.call('/api/me/export', { cookie });
         const body = await json<ExportBody>(response);
@@ -32,11 +32,11 @@ describe('RGPD', () => {
     it('efface le compte et toutes ses données liées (art. 17)', async () => {
         const cookie = await api.register('efface@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
-        await api.call('/api/state', { cookie });
+        await api.call('/api/trips/planned', { cookie });
 
         expect((await api.call('/api/me', { method: 'DELETE', cookie })).status).toBe(200);
 
-        expect((await api.call('/api/state', { cookie })).status).toBe(401);
+        expect((await api.call('/api/trips/planned', { cookie })).status).toBe(401);
         expect(
             (await api.call('/api/auth/login', { body: { email: 'efface@lyon.fr', password: PASSWORD } })).status,
         ).toBe(401);

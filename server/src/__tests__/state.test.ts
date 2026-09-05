@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { DEFAULT_PROFILE } from '../../../src/contracts/index.ts';
 import { users } from '../db/schema.ts';
-import { PLANNED_TRIP, TRIP_SHAPE, createTestApi, json, type AuthBody, type StateBody, type TestApi } from './helpers.ts';
+import { PLANNED_TRIP, TRIP_SHAPE, createTestApi, json, type AuthBody, type TestApi } from './helpers.ts';
 
 let api: TestApi;
 
@@ -31,7 +31,7 @@ const SAVED_ROUTE = {
     score: 82,
 };
 
-const readState = async (cookie: string) => json<StateBody>(await api.call('/api/state', { cookie }));
+const readState = async (cookie: string) => (await json<AuthBody>(await api.call('/api/auth/session', { cookie }))).state;
 
 describe('ressources du compte', () => {
     it('rejoue le PUT d’une ressource sans doublon', async () => {
@@ -122,8 +122,8 @@ describe('ressources du compte', () => {
         const cookie = await api.register('completion@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
 
-        const first = await api.call('/api/state', { cookie });
-        const replay = await api.call('/api/state', { cookie });
+        const first = await api.call('/api/trips/planned', { cookie });
+        const replay = await api.call('/api/trips/planned', { cookie });
 
         expect(first.status).toBe(200);
         expect(replay.status).toBe(200);
@@ -156,7 +156,7 @@ describe('ressources du compte', () => {
     it('efface l’historique uniquement par la commande explicite DELETE', async () => {
         const cookie = await api.register('historique@lyon.fr');
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
-        await api.call('/api/state', { cookie });
+        await api.call('/api/trips/planned', { cookie });
 
         expect((await api.call('/api/trips/history', { method: 'PUT', cookie, body: [] })).status).toBe(404);
         expect((await api.call('/api/trips/history', { method: 'DELETE', cookie })).status).toBe(200);

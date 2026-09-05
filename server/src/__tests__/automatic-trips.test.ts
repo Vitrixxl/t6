@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it } from 'bun:test';
 import { createTestApi, PLANNED_TRIP, type TestApi } from './helpers.ts';
-import { accountState, plannedTrip } from '../../../src/contracts/index.ts';
+import { session, plannedTrip } from '../../../src/contracts/index.ts';
 import { createRepositories } from '../repositories/index.ts';
 import { completeDueTrips } from '../services/planned-trips.ts';
 
@@ -13,7 +13,7 @@ it('compte seulement les ponctuels passés non annulés et date le carbone au d�
     await api.putResource(cookie, '/api/trips/planned/past', PLANNED_TRIP);
     await api.putResource(cookie, '/api/trips/planned/future', { ...PLANNED_TRIP, scheduledFor: '2099-01-01T08:00:00Z' });
     await api.putResource(cookie, '/api/trips/planned/cancelled', { ...PLANNED_TRIP, status: 'cancelled' });
-    const read = async () => accountState.parse(await (await api.call('/api/state', { cookie })).json());
+    const read = async () => session.parse(await (await api.call('/api/auth/session', { cookie })).json()).state;
     for (let repeat = 0; repeat < 2; repeat += 1) {
         const state = await read();
         expect(state.tripRecords).toHaveLength(1);
@@ -53,7 +53,7 @@ it('rétablit un ponctuel passé à sa date prévue, une seule fois, en préserv
         expect(response.status).toBe(200);
         expect(plannedTrip.parse(await response.json()).completedAt).toBe(PLANNED_TRIP.scheduledFor);
     }
-    const state = accountState.parse(await (await api.call('/api/state', { cookie })).json());
+    const state = session.parse(await (await api.call('/api/auth/session', { cookie })).json()).state;
     expect(state.tripRecords).toHaveLength(1);
     expect(state.tripRecords[0]?.createdAt).toBe(PLANNED_TRIP.scheduledFor);
 });
@@ -63,6 +63,6 @@ it('rétablit un ponctuel futur sans le compter dans le carbone', async () => {
     await api.putResource(cookie, '/api/trips/planned/restore', { ...PLANNED_TRIP, scheduledFor: '2099-01-01T08:00:00Z', status: 'cancelled' });
     const response = await api.call('/api/trips/planned/restore/cancellation', { method: 'DELETE', cookie });
     expect(plannedTrip.parse(await response.json()).status).toBe('planned');
-    const state = accountState.parse(await (await api.call('/api/state', { cookie })).json());
+    const state = session.parse(await (await api.call('/api/auth/session', { cookie })).json()).state;
     expect(state.tripRecords).toHaveLength(0);
 });

@@ -24,7 +24,7 @@ it('publie une documentation OpenAPI decrivant les routes', async () => {
 
     expect(spec.openapi).toStartWith('3.');
     expect(Object.keys(spec.paths)).toContain('/api/auth/login');
-    expect(Object.keys(spec.paths)).toContain('/api/state');
+    expect(Object.keys(spec.paths)).toContain('/api/auth/session');
     expect(Object.keys(spec.paths)).toContain('/api/trips/planned');
     expect(Object.keys(spec.paths)).toContain('/api/trips/planned/{id}');
     expect(Object.keys(spec.paths)).not.toContain('/api/trips/planned/{id}/completion');
@@ -64,5 +64,15 @@ it('autorise la page Scalar sans assouplir la politique des réponses JSON', asy
     for (const path of ['/api/doc/json', '/api/health']) {
         const response = await api.call(path);
         expect(response.headers.get('content-security-policy')).toBe("default-src 'none'; frame-ancestors 'none'");
+    }
+});
+
+
+it('ne publie que les ressources utilisées, sans doublon d’état ni horaires non branchés', async () => {
+    const response = await api.call('/api/doc/json');
+    const spec = await json<OpenApiSpec>(response);
+    for (const path of ['/api/state', '/api/transit/network', '/api/transit/journeys']) {
+        expect(Object.keys(spec.paths)).not.toContain(path);
+        expect((await api.call(path)).status).toBe(404);
     }
 });

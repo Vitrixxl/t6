@@ -34,7 +34,6 @@ export const timetableMetadata = z.object({
     }),
     maxTimeSeconds: seconds,
 });
-export const timetableStatus = z.object({ metadata: timetableMetadata.nullable(), network: transitNetwork });
 
 export const timetablePassage = z.object({
     stopId: transitId,
@@ -79,14 +78,6 @@ export const transitSearch = z.object({
     departures: z.array(stopAccess).min(1).max(8),
     arrivals: z.array(stopAccess).min(1).max(8),
 });
-// Une collection calculée reste une lecture GET ; le contrat borne les listes
-// de candidats transmises dans le paramètre, pas les options affichées.
-function decodeSearch(value: unknown): unknown {
-    if (typeof value !== 'string') return value;
-    if (value.length > 8000) return null;
-    try { return JSON.parse(value); } catch { return null; }
-}
-export const transitJourneyQuery = z.object({ search: z.preprocess(decodeSearch, transitSearch) });
 export const scheduledRide = z.object({
     tripId: transitId,
     routeId: transitId,

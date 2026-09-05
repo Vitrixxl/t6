@@ -19,8 +19,15 @@ async function put(path, data) {
     assert(response.ok(), `${path} : ${response.status()} ${await response.text()}`);
     return response.json();
 }
-async function state() {
-    return (await context.request.get(`${baseURL}/api/state`)).json();
+async function readAccountResources() {
+    const [plannedTrips, recurringTrips, tripRecords, savedRoutes, profile] = await Promise.all(
+        ['/trips/planned', '/trips/recurring', '/trips/history', '/saved-routes', '/me/profile'].map(async path => {
+            const response = await context.request.get(`${baseURL}/api${path}`);
+            assert(response.ok(), `${path} : ${response.status()}`);
+            return response.json();
+        }),
+    );
+    return { plannedTrips, recurringTrips, tripRecords, savedRoutes, profile };
 }
 async function openHub() {
     await page.getByRole('button', { name: /passer le tutoriel/i }).click({ timeout: 1500 }).catch(() => undefined);
@@ -66,7 +73,7 @@ try {
         timeZone: 'Europe/Paris', periods: [{ from: createdAt, to: `${yesterday}T23:59:00.000Z` }],
     });
     await put('/trips/planned/past', { ...trip, scheduledFor: `${yesterday}T09:00:00.000Z`, status: 'planned', completedAt: null });
-    await state();
+    await readAccountResources();
     await put('/trips/planned/future', { ...trip, scheduledFor: new Date(today.getTime() + 86_400_000).toISOString(), status: 'planned', completedAt: null });
     await put('/saved-routes/saved', { ...trip, routeId: 'bike', routeTitle: trip.label, score: 80 });
     await page.goto(baseURL, { waitUntil: 'networkidle' });
@@ -90,12 +97,12 @@ try {
     await dialog.getByRole('button', { name: 'Annuler l’aller', exact: true }).click();
     const undoDialog = page.getByRole('dialog', { name: 'Annuler ces passages ?', exact: true });
     await undoDialog.getByRole('button', { name: 'Annuler', exact: true }).click();
-    assert((await state()).recurringTrips[0].cancelledPassages.length === 0, 'Une annulation a été envoyée sans confirmation');
+    assert((await readAccountResources()).recurringTrips[0].cancelledPassages.length === 0, 'Une annulation a été envoyée sans confirmation');
     const waitCancel = page.waitForResponse((response) => response.url().includes('/cancellations/') && response.request().method() === 'PUT');
     await dialog.getByRole('button', { name: 'Annuler l’aller', exact: true }).click();
     await confirmCancellation();
     assert((await waitCancel).ok(), 'Annulation aller refusée');
-    let remote = await state();
+    let remote = await readAccountResources();
     assert(remote.recurringTrips[0].cancelledPassages.length === 1, 'L’aller n’est pas persisté seul');
     assert(remote.recurringTrips[0].cancelledPassages[0].direction === 'outbound', 'Mauvais sens annulé');
     await page.reload({ waitUntil: 'networkidle' });
@@ -110,7 +117,7 @@ try {
     await dialog.getByRole('button', { name: 'Annuler', exact: true }).click();
     await confirmCancellation();
     assert((await waitOnce).ok(), 'Annulation ponctuelle refusée');
-    remote = await state();
+    remote = await readAccountResources();
     assert(remote.recurringTrips[0].cancelledPassages.length === 2, 'Les deux sens ne sont pas conservés');
     assert(remote.tripRecords.length === 0, 'Le ponctuel annulé contribue encore au carbone');
     assert(remote.plannedTrips.find((item) => item.id === 'past').status === 'cancelled', 'Trace ponctuelle perdue');
@@ -128,13 +135,13 @@ try {
     await dialog.getByRole('button', { name: 'Annuler les deux', exact: true }).click();
     await confirmCancellation();
     assert((await waitBoth).ok(), 'Annulation des deux sens refusée');
-    remote = await state();
+    remote = await readAccountResources();
     assert(remote.recurringTrips.find((item) => item.id === 'both').cancelledPassages.length === 2, 'Les deux sens ne sont pas annulés ensemble');
     const bothCard = dialog.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Annulation groupée', exact: true }) });
     const restored = page.waitForResponse((response) => response.url().includes('/both/cancellations/') && response.request().method() === 'DELETE');
     await bothCard.getByRole('button', { name: 'Rétablir l’aller', exact: true }).click();
     assert((await restored).ok(), 'Rétablissement refusé');
-    remote = await state();
+    remote = await readAccountResources();
     assert(remote.recurringTrips.find((item) => item.id === 'both').cancelledPassages.length === 1, 'Le retour a été rétabli avec l’aller');
     await page.reload({ waitUntil: 'networkidle' });
     await openHub();
@@ -167,7 +174,7 @@ try {
         await page.screenshot({ path: `tmp/screenshots/confirmation-${target.id}-${target.width}.png` });
         await confirmation.getByRole('button', { name: 'Annuler', exact: true }).click();
         await confirmation.waitFor({ state: 'hidden' });
-        assert((await state())[target.collection].some((item) => item.id === target.id), 'Annuler a supprimé le trajet');
+        assert((await readAccountResources())[target.collection].some((item) => item.id === target.id), 'Annuler a supprimé le trajet');
         await remove.click();
         await confirmation.waitFor();
         await confirmation.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
@@ -181,11 +188,11 @@ try {
         await confirmation.getByRole('button', { name: 'Supprimer', exact: true }).click();
         assert((await response).ok(), 'Suppression confirmée refusée');
         await remove.waitFor({ state: 'hidden' });
-        assert(!(await state())[target.collection].some((item) => item.id === target.id), 'Suppression non persistée');
+        assert(!(await readAccountResources())[target.collection].some((item) => item.id === target.id), 'Suppression non persistée');
         assert(deleteRequests.length === before + 1, 'La confirmation doit envoyer une seule suppression');
     }
     await put('/trips/planned/carbon-clear', { ...trip, scheduledFor: new Date(Date.now() - 1000).toISOString(), status: 'planned', completedAt: null });
-    await state();
+    await readAccountResources();
     await page.setViewportSize({ width: 1280, height: 844 });
     await page.reload({ waitUntil: 'networkidle' });
     await page.locator('[data-tour="route-detail"]').waitFor();
@@ -196,20 +203,20 @@ try {
     await clearDialog.waitFor();
     await clearDialog.getByRole('button', { name: 'Annuler', exact: true }).click();
     await clearDialog.waitFor({ state: 'hidden' });
-    assert(deleteRequests.length === beforeClear && (await state()).tripRecords.length > 0, 'Annuler a effacé l’historique');
+    assert(deleteRequests.length === beforeClear && (await readAccountResources()).tripRecords.length > 0, 'Annuler a effacé l’historique');
     await clear.click();
     const cleared = page.waitForResponse((response) => response.url().endsWith('/api/trips/history') && response.request().method() === 'DELETE');
     await clearDialog.getByRole('button', { name: 'Effacer l’historique', exact: true }).click();
     assert((await cleared).ok(), 'Effacement confirmé refusé');
-    assert((await state()).tripRecords.length === 0, 'Historique non effacé');
-    assert((await state()).recurringTrips.some((item) => item.id === 'both'), 'L’effacement carbone a supprimé une récurrence');
+    assert((await readAccountResources()).tripRecords.length === 0, 'Historique non effacé');
+    assert((await readAccountResources()).recurringTrips.some((item) => item.id === 'both'), 'L’effacement carbone a supprimé une récurrence');
     console.log('Confirmations : ponctuel, récurrent, enregistré et historique carbone ; annulation sans DELETE, Échap et suppression persistée vérifiés.');
     const profileResponse = await context.request.put(`${baseURL}/api/me/profile`, {
-        data: { ...(await state()).profile, carbonGoalGramsPerWeek: 250 },
+        data: { ...(await readAccountResources()).profile, carbonGoalGramsPerWeek: 250 },
     });
     assert(profileResponse.ok(), 'Budget de recette refusé');
     await put('/trips/planned/budget', { ...trip, label: 'Vérification budget', carbonGrams: 300, carbonSavedGrams: 5000, scheduledFor: createdAt, status: 'planned', completedAt: null });
-    await state();
+    await readAccountResources();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'networkidle' });
     await openHub();

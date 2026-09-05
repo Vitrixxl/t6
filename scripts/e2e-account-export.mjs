@@ -30,7 +30,7 @@ try {
         carbonSavedGrams: null, createdAt: new Date().toISOString(),
     } });
     assert.equal(saved.status(), 200);
-    const state = await (await context.request.get(`${baseURL}/api/state`)).json();
+    const { state } = await (await context.request.get(`${baseURL}/api/auth/session`)).json();
     await page.goto(baseURL, { waitUntil: 'networkidle' });
     await page.getByRole('button', { name: /passer le tutoriel/i }).click({ timeout: 1500 }).catch(() => undefined);
     await page.getByRole('button', { name: 'Ouvrir le profil', exact: true }).click();

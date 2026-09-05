@@ -4,8 +4,6 @@ import { importTimetable } from '../services/transit/import';
 import { createTransitRepository } from '../repositories/transit';
 import { searchTimetable } from '../services/transit/search';
 import { serviceStart } from '../services/transit/time';
-import { createTestApi } from './helpers';
-import { transitJourneyResult } from '../../../src/contracts/transit';
 import type { TimetableImport, TransitSearch } from '../../../src/contracts/transit';
 
 const databases: Db[] = [];
@@ -120,21 +118,5 @@ describe('horaires de transport', () => {
     it('ancre la journée GTFS à midi moins douze heures aux changements d’heure', () => {
         expect(new Date(serviceStart('2026-03-29', 'Europe/Paris')).toISOString()).toBe('2026-03-28T22:00:00.000Z');
         expect(new Date(serviceStart('2026-10-25', 'Europe/Paris')).toISOString()).toBe('2026-10-24T23:00:00.000Z');
-    });
-    it('sert les horaires par GET et refuse les paramètres invalides', async () => {
-        const api = createTestApi();
-        try {
-            const path = `/api/transit/journeys?search=${encodeURIComponent(JSON.stringify(request))}`;
-            const absent = await api.call(path);
-            expect(transitJourneyResult.parse(await absent.json()).status).toBe('unavailable');
-            importTimetable(api.db, fixture());
-            const response = await api.call(path);
-            expect(response.status).toBe(200);
-            expect(response.headers.get('cache-control')).toBe('no-store');
-            expect(transitJourneyResult.parse(await response.json()).journey?.rides[0].tripId).toBe('fast');
-            expect((await api.call('/api/transit/journeys?search=invalid')).status).toBe(422);
-            expect((await api.call('/api/transit/journeys?search=%7B%7D')).status).toBe(422);
-            expect((await api.call('/api/transit/network')).status).toBe(200);
-        } finally { api.close(); }
     });
 });
