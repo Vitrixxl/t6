@@ -27,6 +27,11 @@ function resolveWithin(root: string, requestPath: string): string | null {
 
 export function staticSite(root: string) {
     return new Elysia({ name: 'static-site' }).get('/*', async ({ path, set, status }) => {
+        // Une ressource API absente doit rester une erreur JSON, même lorsque
+        // le client est construit et peut servir sa page pour une URL inconnue.
+        if (path === '/api' || path.startsWith('/api/')) {
+            return status(404, { error: 'Ressource inconnue.' });
+        }
         const resolved = resolveWithin(root, path);
         if (!resolved) {
             return status(403, 'Chemin invalide.');
@@ -50,5 +55,5 @@ export function staticSite(root: string) {
         }
 
         return status(404, 'Client non construit. Lancer bun run build.');
-    });
+    }, { detail: { hide: true } });
 }
