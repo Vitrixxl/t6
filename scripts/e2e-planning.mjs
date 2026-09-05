@@ -111,11 +111,13 @@ async function testMobileSheet() {
     await page.screenshot({ path: 'tmp/screenshots/routes-landscape.png' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.locator('[data-tour="route-detail"]').waitFor();
     const desktopChoices = page.locator('[data-tour="routes"]:visible').getByRole('button');
     await desktopChoices.first().waitFor();
     await checkRouteOrder(desktopChoices);
     await page.screenshot({ path: 'tmp/screenshots/routes-sorted-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('[data-tour="mobile-map"]').waitFor();
     log('panneau mobile : hauteur automatique, défilement, sélection, rotation et tri mobile/bureau vérifiés');
 }
 

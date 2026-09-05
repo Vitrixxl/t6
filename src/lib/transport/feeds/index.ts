@@ -1,31 +1,26 @@
-// Chargement du réseau de transport : GTFS statique du build, puis
-// enrichissements live. Chaque source est tentee indépendamment et retombe sur
-// le feed local en cas d'échec, de sorte qu'une source indisponible ne prive
-// jamais l'utilisateur des autres. L'origine réelle de chaque flux est
-// remontée dans `sources` et affichée dans l'interface.
+// Les disponibilités partagées exigent une réponse en direct. Une panne ne
+// doit pas alimenter la carte et les itinéraires avec des données anciennes.
 import type { GtfsFeed, NetworkSources, SharedMobilityFeed, TransportNetwork } from '../../../types';
 import { fetchJson } from './fetch-json';
 import { fetchLiveSharedMobility } from './gbfs';
 import { OPEN_METEO_URL, weatherFromOpenMeteo, type OpenMeteoCurrent } from './weather';
 
-export async function loadTransportNetwork(fetcher: typeof fetch = fetch): Promise<TransportNetwork> {
-    const gtfs = await fetchJson<GtfsFeed>('/data/gtfs-feed.json', fetcher);
+export async function loadTransportNetwork(): Promise<TransportNetwork> {
+    const gtfs = await fetchJson<GtfsFeed>('/data/gtfs-feed.json');
     const sources: NetworkSources = {
         gtfs: gtfs.agency.agency_id === 'ufm-metropole' ? 'local' : 'tcl-odbl',
-        sharedMobility: 'local',
         weather: 'local',
     };
 
-    let sharedMobility: SharedMobilityFeed;
+    let sharedMobility: SharedMobilityFeed | null;
     try {
-        sharedMobility = await fetchLiveSharedMobility(fetcher);
-        sources.sharedMobility = 'gbfs-live';
+        sharedMobility = await fetchLiveSharedMobility();
     } catch {
-        sharedMobility = await fetchJson<SharedMobilityFeed>('/data/shared-mobility.json', fetcher);
+        sharedMobility = null;
     }
 
     try {
-        const meteo = await fetchJson<{ current: OpenMeteoCurrent }>(OPEN_METEO_URL, fetcher);
+        const meteo = await fetchJson<{ current: OpenMeteoCurrent }>(OPEN_METEO_URL);
         gtfs.weather = weatherFromOpenMeteo(meteo.current);
         sources.weather = 'open-meteo';
     } catch {

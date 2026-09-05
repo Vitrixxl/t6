@@ -52,7 +52,7 @@ const stopPosition = (stop: GtfsStop): GeoPoint => ({
  * vide n'aide pas l'utilisateur, l'afficher serait une fausse promesse.
  */
 export function findNearby(network: TransportNetwork, point: GeoPoint): Nearby {
-    const stations = network.sharedMobility.data.stations;
+    const stations = network.sharedMobility?.data.stations ?? [];
 
     return {
         velov: closest(
@@ -117,7 +117,7 @@ function within<T>(items: T[], point: GeoPoint, radiusKm: number, positionOf: (i
 }
 
 export function findWithinRadius(network: TransportNetwork, point: GeoPoint, radiusKm: number): NearbyWithin {
-    const stations = network.sharedMobility.data.stations;
+    const stations = network.sharedMobility?.data.stations ?? [];
 
     return {
         velov: within(

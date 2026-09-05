@@ -6,7 +6,7 @@ import { queryKeys } from './keys';
 
 export const transportNetworkQuery = queryOptions({
     queryKey: queryKeys.transportNetwork,
-    queryFn: () => loadTransportNetwork(),
+    queryFn: loadTransportNetwork,
     staleTime: Infinity,
     gcTime: Infinity,
     refetchOnWindowFocus: false,

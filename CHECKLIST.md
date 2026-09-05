@@ -102,7 +102,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levée.
 - [x] theme-color aligne (index.html/manifest), scripts Bun e2e/screens exposés, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, économie chiffrée, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 218 tests verts (26 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core antérieur : 0 violation WCAG 2.1 A/AA (4 écrans), non rejoué sur cette branche. Le dossier PDF reste gelé.
+- [x] 219 tests verts (26 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core antérieur : 0 violation WCAG 2.1 A/AA (4 écrans), non rejoué sur cette branche. Le dossier PDF reste gelé.
 
 ## 9. Preuves concrètes
 
@@ -112,12 +112,12 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, route sélectionnée, alternatives, position utilisateur, destination, arrêts GTFS et stations partagées.
 - UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `src/styles.css`.
 - APIs réelles: `src/lib/transport/` pour BAN, Photon et les flux ; OSRM uniquement derrière `/api/route-matrix` et `/api/route`, avec cache SQLite partagé, profil driving de référence et aucune géométrie inventée.
-- F3 intégration transport: `src/lib/transport/feeds/`, `public/data/gtfs-feed.json`, `public/data/shared-mobility.json`.
+- F3 intégration transport: `src/lib/transport/feeds/`, `public/data/gtfs-feed.json`.
 - Option carbone: `src/lib/carbon.ts`, `src/components/planner/trips/TripGoalsCard.tsx`, `src/components/profile/ProfilePanels.tsx` (objectifs hebdomadaire et mensuel indépendants).
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectée).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et contrôlées en planche-contact et pleine page.
-- Vérification de la simplification : `bun run check` OK (`eslint .`, TypeScript 7 strict, 218 tests, `Bun.build`), audit antérieur `bun run audit:a11y` OK (0 violation sur 4 écrans, non rejoué sur cette branche) et `bun run e2e` OK (9/9).
+- Vérification de la simplification : `bun run check` OK (`eslint .`, TypeScript 7 strict, 219 tests, `Bun.build`), audit antérieur `bun run audit:a11y` OK (0 violation sur 4 écrans, non rejoué sur cette branche) et `bun run e2e` OK (9/9).
 
 ## 10. Backend (ajout post-audit)
 
@@ -162,10 +162,10 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] API : `bun server/src/index.ts`, sans étape de compilation ni dépendance native.
 - [x] Serveur de développement et build du client exécutés par Bun (`bun scripts/dev.ts`, `Bun.build`).
 - [x] TypeScript 7 conserve ; `tsc` strict contrôle types et symboles inutilisés, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
-- [x] Tests client / métier : 141 tests verts dans `src/`.
+- [x] Tests client / métier : 142 tests verts dans `src/`.
 - [x] Tests d'API : `bun test server`, 77 tests verts.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) exécutés par Bun.
-- [x] Vérifications de simplification : `bun run check` complet (218 tests), E2E 9/9, `e2e:trips` et `e2e:offline` réussis. L’audit axe-core précédent reste à 0 violation sur 4 écrans ; il n’a pas été rejoué ici.
+- [x] Vérifications de simplification : `bun run check` complet (219 tests), E2E 9/9, `e2e:trips` et `e2e:offline` réussis. L’audit axe-core précédent reste à 0 violation sur 4 écrans ; il n’a pas été rejoué ici.
 - [x] Limite assumée : l'ingestion GTFS et la génération du dossier restent en Python, faute d'équivalent JavaScript.
 
 ## Correctif du hub et des annulations
@@ -198,6 +198,10 @@ Les estimations actuelles restent utilisées par l’interface. Détails :
 `docs/PLAN-ATTENTE-GTFS.md`.
 
 ## Simplification pour l’apprentissage
+
+- [x] Aucun secours GBFS : absence représentée par `null`, bandeau explicite et aucune option partagée calculée depuis des données anciennes.
+
+- [x] Chargement des flux par `fetch` directement, sans paramètre d’injection transmis entre fonctions ; réponses réseau simulées uniquement dans les tests.
 
 - [x] Les mutations exposent directement leurs mises à jour et invalidations de cache, sans relais génériques.
 - [x] La pause transforme une seule récurrence ; les anciennes opérations client de complétion sans appelant réel sont retirées.

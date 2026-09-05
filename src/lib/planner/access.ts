@@ -220,7 +220,7 @@ function buildJourney(
 }
 
 function availableStations(network: TransportNetwork) {
-    const stations = network.sharedMobility.data.stations;
+    const stations = network.sharedMobility?.data.stations ?? [];
     return {
         bikePickups: stations.filter(
             (station) => station.kind === 'velov' && station.is_installed && station.is_renting && station.bikes_available > 0,

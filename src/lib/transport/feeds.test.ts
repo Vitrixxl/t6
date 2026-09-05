@@ -1,6 +1,10 @@
-import { describe, expect, it } from '../../test/harness';
+import { afterEach, describe, expect, it, vi } from '../../test/harness';
 import { fetchJson, loadTransportNetwork, mapDottVehicles, mergeVelovStations, weatherFromOpenMeteo } from './feeds';
-import type { GtfsFeed, SharedMobilityFeed } from '../../types';
+import type { GtfsFeed } from '../../types';
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
 
 describe('mergeVelovStations', () => {
     it('fusionne information et status GBFS v3 en stations exploitables', () => {
@@ -162,113 +166,79 @@ const gtfsFixture: GtfsFeed = {
     weather: { condition: 'clear', temperature_celsius: 18, wind_kmh: 5, updated_at: 't' },
 };
 
-const localSharedMobility: SharedMobilityFeed = {
-    last_updated: 1789365900,
-    ttl: 60,
-    version: '2.3 local',
-    data: {
-        stations: [
-            {
-                station_id: 'local-1',
-                kind: 'velov' as const,
-                name: 'Station locale',
-                lat: 45.7578,
-                lon: 4.832,
-                capacity: 10,
-                bikes_available: 4,
-                scooters_available: 1,
-                is_installed: true,
-                is_renting: true,
-                is_returning: true,
-                last_reported: 1789365900,
-            },
-        ],
-    },
-};
-
 describe('fetchJson', () => {
     it('remonte une erreur explicite avec URL et statut si le flux répond en échec', async () => {
-        const fetcher = (async () => ({ ok: false, status: 429 }) as Response) as unknown as typeof fetch;
+        vi.stubGlobal('fetch', async () => new Response(null, { status: 429 }));
 
-        await expect(fetchJson('https://flux.test/gbfs.json', fetcher)).rejects.toThrow(
+        await expect(fetchJson('https://flux.test/gbfs.json')).rejects.toThrow(
             'Flux indisponible: https://flux.test/gbfs.json (429)',
         );
     });
 });
 
 describe('loadTransportNetwork', () => {
-    it('bascule sur le fallback GBFS local et l\'étiquette comme tel quand le live est indisponible', async () => {
-        const fetcher = (async (input: RequestInfo | URL) => {
+    it('signale les disponibilités absentes sans charger de secours quand le live échoue', async () => {
+        const urls: string[] = [];
+        vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+            urls.push(String(input));
             const url = String(input);
             if (url.includes('gtfs-feed.json')) {
-                return { ok: true, json: async () => gtfsFixture } as Response;
-            }
-            if (url.includes('shared-mobility.json')) {
-                return { ok: true, json: async () => localSharedMobility } as Response;
+                return Response.json(gtfsFixture);
             }
             throw new Error('réseau coupe');
-        }) as unknown as typeof fetch;
+        });
 
-        const network = await loadTransportNetwork(fetcher);
+        const network = await loadTransportNetwork();
 
         expect(network.sources?.gtfs).toBe('tcl-odbl');
-        expect(network.sources?.sharedMobility).toBe('local');
+        expect(network.sharedMobility).toBeNull();
+        expect(urls.some((url) => url.includes("shared-mobility.json"))).toBe(false);
         expect(network.sources?.weather).toBe('local');
-        expect(network.sharedMobility.data.stations).toHaveLength(1);
     });
 
     it('marque les sources live quand GBFS et Open-Meteo repondent', async () => {
-        const fetcher = (async (input: RequestInfo | URL) => {
+        vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
             const url = String(input);
             if (url.includes('gtfs-feed.json')) {
-                return { ok: true, json: async () => gtfsFixture } as Response;
+                return Response.json(gtfsFixture);
             }
             if (url.includes('station_information')) {
-                return {
-                    ok: true,
-                    json: async () => ({
-                        data: { stations: [{ station_id: '1001', name: 'BELLECOUR', lat: 45.7578, lon: 4.832, capacity: 20 }] },
-                    }),
-                } as Response;
+                return Response.json({
+                    data: { stations: [{ station_id: '1001', name: 'BELLECOUR', lat: 45.7578, lon: 4.832, capacity: 20 }] },
+                });
             }
             if (url.includes('station_status')) {
-                return {
-                    ok: true,
-                    json: async () => ({
-                        data: {
-                            stations: [
-                                {
-                                    station_id: '1001',
-                                    num_vehicles_available: 5,
-                                    is_installed: true,
-                                    is_renting: true,
-                                    is_returning: true,
-                                    last_reported: 1789365900,
-                                },
-                            ],
-                        },
-                    }),
-                } as Response;
+                return Response.json({
+                    data: {
+                        stations: [
+                            {
+                                station_id: '1001',
+                                num_vehicles_available: 5,
+                                is_installed: true,
+                                is_renting: true,
+                                is_returning: true,
+                                last_reported: 1789365900,
+                            },
+                        ],
+                    },
+                });
             }
             if (url.includes('free_bike_status')) {
-                return { ok: true, json: async () => ({ data: { bikes: [] } }) } as Response;
+                return Response.json({ data: { bikes: [] } });
             }
             if (url.includes('open-meteo')) {
-                return {
-                    ok: true,
-                    json: async () => ({
-                        current: { temperature_2m: 19.4, wind_speed_10m: 9, precipitation: 0, weather_code: 1, time: 't' },
-                    }),
-                } as Response;
+                return Response.json({
+                    current: { temperature_2m: 19.4, wind_speed_10m: 9, precipitation: 0, weather_code: 1, time: 't' },
+                });
             }
             throw new Error(`URL inattendue: ${url}`);
-        }) as unknown as typeof fetch;
+        });
 
-        const network = await loadTransportNetwork(fetcher);
+        const network = await loadTransportNetwork();
 
-        expect(network.sources?.sharedMobility).toBe('gbfs-live');
+        expect(network.sharedMobility).not.toBeNull();
         expect(network.sources?.weather).toBe('open-meteo');
-        expect(network.sharedMobility.data.stations[0].name).toBe("Vélo'v BELLECOUR");
+        expect(network.sharedMobility?.data.stations[0].name).toBe("Vélo'v BELLECOUR");
         expect(network.gtfs.weather.temperature_celsius).toBe(19);
     });
 });

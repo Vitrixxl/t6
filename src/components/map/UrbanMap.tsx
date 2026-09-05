@@ -175,12 +175,12 @@ export function UrbanMap({
     // Vélo'v et trottinettes sont deux couches distinctes : services différents,
     // densites différentes, et l'utilisateur veut souvent n'en voir qu'une.
     const velovData = useMemo<FeatureCollection>(
-        () => toStationFeatures(network.sharedMobility.data.stations.filter((station) => station.kind === 'velov')),
+        () => toStationFeatures((network.sharedMobility?.data.stations ?? []).filter((station) => station.kind === 'velov')),
         [network],
     );
 
     const scooterData = useMemo<FeatureCollection>(
-        () => toStationFeatures(network.sharedMobility.data.stations.filter((station) => station.kind === 'scooter')),
+        () => toStationFeatures((network.sharedMobility?.data.stations ?? []).filter((station) => station.kind === 'scooter')),
         [network],
     );
 

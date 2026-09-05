@@ -36,6 +36,8 @@ code produit sans comprendre ce qu'il fait.
   ne font que transmettre des arguments. Transformer une ressource seule sur
   un objet, sans collection temporaire. Regrouper les variantes qui partagent
   le même parcours ; ne pas créer de framework générique pour quelques actions.
+  Ne pas transmettre une fonction système comme `fetch` à travers plusieurs
+  couches uniquement pour les tests ; simuler le réseau dans les tests.
 - Avant de proposer, se demander comment un relecteur exigeant verrait le
   code. Si la réponse est « bricolé », ne pas le proposer.
 
@@ -198,6 +200,12 @@ recherche. Son contenu long défile ; l’en-tête et la fermeture restent acces
 Aucune poignée ni commande ne règle sa taille.
 Le cadrage de carte utilise les dimensions du canvas : les marges doivent
 laisser une zone de dessin positive, même en paysage ou après redimensionnement.
+
+**Les disponibilités Vélo’v et Dott exigent les flux en direct.** En cas
+d’échec du groupe GBFS, `sharedMobility` vaut `null` : afficher l’indisponibilité,
+sans fichier de secours ni compteur à zéro présenté comme une mesure. La carte
+et le moteur ne proposent alors aucun véhicule partagé. Le repli météo reste
+indépendant. Vérifier cette panne avec `bun run e2e:offline`.
 
 **Ne jamais afficher un plafond comme une mesure.** Ce fut un vrai bogue
 (B9) : l'interface annonçait « 300 trottinettes » parce que c'était la

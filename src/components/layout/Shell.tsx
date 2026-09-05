@@ -120,7 +120,7 @@ export function LayerPanel({
         onLayersChange: (layers: LayerState) => void;
         network: TransportNetwork;
     }) {
-    const stations = network.sharedMobility.data.stations;
+    const stations = network.sharedMobility?.data.stations ?? [];
     // Vélo'v est un service à stations : on compte les stations et les vélos qui
     // s'y trouvent. Dott est en flotte libre : chaque trottinette est un point,
     // il n'y a pas de station à compter. Les deux ne se résument donc pas de la
@@ -142,28 +142,28 @@ export function LayerPanel({
                 />
                 <LayerToggle
                     label="Vélo’v"
-                    detail={`${bikeCount} vélos dans ${velovStations.length} stations`}
+                    detail={network.sharedMobility ? `${bikeCount} vélos dans ${velovStations.length} stations` : "Données indisponibles"}
                     active={layers.velov}
                     color="bg-[#84cc16]"
                     onClick={() => onLayersChange({ ...layers, velov: !layers.velov })}
                 />
                 <LayerToggle
                     label="Trottinettes"
-                    detail={`${scooterCount} trottinettes en flotte libre`}
+                    detail={network.sharedMobility ? `${scooterCount} trottinettes en flotte libre` : "Données indisponibles"}
                     active={layers.scooters}
                     color="bg-[#f97316]"
                     onClick={() => onLayersChange({ ...layers, scooters: !layers.scooters })}
                 />
             </div>
-            {network.sources?.sharedMobility === 'gbfs-live' ? (
+            {network.sharedMobility ? (
                 <div className="mt-4 rounded-lg border border-primary/25 bg-accent px-3 py-2 text-xs text-accent-foreground">
                     Données live: GBFS Vélo'v + Dott ({getFeedFreshness(network.sharedMobility)})
-                    {network.sources.gtfs === 'tcl-odbl' ? ', GTFS TCL (ODbL)' : ''}
-                    {network.sources.weather === 'open-meteo' ? ', météo Open-Meteo' : ''}.
+                    {network.sources?.gtfs === 'tcl-odbl' ? ', GTFS TCL (ODbL)' : ''}
+                    {network.sources?.weather === 'open-meteo' ? ', météo Open-Meteo' : ''}.
                 </div>
             ) : (
                 <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                    Disponibilités en direct indisponibles : données de secours du {getFeedFreshness(network.sharedMobility)}.
+                    Impossible de récupérer les disponibilités Vélo’v et Dott.
                 </div>
             )}
         </div>

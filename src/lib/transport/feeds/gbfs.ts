@@ -117,11 +117,11 @@ export function mapDottVehicles(vehicles: DottVehicle[]): SharedStation[] {
         }));
 }
 
-export async function fetchLiveSharedMobility(fetcher: typeof fetch): Promise<SharedMobilityFeed> {
+export async function fetchLiveSharedMobility(): Promise<SharedMobilityFeed> {
     const [info, status, dott] = await Promise.all([
-        fetchJson<{ data: { stations: VelovStationInformation[] } }>(VELOV_INFO_URL, fetcher),
-        fetchJson<{ data: { stations: VelovStationStatus[] } }>(VELOV_STATUS_URL, fetcher),
-        fetchJson<{ data: { bikes: DottVehicle[] } }>(DOTT_VEHICLES_URL, fetcher),
+        fetchJson<{ data: { stations: VelovStationInformation[] } }>(VELOV_INFO_URL),
+        fetchJson<{ data: { stations: VelovStationStatus[] } }>(VELOV_STATUS_URL),
+        fetchJson<{ data: { bikes: DottVehicle[] } }>(DOTT_VEHICLES_URL),
     ]);
 
     const stations = [

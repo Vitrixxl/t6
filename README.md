@@ -115,6 +115,11 @@ et symboles dans l’ordre des appels, explications des données, exemples concr
 et choix de conception. Le parcours se lit en continu, sans découpage horaire. Ce support
 reste ignoré par Git, comme les autres fichiers de soutenance.
 
+Le chargement du transport se lit dans `src/lib/transport/feeds/index.ts` :
+`loadTransportNetwork()` appelle les flux partagés et `fetchJson(url)`, qui utilise
+directement `fetch`. Les tests simulent le réseau sans ajouter de paramètre aux
+fonctions de l’application.
+
 **Suivre les données** :
 
 1. Démarrage : `server/src/index.ts` → `server/src/app.ts`, puis
@@ -168,7 +173,10 @@ distincts ; un simple relais n’a pas besoin de son propre fichier.
 | Desserte et tracés des lignes | WFS SYTRAL `data.grandlyon.com` (ODbL, sans jeton) | intégré au build (`bun run generate:lignes`) |
 | Météo | Open-Meteo | live navigateur |
 
-Chaque flux a un fallback local (`public/data/`) signalé dans l'UI.
+Les disponibilités Vélo’v et Dott proviennent uniquement des flux en direct.
+Si le groupe GBFS échoue, un bandeau annonce l’indisponibilité : aucun fichier
+de secours, aucune station partagée ni option vélo/trottinette. La marche et les
+transports publics restent calculables. La météo conserve son repli local.
 
 ## Calcul d'itinéraires
 

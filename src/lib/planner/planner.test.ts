@@ -3,7 +3,7 @@ import { DEFAULT_PROFILE } from '../../contracts';
 import { haversineDistanceKm, measureRoutes, LANDMARKS, planRoutes, preselectRoute, SCORING_WEIGHTS } from './index';
 import type { TransportNetwork } from '../../types';
 
-const network: TransportNetwork = {
+const network = {
     gtfs: {
         agency: {
             agency_id: 'test',
@@ -103,7 +103,7 @@ const network: TransportNetwork = {
             ],
         },
     },
-};
+} satisfies TransportNetwork;
 
 describe('planRoutes', () => {
     it('propose les options multimodales par durée croissante', () => {
@@ -223,6 +223,19 @@ describe('planRoutes', () => {
         expect(walking).toBeDefined();
         expect(walking!.durationMinutes).toBeGreaterThan(60);
         expect(walking!.warnings).toEqual([]);
+    });
+
+    it('conserve marche et transports publics sans disponibilités partagées', () => {
+        const routes = planRoutes({
+            origin: LANDMARKS[0],
+            destination: LANDMARKS[1],
+            profile: DEFAULT_PROFILE,
+            network: { ...network, sharedMobility: null },
+        });
+
+        expect(routes.some((route) => route.id === 'walk')).toBe(true);
+        expect(routes.some((route) => route.modes.includes('transit'))).toBe(true);
+        expect(routes.some((route) => route.modes.includes('bike') || route.modes.includes('scooter'))).toBe(false);
     });
 
     it('RG3 : aucune option vélo/trottinette si aucune station n\'est à portée de marche', () => {

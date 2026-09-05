@@ -67,6 +67,44 @@ try {
     }
     await checkOffline('carte', 844, 390);
     console.log('Bandeau hors ligne : connexion, carte, rechargement et panne serveur vérifiés.');
+
+    // Une panne GBFS ne doit ni charger des disponibilités anciennes ni être
+    // présentée comme une coupure Internet. Le contexte isole le cache du test.
+    const unavailableContext = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        storageState: await context.storageState(),
+        serviceWorkers: 'block',
+    });
+    await unavailableContext.route('https://api.cyclocity.fr/**', (route) => route.abort());
+    await unavailableContext.route('https://gbfs.api.ridedott.com/**', (route) => route.abort());
+    const unavailablePage = await unavailableContext.newPage();
+    const requests = [];
+    const errors = [];
+    unavailablePage.on('request', (request) => requests.push(request.url()));
+    unavailablePage.on('pageerror', (error) => errors.push(error.message));
+    await unavailablePage.goto(baseUrl);
+    const unavailableBanner = unavailablePage.getByRole('status').filter({ hasText: 'Impossible de récupérer les disponibilités Vélo’v et Dott.' });
+    await unavailableBanner.waitFor();
+    const skipUnavailable = unavailablePage.getByRole('button', { name: /passer le tutoriel/i });
+    if (await skipUnavailable.isVisible()) await skipUnavailable.click();
+    for (const width of [390, 1280]) {
+        await unavailablePage.setViewportSize({ width, height: 844 });
+        await unavailablePage.locator(width >= 1024 ? '[data-tour="map"]' : '[data-tour="mobile-map"]').waitFor();
+        await unavailablePage.locator('.maplibregl-canvas').waitFor();
+        await unavailablePage.waitForLoadState('networkidle');
+        const bannerBox = await unavailableBanner.boundingBox();
+        const mapBox = await unavailablePage.locator('.maplibregl-canvas').boundingBox();
+        assert.ok(bannerBox && mapBox && mapBox.y >= bannerBox.y + bannerBox.height);
+        assert.equal(await unavailablePage.getByText('Vous êtes hors ligne.').count(), 0);
+        if (width === 1280) {
+            assert.equal(await unavailablePage.getByText('Données indisponibles', { exact: true }).count(), 2);
+        }
+        await unavailablePage.screenshot({ path: `tmp/screenshots/gbfs-indisponible-${width}.png` });
+    }
+    assert.equal(requests.some((url) => url.includes('/data/shared-mobility.json')), false);
+    assert.deepEqual(errors, []);
+    await unavailableContext.close();
+    console.log('Panne GBFS : message visible, aucun secours local, compteurs indisponibles, carte utilisable sur mobile et bureau.');
 } finally {
     await browser.close();
 }

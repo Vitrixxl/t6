@@ -117,13 +117,12 @@ export interface SharedMobilityFeed {
 
 export interface NetworkSources {
     gtfs: 'tcl-odbl' | 'local';
-    sharedMobility: 'gbfs-live' | 'local';
     weather: 'open-meteo' | 'local';
 }
 
 export interface TransportNetwork {
     gtfs: GtfsFeed;
-    sharedMobility: SharedMobilityFeed;
+    sharedMobility: SharedMobilityFeed | null;
     sources?: NetworkSources;
 }
 
