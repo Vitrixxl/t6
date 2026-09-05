@@ -1410,3 +1410,45 @@ variable OSRM ; E2E complet réussi. `bun run check` : 205 tests / 24 fichiers.
 
 **Niveau de verrouillage** : **automatisé** pour les défauts locaux et l’absence
 de bascule en cas de panne ; **faible** pour le déploiement Docker vérifié.
+
+
+## Ouverts
+
+### B45 — L’attente affichée ne dépend pas d’une course horaire
+
+**Symptôme observé** : une même ligne conserve une attente issue de constantes,
+sans vérifier son prochain départ ni son dernier service. Le champ
+`realtime_delay_minutes` ajoute un décalage généré et non un retard reçu.
+
+**Cause racine** : l’ingestion actuelle ne conserve ni `stop_times.txt` ni le
+calendrier des courses ; le moteur client ne reçoit pas d’instant de recherche.
+Les tracés et identifiants WFS ont remplacé le modèle de courses GTFS.
+
+**État** : ouvert dans l’application. Le service serveur horaire et son import
+sont préparés, mais ils ne sont pas encore appelés par les recherches ni par
+le formulaire de planification. `GTFS_SOURCE_URL` est absente. L’archive publique
+TCL du 15 avril 2022 est expirée et l’import y détecte une course T2 sans tracé
+GTFS exploitable. Une archive récente et la correspondance avec les tracés
+publiés sont nécessaires avant activation. Aucune donnée de test n’est importée
+dans l’application ; aucune durée historique n’est réécrite.
+
+**Commit préparatoire** : [8d4e0d3 — service horaire et import](https://github.com/Vitrixxl/t6/commit/8d4e0d36322b9561eb6cab303d93a43f05a5dc1e).
+
+**Où le montrer** : `src/lib/planner/transit.ts` (comportement actuel),
+`server/src/services/transit/search.ts`, `scripts/gtfs_timetable.py`,
+`server/src/__tests__/transit.test.ts`, `scripts/test_gtfs_timetable.py`,
+`docs/PLAN-ATTENTE-GTFS.md`.
+
+**Vérification réalisée** : 12 tests du service et de son API couvrent la
+marche avant montée, les départs manqués, la meilleure arrivée, le sens,
+le calendrier, les prolongements après minuit, les correspondances,
+l’accessibilité, les fréquences et les changements d’heure. Six tests Python
+sur archives miniatures sont invoqués par un test Bun et couvrent notamment
+les quais homonymes, exceptions, tracés absents et horaires manquants.
+`bun run check` passe : 218 tests Bun dans 26 fichiers, lint, typage et build.
+L’OpenAPI expose les deux lectures GET et leur contrat. Cela ne valide pas
+encore un parcours TCL réel ni le branchement de l’interface.
+
+**Niveau de verrouillage** : **ouvert** pour le défaut utilisateur ; le socle
+serveur dispose de tests automatisés. La validation du flux réel, le raccordement
+client, le renouvellement automatisé et la recette navigateur restent à faire.
