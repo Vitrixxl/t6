@@ -1673,6 +1673,30 @@ L’inspection visuelle des captures reste un contrôle faible.
 
 **Niveau de verrouillage : automatisé pour la durée et les propriétés PMR testées ; faible pour l’ensemble du rendu.** 235 tests, 693 assertions, 31 fichiers ; lint, typage, build et parcours de planification 9/9 réussis. Les captures et l’audit axe complètent les tests sans prouver tous les états visuels.
 
+### B56 — Le panneau d’itinéraire mobile masquait la carte
+
+**Symptôme observé.** Ouvrir un trajet sur téléphone laissait trop peu de carte visible et obligeait à parcourir une longue liste verticale.
+
+**Cause racine.** La hauteur était limitée seulement par l’espace sous la recherche ; options et détails occupaient cet espace ensemble.
+
+**Correctif.** Rangée horizontale sans troncature, détails repliés et hauteur limitée à 50 % (45 % en paysage bas), avec marges MapLibre adaptées. Les types publics filtrent le réseau avant les accès et correspondances ; leur choix apparaît uniquement pour une famille contenant du transport public et reste modifiable si le résultat est vide. [Commit](https://github.com/Vitrixxl/t6/commit/92bdf3e).
+
+**Où le montrer.** `src/components/planner/MobilePanels.tsx`, `TransitTypeFilters.tsx` dans le même dossier, `src/lib/planner/transit-filter.ts` et `scripts/e2e-mobile-transit.mjs`.
+
+**Test et niveau de verrouillage.** Automatisé pour le filtrage du réseau, les clés de cache et les marges testées ; scénario navigateur sur 320/390 px, paysage et bureau, bus seul, métro seul, filtre vide et sélection marche. Faible pour l’aspect visuel hors de ces états. Planification réelle 9/9 réussie.
+
+### B57 — La documentation API restait vide avec des erreurs CSP
+
+**Symptôme observé.** Sur `/api/doc`, le navigateur bloque les styles et scripts Scalar avec `default-src 'none'`. Avec le slash final, le schéma pouvait aussi être demandé à une mauvaise adresse.
+
+**Cause racine.** La sélection de politique traitait toute URL commençant par /api comme du JSON ; le plugin utilisait en outre une adresse de schéma relative au document.
+
+**Correctif.** Politique dédiée aux deux URL exactes du document, version Scalar 1.67.0 fixée, schéma absolu /api/doc/json, agent et polices externes désactivés. Les exceptions de script restent limitées à la documentation. Le JSON et l’application conservent leurs politiques. [Commit](https://github.com/Vitrixxl/t6/commit/92bdf3e).
+
+**Où le montrer.** `server/src/plugins/security-headers.ts`, `server/src/app.ts`, `server/src/__tests__/platform.test.ts` et `scripts/e2e-api-doc.mjs`.
+
+**Test et niveau de verrouillage : automatisé.** Le test serveur a d’abord échoué sur la politique reçue, puis passe avec les deux URL HTML et le JSON strict. Le scénario Chromium attend le titre et les routes et échoue sur tout événement securitypolicyviolation. Les deux URL sont vérifiées sans blocage. Le CDN reste nécessaire au chargement de Scalar.
+
 ## Ouverts
 
 ### B45 — L’attente affichée ne dépend pas d’une course horaire
