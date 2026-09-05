@@ -45,8 +45,13 @@ déterminent toujours les options calculables.
 
 Les durées longues se lisent en heures et minutes (`63 min` → `1h03`), dans les
 options, les étapes et les trajets. Sur mobile, le panneau prend automatiquement
-la hauteur de son contenu, dans l’espace disponible sous la recherche. Le contenu
-long défile ; l’en-tête et la fermeture restent accessibles. Aucun réglage de taille.
+la hauteur de son contenu, limitée à la moitié de la carte (45 % en paysage bas).
+Toutes les options défilent horizontalement ; les détails se déplient à la demande.
+L’en-tête et la fermeture restent accessibles. Aucun réglage de taille.
+
+Une option contenant des transports en commun affiche le choix Bus, Métro, Tramway
+et Funiculaire. Le moteur filtre le réseau avant de chercher les accès et correspondances.
+Ce choix est temporaire : sélectionner une option sans transport public le remet à Tous.
 
 Le hub comporte quatre onglets : **Une fois**, **Récurrents**, **Historique** et
 **Enregistrés**. Les trajets ponctuels futurs n’ont pas de bouton « Fait ». Après leur date prévue,
@@ -512,3 +517,7 @@ l’ingestion Python avec de petits jeux de données, puis vérifie son JSON sou
 réelle Gare Saint-Paul → Laurent Bonnevay (TB11) à 390/1280 px. Le parcours général
 `bun run e2e` reste à 9/9. Le service horaire préparé dans `server/src/services/transit/`
 reste séparé et non branché au client ; ses contrats ne sont pas étendus par cet import WFS.
+
+La documentation `/api/doc` utilise Scalar 1.67.0 et une politique CSP limitée à cette page.
+Le JSON `/api/doc/json` conserve `default-src 'none'`. Vérification navigateur :
+`bun scripts/e2e-api-doc.mjs`. Filtres et mobile : `bun scripts/e2e-mobile-transit.mjs`.

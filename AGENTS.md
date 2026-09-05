@@ -73,7 +73,11 @@ d'eux en se demandant s'il décrit encore l'application telle qu'elle est.
 
 ## Journal des bogues — obligatoire
 
-**Tout bogue corrigé donne lieu à une entrée dans [`docs/BUGS.md`](docs/BUGS.md).**
+**Tout bogue corrigé donne lieu à une entrée dans le [journal complet](docs/BUGS-ARCHIVE.md).**
+
+[`docs/BUGS.md`](docs/BUGS.md) reste limité aux trois exemples retenus pour la
+revue C3.3 : B16, B17 et B20, avec leurs PR. Les autres correctifs et la section
+« Ouverts » sont conservés dans `docs/BUGS-ARCHIVE.md`.
 
 C'est la contrainte la plus importante de ce dépôt. La compétence C3.3 de la
 grille est évaluée lors d'une revue de test portant sur « un échantillon de
@@ -195,8 +199,9 @@ le score et la présélection, pas l’ordre ni la visibilité des options. Il n
 dans le profil ni de pénalité associée. Les contraintes de disponibilité,
 de desserte et de mesure réelle restent celles du moteur. Les durées sont
 formatées par `src/lib/duration.ts` : `63 min` se lit `1h03`.
-Le panneau mobile prend la hauteur de son contenu, limitée à l’espace sous la
-recherche. Son contenu long défile ; l’en-tête et la fermeture restent accessibles.
+Le panneau mobile prend la hauteur de son contenu, limitée à 50 % de la carte
+(45 % en paysage bas). Toutes les options défilent horizontalement et les détails
+sont repliés à l’ouverture. Son contenu long défile ; l’en-tête et la fermeture restent accessibles.
 Aucune poignée ni commande ne règle sa taille.
 Le cadrage de carte utilise les dimensions du canvas : les marges doivent
 laisser une zone de dessin positive, même en paysage ou après redimensionnement.
@@ -345,3 +350,9 @@ lorsque la motorisation est inconnue. PMR exige le quai et la ligne accessibles.
 Le fichier contient les données actuelles du compte et les lieux des trajets,
 sans mot de passe ni jeton de session. Un échec reste visible dans le profil
 et permet de réessayer. Vérifier avec `bun scripts/e2e-account-export.mjs`.
+
+**Types publics et documentation.** Le choix Bus/Métro/Tramway/Funiculaire apparaît
+uniquement si la famille sélectionnée contient transit, même si le filtre ne donne
+aucun résultat. Choisir une option sans transit remet les types à Tous. Le réseau
+est filtré avant les accès et correspondances. `/api/doc` et `/api/doc/` ont une
+CSP propre à Scalar ; `/api/doc/json` conserve la politique JSON stricte.

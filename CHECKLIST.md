@@ -234,3 +234,6 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 - [x] Annulation confirmée des ponctuels et rétablissement possible, sans doublon carbone.
 
 - [x] Bus WFS par sens, ordre des quais, accessibilité quai/ligne, hypothèses affichées et recette TB11 mobile/bureau.
+
+- [x] Types publics filtrés avant le calcul, sélecteur visible uniquement pour une option TC ; mobile horizontal et carte préservée (recette 320/390 px et paysage).
+- [x] Documentation Scalar : CSP distincte du JSON, version fixée, agent et polices externes désactivés ; test serveur et recette navigateur dédiés.
