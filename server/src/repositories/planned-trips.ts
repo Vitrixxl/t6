@@ -1,7 +1,7 @@
 // Dépôt des trajets programmés à une date. Une commande ne touche qu'une
 // ligne identifiée par (utilisateur, id) ; le dépôt ne reçoit jamais la vue
 // complète tenue par le client.
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, lt, ne } from 'drizzle-orm';
 import type { Executor } from '../db/index.ts';
 import { plannedTrips } from '../db/schema.ts';
 import type { PlannedTrip } from '../../../src/types.ts';
@@ -86,6 +86,14 @@ export function createPlannedTripRepository(db: Executor) {
         },
 
         deleteById,
+
+        /** Conservation dans le temps : les ponctuels passés (terminés ou annulés)
+         *  prévus avant `cutoff` sont effacés avec leurs coordonnées. */
+        deletePastBefore(userId: string, cutoff: string): void {
+            db.delete(plannedTrips)
+                .where(and(eq(plannedTrips.userId, userId), ne(plannedTrips.status, 'planned'), lt(plannedTrips.scheduledFor, cutoff)))
+                .run();
+        },
 
         /** La conservation bornée retire seulement les lignes surnumeraires. */
         prune(userId: string): void {

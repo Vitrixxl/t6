@@ -67,9 +67,17 @@ describe('profil de mobilité', () => {
 
 describe('authentification', () => {
     it('l’inscription exige douze caractères et un chiffre', () => {
-        expect(registration.safeParse({ email: 'a@b.fr', password: 'UrbanFlow2026!', displayName: 'Nadia' }).success).toBe(true);
-        expect(registration.safeParse({ email: 'a@b.fr', password: 'UrbanFlowUrban!', displayName: 'Nadia' }).success).toBe(false);
-        expect(registration.safeParse({ email: 'a@b.fr', password: 'Court1!', displayName: 'Nadia' }).success).toBe(false);
+        const accepted = { email: 'a@b.fr', displayName: 'Nadia', termsAccepted: true };
+        expect(registration.safeParse({ ...accepted, password: 'UrbanFlow2026!' }).success).toBe(true);
+        expect(registration.safeParse({ ...accepted, password: 'UrbanFlowUrban!' }).success).toBe(false);
+        expect(registration.safeParse({ ...accepted, password: 'Court1!' }).success).toBe(false);
+    });
+
+    it("l'inscription exige l'acceptation des conditions, jamais implicite", () => {
+        const valid = { email: 'a@b.fr', password: 'UrbanFlow2026!', displayName: 'Nadia' };
+        expect(registration.safeParse({ ...valid, termsAccepted: false }).success).toBe(false);
+        expect(registration.safeParse(valid).success).toBe(false);
+        expect(registration.safeParse({ ...valid, termsAccepted: true }).success).toBe(true);
     });
 
     it('la connexion ne rejoue pas la politique de robustesse', () => {

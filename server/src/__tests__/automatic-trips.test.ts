@@ -42,6 +42,30 @@ it('bascule après la date exacte et corrige les anciennes réalisations anticip
     expect(repos.tripRecords.list(trip.userId)).toHaveLength(0);
 });
 
+it('efface les ponctuels passés depuis six mois, sans toucher aux ponctuels à venir ni au bilan carbone', async () => {
+    const cookie = await api.register();
+    const other = await api.register('voisin@example.test');
+    const scheduledFor = '2026-03-01T08:00:00.000Z';
+    await api.putResource(cookie, '/api/trips/planned/old', { ...PLANNED_TRIP, scheduledFor });
+    await api.putResource(cookie, '/api/trips/planned/old-cancelled', { ...PLANNED_TRIP, scheduledFor, status: 'cancelled' });
+    await api.putResource(cookie, '/api/trips/planned/future', { ...PLANNED_TRIP, scheduledFor: '2099-01-01T08:00:00Z' });
+    const neighborId = plannedTrip.parse(await (await api.putResource(other, '/api/trips/planned/old', { ...PLANNED_TRIP, scheduledFor })).json()).userId;
+    const userId = plannedTrip.parse(await (await api.putResource(cookie, '/api/trips/planned/old', { ...PLANNED_TRIP, scheduledFor })).json()).userId;
+    const repos = createRepositories(api.db);
+
+    // Six mois moins une milliseconde : rien n'est effacé, le trajet est réalisé.
+    completeDueTrips(api.db, userId, new Date('2026-09-01T07:59:59.999Z'));
+    expect(repos.plannedTrips.list(userId).map((trip) => trip.id).sort()).toEqual(['future', 'old', 'old-cancelled']);
+    expect(repos.plannedTrips.findById(userId, 'old')?.status).toBe('done');
+
+    completeDueTrips(api.db, userId, new Date('2026-09-01T08:00:00.001Z'));
+    expect(repos.plannedTrips.list(userId).map((trip) => trip.id)).toEqual(['future']);
+    // L'entrée carbone, sans coordonnées, reste dans l'historique.
+    expect(repos.tripRecords.list(userId).map((record) => record.id)).toEqual(['trip:old']);
+    // La purge d'un compte ne touche pas les lignes d'un autre.
+    expect(repos.plannedTrips.findById(neighborId, 'old')).not.toBeNull();
+});
+
 it('rétablit un ponctuel passé à sa date prévue, une seule fois, en préservant les autres comptes', async () => {
     const cookie = await api.register();
     const other = await api.register('voisin@example.test');

@@ -27,5 +27,8 @@ export const accountExport = accountState.extend({
         email: z.string(),
         displayName: z.string(),
         createdAt: z.string(),
+        // Nuls pour les comptes créés avant l'introduction des conditions.
+        termsAcceptedAt: z.string().nullable(),
+        termsVersion: z.string().nullable(),
     }),
 });

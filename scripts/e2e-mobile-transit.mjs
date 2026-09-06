@@ -10,7 +10,7 @@ const page = await context.newPage();
 function assert(value, message) { if (!value) throw new Error(message); }
 try {
     const signup = await context.request.post(base + '/api/auth/register', { data: {
-        email: `test-bus-${randomUUID()}@example.test`, password: 'RecetteBus2026!', displayName: 'Test bus',
+        email: `test-bus-${randomUUID()}@example.test`, password: 'RecetteBus2026!', displayName: 'Test bus', termsAccepted: true,
     } });
     assert(signup.ok(), 'Inscription de recette refusée');
     const feed = await file(new URL('../data/transport/gtfs-feed.json', import.meta.url)).json();

@@ -58,7 +58,14 @@ export function meRoutes(ctx: AppContext) {
 
                 return {
                     exportedAt: new Date().toISOString(),
-                    account: { id: user.id, email: user.email, displayName: user.displayName, createdAt: row.createdAt },
+                    account: {
+                        id: user.id,
+                        email: user.email,
+                        displayName: user.displayName,
+                        createdAt: row.createdAt,
+                        termsAcceptedAt: row.termsAcceptedAt,
+                        termsVersion: row.termsVersion,
+                    },
                     ...repositories.state.fullState(userId, user.profile),
                 };
             },

@@ -4,7 +4,8 @@ import { CarbonReference } from '../carbon/CarbonReference';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Check, CircleHelp, LogOut, Trash2, UserRound } from 'lucide-react';
+import { Check, CircleHelp, LogOut, ScrollText, Trash2, UserRound } from 'lucide-react';
+import { LegalDialog } from '../legal/LegalNotice';
 import { ConfirmDialog } from '../ui/confirm-dialog';
 import { Button } from '../ui/button';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../ui/drawer';
@@ -35,6 +36,7 @@ export function ProfileDrawer({
     const logout = useLogout();
     const deleteAccount = useDeleteAccount();
     const [confirming, setConfirming] = useState<'logout' | 'delete' | null>(null);
+    const [legalOpen, setLegalOpen] = useState(false);
     const onLogout = () => {
         onOpenChange(false);
         logout();
@@ -74,6 +76,10 @@ export function ProfileDrawer({
                                 Revoir le tutoriel
                             </Button>
                             <AccountExport />
+                            <Button type="button" variant="outline" className="w-full justify-center" onClick={() => setLegalOpen(true)}>
+                                <ScrollText className="size-4" aria-hidden="true" />
+                                Données personnelles
+                            </Button>
                             <div className="grid gap-2 sm:grid-cols-2">
                                 <Button type="button" variant="outline" className="w-full justify-center" onClick={() => setConfirming('logout')}>
                                     <LogOut className="size-4" aria-hidden="true" />
@@ -104,6 +110,7 @@ export function ProfileDrawer({
                 onConfirm={onLogout}
             />
 
+            <LegalDialog open={legalOpen} onOpenChange={setLegalOpen} />
             <ConfirmDialog
                 open={confirming === 'delete'}
                 onOpenChange={(next) => setConfirming(next ? 'delete' : null)}

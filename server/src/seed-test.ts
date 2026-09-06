@@ -4,7 +4,7 @@ import { loadConfig } from './config/index.ts';
 import { openDatabase, type Db } from './db/index.ts';
 import { createRepositories } from './repositories/index.ts';
 import { hashPassword } from './security/password.ts';
-import { DEFAULT_PROFILE, plannedTrip, recurringTrip, savedRoute, type PlannedTrip } from '../../src/contracts/index.ts';
+import { DEFAULT_PROFILE, TERMS_VERSION, plannedTrip, recurringTrip, savedRoute, type PlannedTrip } from '../../src/contracts/index.ts';
 import { atCalendarTime, calendarDate } from '../../src/lib/trips/calendar.ts';
 
 export const TEST_EMAIL = 'test@urbanflow.local';
@@ -24,7 +24,10 @@ export async function seedTestAccount(db: Db, password: string, now = new Date()
         if (existing) repositories.users.delete(existing.id);
         const userId = crypto.randomUUID();
         const profile = { ...DEFAULT_PROFILE, displayName: 'Test · données fictives', carbonGoalGramsPerWeek: 2500 };
-        repositories.users.insert({ id: userId, email: TEST_EMAIL, displayName: profile.displayName, passwordHash, createdAt, profile });
+        repositories.users.insert({
+            id: userId, email: TEST_EMAIL, displayName: profile.displayName, passwordHash, createdAt, profile,
+            termsAcceptedAt: createdAt, termsVersion: TERMS_VERSION,
+        });
         const journey = {
             userId,
             origin: { label: 'Test · Bellecour', lat: 45.7578, lon: 4.832 },

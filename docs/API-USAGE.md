@@ -8,7 +8,7 @@ n’est pas considérée comme utilisée par l’application.
 | --- | --- |
 | `GET /api/doc`, `GET /api/doc/json` | Documentation consultable et schéma chargé par Scalar ; `scripts/e2e-api-doc.mjs` vérifie le rendu. |
 | `GET /api/health` | Sonde du conteneur dans `infra/api.Dockerfile` et attente du serveur dans `scripts/ci.ts`. |
-| `POST /api/auth/register`, `POST /api/auth/login` | `src/lib/api/auth.ts`, appelé par les formulaires et les mutations de session. La réponse contient l’état initial du compte. |
+| `POST /api/auth/register`, `POST /api/auth/login` | `src/lib/api/auth.ts`, appelé par les formulaires et les mutations de session. L’inscription exige `termsAccepted: true` (422 sinon) et enregistre la date et la version des conditions acceptées. La réponse contient l’état initial du compte. |
 | `POST /api/auth/logout`, `GET /api/auth/session` | `src/lib/api/auth.ts` : fermeture et reprise de la session, avec état du compte. |
 | `GET /api/me/profile`, `PUT /api/me/profile` | `src/lib/api/profile.ts` et `src/queries/profile.ts` : lecture, modification et relecture après un échec. |
 | `GET /api/me/export` | `src/lib/api/account-export.ts`, appelé par le bouton d’export du profil. |

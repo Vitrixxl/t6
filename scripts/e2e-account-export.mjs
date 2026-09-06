@@ -19,7 +19,7 @@ page.on('download', () => downloads++);
 try {
     const email = `export-${randomUUID()}@example.test`;
     const registered = await context.request.post(`${baseURL}/api/auth/register`, {
-        data: { email, password: 'UrbanFlow2026!', displayName: 'Test export' },
+        data: { email, password: 'UrbanFlow2026!', displayName: 'Test export', termsAccepted: true },
     });
     assert.equal(registered.status(), 201);
     const saved = await context.request.put(`${baseURL}/api/saved-routes/export-test`, { data: {
@@ -52,7 +52,7 @@ try {
         for (const key of Object.keys(state)) assert.deepEqual(exported[key], state[key]);
         assert.equal(exported.savedRoutes[0].origin.lat, 45.75);
         assert.equal(exported.savedRoutes[0].carbonSavedGrams, null);
-        assert.deepEqual(Object.keys(exported.account).sort(), ['createdAt', 'displayName', 'email', 'id']);
+        assert.deepEqual(Object.keys(exported.account).sort(), ['createdAt', 'displayName', 'email', 'id', 'termsAcceptedAt', 'termsVersion']);
         assert.equal(exportRequests - before, 1);
         await profile.getByRole('status').waitFor();
         await page.screenshot({ path: `tmp/screenshots/export-${width}.png` });
