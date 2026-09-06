@@ -270,7 +270,7 @@ courantes, et sans `shapes.txt` le tracé d'une ligne relie ses arrêts en ligne
 droite. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
-Après activation future, les horaires viendront de l’archive GTFS chargée dans MOTIS (`infra/motis-prepare.sh`).
+Les horaires théoriques viennent de l’archive GTFS officielle chargée dans MOTIS (`infra/motis-prepare.sh`).
 L'horaire de recette de `scripts/fixtures/` est dérivé du réseau livré et ne sert
 qu'à `bun run ci` : ne jamais le présenter ni le charger comme horaire réel.
 
@@ -395,9 +395,9 @@ modification de ce parcours ; annoncer les octets mesurés, pas une économie
 d’énergie supposée.
 
 
-## Livraison sans horaires TCL
+## Livraison avec horaires TCL officiels
 
-Les horaires TCL sont reportés à une prochaine itération. Par défaut, `MOTIS_TRANSIT_ENABLED=false` : marche et véhicules partagés uniquement, arrêts TCL consultables et limite annoncée dans l’interface. Aucun accès GTFS n’est requis. Le serveur publie `transitRoutingAvailable=false` et force `transitModes=` vers MOTIS. Les horaires de recette servent uniquement à la CI. Une activation future exige une archive actuelle et `MOTIS_TRANSIT_ENABLED=true` à la préparation et au lancement.
+La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours. `MOTIS_TRANSIT_ENABLED=true` active les TCL à la préparation et au lancement. `GTFS_SOURCE_FILE` accepte le ZIP local ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour le téléchargement. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les segments TCL ont leurs lignes et horaires, mais aucun tracé affiché ; leur distance et leur bilan carbone sont explicitement estimés entre arrêts. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
 
 
 ## Navigation mobile de la présentation

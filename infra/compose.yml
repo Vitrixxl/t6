@@ -44,7 +44,7 @@ services:
     command: /motis server -d /data/data
     working_dir: /data
     volumes:
-      - ./motis-data:/data
+      - ${MOTIS_DATA_DIR:-./motis-data}:/data
     restart: unless-stopped
 
 volumes:

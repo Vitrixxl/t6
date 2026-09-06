@@ -14,6 +14,15 @@ const picker = page.locator('.ufm-picker');
 const canvas = page.locator('.maplibregl-canvas');
 async function touch(type, touchPoints = []) { await cdp.send('Input.dispatchTouchEvent', { type, touchPoints }); }
 async function pointOnMap(fraction = 0.5) {
+    // Le resize du canvas suit celui du viewport au rendu suivant.
+    await page.waitForFunction(() => {
+        const surface = globalThis.document.querySelector('.maplibregl-canvas');
+        const frame = surface?.closest('.maplibregl-map');
+        if (!surface || !frame) return false;
+        const actual = surface.getBoundingClientRect();
+        const expected = frame.getBoundingClientRect();
+        return Math.abs(actual.width - expected.width) < 1 && Math.abs(actual.height - expected.height) < 1;
+    });
     const box = await canvas.boundingBox();
     assert(box, 'Carte absente');
     return { x: box.x + box.width * fraction, y: box.y + box.height * 0.55 };

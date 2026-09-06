@@ -195,7 +195,8 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 - [x] Le calcul d'itinéraires est délégué à MOTIS : voirie OSM, horaires GTFS (RAPTOR) et flux GBFS sur un graphe unique ; le pipeline horaire maison et ses cinq tables sont retirés (migration 0011).
 - [x] Recette : horaire GTFS de recette dérivé du réseau livré (`scripts/build-gtfs-fixture.py`), importé dans un MOTIS jetable par `bun run ci`.
-- [ ] Production : charger une archive TCL récente avec `infra/motis-prepare.sh` (`MOTIS_TRANSIT_ENABLED=true`, `GTFS_SOURCE_URL`) et automatiser son renouvellement.
+- [x] Archive TCL officielle importée via `GTFS_SOURCE_FILE`, moteur et API activés.
+- [ ] Automatiser le renouvellement de l’archive et intégrer les tracés de lignes vérifiés.
 
 ## Simplification pour l’apprentissage
 
@@ -254,15 +255,15 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 - [x] Filtres temporaires de recherche ; PMR exclut Vélo’v/Dott et exige une accessibilité publique déclarée.
 - [x] Contrats et OpenAPI : un trajet objet, aucun score ni présélection ; voiture seulement comme référence.
 - [x] Recettes dédiées : `scripts/e2e-onboarding.mjs`, planification, filtres/mobile, transport, hors ligne, historique et export intégrés à `bun run ci`.
-- [ ] Itération suivante : intégrer les horaires TCL officiels. La version actuelle fonctionne sans GTFS ; les fixtures de CI ne sont pas des horaires réels.
+- [x] Horaires TCL officiels intégrés ; la recette `scripts/e2e-tcl.mjs` compare le trajet à la marche et vérifie les lignes et limites de tracé.
 
 Le PDF et ses scripts sont gelés. Les anciennes cases de génération et de
 contrôle décrivent leur livraison historique ; elles ne demandent aucun rejeu.
 
 
-## Livraison sans horaires TCL
+## Livraison avec horaires TCL officiels
 
-Les horaires TCL sont reportés à une prochaine itération. Par défaut, `MOTIS_TRANSIT_ENABLED=false` : marche et véhicules partagés uniquement, arrêts TCL consultables et limite annoncée dans l’interface. Aucun accès GTFS n’est requis. Le serveur publie `transitRoutingAvailable=false` et force `transitModes=` vers MOTIS. Les horaires de recette servent uniquement à la CI. Une activation future exige une archive actuelle et `MOTIS_TRANSIT_ENABLED=true` à la préparation et au lancement.
+La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours. `MOTIS_TRANSIT_ENABLED=true` active les TCL à la préparation et au lancement. `GTFS_SOURCE_FILE` accepte le ZIP local ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour le téléchargement. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les segments TCL ont leurs lignes et horaires, mais aucun tracé affiché ; leur distance et leur bilan carbone sont explicitement estimés entre arrêts. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
 
 
 ## Navigation mobile de la présentation

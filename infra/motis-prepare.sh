@@ -5,17 +5,17 @@
 # graphe unique à partir de la voirie OpenStreetMap, des horaires GTFS et des
 # flux GBFS Vélo'v et Dott, lus à l'exécution. Il calcule ensuite sur les
 # calendriers de l'archive : une archive périmée ne produit aucun trajet en
-# transport aux dates courantes. Les horaires sont désactivés par défaut.
+# transport aux dates courantes. L’activation des horaires est explicite.
 #
 # Prérequis : docker et curl. Les accès GTFS ne sont requis que pour une
-# future activation des horaires (MOTIS_TRANSIT_ENABLED=true). `osmium` est facultatif : s'il est installé, la région est
+# activation des horaires (MOTIS_TRANSIT_ENABLED=true). `osmium` est facultatif : s'il est installé, la région est
 # découpée autour de Lyon, ce qui divise par dix le temps d'import.
 set -euo pipefail
 
 ENGINE="${CONTAINER_ENGINE:-docker}"
 IMAGE="ghcr.io/motis-project/motis@sha256:6055f51eec43eeed28524037ca0161b96efe9cd05728eaa9ac04c20c2826d330"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DATA_DIR="$ROOT/infra/motis-data"
+
 REGION_URL="https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf"
 # Boîte englobant la métropole, un peu plus large que le rayon de 16 km du feed.
 BBOX="4.60,45.60,5.05,45.95"
@@ -29,21 +29,26 @@ if [ -f "$ROOT/.env" ]; then
   # shellcheck disable=SC1091
   set -a; . "$ROOT/.env"; set +a
 fi
+DATA_DIR="${MOTIS_DATA_DIR:-$ROOT/infra/motis-data}"
 mkdir -p "$DATA_DIR"
 
-# Les horaires sont reportés : aucun compte externe n’est nécessaire au mode
-# voirie et véhicules partagés. L’activation future doit rester explicite.
+# Une archive téléchargée manuellement suffit : les accès API ne sont
+# nécessaires que pour récupérer directement une nouvelle version.
 WITH_TRANSIT="${MOTIS_TRANSIT_ENABLED:-false}"
 if [ "$WITH_TRANSIT" = true ]; then
-  : "${GTFS_SOURCE_URL:?Renseigner GTFS_SOURCE_URL pour activer les horaires}"
-  GTFS_AUTH=()
-  if [[ -n "${GTFS_USERNAME:-}" || -n "${GTFS_PASSWORD:-}" ]]; then
-    : "${GTFS_USERNAME:?GTFS_USERNAME absent}"
-    : "${GTFS_PASSWORD:?GTFS_PASSWORD absent}"
-    GTFS_AUTH=(--user "$GTFS_USERNAME:$GTFS_PASSWORD")
+  if [ -n "${GTFS_SOURCE_FILE:-}" ]; then
+    cp "$GTFS_SOURCE_FILE" "$DATA_DIR/tcl.gtfs.zip.part"
+  else
+    : "${GTFS_SOURCE_URL:?Renseigner GTFS_SOURCE_FILE ou GTFS_SOURCE_URL pour activer les horaires}"
+    GTFS_AUTH=()
+    if [[ -n "${GTFS_USERNAME:-}" || -n "${GTFS_PASSWORD:-}" ]]; then
+      : "${GTFS_USERNAME:?GTFS_USERNAME absent}"
+      : "${GTFS_PASSWORD:?GTFS_PASSWORD absent}"
+      GTFS_AUTH=(--user "$GTFS_USERNAME:$GTFS_PASSWORD")
+    fi
+    echo "Téléchargement de l’archive GTFS TCL..."
+    curl "${GTFS_AUTH[@]}" -L --fail --progress-bar -o "$DATA_DIR/tcl.gtfs.zip.part" "$GTFS_SOURCE_URL"
   fi
-  echo "Téléchargement de l’archive GTFS TCL..."
-  curl "${GTFS_AUTH[@]}" -L --fail --progress-bar -o "$DATA_DIR/tcl.gtfs.zip.part" "$GTFS_SOURCE_URL"
   mv "$DATA_DIR/tcl.gtfs.zip.part" "$DATA_DIR/tcl.gtfs.zip"
 else
   echo "Préparation sans horaires TCL : marche et véhicules partagés uniquement."
@@ -97,4 +102,4 @@ echo "Construction du graphe MOTIS..."
 "$ENGINE" run --rm -u "$(id -u):$(id -g)" -v "$DATA_DIR:/data" -w /data "$IMAGE" /motis import -c /data/config.yml -d /data/data
 
 echo
-echo "Données prêtes dans $DATA_DIR/data. Lancer : docker compose -f infra/compose.yml up -d"
+echo "Données prêtes dans $DATA_DIR/data. Lancer : docker compose --env-file .env -f infra/compose.yml up -d --force-recreate"

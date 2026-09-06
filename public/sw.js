@@ -40,6 +40,25 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Le HTML désigne les fichiers empreintés de la livraison. Le rendre depuis
+    // le cache avant le réseau conserve l’ancien code au premier rechargement.
+    // Hors ligne, le dernier écran téléchargé garde le bandeau et la reconnexion.
+    if (event.request.mode === 'navigate') {
+        event.respondWith((async () => {
+            try {
+                const response = await fetch(event.request, { cache: 'no-cache' });
+                if (response.ok && response.type === 'basic') {
+                    const cache = await caches.open(CACHE_NAME);
+                    await cache.put(event.request, response.clone());
+                }
+                return response;
+            } catch {
+                return await caches.match(event.request) || await caches.match('/offline.html');
+            }
+        })());
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
             const networkResponse = fetch(event.request)

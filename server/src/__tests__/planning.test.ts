@@ -116,7 +116,7 @@ describe('choix et traduction', () => {
         expect(fastestItinerary([unsupported, late])).toBe(late);
     });
 
-    it('conserve lignes, correspondances, géométries et facteurs carbone', async () => {
+    it('conserve lignes, correspondances et facteurs sans dessiner les droites du GTFS sans shapes', async () => {
         const plans = await itineraries(transitPlan);
         const best = fastestItinerary(plans);
         if (!best) throw new Error('Trajet absent');
@@ -126,7 +126,9 @@ describe('choix et traduction', () => {
         expect(route.legs[2].transfer).toBe(true);
         expect(route.legs[0].from).toBe('Bellecour');
         expect(route.legs.at(-1)?.to).toBe('Part-Dieu');
-        expect(route.legs.every(leg => leg.path.length >= 2)).toBe(true);
+        expect(route.legs.filter(leg => leg.mode !== 'transit').every(leg => leg.path.length >= 2)).toBe(true);
+        expect(route.legs.filter(leg => leg.mode === 'transit').every(leg => leg.path.length === 0)).toBe(true);
+        expect(route.legs[1].detail).toContain('distance et bilan carbone estimés');
         expect(route.summary).toBe('Métro D puis Tram T1, 1 correspondance.');
         const rentals = await itineraries(rentalPlan);
         const bike = toRouteOption(rentals[0], { ...search, departureAt: '2022-04-20T06:00:00Z' });

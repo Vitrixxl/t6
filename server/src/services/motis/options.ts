@@ -1,8 +1,8 @@
 // Choix et traduction du trajet MOTIS retenu.
 //
 // MOTIS rend des trajets non dominés ; UrbanFlow n'en propose qu'un, celui qui
-// arrive le premier avec les moyens demandés, attentes comprises. Ses mesures,
-// tracés et lignes viennent tels quels de MOTIS ; seuls les libellés sont ici.
+// arrive le premier avec les moyens demandés, attentes comprises. Les horaires et
+// lignes viennent de MOTIS. Les droites du GTFS sans shapes ne sont pas tracées.
 import type { AvailableMode, GeoPoint, MobilityMode, RouteLeg, RouteOption } from '../../../../src/types.ts';
 import { ROAD_EMISSION_FACTORS, transitEmissionFactor } from '../../../../src/lib/planner/emissions.ts';
 import { haversineDistanceKm } from '../../../../src/lib/planner/geo.ts';
@@ -53,7 +53,7 @@ function describeTransit(leg: MotisLeg, to: GeoPoint): LegText {
     const label = lineLabel(leg.routeType ?? -1, leg.routeShortName ?? '');
     return {
         title: `${label} vers ${to.label}`,
-        detail: leg.headsign ? `${label} direction ${leg.headsign}.` : `${label}.`,
+        detail: `${leg.headsign ? `${label} direction ${leg.headsign}.` : `${label}.`} Horaires théoriques TCL. Tracé de ligne indisponible ; distance et bilan carbone estimés entre les arrêts.`,
         mapLabel: label,
         mapColor: leg.routeColor ? `#${leg.routeColor}` : undefined,
     };
@@ -116,7 +116,9 @@ function toLeg(leg: MotisLeg, mode: MobilityMode, id: string, ends: SearchEnds):
         to: to.label,
         fromPoint: from,
         toPoint: to,
-        path,
+        // Le GTFS TCL livré ne contient pas shapes.txt : la polyligne MOTIS
+        // relie seulement les arrêts. Elle estime la distance, pas le tracé.
+        path: mode === 'transit' ? [] : path,
         distanceKm,
         durationMinutes: Math.max(1, Math.round(leg.duration / 60)),
         carbonGrams: Math.round(distanceKm * carbonGramsPerKm),

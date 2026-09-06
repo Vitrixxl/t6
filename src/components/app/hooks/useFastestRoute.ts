@@ -11,12 +11,13 @@ import { useSearchFilters } from '../../planner/useSearchFilters';
  * l'utilisateur : dans le premier cas la carte va se remplir, dans le second
  * il faut lui dire que le service de routage ne répond pas.
  */
-export type RoutingStatus = 'idle' | 'pending' | 'ready' | 'unavailable';
+export type RoutingStatus = 'idle' | 'pending' | 'ready' | 'partial' | 'unavailable';
 
 export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
     idle: 'En attente d\'un trajet',
     pending: 'Calcul du tracé en cours',
     ready: 'Tracé réel affiché',
+    partial: 'Tracé TCL indisponible',
     unavailable: 'Service de routage indisponible',
 };
 
@@ -37,7 +38,8 @@ export function useFastestRoute(input: {
     // affiché est toujours celui de la recherche courante.
     const query = useQuery(fastestRouteQuery(search, network));
     const route = query.data ?? null;
-    const routingStatus: RoutingStatus = !search ? 'idle' : query.isPending ? 'pending' : route ? 'ready' : 'unavailable';
+    const routeStatus: RoutingStatus = !route ? 'unavailable' : route.legs.some(leg => leg.path.length < 2) ? 'partial' : 'ready';
+    const routingStatus: RoutingStatus = !search ? 'idle' : query.isPending ? 'pending' : routeStatus;
 
     return { route, routingStatus };
 }

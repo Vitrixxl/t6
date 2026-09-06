@@ -255,7 +255,7 @@ une erreur GBFS après expiration produit `null`, sans réutiliser un ancien flu
 Le contexte est demandé après la connexion, puis relu chaque minute lorsque l’application est active.
 
 Le calcul porte sur tout le réseau, indépendamment du cadrage. Seul le trajet
-retenu, ses mesures et son tracé sont envoyés au client. Le calcul public est désactivé tant que les horaires ne sont pas intégrés.
+retenu, ses mesures et son tracé sont envoyés au client. Les TCL sont calculés lorsque l’archive officielle est importée et le transport activé.
 Les anciennes routes `/api/route` et `/api/route-matrix` n’ont plus d’appelant et
 sont retirées. `bun run e2e:transport` vérifie le volume TCL initial, l’absence de
 fichier global, le cache au déplacement, le zoom régional et la reprise après
@@ -264,9 +264,9 @@ d’énergie ou l’ensemble du trafic (fond OSM et GBFS restent distincts).
 
 ## Calcul d'itinéraires
 
-Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur la confie à MOTIS, un moteur multimodal open source qui calcule sur un graphe unique : la voirie OpenStreetMap, les flux GBFS et, après activation future, les horaires GTFS Vélo'v et Dott.
+Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur la confie à MOTIS, un moteur multimodal open source qui calcule sur un graphe unique : la voirie OpenStreetMap, les flux GBFS Vélo’v/Dott et les horaires GTFS officiels TCL.
 
-1. Un seul appel `plan` autorise la marche et les moyens demandés en accès, en sortie et en trajet direct. Les engins partagés exigent les flux GBFS en direct. Après activation des horaires, les types publics choisis sont transmis à MOTIS. En parallèle, un appel `one-to-many` mesure la référence voiture.
+1. Un seul appel `plan` autorise la marche et les moyens demandés en accès, en sortie et en trajet direct. Les engins partagés exigent les flux GBFS en direct. Les types publics choisis sont transmis à MOTIS lorsque le transport est activé. En parallèle, un appel `one-to-many` mesure la référence voiture.
 2. `fetchPlan` réunit `direct` et `itineraries`. `fastestItinerary` retient la première arrivée parmi les trajets autorisés ; à arrivée égale, il retient le trajet le plus court. `numItineraries` est un minimum de recherche, jamais un plafond de résultats.
 3. `toRouteOption` traduit ce seul trajet et mesure sa durée depuis l’heure demandée, attente initiale comprise. Exemple : départ dans 12 minutes puis trajet de 10 minutes → durée totale 22 minutes. La référence carbone voiture est appliquée au résultat.
 
@@ -277,7 +277,7 @@ mémoire pendant cinq minutes ; chaque appel serveur interroge MOTIS.
 
 Référence du protocole : [OpenAPI MOTIS](https://github.com/motis-project/motis/blob/master/openapi.yaml).
 
-Une correspondance entre deux quais est un segment piéton routé par MOTIS sur la voirie, avec son tracé. Sans `shapes.txt` dans l'archive GTFS, le tracé d'une ligne relie ses arrêts en ligne droite : cette limite devra être vérifiée lors de l’intégration future des horaires.
+Une correspondance entre deux quais est un segment piéton routé par MOTIS sur la voirie, avec son tracé. L’archive officielle reçue ne contient pas `shapes.txt`. La polyligne MOTIS entre arrêts est donc retirée des segments TCL ; seules les géométries de voirie sont affichées. Le trajet reste planifiable avec ses horaires théoriques ; distance et carbone TCL sont des estimations annoncées. L’intégration de tracés de lignes vérifiés reste à faire.
 
 ## Facteurs carbone
 
@@ -346,16 +346,17 @@ publique par défaut, ni bascule vers un hébergeur externe en cas de panne.
 Pour héberger le moteur localement (les flux GBFS et le géocodage restent externes) :
 
 ```bash
-./infra/motis-prepare.sh                     # prépare la voirie, sans horaires ni identifiants GTFS (une fois)
-docker compose -f infra/compose.yml up -d    # application + moteur
+# Créer .env depuis .env.example s’il n’existe pas, puis y configurer le ZIP TCL.
+./infra/motis-prepare.sh
+docker compose --env-file .env -f infra/compose.yml up -d --build --force-recreate
 ```
 
-Les horaires TCL sont reportés à une prochaine itération. Par défaut, `MOTIS_TRANSIT_ENABLED=false` : marche et véhicules partagés uniquement, arrêts TCL consultables et limite annoncée dans l’interface. Aucun accès GTFS n’est requis. Le serveur publie `transitRoutingAvailable=false` et force `transitModes=` vers MOTIS. Les horaires de recette servent uniquement à la CI. Une activation future exige une archive actuelle et `MOTIS_TRANSIT_ENABLED=true` à la préparation et au lancement.
+La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours. `MOTIS_TRANSIT_ENABLED=true` active les TCL à la préparation et au lancement. `GTFS_SOURCE_FILE` accepte le ZIP local ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour le téléchargement. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les segments TCL ont leurs lignes et horaires, mais aucun tracé affiché ; leur distance et leur bilan carbone sont explicitement estimés entre arrêts. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
 
 Le script requiert Docker et curl. `osmium` est facultatif : il découpe Lyon si disponible ; sinon la région Rhône-Alpes est importée. Un extrait `infra/motis-data/lyon.osm.pbf` déjà présent est réutilisé. L’import utilise l’utilisateur courant pour écrire le graphe sans privilège administrateur.
 
 
-`infra/compose.yml` lance **l'application et le moteur ensemble** : l'API appelle `motis:8080` sur le réseau Docker, sans port publié. L'application écoute en **HTTPS** sur le port 4000, avec un certificat auto-signé généré au premier démarrage. Pour y accéder depuis le réseau local, inscrire l'adresse de la machine dans le certificat : `TLS_EXTRA_HOSTS=IP:192.168.1.37 docker compose -f infra/compose.yml up -d`.
+`infra/compose.yml` lance **l'application et le moteur ensemble** : l'API appelle `motis:8080` sur le réseau Docker, sans port publié. L'application écoute en **HTTPS** sur le port 4000, avec un certificat auto-signé généré au premier démarrage. Pour y accéder depuis le réseau local, inscrire l'adresse de la machine dans le certificat : `TLS_EXTRA_HOSTS=IP:192.168.1.37 docker compose --env-file .env -f infra/compose.yml up -d`.
 
 Pour une API lancée hors conteneur, publier le moteur en loopback dans Compose (`ports: ['127.0.0.1:8080:8080']`) et renseigner `.env` :
 
@@ -435,7 +436,7 @@ suffit. La surface spécifique à Bun se limite à trois fichiers (`db/index.ts`
 `config/index.ts`) : le portage vers Node se ferait via `@elysiajs/node`, le driver `drizzle-orm/better-sqlite3`
 (les dépôts ne changent pas) et scrypt.
 
-Le feed `data/transport/gtfs-feed.json` est déjà versionné : `GTFS_SOURCE_URL` ne sert qu'à le régénérer.
+Le feed `data/transport/gtfs-feed.json` est déjà versionné : `GTFS_SOURCE_URL` sert aussi à préparer les horaires du moteur.
 Chemin Chromium des scripts configurable via `CHROME_BIN`.
 
 ## Sécurité / RGPD
@@ -526,7 +527,7 @@ vérifiables, les boucles de même terminus, les morceaux discontinus et les ser
 spéciaux ne sont pas importés. Le rayon de 16 km reste celui du produit.
 
 Ces séquences alimentent l'horaire GTFS de recette (`scripts/build-gtfs-fixture.py`) et
-les cellules de la carte. En production, le calcul public reste désactivé jusqu’à l’intégration d’une archive GTFS officielle actuelle.
+les cellules de la carte. La production calcule les TCL sur l’archive officielle importée, indépendamment de ces fixtures.
 
 Le bus utilise une référence
 [bus thermique ADEME Impact CO₂](https://impactco2.fr/outils/transport/busthermique)
@@ -582,3 +583,18 @@ La présentation conserve sa mise en page et se pilote aussi au toucher : balaya
 L’appui long de 500 ms ouvre le choix départ/arrivée. Le menu reste ouvert au relâchement et pendant les actualisations GPS ; un nouveau toucher extérieur ou la fermeture explicite le referme. Les déplacements, gestes annulés et appuis à plusieurs doigts ne sélectionnent aucun point.
 
 Recette navigateur : `bun scripts/e2e-map-picker.mjs` (`E2E_BASE_URL` désigne le serveur), incluse dans `bun run ci`.
+
+### Charger un ZIP TCL téléchargé manuellement
+
+Renseigner `.env` (jamais versionné) :
+
+```dotenv
+MOTIS_TRANSIT_ENABLED=true
+GTFS_SOURCE_FILE=/chemin/vers/GTFS_TCL.ZIP
+# Facultatif : préparer à part du graphe actuellement servi.
+MOTIS_DATA_DIR=/chemin/vers/les/donnees-motis
+```
+
+Puis `./infra/motis-prepare.sh` et `docker compose --env-file .env -f infra/compose.yml up -d --build --force-recreate`. Le chemin explicite de `.env` est nécessaire : le fichier Compose vit dans `infra/`. Le dossier doit contenir l’extrait OSM existant pour éviter un nouveau téléchargement. La préparation importe 60 jours à partir du jour d’exécution ; une archive périmée ne fournit aucun horaire courant. Les données sont privées au moteur et le ZIP n’est pas versionné.
+
+Le service worker charge le HTML depuis le réseau lors d’une navigation en ligne, puis actualise son cache. Hors ligne, il conserve le dernier écran chargé. `scripts/e2e-app-update.mjs` vérifie une mise à jour avec un ancien HTML déjà en cache.

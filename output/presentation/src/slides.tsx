@@ -64,7 +64,7 @@ function Requirements() {
                         <>
                             <b>F3</b> Intégration d'API transport
                         </>,
-                        "Arrêts TCL et tracés SYTRAL, GBFS Vélo'v et Dott, géocodage. Horaires reportés.",
+                        "Horaires officiels TCL, arrêts SYTRAL, GBFS Vélo'v et Dott, géocodage.",
                     ],
                     [
                         <>
@@ -127,7 +127,7 @@ function ExternalApis() {
                 rows={[
                     [<b>BAN</b>, 'Géocodage des adresses, service public sans clé.', 'Résultats Photon conservés.'],
                     [<b>Photon</b>, 'Second géocodeur, données OpenStreetMap.', 'Résultats BAN conservés ; erreur si les deux échouent.'],
-                    [<b>MOTIS</b>, 'Trajet le plus rapide sur la voirie OSM et les flux GBFS. Moteur local, sans horaires TCL pour cette version.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
+                    [<b>MOTIS</b>, 'Trajet le plus rapide sur la voirie OSM, les horaires TCL et les flux GBFS. Moteur local.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
                     [<b>Tuiles OSM</b>, 'Le fond de plan.', "Carte vide, l'itinéraire reste lisible en liste."],
                     [<b>GBFS Vélo'v et Dott</b>, 'Stations, vélos disponibles, trottinettes libres.', 'Message explicite, aucun véhicule partagé ni secours local.'],
                     [<b>Réseau TCL et WFS Grand Lyon</b>, 'Arrêts, desserte et tracés officiels, ingérés hors ligne. Horaires à intégrer.', "Sans effet à l'exécution."],
@@ -149,9 +149,9 @@ function Docker() {
                         <li>Deux volumes : la base et le certificat. Compte de recette réinitialisé au démarrage.</li>
                     </ul>
                 </Card>
-                <Card kicker="Le calculateur d'itinéraires" title="MOTIS : voirie et engins partagés">
+                <Card kicker="Le calculateur d'itinéraires" title="MOTIS : voirie, TCL et engins partagés">
                     <ul>
-                        <li>Un seul processus route la marche, les engins et la référence voiture. Aucun accès GTFS requis au démarrage.</li>
+                        <li>Un seul moteur route marche, TCL et engins ; la voiture sert de référence. Archive officielle importée en amont.</li>
                         <li>Les flux GBFS Vélo'v et Dott sont lus à l'exécution : prise et dépose décidées par le moteur.</li>
                         <li>La voiture est une référence carbone invisible, jamais proposée.</li>
                         <li>Appelé par nom de service, aucun port publié, aucun routage public en secours.</li>
@@ -260,7 +260,7 @@ function Reversals() {
                         <li>La carte TCL : 92 lignes de bus, quais et tracés par sens.</li>
                         <li>Un accueil obligatoire : moyens utilisables et PMR, avec reprise en cas d’erreur.</li>
                         <li>Les quais chargés par zone visible au lieu du fichier complet.</li>
-                        <li>MOTIS local pour la marche et les engins partagés. Horaires TCL reportés.</li>
+                        <li>MOTIS local : marche, TCL et engins partagés. Horaires officiels, attente comprise.</li>
                         <li>Information RGPD, conservation à six mois et registre des traitements.</li>
                     </ul>
                 </Card>
@@ -327,9 +327,9 @@ function NextIterations() {
     return (
         <SlideFrame eyebrow="06 · Prochaines itérations" title="Les ajustements à effectuer, dans l'ordre">
             <div className="tiles tiles-4">
-                <Card kicker="1 · Données" title="Intégrer les horaires TCL">
-                    Cette version calcule la marche et les trajets partagés, sans transports publics. Les arrêts restent visibles.
-                    Prochaine étape : charger un GTFS actuel, activer le calcul TCL et automatiser son renouvellement.
+                <Card kicker="1 · Données" title="Renouveler les horaires TCL">
+                    Les horaires théoriques TCL sont intégrés. Leur renouvellement reste à automatiser.
+                    Le ZIP ne fournit pas les tracés : les segments TCL sont décrits, sans ligne droite affichée. Temps réel à venir.
                 </Card>
                 <Card kicker="2 · Exploitation" title="Passer à PostgreSQL et Kubernetes">
                     SQLite sur un nœud suffit à la démonstration, pas à une métropole. Le schéma Drizzle migre vers
@@ -353,7 +353,7 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="164" label="commits depuis le code remis au jury" />
+                <Stat value="166" label="commits depuis le code remis au jury" />
                 <Stat value="24" label="PR fusionnées, chacune avec ses tests" />
                 <Stat value="187" label="tests, 31 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
