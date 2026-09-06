@@ -2022,6 +2022,19 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé.** Sur le build précédent, le scénario échoue lorsque la hauteur du viewport diminue après déplacement et zoom. Il observe les positions des repères rendus, sans accès de test à l’instance MapLibre. Après correction, les gestes et redimensionnements conservent la caméra ; inverser les extrémités cadre le nouveau résultat. La recette tactile fait partie de `bun run ci`.
 
+### B82 — L’enregistrement d’un trajet avec de longues adresses dépasse le contrat
+
+**Symptôme observé.** La validation d’un favori construit avec de longs libellés d’adresses échoue sur son identifiant, alors que les données du trajet sont valides. Le défaut a été reproduit en test pendant l’ajout des variantes MOTIS.
+
+**Cause racine.** L’identifiant du favori concaténait les deux libellés complets, les coordonnées et l’identifiant du trajet. Sa longueur pouvait dépasser les 200 caractères autorisés pour l’identifiant HTTP. Les variantes exigent désormais un identifiant de trajet distinct, ce qui rendait cette concaténation encore plus fragile.
+
+**Correctif.** [81bd2a2](https://github.com/Vitrixxl/t6/commit/81bd2a2dacc732fb31fa351942cd1245e1d606f5) : identifier le favori par la variante MOTIS et les coordonnées des extrémités. Les libellés restent dans les données du favori ; deux alias du même lieu ne créent plus d’identifiants différents. Aucun enregistrement existant n’est supprimé.
+
+**Où le montrer.** `src/lib/savedRoutes.ts` → `stableSavedRouteId`, `src/lib/savedRoutes.test.ts`, `server/src/services/motis/options.ts` → `toRouteOption`.
+
+**Test et niveau de verrouillage : automatisé.** Le test de `savedRoutes.test.ts` construit un favori avec des adresses longues et un identifiant de variante SHA-256, le valide avec le contrat partagé et vérifie la stabilité après renommage des lieux. Le scénario `scripts/check-route-choices.mjs`, appelé par `e2e-tcl.mjs`, sélectionne la deuxième variante sur mobile et bureau, l’enregistre par l’interface et compare les données persistées à cette variante. La liste complète, le choix initial, les détails et le formulaire de planification sont également contrôlés.
+
+
 ## Ouverts
 
 Le renouvellement du GTFS officiel reste manuel. Le temps réel reste à intégrer. Les variantes TCL sans correspondance vérifiée avec les tracés SYTRAL restent sans géométrie. La reprise piétonne après échec du profil location est limitée à un accès du chemin réel : elle ne prouve pas l’optimalité globale du moteur.
