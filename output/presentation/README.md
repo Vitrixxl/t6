@@ -27,8 +27,8 @@ même endroit.
 ## Contenu
 
 `src/slides.tsx` suit le déroulé de `output/soutenance/01-deroule.html`,
-section par section. Les transitions et les apparitions en cascade utilisent
-`motion`. Les chiffres de la diapositive « Depuis la remise » sont relevés à la
+section par section. Les transitions, les apparitions en cascade et les formes de fond qui se
+déplacent d'une diapositive à l'autre (`src/Backdrop.tsx`) utilisent `motion`. Les chiffres de la diapositive « Depuis la remise » sont relevés à la
 main ; les recalculer avant l'oral :
 
 ```sh

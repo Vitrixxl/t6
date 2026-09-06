@@ -21,7 +21,7 @@ export const isoDate = z.iso.datetime();
 export const distanceKm = z.number().min(0).max(2000);
 export const durationMinutes = z.number().min(0).max(10_000);
 export const carbonGrams = z.number().min(0).max(10_000_000);
-// La comparaison dépend d'une mesure OSRM voiture. Son absence ne vaut jamais
+// La comparaison dépend d'une mesure voiture sur la voirie. Son absence ne vaut jamais
 // zéro : null dit explicitement que la référence n'était pas disponible.
 export const carbonSavedGrams = z.number().min(-10_000_000).max(10_000_000).nullable();
 

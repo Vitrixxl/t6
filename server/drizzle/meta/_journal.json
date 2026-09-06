@@ -78,6 +78,13 @@
       "when": 1788680601632,
       "tag": "0010_acceptation-conditions",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1788696742591,
+      "tag": "0011_retrait-horaire-maison",
+      "breakpoints": true
     }
   ]
 }

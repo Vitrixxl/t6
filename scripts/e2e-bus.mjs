@@ -1,4 +1,4 @@
-// Calcul complet avec le feed WFS livré, l’API et les moteurs OSRM locaux.
+// Calcul complet avec le feed WFS livré, l’API et le moteur MOTIS local.
 import { file } from 'bun';
 import { URL } from 'node:url';
 import { chromium } from 'playwright-core';
@@ -38,7 +38,7 @@ try {
     console.log('Calcul demandé.');
     await page.getByText(/^Bus TB11/).first().waitFor({ timeout: 60000 });
     await page.getByText(/^Détails du trajet/).click();
-    assert(await page.getByText(/CO₂e : référence bus thermique/).first().isVisible(), 'Hypothèse carbone absente du détail');
+    assert(await page.getByText(/Bus TB11 direction/).first().isVisible(), 'Ligne et direction absentes du détail');
     assert(await page.locator('.maplibregl-canvas').count() === 1, 'Carte absente');
     const require = createRequire(import.meta.url);
     await page.evaluate(readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8'));
@@ -49,7 +49,7 @@ try {
         await page.getByText(/^Bus TB11/).first().waitFor();
         await page.screenshot({ path: `tmp/screenshots/bus-${width}.png` });
     }
-    console.log('Bus : feed réel, calcul OSRM des accès, ligne TB11, détail des hypothèses et carte vérifiés à 390/1280 px.');
+    console.log('Bus : feed réel, calcul MOTIS des accès, ligne TB11, détail des hypothèses et carte vérifiés à 390/1280 px.');
 } catch (error) {
     await page.screenshot({ path: 'tmp/screenshots/bus-failure.png' });
     console.log((await page.locator('body').innerText()).slice(-5000));

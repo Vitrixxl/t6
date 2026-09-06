@@ -131,7 +131,7 @@ bun run dev          # serveur + reconstruction du client, un seul Ctrl+C
 bun run build        # construit le client dans dist/
 bun run start        # sert le build de production
 bun run check        # lint + typage + tests + build
-bun run ci           # recette complète identique à GitHub, moteurs OSRM isolés
+bun run ci           # recette complète identique à GitHub, moteur MOTIS isolé
 bun run test         # tests du client et de l'API (src/ et server/)
 bun run e2e          # scénario de planification (Playwright)
 bun run audit:a11y   # axe-core sur quatre écrans
@@ -142,12 +142,14 @@ assumé. La génération du dossier PDF est gelée par la règle ci-dessus.
 
 ## Architecture
 
-Les moteurs OSRM sont appelés directement depuis l'API : `OSRM_FOOT_URL`,
-`OSRM_BIKE_URL` et `OSRM_CAR_URL`, avec une adresse configurable pour chaque moteur local.
-Compose fournit les noms des trois services internes, sans Caddy ni port OSRM
-publié. Ces moteurs locaux sont les seules sources de routage : aucun défaut
-public, aucune bascule externe ni file de quota public. En cas de panne d’un
-moteur, l’API répond 503. La trottinette partage le moteur vélo ; la voiture reste une référence.
+Le calcul d'itinéraires est délégué à MOTIS, appelé directement depuis l'API
+(`MOTIS_URL`, par défaut le service Compose `motis:8080`, aucun port publié).
+MOTIS calcule sur un graphe unique — voirie OSM, horaires GTFS, flux GBFS — et
+rend des trajets non dominés ; le serveur les traduit en options par famille
+(`server/src/services/motis/`), les classe et y applique la référence voiture
+mesurée par `one-to-many`. Ce moteur local est la seule source de routage :
+aucun défaut public, aucune bascule externe. En cas de panne, l’API répond 503.
+La voiture reste une référence, jamais une option.
 
 Un fichier, une raison de changer. Ce n'est pas un seuil de lignes : un fichier
 long mais cohésif reste préférable à trois fichiers qui se renvoient la balle.
@@ -167,8 +169,7 @@ Le schéma vit dans `server/src/db/schema.ts`. Toute modification passe par
 committe avec le schéma : elle est appliquée au démarrage, y compris sur la
 base `:memory:` des tests.
 
-**Client** (`src/`) : `lib/planner/` (générateurs dans `options/`, rabattements vélo et
-trottinette réunis dans `feeder-transit.ts`),
+**Client** (`src/`) : `lib/planner/` (score, présélection, facteurs carbone, outils géographiques),
 `lib/transport/` (`geocoding/`, `feeds/`, cellules cartographiques), `lib/api/` (client HTTP,
 authentification, une commande par ressource du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa
@@ -261,16 +262,15 @@ cours, ou service indisponible. Ce fut un vrai bogue (B14) : des points
 intermédiaires décorés, invisibles tant que le routage réel les remplaçait,
 sont apparus le jour où le service tiers a cessé de répondre.
 
-**Nommer les limites plutôt que les masquer.** Le moteur d'itinéraires reste
-heuristique et il n'y a pas de graphe horaire GTFS : les fréquences sont des
-moyennes, pas des horaires. Ces limites sont écrites dans le code et dans les
+**Nommer les limites plutôt que les masquer.** MOTIS calcule sur l'archive GTFS
+chargée : sans archive récente, aucun trajet en transport n'existe aux dates
+courantes, et sans `shapes.txt` le tracé d'une ligne relie ses arrêts en ligne
+droite. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
-Un service horaire est préparé dans `server/src/services/transit/`, sans endpoint
-HTTP publié. Les anciennes routes non consommées ont été supprimées. Il n’est
-pas encore branché au client : ne pas présenter les horaires comme livrés. L’import réel
-attend une archive TCL récente et des tracés compatibles. Le suivi est dans
-`docs/PLAN-ATTENTE-GTFS.md` ; aucun horaire fictif des tests ne doit être activé.
+Les horaires viennent de l'archive GTFS chargée dans MOTIS (`infra/motis-prepare.sh`).
+L'horaire de recette de `scripts/fixtures/` est dérivé du réseau livré et ne sert
+qu'à `bun run ci` : ne jamais le présenter ni le charger comme horaire réel.
 
 En revanche le nom de ligne **est** affiché depuis l'intégration de la desserte
 publiée : une ligne n'est proposée que si elle dessert réellement les deux
@@ -292,7 +292,7 @@ est comparée à son propre objectif persisté par l'API.
 
 **La voiture est une référence, jamais une option.** Elle n'entre pas dans
 `MobilityMode`, les préférences ni la liste des itinéraires : seul
-`RoutableMode` connaît `car`. Une matrice OSRM driving `1 x 1` mesure sa
+le client MOTIS connaît `CAR`. Un appel `one-to-many` en voiture mesure sa
 distance entre les extrémités de la recherche, une seule fois et en parallèle
 du reste. Cette même référence est appliquée à toutes les options après leurs
 mesures réelles. Le facteur est versionné dans `src/lib/planner/emissions.ts` ;
@@ -356,13 +356,13 @@ et permet de réessayer. Vérifier avec `bun scripts/e2e-account-export.mjs`.
 
 **Types publics et documentation.** Le choix Bus/Métro/Tramway/Funiculaire apparaît
 uniquement si la famille sélectionnée contient transit, même si le filtre ne donne
-aucun résultat. Choisir une option sans transit remet les types à Tous. Le réseau
-est filtré avant les accès et correspondances. `/api/doc` et `/api/doc/` ont une
+aucun résultat. Choisir une option sans transit remet les types à Tous. Les types
+choisis sont les modes de transport demandés à MOTIS. `/api/doc` et `/api/doc/` ont une
 CSP propre à Scalar ; `/api/doc/json` conserve la politique JSON stricte.
 
 **Avant chaque push.** Exécuter `bun run ci` sur le code qui sera envoyé et
 attendre sa réussite. `bun run check` seul ne suffit pas : la recette prépare
-trois moteurs OSRM dédiés, une base vide, puis lance l’audit et les scénarios
+un moteur MOTIS dédié sur les fixtures versionnées, une base vide, puis lance l’audit et les scénarios
 navigateur. Docker et Chromium sont nécessaires ; `CI_API_PORT` change le port
 local (4101 par défaut). Après le push, vérifier la conclusion du run GitHub.
 Un échec se corrige avant de considérer la livraison terminée.
@@ -385,11 +385,11 @@ le vrai compte du rayon et ses quatre résultats les plus proches.
 `POST /api/transport/journeys` calcule toutes les options côté serveur sur le
 réseau complet : le cadrage ne doit jamais limiter une destination ou une
 correspondance. Les anciennes routes `/api/route` et `/api/route-matrix` sont
-retirées ; l’appel à OSRM reste interne. Les réponses d’options
+retirées ; l’appel à MOTIS reste interne. Les réponses d’options
 sont validées dans `src/contracts/planning.ts`, les flux et ressources de carte
 dans `src/contracts/transport.ts`. GBFS est mutualisé côté serveur
 pendant 60 s ; le client relit le contexte chaque minute. Une panne après
 expiration n’autorise aucune réutilisation d’un ancien flux GBFS.
 Rejouer `bun run e2e:transport`, la planification et le hors-ligne après une
 modification de ce parcours ; annoncer les octets mesurés, pas une économie
-d’énergie supposée. Le moteur horaire préparatoire reste non activé.
+d’énergie supposée.

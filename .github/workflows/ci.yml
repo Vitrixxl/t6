@@ -1,8 +1,8 @@
 name: CI
 
 # Une seule recette, exécutée à l’identique avant push et sur GitHub.
-# Elle prépare ses trois moteurs OSRM à partir d’un extrait OSM versionné,
-# vérifie leur disponibilité et utilise une base SQLite neuve.
+# Elle prépare son moteur MOTIS à partir d’un extrait OSM et d’un horaire GTFS
+# de recette versionnés, vérifie sa disponibilité et utilise une base SQLite neuve.
 # BAN, GBFS, tuiles et CDN Scalar restent des services externes.
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
           echo "Aucun navigateur trouvé sur le runner." >&2
           exit 1
 
-      - name: Recette complète (qualité, OSRM, accessibilité et navigateur)
+      - name: Recette complète (qualité, MOTIS, accessibilité et navigateur)
         run: bun run ci
 
       - name: Conserver les diagnostics en cas d’échec

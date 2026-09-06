@@ -28,17 +28,14 @@ Supprimés :
 
 - `GET /api/route` et `POST /api/route-matrix` : les mesures sont appelées directement
   par `server/src/services/planning.ts` ; aucun navigateur ne consomme plus ces routes.
-  Les tests des appels OSRM et des segments portent sur les services serveur.
+  Les tests du client MOTIS et de la traduction des options portent sur les services serveur.
 
 - `GET /api/state` : aucun appel du client ; la connexion et la reprise de session
   rendent déjà cet état. Les tests lisent désormais la session ou les ressources
   utiles, comme le client. `repositories/state.ts` reste nécessaire à la session
   et à l’export ; ce n’est pas une route.
-- `GET /api/transit/network` et `GET /api/transit/journeys` : aucun consommateur
-  applicatif, chantier horaire non branché. Les contrats de requête HTTP et le
-  dépôt horaire dans le contexte HTTP sont retirés. Les outils d’import GTFS et
-  le service préparatoire restent isolés, sans endpoint publié ; leur suivi est
-  dans `docs/PLAN-ATTENTE-GTFS.md`.
+- `GET /api/transit/network` et `GET /api/transit/journeys` : retirées avec le
+  pipeline horaire maison ; les horaires sont calculés par MOTIS.
 
 `server/src/__tests__/platform.test.ts` vérifie que les cinq anciennes URL
 répondent 404 et sont absentes du schéma OpenAPI généré. Il n’y a aucun alias

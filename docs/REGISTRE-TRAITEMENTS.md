@@ -40,7 +40,7 @@ listés ci-dessous.
 | Base Adresse Nationale (`api-adresse.data.gouv.fr`) | adresses tapées, points choisis par appui long, adresse IP du navigateur | France | service public, appelé par le navigateur |
 | Photon (`photon.komoot.io`) | requêtes de recherche de lieux, adresse IP | Allemagne (UE) | service toléré pour un prototype ; à remplacer par un géocodeur auto-hébergé à l'échelle |
 | Tuiles OpenStreetMap (`tile.openstreetmap.org`) | zone de carte affichée, adresse IP | Fondation OSM (Royaume-Uni, décision d'adéquation) | service toléré pour un prototype ; fournisseur sous contrat à l'échelle |
-| OSRM | origines et destinations des calculs | auto-hébergé avec l'API, même opérateur | pas un tiers |
+| MOTIS | origines et destinations des calculs | auto-hébergé avec l'API, même opérateur | pas un tiers |
 
 Aucun transfert hors Union européenne autre que celui listé.
 

@@ -3,7 +3,7 @@ import { Card, Reveal, SlideFrame, Stat, Table } from './ui.tsx';
 
 // Le contenu suit le déroulé de output/soutenance/01-deroule.html, section par
 // section. Les chiffres de la diapositive « Depuis la remise » ont été relevés
-// le 5 septembre 2026 : git rev-list --count cf07f12..main, gh pr list
+// le 6 septembre 2026 : git rev-list --count cf07f12..main, gh pr list
 // --state merged, bun run test.
 
 function Cover() {
@@ -127,7 +127,7 @@ function ExternalApis() {
                 rows={[
                     [<b>BAN</b>, 'Géocodage des adresses, service public sans clé.', 'Résultats Photon conservés.'],
                     [<b>Photon</b>, 'Second géocodeur, données OpenStreetMap.', 'Résultats BAN conservés ; erreur si les deux échouent.'],
-                    [<b>OSRM</b>, 'Matrices, tracé routé par segment, référence voiture. Trois moteurs locaux.', 'Aucune option non mesurée ; comparaison annoncée indisponible.'],
+                    [<b>MOTIS</b>, 'Itinéraires multimodaux sur un graphe unique : voirie OSM, horaires GTFS, flux GBFS. Un moteur local.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
                     [<b>Tuiles OSM</b>, 'Le fond de plan.', "Carte vide, l'itinéraire reste lisible en liste."],
                     [<b>GBFS Vélo'v et Dott</b>, 'Stations, vélos disponibles, trottinettes libres.', 'Message explicite, aucun véhicule partagé ni secours local.'],
                     [<b>GTFS TCL et WFS Grand Lyon</b>, 'Desserte et tracés officiels, ingérés hors ligne.', "Sans effet à l'exécution."],
@@ -139,7 +139,7 @@ function ExternalApis() {
 
 function Docker() {
     return (
-        <SlideFrame eyebrow="04 · Ce qu'il y a dans Docker" title="Une image pour l'application, trois moteurs de routage">
+        <SlideFrame eyebrow="04 · Ce qu'il y a dans Docker" title="Une image pour l'application, un moteur d'itinéraires">
             <div className="columns">
                 <Card kicker="Le service app" title="Client et API sur une seule origine">
                     <ul>
@@ -149,12 +149,12 @@ function Docker() {
                         <li>Deux volumes : la base et le certificat. Compte de recette réinitialisé au démarrage.</li>
                     </ul>
                 </Card>
-                <Card kicker="Le calculateur d'itinéraires" title="Trois OSRM : piéton, vélo, voiture">
+                <Card kicker="Le calculateur d'itinéraires" title="MOTIS : voirie, horaires, engins partagés">
                     <ul>
-                        <li>OSRM ne sert qu'un profil par processus : les règles de circulation sont gravées à l'index.</li>
-                        <li>La trottinette reprend le profil vélo.</li>
+                        <li>Un seul processus : osr route la voirie (marche, vélo, référence voiture), nigiri exécute RAPTOR sur le GTFS.</li>
+                        <li>Les flux GBFS Vélo'v et Dott sont lus à l'exécution : prise et dépose décidées par le moteur.</li>
                         <li>La voiture est une référence carbone invisible, jamais proposée.</li>
-                        <li>Appelés par nom de service, aucun port publié, aucun routage public en secours.</li>
+                        <li>Appelé par nom de service, aucun port publié, aucun routage public en secours.</li>
                     </ul>
                 </Card>
             </div>
@@ -209,7 +209,7 @@ function Costs() {
                 <CostScenario
                     kicker="Scénario 1 · tel quel"
                     title="Une machine, Docker, SQLite"
-                    hypothesis="API Bun et trois moteurs OSRM : 468 Mio de RAM mesurés au repos, 4 Go suffisent."
+                    hypothesis="API Bun et un moteur MOTIS : 118 Mio de RAM mesurés au repos pour le moteur sur Lyon, 4 Go suffisent largement."
                     lines={[
                         { label: 'Instance DEV1-M, 3 vCPU, 4 Go', price: '14,74 €' },
                         { label: 'Volume 20 Go et instantanés 10 Go', price: '2,26 €' },
@@ -260,7 +260,8 @@ function Reversals() {
                         <li>Les bus TCL : 92 lignes régulières, quais et tracés par sens.</li>
                         <li>Le vélo et la trottinette en rabattement vers le réseau : six familles d'options.</li>
                         <li>Les quais chargés par zone visible au lieu du fichier complet.</li>
-                        <li>Trois moteurs OSRM locaux après le quota du routage public.</li>
+                        <li>Un moteur MOTIS local après le quota du routage public : horaires, correspondances et rabattements calculés sur un graphe unique.</li>
+                        <li>L'information RGPD acceptée à l'inscription, la conservation à six mois et le registre des traitements.</li>
                     </ul>
                 </Card>
                 <Card kicker="Remplacé" title="Ce qui a changé de forme">
@@ -268,6 +269,7 @@ function Reversals() {
                         <li>Le serveur est la seule source de vérité : une commande par ressource, React Query en cache.</li>
                         <li>Le clic « Fait » remplacé par la comptabilisation à la date, côté serveur.</li>
                         <li>Le plafond de marche du profil retiré : toutes les options calculables sont proposées.</li>
+                        <li>Le moteur maison (huit candidats à vol d'oiseau, fréquences moyennes) et trois OSRM remplacés par MOTIS : deux mille lignes en moins.</li>
                     </ul>
                 </Card>
             </div>
@@ -321,21 +323,27 @@ function Bugs() {
     );
 }
 
-function Limits() {
+function NextIterations() {
     return (
-        <SlideFrame eyebrow="06 · Les limites" title="Trois limites, dites avant qu'on me les trouve">
-            <div className="tiles">
-                <Card kicker="Données" title="Pas de graphe horaire">
-                    Les fréquences sont des moyennes, pas des horaires. Une correspondance est plausible, pas garantie à la
-                    minute. Le palier suivant est l'ingestion des horaires GTFS.
+        <SlideFrame eyebrow="06 · Prochaines itérations" title="Les ajustements à effectuer, dans l'ordre">
+            <div className="tiles tiles-4">
+                <Card kicker="1 · Données" title="Charger l'archive TCL du jour">
+                    MOTIS calcule sur les calendriers de l'archive GTFS chargée ; celle du développement date de 2022.
+                    Il reste à automatiser le téléchargement quotidien de l'archive officielle et à brancher le temps
+                    réel GTFS-RT quand SYTRAL le publiera.
                 </Card>
-                <Card kicker="Hypothèse" title="L'attente est estimée">
-                    Quatre, huit ou dix minutes selon le mode, quinze pour le bus : des constantes, pas des fréquences
-                    mesurées ni des horaires publiés. Le champ temps réel ne vient d'aucune API.
+                <Card kicker="2 · Exploitation" title="Passer à PostgreSQL et Kubernetes">
+                    SQLite sur un nœud suffit à la démonstration, pas à une métropole. Le schéma Drizzle migre vers
+                    PostgreSQL avec PostGIS pour l'index spatial ; le déploiement suit le scénario chiffré.
                 </Card>
-                <Card kicker="Exploitation" title="Un seul nœud">
-                    SQLite sur un fichier, sans réplication. Adapté à la démonstration, à remplacer par PostgreSQL et PostGIS
-                    au palier métropolitain.
+                <Card kicker="3 · Conformité" title="Analyse d'impact avant l'échelle">
+                    Information, base légale par traitement, registre et conservation à six mois sont en place. À
+                    l'échelle d'une métropole, la localisation à grande échelle impose une analyse d'impact et un
+                    contrat avec chaque sous-traitant.
+                </Card>
+                <Card kicker="4 · Dépendances" title="Sortir des services tolérés">
+                    Tuiles OSM et géocodeur Photon sont acceptés pour un prototype. À l'échelle : un fournisseur de tuiles
+                    sous contrat et un géocodeur auto-hébergé sur la BAN.
                 </Card>
             </div>
         </SlideFrame>
@@ -346,9 +354,9 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="150" label="commits depuis le code remis au jury" />
-                <Stat value="20" label="PR fusionnées, chacune avec ses tests" />
-                <Stat value="245" label="tests, 36 fichiers, 0 échec" />
+                <Stat value="156" label="commits depuis le code remis au jury" />
+                <Stat value="23" label="PR fusionnées, chacune avec ses tests" />
+                <Stat value="191" label="tests, 30 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
                 <Stat value="0" label="violation axe-core sur quatre écrans" />
                 <Stat value="CI verte" label="sur le dernier commit poussé" />
@@ -359,14 +367,14 @@ function SinceDelivery() {
 
 function Closing() {
     return (
-        <SlideFrame className="cover" eyebrow="08 · L'échange">
+        <SlideFrame className="cover" eyebrow="08 · Merci">
             <Reveal className="cover-title">
                 <h1>
-                    Voilà ce qui tient, voilà ce qui ne tient plus, <em>et voilà pourquoi j'ai tranché ainsi.</em>
+                    Merci pour votre attention. <em>Je suis à votre écoute</em> pour vos questions.
                 </h1>
             </Reveal>
             <Reveal as="p" className="cover-sub">
-                Merci. Place à vos questions et à la démonstration sur téléphone.
+                UrbanFlow Mobility · code, journal des bogues et supports disponibles pour la revue.
             </Reveal>
         </SlideFrame>
     );
@@ -392,7 +400,7 @@ export const slides: readonly SlideDefinition[] = [
     { component: Costs },
     { component: Reversals },
     { component: Bugs },
-    { component: Limits },
+    { component: NextIterations },
     { component: SinceDelivery },
     { component: Closing },
 ];

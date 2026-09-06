@@ -1,0 +1,303 @@
+{
+ "direct": [],
+ "itineraries": [
+  {
+   "duration": 1500,
+   "startTime": "2022-04-20T06:00:00Z",
+   "endTime": "2022-04-20T06:25:00Z",
+   "transfers": 1,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 45.7578,
+      "lon": 4.832,
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Bellecour",
+      "stopId": "tcl_30201",
+      "lat": 45.756575722669005,
+      "lon": 4.833760215762001,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 360,
+     "distance": 384.0,
+     "legGeometry": {
+      "points": "gvygvAgl|eHxQbI{DjT??bBv@Ib@??o@hD??Ib@xDjEdD|A??bJeg@??jZ}~A??pKvD??n@eB??p@eB??`AiC??hAcC??zDyF??mAi@??wAm@Lq@??b@wDm@[??iCiA",
+      "precision": 6,
+      "length": 38
+     }
+    },
+    {
+     "mode": "SUBWAY",
+     "from": {
+      "name": "Bellecour",
+      "stopId": "tcl_30201",
+      "lat": 45.756575722669005,
+      "lon": 4.833760215762001,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "Guillotière Gabriel Péri",
+      "stopId": "tcl_30199",
+      "lat": 45.755473090779006,
+      "lon": 4.842574199224,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 60,
+     "headsign": "Gare de Vénissieux",
+     "routeColor": "009e3d",
+     "routeType": 1,
+     "routeShortName": "D",
+     "legGeometry": {
+      "points": "_iwgvA_}_fH|cA{eP",
+      "precision": 6,
+      "length": 2
+     },
+     "wheelchairAccessible": "ACCESSIBLE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Guillotière Gabriel Péri",
+      "stopId": "tcl_30199",
+      "lat": 45.755473090779006,
+      "lon": 4.842574199224,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "Guillotière Gabriel Péri",
+      "stopId": "tcl_32110",
+      "lat": 45.754902397972,
+      "lon": 4.842546532259999,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 180,
+     "distance": 134.0,
+     "legGeometry": {
+      "points": "udugvAidqfHb@cB??hAp@??l@\\??dAn@??nAn@??rAr@??d@_C??pFbD??FW??Ja@??Li@??`@gB??FS??TcA??Pq@??BBf@VRq@hTtMQn@??_A[??gHgE",
+      "precision": 6,
+      "length": 40
+     }
+    },
+    {
+     "mode": "TRAM",
+     "from": {
+      "name": "Guillotière Gabriel Péri",
+      "stopId": "tcl_32110",
+      "lat": 45.754902397972,
+      "lon": 4.842546532259999,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_32121",
+      "lat": 45.76173895947301,
+      "lon": 4.857910001198999,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 540,
+     "headsign": "IUT Feyssine",
+     "routeColor": "8c368c",
+     "routeType": 0,
+     "routeShortName": "T1",
+     "legGeometry": {
+      "points": "k`tgvAebqfHwvFxBikAygD}LwkEsTenIubAg~F",
+      "precision": 6,
+      "length": 6
+     },
+     "wheelchairAccessible": "ACCESSIBLE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_32121",
+      "lat": 45.76173895947301,
+      "lon": 4.857910001198999,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "END",
+      "lat": 45.7606,
+      "lon": 4.8594,
+      "vertexType": "NORMAL"
+     },
+     "duration": 240,
+     "distance": 234.0,
+     "legGeometry": {
+      "points": "ukahvAibogHrOaB??dBiA??Es@??IiB??G{B??CiB??tTnA??E{J??EiU??jD_B??rAwG??BiA??d@@??FmDdBF??b@B???mC??hA@??V???\\???`@A??jCFFsI??bFJ??FoI",
+      "precision": 6,
+      "length": 48
+     }
+    }
+   ]
+  },
+  {
+   "duration": 1620,
+   "startTime": "2022-04-20T06:02:00Z",
+   "endTime": "2022-04-20T06:29:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 45.7578,
+      "lon": 4.832,
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Bellecour A. Poncet",
+      "stopId": "tcl_33685",
+      "lat": 45.7561114848,
+      "lon": 4.8340778456099995,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 480,
+     "distance": 404.0,
+     "legGeometry": {
+      "points": "gvygvAgl|eHxQbI{DjT??bBv@Ib@??o@hD??Ib@xDjEdD|A??bJeg@??jZ}~A??pKvD??n@eB??p@eB??`AiC??tAG??H???`Bk@nAaAjA{At@uBN}@??jAd@??~Fq^",
+      "precision": 6,
+      "length": 38
+     }
+    },
+    {
+     "mode": "BUS",
+     "from": {
+      "name": "Bellecour A. Poncet",
+      "stopId": "tcl_33685",
+      "lat": 45.7561114848,
+      "lon": 4.8340778456099995,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_39054",
+      "lat": 45.760606003031995,
+      "lon": 4.857799945695,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 900,
+     "headsign": "Hôpitaux Est",
+     "routeColor": "778186",
+     "routeType": 3,
+     "routeShortName": "C9",
+     "legGeometry": {
+      "points": "}kvgvA{p`fHhJejPypD~TapDknEaT_jGgPmuD|cBscH",
+      "precision": 6,
+      "length": 7
+     },
+     "wheelchairAccessible": "ACCESSIBLE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_39054",
+      "lat": 45.760606003031995,
+      "lon": 4.857799945695,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "END",
+      "lat": 45.7606,
+      "lon": 4.8594,
+      "vertexType": "NORMAL"
+     },
+     "duration": 240,
+     "distance": 223.0,
+     "legGeometry": {
+      "points": "{d_hvAk{ngH|e@eF??jDsA??qD}H??eBeD??iA_C??aSkd@??uC}H??k@uA_AaC??HgE??_@AiCI??FoI",
+      "precision": 6,
+      "length": 24
+     }
+    }
+   ]
+  },
+  {
+   "duration": 1800,
+   "startTime": "2022-04-20T06:03:00Z",
+   "endTime": "2022-04-20T06:33:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 45.7578,
+      "lon": 4.832,
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Cordeliers",
+      "stopId": "tcl_43222",
+      "lat": 45.763927022636,
+      "lon": 4.835808018711,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 840,
+     "distance": 966.0,
+     "legGeometry": {
+      "points": "gvygvAgl|eHwUgKuEvU??gCkAUjA??q@xD??ERaEaB??bJef@??aBy@??A???SK??uAq@??}@a@??Y_@??QUw\\uGsa@mIWG??i@G??k@K??_@G??m@K??[G{OgDgAP{QgD??gAO??iGqC??oAy@aCa@??SE??k@Q??UG??KC??aIkB??sG{B??i@S??wAa@??kF_AC???C?I???mEG??EoD??C}@???{@??AgA??qYf@??w@B??s@B??S@??}@B??W@??Nw@gAeb@??i@wA???yA??@wA???c@??aQ]??q@M??e@K??s@A??a@???c@???_ADum@_B??i@A??g@???u@A??o@C??iQsA}@\\??i@o@??Ow@??KyC??Ag@??w@wc@??EkB??eBR??{@F??GwB??kAec@??sPW??{@A??gAA??kAE??eBE",
+      "precision": 6,
+      "length": 161
+     }
+    },
+    {
+     "mode": "BUS",
+     "from": {
+      "name": "Cordeliers",
+      "stopId": "tcl_43222",
+      "lat": 45.763927022636,
+      "lon": 4.835808018711,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "Part-Dieu Jules Favre",
+      "stopId": "tcl_46191",
+      "lat": 45.76369904335,
+      "lon": 4.857037989838999,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 420,
+     "headsign": "Vaulx - La Grappinière",
+     "routeColor": "778186",
+     "routeType": 3,
+     "routeShortName": "C3",
+     "legGeometry": {
+      "points": "mtehvA_}cfHxQ_fRu@ydH{AaaL",
+      "precision": 6,
+      "length": 4
+     },
+     "wheelchairAccessible": "ACCESSIBLE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Part-Dieu Jules Favre",
+      "stopId": "tcl_46191",
+      "lat": 45.76369904335,
+      "lon": 4.857037989838999,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "END",
+      "lat": 45.7606,
+      "lon": 4.8594,
+      "vertexType": "NORMAL"
+     },
+     "duration": 540,
+     "distance": 498.0,
+     "legGeometry": {
+      "points": "efehvA{kmgH?mCAyC??|@A??L???X???d@???f@???VA???eBb@{A??l@g@vIiAfAA??r@n@??hAv@??p@G??bAK??lAG??vFcA??jAS??`LcA??nEM??RgF??HaC??KeE??EuA??IwB??CaH??CaA???_A??BwD??XE??v@G??x@G??PA@v@v@hAZN??\\N`AH??nAO??|C]??bEi@??fEk@??zIkA??d@G??nBY??dAG??dJm@??tAI??zFa@??jBO??KuD??v@G??xBS???K??dBO??OwE??rAO??nN_C??~B_@??lBY??hBi@??xAiE`@uEAcD??b@A??dA@??AqA??FwG??t@B???sC??`@A??jCFFsI??bFJ??FoI",
+      "precision": 6,
+      "length": 143
+     }
+    }
+   ]
+  }
+ ]
+}

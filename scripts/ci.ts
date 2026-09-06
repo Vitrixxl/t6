@@ -1,10 +1,10 @@
-// Même recette avant push et sur GitHub : base vide et moteurs dédiés,
+// Même recette avant push et sur GitHub : base vide et moteur dédié,
 // sans dépendre des conteneurs ni de la base SQLite du poste de développement.
 import { $ } from 'bun';
 import { copyFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const image = 'ghcr.io/project-osrm/osrm-backend@sha256:8a1b1bc938412f15f9b5b32d794c4ec6bf4a85dfbbabfa0a014b70b187edb53b';
+const image = 'ghcr.io/motis-project/motis@sha256:6055f51eec43eeed28524037ca0161b96efe9cd05728eaa9ac04c20c2826d330';
 const logDir = resolve('tmp/ci');
 await mkdir(logDir, { recursive: true });
 await mkdir('tmp/screenshots', { recursive: true });
@@ -33,35 +33,50 @@ async function run(command: string[], environment = env) {
 }
 
 async function waitForHttp(url: string) {
-    for (let attempt = 0; attempt < 30; attempt++) {
+    for (let attempt = 0; attempt < 60; attempt++) {
         try {
             const response = await fetch(url, { signal: AbortSignal.timeout(1000) });
             if (response.ok) return;
         } catch {
-            // Le processus vient d’être lancé ; il dispose au plus de 30 essais.
+            // Le processus vient d’être lancé ; il dispose au plus de 60 essais.
         }
         await Bun.sleep(1000);
     }
     throw new Error(`Service indisponible : ${url}`);
 }
 
-async function startRouting(mode: 'foot' | 'bike' | 'car') {
-    const name = `${prefix}-${mode}`;
-    const profile = mode === 'bike' ? 'bicycle' : mode;
-    await copyFile('scripts/fixtures/lyon-roads.osm.pbf', resolve(directory, `${mode}.osm.pbf`));
-    for (const command of [
-        ['osrm-extract', '-p', `/opt/${profile}.lua`, `/data/${mode}.osm.pbf`],
-        ['osrm-partition', `/data/${mode}.osrm`],
-        ['osrm-customize', `/data/${mode}.osrm`],
-    ]) {
-        await run(['docker', 'run', '--rm', '-v', `${directory}:/data`, image, ...command]);
-    }
+/**
+ * Un MOTIS jetable sur les fixtures versionnées : l'extrait routier réel de
+ * Lyon et l'horaire GTFS de recette dérivé du réseau livré. Les flux GBFS
+ * restent les vrais.
+ */
+async function startMotis() {
+    const name = `${prefix}-motis`;
+    await copyFile('scripts/fixtures/lyon-roads.osm.pbf', resolve(directory, 'lyon-roads.osm.pbf'));
+    await copyFile('scripts/fixtures/lyon-ci.gtfs.zip', resolve(directory, 'lyon-ci.gtfs.zip'));
+    await Bun.write(resolve(directory, 'config.yml'), [
+        'server:', '  port: 8080',
+        'osm: lyon-roads.osm.pbf',
+        'timetable:', '  first_day: TODAY', '  num_days: 2',
+        '  datasets:', '    tcl:', '      path: lyon-ci.gtfs.zip',
+        'street_routing: true', 'osr_footpath: true', 'geocoding: false', 'reverse_geocoding: false',
+        'gbfs:', '  feeds:',
+        '    velov:', '      url: https://api.cyclocity.fr/contracts/lyon/gbfs/v3/gbfs.json',
+        '    dott:', '      url: https://gbfs.api.ridedott.com/public/v2/lyon/gbfs.json',
+        '',
+    ].join('\n'));
+    await mkdir(resolve(directory, 'data'), { recursive: true });
+    // Le conteneur tourne sous l'utilisateur courant : il lit le dossier temporaire
+    // (né en 0700) et le graphe qu'il écrit reste supprimable à la fin.
+    const user = `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`;
+    await run(['docker', 'run', '--rm', '-u', user, '-v', `${directory}:/data`, '-w', '/data', image,
+        '/motis', 'import', '-c', '/data/config.yml', '-d', '/data/data']);
     containers.push(name);
-    await run(['docker', 'run', '-d', '--name', name, '-v', `${directory}:/data:ro`,
-        '-p', '127.0.0.1::5000', image, 'osrm-routed', '--algorithm', 'mld', `/data/${mode}.osrm`]);
-    const address = (await $`docker port ${name} 5000/tcp`.text()).trim();
+    await run(['docker', 'run', '-d', '--name', name, '-u', user, '-v', `${directory}:/data`, '-w', '/data',
+        '-p', '127.0.0.1::8080', image, '/motis', 'server', '-d', '/data/data']);
+    const address = (await $`docker port ${name} 8080/tcp`.text()).trim();
     const url = `http://${address}`;
-    await waitForHttp(`${url}/route/v1/driving/4.832,45.7578;4.85,45.76?overview=false`);
+    await waitForHttp(`${url}/api/v1/one-to-many?one=45.7578;4.832&many=45.76;4.85&mode=WALK&max=3600&maxMatchingDistance=250&arriveBy=false`);
     return url;
 }
 
@@ -73,12 +88,7 @@ try {
     await run(['bun', 'run', 'check']);
     await run(['bun', 'run', 'metrics:build']);
     await run(['docker', 'pull', image]);
-    const routingEnv = {
-        ...env,
-        OSRM_FOOT_URL: await startRouting('foot'),
-        OSRM_BIKE_URL: await startRouting('bike'),
-        OSRM_CAR_URL: await startRouting('car'),
-    };
+    const routingEnv = { ...env, MOTIS_URL: await startMotis() };
     await run(['bun', 'run', 'seed:demo'], routingEnv);
     server = Bun.spawn(['bun', 'server/src/index.ts'], {
         env: { ...routingEnv, NODE_ENV: 'production' }, stdout: Bun.file(resolve(logDir, 'server.log')), stderr: Bun.file(resolve(logDir, 'server-errors.log')),

@@ -9,7 +9,6 @@ import {
     plannedTripInput,
     recurringTrip,
     registration,
-    routableMode,
 } from './index';
 
 const TRIP = {
@@ -87,9 +86,8 @@ describe('authentification', () => {
 });
 
 describe('trajets', () => {
-    it("garde la voiture hors des modes proposes tout en l'acceptant pour le routage", () => {
+    it('garde la voiture hors des modes proposés', () => {
         expect(mobilityMode.safeParse('car').success).toBe(false);
-        expect(routableMode.safeParse('car').success).toBe(true);
     });
 
     it('un trajet envoye ne porte ni identifiant ni proprietaire : ils viennent de l URL et de la session', () => {

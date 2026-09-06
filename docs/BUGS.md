@@ -17,8 +17,8 @@ le texte source du dossier, sans ouvrir, contrôler ni régénérer le PDF gelé
 Les évolutions du code depuis les PR sont précisées ci-dessous.
 
 Le [journal complet](BUGS-ARCHIVE.md) conserve la traçabilité des autres bogues,
-y compris les ouverts. Le [chantier GTFS](PLAN-ATTENTE-GTFS.md) reste ouvert :
-les horaires réels ne sont pas encore branchés au client.
+y compris les ouverts. Les horaires réels sont calculés par MOTIS depuis l'archive
+GTFS chargée ; une archive récente reste à charger en production.
 
 ## B16 — Le suivi hebdomadaire cumulait tout l’historique
 
@@ -64,7 +64,9 @@ Avec une horloge fixée, vérifier qu’un trajet de la semaine précédente est
 
 Refuser l’option trottinette quand la destination échoue à `withinServiceArea`. Une flotte libre exige une destination dans le périmètre retenu, pas la présence d’une autre trottinette à l’arrivée : copier la règle des bornes Vélo’v aurait été inadapté.
 
-**Où le montrer :** `src/lib/planner/options/scooter.ts` → `createScooterOption` ; `src/lib/planner/geo.ts` → `withinServiceArea` ; `src/lib/planner/planner.test.ts` → suite « portée des modes partagés (RG3) ».
+**Où le montrer :** la [PR #4](https://github.com/Vitrixxl/t6/pull/4), qui porte `createScooterOption`, `withinServiceArea` et leur suite de tests.
+
+**État actuel :** depuis le passage à MOTIS, la prise et la dépose d'un engin sont décidées par le moteur à partir des flux GBFS et de leurs contraintes de retour ; le générateur et `withinServiceArea` n'existent plus.
 
 ### Tester et valider
 
@@ -92,7 +94,7 @@ Trois cas : Paris ne propose aucune trottinette ; une destination locale conserv
 
 Mesurer toutes les options dans `measureRoutes`, écarter celles dont la géométrie est incomplète, puis recalculer leur classement. Liste et détail utilisent les mêmes options mesurées.
 
-**Où le montrer :** `src/queries/routes.ts` → `POST /api/transport/journeys` → `server/src/services/planning.ts` → appel de `measureRoutes` ; `src/lib/planner/index.ts` → `measureRoutes`, puis `rankRoutes` ; `src/lib/planner/legs.ts` → `applyRoutedLegs`, `hasCompleteGeometry` ; `src/lib/planner/planner.test.ts` → suite « measureRoutes ».
+**Où le montrer :** `src/queries/routes.ts` → `POST /api/transport/journeys` → `server/src/services/planning.ts` → `searchRoutes` ; `server/src/services/motis/options.ts` → `selectOptions` ; `src/lib/planner/index.ts` → `rankRoutes` ; `server/src/__tests__/planning.test.ts`.
 
 ### Tester et valider
 
@@ -102,7 +104,7 @@ Un routeur de test double les mesures et fournit une géométrie. Vérifier que 
 
 **Niveau de verrouillage : automatisé** pour les propriétés testées.
 
-**État actuel et limite à annoncer :** Le tri actuel se fait par durée réelle croissante ; la PR initiale décrivait un classement par score. Les moteurs OSRM sont désormais locaux. Les temps de transport public restent heuristiques, sans graphe horaire GTFS branché au client : ce correctif ne garantit pas un prochain départ réel.
+**État actuel et limite à annoncer :** Le tri se fait par durée réelle croissante ; la PR initiale décrivait un classement par score. Depuis le passage à MOTIS, toutes les options arrivent mesurées et tracées par le même moteur, attentes comprises : deux méthodes de mesure ne peuvent plus coexister par construction.
 
 ## Préparer la démonstration
 
@@ -110,7 +112,7 @@ Ouvrir la PR, présenter le symptôme, montrer la cause dans le code, puis le te
 Rejouer les deux suites avec :
 
 ```bash
-bun test src/lib/carbon.test.ts src/lib/planner/planner.test.ts
+bun test src/lib/carbon.test.ts src/lib/planner/planner.test.ts server/src/__tests__/planning.test.ts
 ```
 
 Vérification du 5 septembre 2026 : **35 tests réussis, 0 échec, 100 assertions**.

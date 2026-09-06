@@ -1,9 +1,14 @@
-# Réseau routier de recette
+# Données de recette du moteur MOTIS
 
-`lyon-roads.osm.pbf` est un extrait réel OpenStreetMap de Lyon et Villeurbanne,
-réservé aux moteurs OSRM jetables de `bun run ci`. Il n’est ni servi au client
-ni utilisé par la pile de production. Ce n’est pas une réponse de routage simulée :
-les trois profils calculent leurs propres index puis leurs routes et matrices.
+Deux fichiers alimentent le moteur MOTIS jetable de `bun run ci`. Ils ne sont
+ni servis au client ni utilisés par la pile de production, qui repose sur
+`infra/motis-prepare.sh` (extrait métropolitain et archive GTFS officielle).
+
+## `lyon-roads.osm.pbf` — voirie réelle
+
+Extrait réel OpenStreetMap de Lyon et Villeurbanne. Ce n'est pas une réponse
+de routage simulée : MOTIS construit son graphe de voirie puis calcule ses
+accès, tracés et la référence voiture dessus.
 
 Source : [extrait Rhône-Alpes Geofabrik](https://download.geofabrik.de/europe/france/rhone-alpes.html),
 téléchargé pour la préparation locale le 4 septembre 2026, puis découpé le
@@ -16,13 +21,24 @@ peuvent rester dans l’extrait. Ce jeu couvre les parcours de recette, pas tout
 [Attribution et droits](https://www.openstreetmap.org/copyright).
 
 Reproduction avec osmium-tool 1.18.0, depuis l’extrait métropolitain produit par
-`infra/osrm-prepare.sh` :
+`infra/motis-prepare.sh` :
 
 ```bash
-osmium extract -b 4.78,45.72,4.95,45.81 infra/osrm-data/lyon.osm.pbf -o lyon-ci.osm.pbf
+osmium extract -b 4.78,45.72,4.95,45.81 infra/motis-data/lyon.osm.pbf -o lyon-ci.osm.pbf
 osmium tags-filter lyon-ci.osm.pbf w/highway r/type=restriction -o scripts/fixtures/lyon-roads.osm.pbf
 ```
 
 Les voies, leurs nœuds et les restrictions sont conservés ; les bâtiments et
 les autres objets indépendants sont retirés pour garder un petit jeu versionné.
+
+## `lyon-ci.gtfs.zip` — horaire de recette
+
+Horaire GTFS dérivé du réseau livré (`data/transport/gtfs-feed.json`, desserte
+et fréquences réelles TCL) par `python3 scripts/build-gtfs-fixture.py` : une
+course par ligne et par sens dans l'emprise ci-dessus, cadencée par
+`frequencies.txt` à la fréquence publiée, avec des temps de parcours calculés
+sur la distance entre arrêts. Son calendrier couvre 2026 à 2030 pour que la
+recette trouve des trajets à toute date. Ce n'est pas l'horaire officiel :
+il sert à vérifier le parcours applicatif, pas des heures de passage.
+
 Aucun téléchargement ni outil d’ingestion n’est nécessaire pendant la CI.
