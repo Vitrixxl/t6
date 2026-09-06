@@ -1,5 +1,6 @@
 // L’appui reste exploitable après le relâchement, une mise à jour GPS et plusieurs sélections.
 import assert from 'node:assert/strict';
+import { checkFreeCamera } from './check-map-camera.mjs';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright-core';
 const base = process.env.E2E_BASE_URL || 'https://localhost:4102';
@@ -73,6 +74,7 @@ try {
     await picker.getByRole('button', { name: 'Définir comme arrivée', exact: true }).tap();
     assert((await response).ok(), 'La sélection ne lance pas de trajet exploitable');
     await page.locator('.ufm-endpoint-destination').waitFor();
+    await checkFreeCamera(page, cdp);
     await page.getByRole('button', { name: "Fermer l'itinéraire", exact: true }).click();
     await page.waitForTimeout(800);
 

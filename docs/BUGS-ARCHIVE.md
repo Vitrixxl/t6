@@ -2010,6 +2010,18 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé pour les durées et le contenu ; faible pour l’ensemble du rendu.** `boarding-waits.test.ts` couvre départ différé, correspondance, location, zéro et horaire absent. `scripts/e2e-tcl.mjs` exige les temps et les lignes dans l’API, les pictogrammes/flèches sans mot « marche » dans le résumé fermé, puis attente et heure dans les détails. Les captures mobile et bureau sont inspectées.
 
+### B81 — La carte reprend le cadrage du trajet après un déplacement
+
+**Symptôme observé.** Lorsqu’un trajet est affiché sur téléphone, déplacer ou zoomer la carte est annulé par un retour sur le trajet.
+
+**Cause racine.** Le même effet reliait `fitBounds` aux événements `resize` de MapLibre. Un changement de hauteur du navigateur mobile déclenchait donc un nouveau cadrage. L’effet dépendait également des objets de départ/arrivée, au-delà du résultat à cadrer.
+
+**Correctif.** CAMERA_COMMIT : séparer le redimensionnement du canvas de la caméra. Le `ResizeObserver` reste lié à la durée de vie de la carte ; `fitBounds` s’exécute à la réception d’un trajet, avec ses propres extrémités. Les demandes explicites de position et les nouvelles recherches conservent leur cadrage.
+
+**Où le montrer.** `src/components/map/UrbanMap.tsx`, `scripts/check-map-camera.mjs`, `scripts/e2e-map-picker.mjs`.
+
+**Test et niveau de verrouillage : automatisé.** Sur le build précédent, le scénario échoue lorsque la hauteur du viewport diminue après déplacement et zoom. Il observe les positions des repères rendus, sans accès de test à l’instance MapLibre. Après correction, les gestes et redimensionnements conservent la caméra ; inverser les extrémités cadre le nouveau résultat. La recette tactile fait partie de `bun run ci`.
+
 ## Ouverts
 
 Le renouvellement du GTFS officiel reste manuel. Le temps réel reste à intégrer. Les variantes TCL sans correspondance vérifiée avec les tracés SYTRAL restent sans géométrie. La reprise piétonne après échec du profil location est limitée à un accès du chemin réel : elle ne prouve pas l’optimalité globale du moteur.

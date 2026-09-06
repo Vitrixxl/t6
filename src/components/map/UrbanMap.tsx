@@ -189,6 +189,9 @@ export function UrbanMap({
         map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
         map.on('load', () => setLoaded(true));
         mapRef.current = map;
+        // Adapter le canvas ne doit jamais reprendre la caméra à l’utilisateur.
+        const observer = new ResizeObserver(() => map.resize());
+        observer.observe(map.getContainer());
 
         if (IS_DEV) {
             // Poignée de débogage : MapLibre n'expose pas son instance, et sans elle
@@ -198,6 +201,7 @@ export function UrbanMap({
         }
 
         return () => {
+            observer.disconnect();
             map.remove();
             mapRef.current = null;
         };
@@ -228,42 +232,24 @@ export function UrbanMap({
             return;
         }
 
-        // Le cadrage ne dépend pas du tracé : tant que le routage n'a pas répondu,
-        // il se fait sur les extrémités, connues dès la sélection.
+        // Cadrer à la réception du trajet, puis laisser libres déplacement et zoom.
+        // Les extrémités appartiennent au résultat : une mise à jour GPS ne doit
+        // pas recadrer l’ancien trajet pendant le calcul du suivant.
         const bounds = new maplibregl.LngLatBounds();
         route.path.forEach((point) => bounds.extend([point.lon, point.lat]));
-        if (origin) {
-            bounds.extend([origin.lon, origin.lat]);
+        for (const leg of route.legs) {
+            bounds.extend([leg.fromPoint.lon, leg.fromPoint.lat]);
+            bounds.extend([leg.toPoint.lon, leg.toPoint.lat]);
         }
-        if (destination) {
-            bounds.extend([destination.lon, destination.lat]);
-        }
-        if (bounds.isEmpty()) {
-            return;
-        }
-
-        const fitRoute = () => {
-            const { clientWidth, clientHeight } = map.getContainer();
-            if (clientWidth === 0 || clientHeight === 0) {
-                return;
-            }
-            map.fitBounds(bounds, {
-                padding: routeViewportPadding(clientWidth, clientHeight, window.innerWidth >= 1024),
-                maxZoom: 16.2,
-                duration: 650,
-            });
-        };
-        // Une rotation ou un rail redimensionné change le canvas, même si les
-        // extrémités du trajet n’ont pas changé.
-        const observer = new ResizeObserver(() => map.resize());
-        observer.observe(map.getContainer());
-        map.on('resize', fitRoute);
-        fitRoute();
-        return () => {
-            observer.disconnect();
-            map.off('resize', fitRoute);
-        };
-    }, [destination, loaded, origin, route]);
+        const { clientWidth, clientHeight } = map.getContainer();
+        if (bounds.isEmpty() || clientWidth === 0 || clientHeight === 0) return;
+        map.resize();
+        map.fitBounds(bounds, {
+            padding: routeViewportPadding(clientWidth, clientHeight, window.innerWidth >= 1024),
+            maxZoom: 16.2,
+            duration: 650,
+        });
+    }, [loaded, route]);
 
     useEffect(() => {
         const map = mapRef.current;

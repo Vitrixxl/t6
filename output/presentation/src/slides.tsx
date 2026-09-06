@@ -58,7 +58,7 @@ function Requirements() {
                         <>
                             <b>F2</b> Planificateur multimodal, géolocalisation temps réel
                         </>,
-                        'Un trajet : attente comprise et affichée, pictogrammes avec les lignes, tracés vérifiés par segment.',
+                        'Un trajet : attente affichée, pictogrammes et tracés vérifiés. Cadrage initial, puis caméra libre.',
                     ],
                     [
                         <>
@@ -353,7 +353,7 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="170" label="commits depuis le code remis au jury" />
+                <Stat value="172" label="commits depuis le code remis au jury" />
                 <Stat value="24" label="PR fusionnées, chacune avec ses tests" />
                 <Stat value="199" label="tests, 34 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
