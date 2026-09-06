@@ -40,7 +40,8 @@ try {
     const filter = page.getByRole('button', { name: /^Moyens de transport :/ });
     const sheet = page.locator('[data-tour="routes"]:visible');
     assert(await detailToggle.locator('..').getAttribute('open') === null, 'Détails ouverts au départ');
-    assert(await page.getByRole('group', { name: 'Trajets disponibles' }).count() === 1, 'Liste des trajets absente');
+    // Attendre la fin de fermeture du hub : Radix masque encore la carte aux lecteurs d’écran pendant sa transition.
+    await page.getByRole('group', { name: 'Trajets disponibles', exact: true }).waitFor();
     for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 844 });
         const panel = await sheet.boundingBox();

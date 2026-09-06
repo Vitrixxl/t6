@@ -353,7 +353,7 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="174" label="commits depuis le code remis au jury" />
+                <Stat value="175" label="commits depuis le code remis au jury" />
                 <Stat value="24" label="PR fusionnées, chacune avec ses tests" />
                 <Stat value="201" label="tests, 34 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
