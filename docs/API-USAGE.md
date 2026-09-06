@@ -35,7 +35,7 @@ Supprimés :
   utiles, comme le client. `repositories/state.ts` reste nécessaire à la session
   et à l’export ; ce n’est pas une route.
 - `GET /api/transit/network` et `GET /api/transit/journeys` : retirées avec le
-  pipeline horaire maison ; les horaires sont calculés par MOTIS.
+  pipeline horaire maison ; le calcul horaire MOTIS reste désactivé par défaut dans cette version.
 
 `server/src/__tests__/platform.test.ts` vérifie que les cinq anciennes URL
 répondent 404 et sont absentes du schéma OpenAPI généré. Il n’y a aucun alias

@@ -17,7 +17,7 @@ le texte source du dossier, sans ouvrir, contrôler ni régénérer le PDF gelé
 Les évolutions du code depuis les PR sont précisées ci-dessous.
 
 Le [journal complet](BUGS-ARCHIVE.md) conserve la traçabilité des autres bogues,
-y compris les ouverts. Les horaires réels sont calculés par MOTIS depuis l'archive
+y compris les ouverts. Les horaires TCL sont reportés ; MOTIS fonctionne sans GTFS par défaut. Après activation future, ils dépendront de l’archive
 GTFS chargée ; une archive récente reste à charger en production.
 
 ## B16 — Le suivi hebdomadaire cumulait tout l’historique

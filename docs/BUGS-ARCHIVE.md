@@ -1782,44 +1782,102 @@ Elle vérifie aussi les nouvelles cellules lors d’un vrai déplacement dans le
 canvas, leur réutilisation au retour et l’absence de requêtes au zoom régional.
 Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
+### B63 — Un départ tardif pouvait paraître plus rapide que la première arrivée
+
+**Symptôme observé.** Un trajet qui part dans 12 minutes et dure 10 minutes pouvait être comparé comme 10 minutes à un trajet immédiat de 20 minutes.
+
+**Cause racine.** La durée MOTIS ne comprend pas l’attente avant le départ. Le regroupement par famille conservait plusieurs résultats plutôt que la première arrivée demandée.
+
+**Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : réunir directs et itinéraires d’un seul plan, comparer leurs arrivées et afficher la durée depuis l’heure demandée. Ici, 22 minutes, donc le trajet de 20 minutes gagne.
+
+**Où le montrer.** `server/src/services/motis/options.ts`, `server/src/services/planning.ts`, `server/src/__tests__/planning.test.ts`.
+
+**Test et niveau de verrouillage : automatisé.** Le test compare explicitement ces deux départs, exige 22 minutes pour le départ tardif et vérifie un seul appel plan et une seule référence voiture. Le parcours navigateur vérifie le trajet unique et sa planification.
+
+### B64 — L’accueil interrompu ne garantissait ni reprise ni migration des anciens profils
+
+**Symptôme observé.** Dans le travail repris, le nouveau formulaire ne disposait pas d’un retour d’erreur exploitable ; les profils déjà enregistrés ne portaient pas les nouveaux champs attendus.
+
+**Cause racine.** Le hook ne rendait que la fonction de mutation, et le changement de contrat n’était pas accompagné de la conversion des profils JSON persistés.
+
+**Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : exposer l’état de mutation, garder le dialogue ouvert sur refus, bloquer le tutoriel jusqu’à l’écriture réussie et migrer les comptes sans perdre PMR ni objectifs. Le formulaire demande les moyens utilisables et le besoin PMR.
+
+**Où le montrer.** `src/components/profile/OnboardingDialog.tsx`, `src/queries/profile.ts`, `server/drizzle/0012_magical_pride.sql`.
+
+**Test et niveau de verrouillage : automatisé.** `scripts/e2e-onboarding.mjs` refuse réellement le PUT dans Chromium, vérifie la reprise et la persistance après rechargement sur 320 et 1280 px. `server/src/__tests__/onboarding-migration.test.ts` ouvre une base antérieure à la migration, conserve ses valeurs et vérifie qu’une réouverture ne réinitialise pas l’accueil terminé.
+
+### B65 — Les mesures et les boutons du trajet étaient coupés sur bureau
+
+**Symptôme observé.** Le panneau de droite montrait le titre mais coupait le bilan et les actions du trajet.
+
+**Cause racine.** La section de détail pouvait rétrécir dans le rail flexible, alors que son contenu devait conserver sa hauteur et laisser défiler le rail.
+
+**Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : empêcher cette section de rétrécir. Les détails mobiles restent repliés et leur contenu défile dans la hauteur disponible.
+
+**Où le montrer.** `src/components/planner/RoutePanels.tsx`, `scripts/e2e-planning.mjs`.
+
+**Test et niveau de verrouillage : automatisé pour la coupure.** La recette contrôle les dimensions de la section, la visibilité des actions, le mobile et le paysage. Les captures bureau ont été relues ; l’esthétique reste une vérification visuelle.
+
+### B66 — Un engin partagé pouvait être annoncé compatible PMR
+
+**Symptôme observé.** La traduction d’un trajet en engin pouvait produire `accessible=true` quand le demandeur n’avait pas activé PMR.
+
+**Cause racine.** L’absence de contrainte dans la recherche était confondue avec l’accessibilité réelle du moyen de transport.
+
+**Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : aucun engin partagé n’est déclaré accessible en fauteuil. Une recherche PMR exclut les locations et exige une accessibilité publiée pour chaque segment public.
+
+**Où le montrer.** `server/src/services/motis/options.ts`, `server/src/services/planning.ts`.
+
+**Test et niveau de verrouillage : automatisé.** `server/src/__tests__/planning.test.ts` exige `accessible=false` pour la location et refuse les segments publics déclarés non accessibles.
+
+### B67 — La préparation sans horaires échouait avant tout trajet
+
+**Symptôme observé.** L’import exigeait un accès GTFS même pour la marche. Sur un moteur sans horaires, demander TRANSIT produisait une erreur 500. L’import local dans le dossier créé par le script échouait aussi avec `basic_ios::clear: iostream error`.
+
+**Cause racine.** La configuration chargeait toujours un horaire ; le client n’exprimait pas l’absence totale de modes publics. L’image MOTIS utilise un utilisateur qui ne pouvait pas écrire dans le dossier de l’utilisateur du poste.
+
+**Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : préparation sans GTFS par défaut, indicateur serveur et bandeau explicites, paramètre `transitModes=` vide, import sous l’UID/GID courant et image fixée comme Compose. Un extrait lyonnais existant est réutilisable ; les téléchargements ne deviennent définitifs qu’après succès. L’authentification GTFS optionnelle reste prévue pour une activation future.
+
+**Où le montrer.** `infra/motis-prepare.sh`, `server/src/config/index.ts`, `server/src/services/motis/client.ts`, `src/components/app/TransportStatus.tsx`.
+
+**Test et niveau de verrouillage : automatisé pour le routage, faible pour la préparation.** `scripts/e2e-no-timetable.mjs`, lancé par la CI contre un vrai MOTIS sans GTFS, vérifie contexte, arrêts, trajet et géométrie sur mobile et bureau. Les tests unitaires verrouillent la désactivation par défaut et le paramètre vide. L’import réel de Lyon est passé après correction des droits ; ce script et l’accès authentifié à un futur GTFS ne disposent pas d’une recette automatisée complète.
+
+### B68 — Les recettes cumulées épuisaient la fenêtre de connexion
+
+**Symptôme observé.** Le hors-ligne échouait avec HTTP 429 après les scénarios précédents, alors qu’il passait isolément.
+
+**Cause racine.** Toutes les recettes utilisaient le même processus serveur et cumulaient leurs appels de session dans la limite réelle de débit.
+
+**Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : redémarrer le serveur entre scénarios, en conservant la base isolée de la recette. La limite de production reste inchangée.
+
+**Où le montrer.** `scripts/ci.ts`, fonction `runBrowser`.
+
+**Test et niveau de verrouillage : automatisé.** La recette complète, incluant onboarding, planification, hors-ligne et export, s’exécute successivement sans refus 429. Les tests existants du limiteur restent actifs.
+
+### B69 — Le profil affichait une confirmation avant la réponse serveur
+
+**Symptôme observé.** Le bouton Enregistrer affichait sa coche dès le clic, même si le PUT échouait. Le suivi carbone invitait encore à marquer manuellement un trajet comme fait.
+
+**Cause racine.** L’état de succès suivait l’envoi de la commande plutôt que sa réussite ; le texte du suivi décrivait l’ancien parcours manuel.
+
+**Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : afficher la coche seulement après succès, désactiver le bouton pendant l’envoi et rappeler la comptabilisation automatique au départ prévu.
+
+**Où le montrer.** `src/components/profile/ProfilePanels.tsx`, `src/components/carbon/CarbonPanel.tsx`.
+
+**Test et niveau de verrouillage : automatisé pour la confirmation, faible pour le texte.** `scripts/e2e-onboarding.mjs` force un refus du profil, exige l’absence de coche, puis vérifie son apparition après une nouvelle écriture acceptée. Le libellé du suivi a été relu dans le rendu.
+
 ## Ouverts
 
-### B45 — L’attente affichée ne dépend pas d’une course horaire
+### B45 — Les horaires TCL courants restent à intégrer
 
-**Symptôme observé** : une même ligne conserve une attente issue de constantes,
-sans vérifier son prochain départ ni son dernier service. Le champ
-`realtime_delay_minutes` ajoute un décalage généré et non un retard reçu.
+**Symptôme actuel.** Les arrêts TCL sont consultables mais aucun trajet en transport public n’est proposé dans la configuration livrée. Le bandeau explique cette limite.
 
-**Cause racine** : l’ingestion actuelle ne conserve ni `stop_times.txt` ni le
-calendrier des courses ; le moteur client ne reçoit pas d’instant de recherche.
-Les tracés et identifiants WFS ont remplacé le modèle de courses GTFS.
+**Cause racine.** Aucune archive GTFS officielle actuelle n’est configurée. Les anciennes attentes estimées ont été retirées avec le moteur maison ; elles ne sont plus présentées comme horaires.
 
-**État** : ouvert dans l’application. Le service serveur horaire et son import
-sont préparés, mais ils ne sont pas encore appelés par les recherches ni par
-le formulaire de planification. `GTFS_SOURCE_URL` est absente. L’archive publique
-TCL du 15 avril 2022 est expirée et l’import y détecte une course T2 sans tracé
-GTFS exploitable. Une archive récente et la correspondance avec les tracés
-publiés sont nécessaires avant activation. Aucune donnée de test n’est importée
-dans l’application ; aucune durée historique n’est réécrite.
+**État.** Intégration reportée à une prochaine itération sur décision produit. Le mode livré fonctionne sur la voirie et les flux GBFS, sans archive historique ni horaire de test chargé en production. Une prochaine activation nécessitera une archive actuelle, des tracés vérifiés et un renouvellement fiable.
 
-**Commit préparatoire** : [8d4e0d3 — service horaire et import](https://github.com/Vitrixxl/t6/commit/8d4e0d36322b9561eb6cab303d93a43f05a5dc1e).
+**Commit préparatoire actuel.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) ; l’ancien service horaire maison a été retiré avec la migration MOTIS.
 
-**Où le montrer** : `src/lib/planner/transit.ts` (comportement actuel),
-`server/src/services/transit/search.ts`, `scripts/gtfs_timetable.py`,
-`server/src/__tests__/transit.test.ts`, `scripts/test_gtfs_timetable.py`,
-`docs/PLAN-ATTENTE-GTFS.md`.
+**Où le montrer.** `infra/motis-prepare.sh`, `server/src/services/planning.ts`, `src/components/app/TransportStatus.tsx`, `scripts/ci.ts`.
 
-**Vérification réalisée** : 12 tests du service et de son API couvrent la
-marche avant montée, les départs manqués, la meilleure arrivée, le sens,
-le calendrier, les prolongements après minuit, les correspondances,
-l’accessibilité, les fréquences et les changements d’heure. Six tests Python
-sur archives miniatures sont invoqués par un test Bun et couvrent notamment
-les quais homonymes, exceptions, tracés absents et horaires manquants.
-`bun run check` passe : 218 tests Bun dans 26 fichiers, lint, typage et build.
-Les deux lectures GET préparatoires ont depuis été retirées faute de consommateur
-applicatif ; le service interne reste isolé. Cela ne valide pas
-encore un parcours TCL réel ni le branchement de l’interface.
-
-**Niveau de verrouillage** : **ouvert** pour le défaut utilisateur ; le socle
-serveur dispose de tests automatisés. La validation du flux réel, le raccordement
-client, le renouvellement automatisé et la recette navigateur restent à faire.
+**Niveau de verrouillage : ouvert pour les horaires réels.** Les tests de planning et les recettes MOTIS utilisent les fixtures versionnées pour vérifier le protocole horaire. Ils ne valident pas une desserte TCL actuelle. Le fonctionnement sans GTFS, lui, est couvert par une recette navigateur contre un moteur réel sans horaire.
