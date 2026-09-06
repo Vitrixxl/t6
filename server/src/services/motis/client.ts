@@ -54,6 +54,8 @@ const leg = z.object({
     to: place,
     /** Secondes. */
     duration: z.number(),
+    startTime: z.iso.datetime({ offset: true }).optional(),
+    endTime: z.iso.datetime({ offset: true }).optional(),
     /** Mètres, absent sur les segments de transport. */
     distance: z.number().optional(),
     legGeometry: encodedPolyline,
@@ -156,4 +158,16 @@ export async function fetchCarMeasure(
     return cell && cell.distance !== undefined && cell.distance >= 0 && cell.duration >= 0
         ? { distanceMeters: cell.distance, durationSeconds: cell.duration }
         : null;
+}
+
+
+/** Sous-type public reconnu par MOTIS, y compris les codes GTFS de bus étendus. */
+export function transitTypeOf(leg: MotisLeg): 0 | 1 | 3 | 7 | undefined {
+    switch (leg.mode) {
+        case 'TRAM': return 0;
+        case 'SUBWAY': return 1;
+        case 'BUS': return 3;
+        case 'FUNICULAR': return 7;
+        default: return undefined;
+    }
 }

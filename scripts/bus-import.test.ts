@@ -53,3 +53,13 @@ it('oriente la géométrie depuis le terminus publié et ignore les quais trop �
     expect(routes[0].shape[0]).toEqual([4.83, 45.75]);
     expect(routes[0].stopSequence).toEqual(['bus-stop:0', 'bus-stop:2']);
 });
+
+
+it('reconnaît un terminus dont seuls les espaces et tirets diffèrent, comme TB12', async () => {
+    const named = stops.map(stop => stop.properties.nom === 'Beta'
+        ? { ...stop, properties: { ...stop.properties, nom: 'Kimmerling - Genêts' } } : stop);
+    const [routes] = await imported([line({ nom_destination: 'Kimmerling-Genêts' })], named);
+    expect(routes[0].stopSequence).toEqual(['bus-stop:0', 'bus-stop:1', 'bus-stop:2']);
+    const [missing] = await imported([line({ nom_destination: 'Autre Genêts' })], named);
+    expect(missing).toEqual([]);
+});

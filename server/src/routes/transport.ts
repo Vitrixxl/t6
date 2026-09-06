@@ -5,11 +5,13 @@ import { transportContext, stopCellQuery, stopCollection, nearbyStopsQuery, near
 import { errorResponse } from '../../../src/contracts/primitives.ts';
 import { routeSearch, routeOption } from '../../../src/contracts/planning.ts';
 import { createTransportService } from '../services/transport/index.ts';
+import { transportCompression } from '../plugins/transport-compression.ts';
 import { searchFastestRoute } from '../services/planning.ts';
 
 export function transportRoutes(ctx: AppContext, config: ServerConfig) {
     const transport = createTransportService(ctx.decorator.repositories.transport, config.motisTransitEnabled);
     return new Elysia({ prefix: '/transport', tags: ['Transport'] })
+        .use(transportCompression())
         .get('/context', () => transport.context(), {
             response: transportContext,
             detail: { summary: 'Disponibilités partagées, sans téléchargement du réseau TCL' },

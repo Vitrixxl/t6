@@ -58,7 +58,7 @@ function Requirements() {
                         <>
                             <b>F2</b> Planificateur multimodal, géolocalisation temps réel
                         </>,
-                        'Un trajet : la première arrivée calculée, attente et marche finale comprises. Tracés vérifiés par segment.',
+                        'Un trajet : attente comprise et affichée, pictogrammes avec les lignes, tracés vérifiés par segment.',
                     ],
                     [
                         <>
@@ -129,7 +129,7 @@ function ExternalApis() {
                     [<b>Photon</b>, 'Second géocodeur, données OpenStreetMap.', 'Résultats BAN conservés ; erreur si les deux échouent.'],
                     [<b>MOTIS</b>, 'Trajet le plus rapide sur la voirie OSM, les horaires TCL et les flux GBFS. Moteur local.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
                     [<b>Tuiles OSM</b>, 'Le fond de plan.', "Carte vide, l'itinéraire reste lisible en liste."],
-                    [<b>GBFS Vélo'v et Dott</b>, 'Stations, vélos disponibles, trottinettes libres.', 'Message explicite, aucun véhicule partagé ni secours local.'],
+                    [<b>GBFS Vélo'v et Dott</b>, 'Stations et véhicules disponibles. Transfert gzip, flotte complète.', 'Message explicite, aucun véhicule partagé ni secours local.'],
                     [<b>Réseau TCL et WFS Grand Lyon</b>, 'Arrêts et tracés officiels ingérés hors ligne. Horaires TCL chargés dans MOTIS.', "Sans effet à l'exécution."],
                 ]}
             />
@@ -257,10 +257,10 @@ function Reversals() {
                 </Card>
                 <Card kicker="Ajouté" title="Ce que la démo exigeait" tone="pine">
                     <ul>
-                        <li>La carte TCL : 92 lignes de bus, quais et tracés par sens.</li>
+                        <li>La carte TCL : 98 lignes de bus, quais et tracés officiels par sens, dont TB12.</li>
                         <li>Un accueil obligatoire : moyens utilisables et PMR, avec reprise en cas d’erreur.</li>
                         <li>Les quais chargés par zone visible au lieu du fichier complet.</li>
-                        <li>MOTIS local : marche, TCL et engins partagés. Horaires officiels, attente comprise.</li>
+                        <li>MOTIS local : marche, TCL et engins partagés. Horaires officiels, attente affichée par transport.</li>
                         <li>Information RGPD, conservation à six mois et registre des traitements.</li>
                     </ul>
                 </Card>
@@ -353,9 +353,9 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="168" label="commits depuis le code remis au jury" />
+                <Stat value="170" label="commits depuis le code remis au jury" />
                 <Stat value="24" label="PR fusionnées, chacune avec ses tests" />
-                <Stat value="192" label="tests, 32 fichiers, 0 échec" />
+                <Stat value="199" label="tests, 34 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
                 <Stat value="0" label="violation axe-core sur quatre écrans" />
                 <Stat value="CI verte" label="sur le dernier commit poussé" />

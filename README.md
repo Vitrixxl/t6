@@ -510,10 +510,10 @@ ou fait avec son bilan daté au départ prévu si elle est passée. La commande 
 
 ## Bus TCL dans le calcul d’itinéraires
 
-Le feed livré contient 92 lignes de bus régulières (191 tracés par sens, 2 931 quais),
-en plus des 13 lignes métro/tram/funiculaire : 5 366 entrées d’arrêts et 204 tracés au total.
+Le feed livré contient 98 lignes de bus régulières (203 tracés par sens, 3 135 quais),
+en plus des 13 lignes métro/tram/funiculaire : 5 570 entrées d’arrêts et 216 tracés au total.
 Ce sont des stations regroupées pour le rail et des quais physiques pour le bus, pas
-5 366 lieux uniques. Les données bus ont été téléchargées le 5 septembre 2026 depuis
+5 570 lieux uniques. Les données bus ont été téléchargées le 6 septembre 2026 depuis
 le [WFS SYTRAL](https://www.data.gouv.fr/datasets/lignes-de-bus-du-reseau-transports-en-commun-lyonnais)
 (couche `sytral:tcl_sytral.tcllignebus_2_0_0`, licence ouverte indiquée par la fiche).
 
@@ -601,3 +601,9 @@ Le service worker charge le HTML depuis le réseau lors d’une navigation en li
 
 
 **Arrivée piétonne et tracés (B75–B77).** Une recherche utilise normalement un plan MOTIS et une référence voiture. Si aucun trajet direct partagé exploitable ne revient malgré des moyens partagés demandés, `recoverRentalArrival` reprend le calcul via un point du chemin piéton réel situé à au moins 150 m de marche de l’arrivée. Deux plans supplémentaires mesurent en parallèle l’approche multimodale et la fin à pied ; la destination exacte et les contraintes GBFS sont conservées. Le meilleur trajet complet reste comparé aux résultats initiaux. Cette reprise limitée ne garantit pas l’optimalité globale du moteur ; un échec conserve les résultats initiaux, sans tracé inventé. Les segments annulés, leurs quais annulés et les locations sans engin identifié sont exclus. `transitShape` raccorde les tracés officiels, avec les quais physiques dans le bon ordre pour le bus ; les types de bus étendus suivent le mode BUS de MOTIS pour le libellé et le facteur carbone. Sur la carte, le trajet avec contour blanc passe au-dessus des marqueurs. Vérifications : `server/src/__tests__/planning.test.ts`, `transit-shape.test.ts`, `scripts/e2e-tcl.mjs` et `scripts/e2e-arrival.mjs` (vrai moteur, destination exacte, trajet plus rapide que la marche et pixels du tracé mobile).
+
+
+**Transfert mobile (B78).** Les GET publics `/api/transport/context`, `/api/transport/stops` et `/api/transport/nearby-stops` négocient gzip via `Accept-Encoding` et `Vary`, après validation du JSON. `transportCompression` utilise `Bun.gzipSync` sans dépendance supplémentaire, à partir de 1 024 octets. Les refus `gzip;q=0`, petits corps, erreurs et réponses du compte restent non compressés. Un instantané des disponibilités passe de 1 063 426 à 138 168 octets sans retirer aucun véhicule. Avant correction, le transfert public de cet instantané prenait 14–20 s et approchait le délai de 20 s du contexte transport. Les tests de `transport-compression.test.ts` vérifient identité du JSON, négociation et en-têtes ; `e2e-arrival.mjs` exige la compression des disponibilités, et `e2e-transport-map.mjs` distingue octets transférés et JSON décompressé. Aucun gain énergétique n’est déduit de cette mesure.
+
+
+**Lecture du trajet (B79–B80).** Les terminus de bus sont comparés après normalisation des espaces et de la ponctuation ; les noms affichés, quais physiques et sens restent ceux de la source. TB12 est ainsi importé et raccordé au tracé officiel. Le réseau actualisé compte 98 lignes de bus, 203 tracés bus par sens et 3 135 quais bus (5 570 entrées et 216 tracés avec le rail). `boardingWaits` calcule chaque attente avant embarquement depuis le départ demandé, puis depuis l’arrivée du précédent transport et la durée des accès. Un départ à pied différé par MOTIS devient une attente au premier arrêt pour un départ immédiat ; la durée totale reste inchangée. Une heure manquante donne une attente indisponible, jamais zéro. Les détails montrent attente et départ théoriques de chaque transport. `RouteSequence` affiche les pictogrammes, flèches et lettres/numéros, avec libellés accessibles mais aucun texte « marche » visible. Vérifications : `boarding-waits.test.ts`, `scripts/bus-import.test.ts` et `scripts/e2e-tcl.mjs` (le cas officiel TB12 se rejoue avec `E2E_TCL_CASE=tb12`).

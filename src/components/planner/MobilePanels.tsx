@@ -10,6 +10,7 @@ import type { GeoPoint, RouteOption } from '../../types';
 import { formatCarbonComparisonCompact } from '../../lib/carbon-comparison';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useFastestRoute';
 import { Metric } from '../app/shared';
+import { RouteSequence } from './RouteSequence';
 import { RouteSteps } from './RouteSteps';
 
 export const NO_ROUTE_MESSAGE = 'Aucun trajet avec ces moyens de transport. Modifie-les, ou réessaie si le moteur ne répond pas.';
@@ -169,6 +170,7 @@ function MobileRouteHeadline({ routeOption }: { routeOption: RouteOption }) {
     return (
         <div className="rounded-xl border border-primary bg-primary/10 px-3 py-2.5 text-primary">
             <strong className="block text-sm">{routeOption.title}</strong>
+            <RouteSequence route={routeOption} />
             <span className="block font-mono text-[11px]">
                 {formatClockTime(routeOption.departureAt)} → {formatClockTime(routeOption.arrivalAt)} · {formatDuration(routeOption.durationMinutes)} · {routeOption.distanceKm.toFixed(1)} km
             </span>

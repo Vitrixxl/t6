@@ -5,9 +5,11 @@ import { CalendarPlus, Check, Route, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { RouteOption } from '../../types';
 import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useFastestRoute';
+import { RouteSequence, LegIcon } from './RouteSequence';
+import { BoardingTime } from './RouteSteps';
 import { visibleLegs } from '../../lib/planner';
 import { formatCarbonComparison, formatCarbonFootprint } from '../../lib/carbon-comparison';
-import { Metric, MODE_ICON } from '../app/shared';
+import { Metric } from '../app/shared';
 
 export function MapStatusBar({
     routingStatus,
@@ -55,6 +57,7 @@ export function RouteDetailPanel({
                 </div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Trajet le plus rapide</p>
                 <h2 className="truncate text-[15px] font-semibold tracking-normal">{routeOption.title}</h2>
+                <RouteSequence route={routeOption} />
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{routeOption.summary}</p>
             </div>
             <div className="grid gap-3 p-3">
@@ -68,11 +71,10 @@ export function RouteDetailPanel({
                 </div>
                 <ol className="grid gap-2">
                     {visibleLegs(routeOption).map((leg) => {
-                        const Icon = MODE_ICON[leg.mode];
                         return (
                             <li key={leg.id} className="grid grid-cols-[30px_1fr] gap-2.5 rounded-lg border border-border/70 bg-background/70 p-2.5">
                                 <span className="grid size-7 place-items-center rounded-lg bg-secondary text-secondary-foreground">
-                                    <Icon className="size-4" aria-hidden="true" />
+                                    <LegIcon leg={leg} className="size-4" />
                                 </span>
                                 <span>
                                     <strong className="block text-sm">{leg.title}</strong>
@@ -81,6 +83,7 @@ export function RouteDetailPanel({
                                         {' -> '}
                                         {leg.to}. {leg.detail}
                                     </span>
+                                    <BoardingTime leg={leg} />
                                 </span>
                             </li>
                         );

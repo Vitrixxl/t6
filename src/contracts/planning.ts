@@ -19,6 +19,8 @@ export const legEstimate = z.object({
 });
 export const routeLeg = z.object({
     id: z.string(), mode: mobilityMode, transfer: z.boolean().optional(), title: z.string(),
+    transitType: transitType.optional(), lineCode: z.string().optional(),
+    boardingAt: z.iso.datetime({ offset: true }).optional(), waitingSeconds: z.number().int().nonnegative().optional(),
     mapLabel: z.string().optional(), mapColor: z.string().optional(), from: z.string(), to: z.string(),
     fromPoint: geoPoint, toPoint: geoPoint, path: z.array(geoPoint), distanceKm: z.number(),
     durationMinutes: z.number(), carbonGrams: z.number(), accessible: z.boolean(), detail: z.string(), estimate: legEstimate,

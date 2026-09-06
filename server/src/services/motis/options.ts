@@ -10,7 +10,8 @@ import { lineLabel } from '../../../../src/lib/planner/labels.ts';
 import { buildOption } from '../../../../src/lib/planner/legs.ts';
 import { round } from '../../../../src/lib/planner/metrics.ts';
 import { AVAILABLE_MODE_LABELS } from '../../../../src/lib/planner/search-filters.ts';
-import type { MotisItinerary, MotisLeg } from './client.ts';
+import { transitTypeOf, type MotisItinerary, type MotisLeg } from './client.ts';
+import { boardingWaits } from './timing.ts';
 import { transitShape } from './transit-shape.ts';
 import { decodePolyline } from './polyline.ts';
 
@@ -52,7 +53,7 @@ function pathLengthMeters(path: GeoPoint[]): number {
 type LegText = Pick<RouteLeg, 'title' | 'detail' | 'mapLabel' | 'mapColor'>;
 
 function describeTransit(leg: MotisLeg, to: GeoPoint, traced: boolean): LegText {
-    const label = lineLabel(leg.mode === 'BUS' ? 3 : leg.routeType ?? -1, leg.routeShortName ?? '');
+    const label = lineLabel(transitTypeOf(leg) ?? leg.routeType ?? -1, leg.routeShortName ?? '');
     return {
         title: `${label} vers ${to.label}`,
         detail: `${leg.headsign ? `${label} direction ${leg.headsign}.` : `${label}.`} Horaires théoriques TCL. ${traced ? 'Tracé officiel SYTRAL.' : 'Tracé de ligne indisponible ; distance et bilan carbone estimés entre les arrêts.'}`,
@@ -84,7 +85,7 @@ function describe(leg: MotisLeg, mode: MobilityMode, transfer: boolean, to: GeoP
 
 function carbonFactor(leg: MotisLeg, mode: MobilityMode): number {
     return mode === 'transit'
-        ? transitEmissionFactor(leg.mode === 'BUS' ? 3 : leg.routeType ?? -1).gramsCo2ePerPassengerKm
+        ? transitEmissionFactor(transitTypeOf(leg) ?? leg.routeType ?? -1).gramsCo2ePerPassengerKm
         : ROAD_EMISSION_FACTORS[mode].gramsCo2ePerPassengerKm;
 }
 
@@ -101,7 +102,7 @@ function fallbackLabels(mode: MobilityMode): { from: string; to: string } {
         : { from: 'Point de passage', to: 'Point de passage' };
 }
 
-function toLeg(leg: MotisLeg, mode: MobilityMode, id: string, ends: SearchEnds): RouteLeg {
+function toLeg(leg: MotisLeg, mode: MobilityMode, id: string, ends: SearchEnds, waitingSeconds?: number): RouteLeg {
     const fallback = fallbackLabels(mode);
     const from = placePoint(leg.from, ends, fallback.from);
     const to = placePoint(leg.to, ends, fallback.to);
@@ -114,6 +115,7 @@ function toLeg(leg: MotisLeg, mode: MobilityMode, id: string, ends: SearchEnds):
     return {
         id,
         mode,
+        ...(mode === 'transit' ? { transitType: transitTypeOf(leg), lineCode: leg.routeShortName, boardingAt: leg.startTime, waitingSeconds } : {}),
         ...(transfer ? { transfer } : {}),
         ...describe(leg, mode, transfer, to, distanceKm, path.length > 1),
         from: from.label,
@@ -175,9 +177,10 @@ export function fastestItinerary(itineraries: MotisItinerary[]): MotisItinerary 
 }
 
 export function toRouteOption(itinerary: MotisItinerary, ends: SearchEnds): RouteOption {
+    const waits = boardingWaits(itinerary, ends.departureAt);
     const legs = itinerary.legs.flatMap((leg, index) => {
         const mode = legMode(leg);
-        return mode ? [toLeg(leg, mode, `leg-${index}`, ends)] : [];
+        return mode ? [toLeg(leg, mode, `leg-${index}`, ends, waits[index])] : [];
     });
     const sequence = modeSequence(legs);
     // L'identifiant nomme la forme du trajet : un enregistrement « Vélo’v puis
@@ -189,7 +192,7 @@ export function toRouteOption(itinerary: MotisItinerary, ends: SearchEnds): Rout
         summary: summaryOf(legs, itinerary.transfers),
         modes: [...new Set(legs.map((leg) => leg.mode))],
         legs: legs.map((leg) => ({ ...leg, id: `${id}-${leg.id}` })),
-        departureAt: itinerary.startTime,
+        departureAt: ends.departureAt,
         arrivalAt: itinerary.endTime,
         durationMinutes: Math.max(1, Math.ceil((Date.parse(itinerary.endTime) - Date.parse(ends.departureAt)) / 60_000)),
     });

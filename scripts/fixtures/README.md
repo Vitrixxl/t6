@@ -34,11 +34,13 @@ les autres objets indépendants sont retirés pour garder un petit jeu versionn�
 ## `lyon-ci.gtfs.zip` — horaire de recette
 
 Horaire GTFS dérivé du réseau livré (`data/transport/gtfs-feed.json`, desserte
-et fréquences réelles TCL) par `python3 scripts/build-gtfs-fixture.py` : une
+et intervalles du réseau normalisé, dont des hypothèses pour le bus) par `python3 scripts/build-gtfs-fixture.py` : une
 course par ligne et par sens dans l'emprise ci-dessus, cadencée par
-`frequencies.txt` à la fréquence publiée, avec des temps de parcours calculés
+`frequencies.txt` aux intervalles du jeu normalisé, avec des temps de parcours calculés
 sur la distance entre arrêts. Son calendrier couvre 2026 à 2030 pour que la
 recette trouve des trajets à toute date. Ce n'est pas l'horaire officiel :
 il sert à vérifier le parcours applicatif, pas des heures de passage.
 
 Aucun téléchargement ni outil d’ingestion n’est nécessaire pendant la CI.
+
+Jeu actualisé le 6 septembre 2026 : 1 468 arrêts, 182 lignes par sens, 195 courses cadencées, dont TB12.

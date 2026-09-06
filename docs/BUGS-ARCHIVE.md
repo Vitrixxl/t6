@@ -1974,6 +1974,42 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé pour les règles et la présence du tracé, faible pour toute la lisibilité visuelle.** `transit-shape.test.ts` couvre les courbes, les sens, les quais et les variantes. `scripts/e2e-tcl.mjs` vérifie les tracés officiels ; `scripts/e2e-arrival.mjs` compte les pixels du trajet sur la carte mobile. Les captures mobile et bureau sont inspectées. Le rendu ne prouve pas à lui seul la lisibilité à tous les zooms.
 
+### B78 — Le premier chargement mobile dépasse le délai de l’application
+
+**Symptôme observé.** Sur le lien public, le navigateur reste sur « Synchronisation des flux GTFS et des stations partagées ». La même application s’ouvre rapidement en local.
+
+**Cause racine.** Le contexte des disponibilités était envoyé sans compression : 1 063 426 octets sur l’instantané contrôlé. Le transfert public mesuré prend 14–20 s et approche le délai de 20 s du contexte transport ; un ralentissement supplémentaire peut faire expirer une tentative avant réception du corps complet.
+
+**Correctif.** COMPRESSION_COMMIT : négocier gzip pour les grandes réponses GET publiques du transport, après validation du JSON, avec `Vary: Accept-Encoding`. La flotte reste complète. Sur le même instantané : 138 168 octets compressés. Aucun changement de délai, de compte ou d’interface.
+
+**Où le montrer.** `server/src/plugins/transport-compression.ts`, `server/src/routes/transport.ts`, `scripts/e2e-arrival.mjs`, `scripts/e2e-transport-map.mjs`.
+
+**Test et niveau de verrouillage : automatisé.** `transport-compression.test.ts` compare intégralement le JSON avant/après décompression, vérifie refus et préférence gzip, maintien de la CSP et du cache, petits corps, erreurs et absence de compression du compte. La recette d’arrivée exige un contexte gzip ; la recette cartographique mesure les octets transférés et les distingue du JSON décompressé. Les temps publics dépendent du tunnel et ne sont pas une garantie de délai.
+
+### B79 — Le bus TB12 reste sans tracé entre Part-Dieu et Bir Hakeim
+
+**Symptôme observé.** Le trajet 99 Rue Robert → 2ter Rue Pauline Kergomard affiche TB12 et ses horaires mais seulement les accès à pied sur la carte.
+
+**Cause racine.** L’import comparait le terminus exactement : « Kimmerling-Genêts » pour la ligne et « Kimmerling - Genêts » pour le quai. Cette différence de ponctuation rejetait la ligne entière avant le raccordement MOTIS.
+
+**Correctif.** DELIVERY_COMMIT : comparer des clés de noms sans ponctuation ni espaces, en conservant les identifiants, libellés et ordre des quais. Actualiser le réseau SYTRAL et l’horaire de recette dérivé. TB12 retrouve les géométries officielles dans les deux sens ; aucune droite de substitution.
+
+**Où le montrer.** `scripts/fetch_tcl_bus.py` (`stop_name_key`, `route_stops`), `data/transport/gtfs-feed.json`, `server/src/services/motis/transit-shape.ts`.
+
+**Test et niveau de verrouillage : automatisé pour l’import et le raccordement ; faible pour la lisibilité visuelle.** `scripts/bus-import.test.ts` accepte la variation de ponctuation et refuse un autre terminus. `transit-shape.test.ts` conserve les contraintes de quai et de sens. `E2E_TCL_CASE=tb12 bun scripts/e2e-tcl.mjs` teste le parcours officiel, exige une courbe TB12 et produit les captures mobile et bureau.
+
+### B80 — L’attente incluse dans la durée reste invisible dans les étapes
+
+**Symptôme observé.** La durée totale dépasse la somme des temps des étapes, sans indiquer combien attendre avant le bus. Le résumé replié ne permet pas d’identifier les lignes empruntées.
+
+**Cause racine.** La conversion utilisait les horaires globaux pour la durée totale mais perdait les heures d’embarquement et l’attente de chaque segment. Le résumé ne portait que les familles de transport.
+
+**Correctif.** DELIVERY_COMMIT : conserver les heures MOTIS et calculer chaque attente dans `boardingWaits`. Le départ affiché correspond au départ demandé ; son éventuel décalage à pied devient l’attente au premier arrêt. Les correspondances partent de la fin du transport précédent, accès déduits. Aucune attente n’est ajoutée une seconde fois à la durée. Un horaire absent reste inconnu. Ajouter les pictogrammes, flèches et numéros/lettres au résumé, avec libellés uniquement pour les lecteurs d’écran.
+
+**Où le montrer.** `server/src/services/motis/timing.ts`, `options.ts`, `src/contracts/planning.ts`, `src/components/planner/RouteSequence.tsx`, `RouteSteps.tsx`, `RoutePanels.tsx`.
+
+**Test et niveau de verrouillage : automatisé pour les durées et le contenu ; faible pour l’ensemble du rendu.** `boarding-waits.test.ts` couvre départ différé, correspondance, location, zéro et horaire absent. `scripts/e2e-tcl.mjs` exige les temps et les lignes dans l’API, les pictogrammes/flèches sans mot « marche » dans le résumé fermé, puis attente et heure dans les détails. Les captures mobile et bureau sont inspectées.
+
 ## Ouverts
 
 Le renouvellement du GTFS officiel reste manuel. Le temps réel reste à intégrer. Les variantes TCL sans correspondance vérifiée avec les tracés SYTRAL restent sans géométrie. La reprise piétonne après échec du profil location est limitée à un accès du chemin réel : elle ne prouve pas l’optimalité globale du moteur.

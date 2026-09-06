@@ -19,7 +19,9 @@ try {
         email: `arrival-${randomUUID()}@example.test`, password: 'RecetteArrivee2026!', displayName: 'Recette arrivée', termsAccepted: true,
     } });
     assert.equal(signup.status(), 201);
-    const network = await (await context.request.get(base + '/api/transport/context')).json();
+    const networkResponse = await context.request.get(base + '/api/transport/context');
+    assert.equal(networkResponse.headers()['content-encoding'], 'gzip', 'Les disponibilités mobiles ne sont pas compressées');
+    const network = await networkResponse.json();
     assert.equal(network.transitRoutingAvailable, true, 'Les TCL sont désactivés');
     const response = await context.request.post(base + '/api/transport/journeys', { data: search });
     assert(response.ok(), `Routage partagé : ${response.status()}`);

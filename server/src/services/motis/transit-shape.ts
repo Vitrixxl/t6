@@ -1,7 +1,7 @@
 // Le GTFS horaire TCL ne contient pas de shapes. Les tracés SYTRAL normalisés
 // complètent l'affichage seulement si la ligne, les quais et leur ordre concordent.
 import type { GeoPoint, GtfsRoute } from '../../../../src/types.ts';
-import type { MotisLeg } from './client.ts';
+import { transitTypeOf, type MotisLeg } from './client.ts';
 
 type Projection = { position: number; distance: number; point: GeoPoint };
 const MAX_PLATFORM_DISTANCE_METERS = 60;
@@ -51,7 +51,7 @@ function sliceShape(route: GtfsRoute, stops: MotisLeg['from'][]): GeoPoint[] {
 
 export function transitShape(leg: MotisLeg, routes: GtfsRoute[]): GeoPoint[] {
     const stops = [leg.from, ...(leg.intermediateStops ?? []), leg.to];
-    const candidates = routes.filter(route => route.route_short_name === leg.routeShortName && route.route_type === (leg.mode === 'BUS' ? 3 : leg.routeType));
+    const candidates = routes.filter(route => route.route_short_name === leg.routeShortName && route.route_type === (transitTypeOf(leg) ?? leg.routeType));
     const paths = candidates.map(route => sliceShape(route, stops)).filter(path => path.length >= 2);
     // Plusieurs variantes admissibles ne permettent pas d'affirmer laquelle est empruntée.
     return paths.length === 1 ? paths[0] : [];

@@ -58,6 +58,11 @@ def route_stops(feature: dict, stops: list[dict], shape: list[list[float]]) -> l
     return [stop for _, stop in candidates]
 
 
+def stop_name_key(name: str | None) -> str:
+    """Les noms SYTRAL varient en espaces et tirets entre quai et terminus."""
+    return "".join(character for character in (name or "").casefold() if character.isalnum())
+
+
 def build_bus_network(line_features: list[dict], stop_features: list[dict], today: str) -> tuple[list[dict], list[dict]]:
     routes, stops = [], {}
     for feature in line_features:
@@ -76,8 +81,9 @@ def build_bus_network(line_features: list[dict], stop_features: list[dict], toda
         if len(served) < 2:
             continue
         # Le sens de la géométrie est contrôlé avec les terminus publiés.
-        names = [stop["properties"]["nom"] for stop in served]
-        origin, destination = properties.get("nom_origine"), properties.get("nom_destination")
+        names = [stop_name_key(stop["properties"]["nom"]) for stop in served]
+        origin = stop_name_key(properties.get("nom_origine"))
+        destination = stop_name_key(properties.get("nom_destination"))
         if origin == destination or origin not in names or destination not in names:
             continue
         if names.index(origin) > names.index(destination):

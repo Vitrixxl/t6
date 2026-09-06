@@ -4,20 +4,18 @@
 // calculateur d'itinéraires. Ce que l'utilisateur a besoin de savoir avant de
 // partir, c'est l'enchaînement — marcher jusqu'à la station, prendre le vélo,
 // marcher jusqu'à l'arrêt, prendre le métro — et non « tourner à droite dans
-// 80 m », qui releve du guidage pas-à-pas et n'a de sens qu'en chemin.
+// 80 m », qui relève du guidage pas-à-pas et n'a de sens qu'en chemin.
 //
-// La liste n'est jamais repliée : c'est l'information principale d'une option
-// d'itinéraire, la demander d'un geste supplémentaire revient à la cacher.
-import { formatDuration } from '../../lib/duration';
+import { Clock3 } from 'lucide-react';
+import { formatClockTime, formatDuration } from '../../lib/duration';
 import type { RouteLeg, RouteOption } from '../../types';
 import { formatDistance, visibleLegs } from '../../lib/planner';
 import { legColor, legTextColor } from '../map/legStyle';
-import { MODE_ICON } from '../app/shared';
+import { LegIcon } from './RouteSequence';
 
 function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
-    const Icon = MODE_ICON[leg.mode];
     const color = legColor(leg);
-    // Le nom de ligne est déjà porte par la pastille : le repeter dans le titre
+    // Le nom de ligne est déjà porté par la pastille : le répéter dans le titre
     // donnerait "Métro D Métro D vers Vénissieux".
     const title = leg.mapLabel && leg.title.startsWith(leg.mapLabel) ? leg.title.slice(leg.mapLabel.length).trim() : leg.title;
 
@@ -28,7 +26,7 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
                     className="grid size-7 shrink-0 place-items-center rounded-lg text-white"
                     style={{ background: color, color: legTextColor(leg) }}
                 >
-                    <Icon className="size-3.5" aria-hidden="true" />
+                    <LegIcon leg={leg} className="size-3.5" />
                 </span>
                 {/* Le filet relie visuellement les étapes : on lit une suite, pas une
             liste de cartes indépendantes. */}
@@ -60,6 +58,7 @@ function StepRow({ leg, last }: { leg: RouteLeg; last: boolean }) {
                 <p className="mt-0.5 truncate text-[0.72rem] leading-4 text-muted-foreground">
                     {leg.from} <span aria-hidden="true">&rarr;</span> {leg.to}
                 </p>
+                <BoardingTime leg={leg} />
                 {leg.mode === 'transit' ? <p className="mt-1 text-[0.72rem] leading-4 text-muted-foreground">{leg.detail}</p> : null}
             </div>
         </li>
@@ -83,5 +82,17 @@ export function RouteSteps({ routeOption }: { routeOption: RouteOption }) {
                 ))}
             </ol>
         </section>
+    );
+}
+
+export function BoardingTime({ leg }: { leg: RouteLeg }) {
+    if (leg.mode !== 'transit') return null;
+    const wait = leg.waitingSeconds === undefined ? 'indisponible' : leg.waitingSeconds === 0 ? '0 min' : leg.waitingSeconds < 60 ? 'moins d’1 min' : formatDuration(Math.ceil(leg.waitingSeconds / 60));
+    return (
+        <span className="mt-1 flex flex-wrap items-center gap-x-1 text-xs font-medium">
+            <Clock3 className="size-3.5" aria-hidden="true" />
+            <span>Attente : {wait}</span>
+            {leg.boardingAt ? <span>· Départ à {formatClockTime(leg.boardingAt)}</span> : null}
+        </span>
     );
 }

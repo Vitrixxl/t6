@@ -32,6 +32,8 @@ try {
     const right = canvas.x + canvas.width * 0.8;
     const middle = canvas.y + canvas.height * 0.45;
     const initialBytes = (await Promise.all(cells.map(async response => (await response.body()).byteLength))).reduce((a, b) => a + b, 0);
+    const transferredBytes = (await Promise.all(cells.map(async response => (await response.request().sizes()).responseBodySize))).reduce((a, b) => a + b, 0);
+    assert.ok(transferredBytes < initialBytes, 'Les cellules ne sont pas compressées sur le réseau');
     assert.ok(initialBytes < 500_000, `Trop de données TCL à l’ouverture : ${initialBytes}`);
     assert.equal(await page.getByText('Certains arrêts TCL n’ont pas pu être chargés.', { exact: false }).count(), 0);
     await page.mouse.move(right, middle);
@@ -70,5 +72,5 @@ try {
     await page.getByRole('status').filter({ hasText: 'Certains arrêts TCL n’ont pas pu être chargés.' }).waitFor({ state: 'hidden' });
     await page.screenshot({ path: 'tmp/screenshots/transport-map-loaded.png' });
     assert.deepEqual(errors, []);
-    console.log(`Carte TCL : ${initialBytes} octets de cellules à l’ouverture, ${urls.length} cellules uniques après aller-retour ; zoom régional sans requête, panne et reprise vérifiés.`);
+    console.log(`Carte TCL : ${transferredBytes} octets transférés pour ${initialBytes} octets JSON de cellules à l’ouverture, ${urls.length} cellules uniques après aller-retour ; zoom régional sans requête, panne et reprise vérifiés.`);
 } finally { await browser.close(); }
