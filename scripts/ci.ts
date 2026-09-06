@@ -107,6 +107,9 @@ try {
     await run(['bun', 'install', '--frozen-lockfile']);
     await run(['bun', 'run', 'check']);
     await run(['bun', 'run', 'metrics:build']);
+    await run(['bun', 'install', '--cwd', 'output/presentation', '--frozen-lockfile']);
+    await run(['bun', 'run', 'tsc', '-p', 'output/presentation']);
+    await run(['bun', 'scripts/e2e-presentation.mjs']);
     await run(['docker', 'pull', image]);
     const routingEnv = { ...env, MOTIS_TRANSIT_ENABLED: 'true', MOTIS_URL: await startMotis(true) };
     await run(['bun', 'run', 'seed:demo'], routingEnv);

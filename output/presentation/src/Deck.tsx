@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { slides } from './slides.tsx';
+import { useSlideSwipe } from './useSlideSwipe.ts';
 
 // Le plateau a une taille fixe et il est mis à l'échelle pour tenir dans la
 // fenêtre : la mise en page est ainsi identique sur le projecteur et sur
@@ -126,11 +127,13 @@ export function Deck() {
         [reduceMotion],
     );
 
+    const swipe = useSlideSwipe(() => move(backward), () => move(forward));
+
     const count = String(position.index + 1).padStart(2, '0');
     const total = String(slides.length).padStart(2, '0');
 
     return (
-        <div className="viewport">
+        <div className="viewport" {...swipe}>
             <div className="stage" style={{ transform: `translate(-50%, -50%) scale(${scale})` }}>
                 <AnimatePresence mode="popLayout" custom={direction} initial={false}>
                     <motion.section

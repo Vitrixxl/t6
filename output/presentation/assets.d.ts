@@ -8,3 +8,6 @@ declare module '*.html' {
     const bundle: HTMLBundle;
     export default bundle;
 }
+
+// Les styles sont chargés par Bun ; TypeScript ne leur attribue aucune valeur.
+declare module "*.css";

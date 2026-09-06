@@ -12,6 +12,14 @@ bun run presentation
 
 Puis ouvrir http://localhost:4100/ (variable `PORT` pour changer de port).
 
+## Téléphone
+
+Glisser vers la gauche avance, vers la droite revient à la diapositive précédente.
+Le geste fonctionne en portrait et en paysage, même dans les marges autour du
+diaporama. Les petits mouvements, les gestes verticaux et le zoom à deux doigts
+ne changent pas de diapositive. Les liens restent cliquables. Le paysage est
+plus lisible ; le cadrage suit la rotation sans modifier la mise en page.
+
 ## Clavier
 
 | Touche                              | Action              |

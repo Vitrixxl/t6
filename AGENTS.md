@@ -398,3 +398,8 @@ d’énergie supposée.
 ## Livraison sans horaires TCL
 
 Les horaires TCL sont reportés à une prochaine itération. Par défaut, `MOTIS_TRANSIT_ENABLED=false` : marche et véhicules partagés uniquement, arrêts TCL consultables et limite annoncée dans l’interface. Aucun accès GTFS n’est requis. Le serveur publie `transitRoutingAvailable=false` et force `transitModes=` vers MOTIS. Les horaires de recette servent uniquement à la CI. Une activation future exige une archive actuelle et `MOTIS_TRANSIT_ENABLED=true` à la préparation et au lancement.
+
+
+## Navigation mobile de la présentation
+
+La présentation conserve sa mise en page et se pilote aussi au toucher : balayage horizontal à gauche pour avancer, à droite pour revenir, en portrait ou paysage. Les petits gestes, le déplacement vertical, le zoom à plusieurs doigts et les liens ne déclenchent pas de changement de diapositive. `useSlideSwipe` dans `output/presentation/src/useSlideSwipe.ts` réutilise les fonctions de navigation de `Deck`. `scripts/e2e-presentation.mjs` vérifie de vrais événements tactiles Chromium et fait partie de `bun run ci`.

@@ -571,3 +571,8 @@ contrôler le résultat GitHub.
 Les endpoints conservés et leurs appelants sont recensés dans [API-USAGE](docs/API-USAGE.md).
 La session porte déjà l’état initial du compte ; les écrans utilisent ensuite les
 GET de chaque ressource. La lecture globale indépendante a été supprimée.
+
+
+## Navigation mobile de la présentation
+
+La présentation conserve sa mise en page et se pilote aussi au toucher : balayage horizontal à gauche pour avancer, à droite pour revenir, en portrait ou paysage. Les petits gestes, le déplacement vertical, le zoom à plusieurs doigts et les liens ne déclenchent pas de changement de diapositive. `useSlideSwipe` dans `output/presentation/src/useSlideSwipe.ts` réutilise les fonctions de navigation de `Deck`. `scripts/e2e-presentation.mjs` vérifie de vrais événements tactiles Chromium et fait partie de `bun run ci`.
