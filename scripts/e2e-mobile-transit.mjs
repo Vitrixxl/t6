@@ -7,6 +7,10 @@ const base = process.env.E2E_BASE_URL || 'http://localhost:4000';
 const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN || '/usr/sbin/chromium', args: ['--no-sandbox'] });
 const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
 const page = await context.newPage();
+// L'horaire de recette circule de 5 h à 24 h : le départ est figé à midi pour
+// que la recette trouve un bus à toute heure de la CI.
+const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+const departureAt = `${day}T12:00:00Z`;
 function assert(value, message) { if (!value) throw new Error(message); }
 try {
     const signup = await context.request.post(base + '/api/auth/register', { data: {
@@ -27,6 +31,9 @@ try {
     } });
     assert(saved.ok(), 'Préparation des coordonnées refusée');
     console.log('Compte et coordonnées prêts.');
+    await page.route('**/api/transport/journeys', request => request.continue({
+        postData: JSON.stringify({ ...request.request().postDataJSON(), departureAt }),
+    }));
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.getByRole('dialog', { name: 'Bienvenue sur UrbanFlow', exact: true }).getByRole('button', { name: 'Commencer' }).click();
     await page.getByRole('button', { name: /passer le tutoriel/i }).click();
