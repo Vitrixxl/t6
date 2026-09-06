@@ -95,8 +95,8 @@ async function testMobileSheet() {
     await page.screenshot({ path: 'tmp/screenshots/routes-landscape.png' });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.locator('[data-tour="route-detail"]').waitFor();
-    await page.getByText('Trajet le plus rapide', { exact: true }).waitFor();
-    const panel = page.locator('[data-tour="route-detail"] section').filter({ hasText: 'Trajet le plus rapide' });
+    await page.getByText('Trajet sélectionné', { exact: true }).waitFor();
+    const panel = page.locator('[data-tour="route-detail"] section').filter({ hasText: 'Trajet sélectionné' });
     if (await panel.evaluate(element => element.scrollHeight > element.clientHeight + 1)) failures.push('détail desktop comprimé et tronqué');
     await page.locator('.ufm-endpoint-destination').waitFor();
     await page.waitForTimeout(800);
@@ -104,7 +104,7 @@ async function testMobileSheet() {
     await page.screenshot({ path: 'tmp/screenshots/route-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator('[data-tour="mobile-map"]').waitFor();
-    log('trajet unique : détails repliés, défilement du contenu, rotation et bureau vérifiés');
+    log('trajets disponibles : détails repliés, défilement du contenu, rotation et bureau vérifiés');
 }
 
 async function testMobileTutorial() {

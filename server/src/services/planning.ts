@@ -1,13 +1,13 @@
 // Recherche d'itinéraire : MOTIS calcule sur le graphe complet (voirie, horaires,
-// GBFS) avec les moyens que l'utilisateur a choisis, l'API retient le trajet qui
-// arrive le premier et y ajoute la référence carbone.
+// GBFS) avec les moyens choisis. L'API classe tous les trajets autorisés par
+// arrivée et leur applique la même référence carbone.
 import type { RouteSearchRequest } from '../../../src/contracts/planning.ts';
 import type { AvailableMode, GtfsRoute, RouteOption } from '../../../src/types.ts';
 import { applyCarbonReference, createCarbonReference } from '../../../src/lib/planner/emissions.ts';
 import type { TransitType } from '../../../src/lib/planner/search-filters.ts';
 import { fetchCarMeasure, fetchPlan, type RentalFormFactor, type PlanQuery } from './motis/client.ts';
 import { recoverRentalArrival } from './motis/arrival.ts';
-import { fastestItinerary, toRouteOption } from './motis/options.ts';
+import { compareItineraries, usableItinerary, toRouteOption } from './motis/options.ts';
 
 /** Types GTFS retenus par l'utilisateur, dans le vocabulaire MOTIS. */
 const TRANSIT_MODE: Record<TransitType, string> = { 0: 'TRAM', 1: 'SUBWAY', 3: 'BUS', 7: 'FUNICULAR' };
@@ -27,7 +27,7 @@ function motisQuery(search: RouteSearchRequest, availability: RoutingAvailabilit
     };
 }
 
-export async function searchFastestRoute(search: RouteSearchRequest, motisUrl: string, availability: RoutingAvailability, signal?: AbortSignal): Promise<RouteOption | null> {
+export async function searchRouteOptions(search: RouteSearchRequest, motisUrl: string, availability: RoutingAvailability, signal?: AbortSignal): Promise<RouteOption[]> {
     signal?.throwIfAborted();
     // La voiture n'est mesurée que comme référence carbone, en parallèle du plan.
     const reference = fetchCarMeasure(motisUrl, search.origin, search.destination, signal).then(createCarbonReference);
@@ -43,7 +43,10 @@ export async function searchFastestRoute(search: RouteSearchRequest, motisUrl: s
         if (leg.mode === 'RENTAL') return query.rentalFormFactors.some(factor => factor === leg.rental?.formFactor);
         return availability.transit && search.modes.includes('transit') && search.transitTypes.some((type) => TRANSIT_MODE[type] === leg.mode);
     }));
-    const fastest = fastestItinerary(allowed);
+    const ordered = allowed.filter(usableItinerary).sort(compareItineraries);
     const carbonReference = await reference;
-    return fastest ? applyCarbonReference(toRouteOption(fastest, { ...search, departureAt: query.departureAt, lineShapes: availability.lineShapes }), carbonReference) : null;
+    const options = ordered.map(itinerary => applyCarbonReference(toRouteOption(itinerary, { ...search, departureAt: query.departureAt, lineShapes: availability.lineShapes }), carbonReference));
+    // Un même candidat peut être présent dans plusieurs réponses du moteur.
+    // Seuls les doublons exacts disparaissent ; aucune variante n'est tronquée.
+    return [...new Map(options.map(option => [option.id, option])).values()];
 }

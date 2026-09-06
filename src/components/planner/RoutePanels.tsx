@@ -4,7 +4,7 @@ import { formatClockTime, formatDuration } from '../../lib/duration';
 import { CalendarPlus, Check, Route, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { RouteOption } from '../../types';
-import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useFastestRoute';
+import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 import { RouteSequence, LegIcon } from './RouteSequence';
 import { BoardingTime } from './RouteSteps';
 import { visibleLegs } from '../../lib/planner';
@@ -55,7 +55,7 @@ export function RouteDetailPanel({
                         {routeOption.accessible ? 'PMR compatible' : 'PMR limité'}
                     </span>
                 </div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Trajet le plus rapide</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Trajet sélectionné</p>
                 <h2 className="truncate text-[15px] font-semibold tracking-normal">{routeOption.title}</h2>
                 <RouteSequence route={routeOption} />
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{routeOption.summary}</p>

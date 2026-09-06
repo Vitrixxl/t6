@@ -34,11 +34,12 @@ des ressources déjà chargées, mais il ne met jamais les réponses de l’API 
 
 ## Planificateur et annulations
 
-Une recherche propose **un seul trajet : celui qui arrive le premier**, avec les
-moyens autorisés, attente initiale et correspondances comprises. MOTIS renvoie
-les trajets directs et les itinéraires avec transport ; le serveur compare leurs
-arrivées et traduit uniquement le gagnant. Il n’y a plus de score, de famille
-ni de présélection d’itinéraire.
+Une recherche propose **tous les trajets autorisés renvoyés par MOTIS**, par heure
+d’arrivée croissante, attente initiale et correspondances comprises. Le serveur
+réunit les trajets directs et les itinéraires avec transport, sans regroupement
+par famille ni troncature ; seuls les doublons identiques sont retirés. Le premier
+est sélectionné par défaut. Choisir une autre carte actualise le tracé, les détails,
+l’enregistrement et la planification.
 
 À la première connexion, l’accueil demande l’accès à **Vélo’v, Dott et aux
 transports en commun**, ainsi que le besoin **PMR**. Les réponses sont persistées
@@ -142,13 +143,13 @@ fonctions de l’application.
    `src/lib/api/planned-trips.ts` → route → service → dépôt du même nom.
    Lire ensuite `completeDueTrips` et sa transaction trajet + historique carbone.
 4. Calcul : `src/queries/routes.ts` → `POST /api/transport/journeys`
-   → `server/src/services/planning.ts` → `fetchPlan` (MOTIS) → `fastestItinerary` → `toRouteOption`
+   → `server/src/services/planning.ts` → `searchRouteOptions` → `fetchPlan` (MOTIS) → `compareItineraries` → `toRouteOption`
    → `applyCarbonReference`.
 
 **Comprendre le fonctionnement des écrans et les garanties** :
 
-1. Affichage : `MobilityMapApp` → `useFastestRoute` → `MobilityLayouts`
-   → `UrbanMap`, ses sources et son cadrage.
+1. Affichage : `MobilityMapApp` → `useRouteOptions` → `MobilityLayouts`
+   → `RouteChoices` et `useRouteSelection` (choix dans Jotai), puis `UrbanMap`, ses sources et son cadrage.
 2. Récurrences : `src/lib/trips/operations.ts` (pause d’une seule routine),
    `routines.ts` (passages), `history.ts` (annulations), puis les services serveur.
 3. Pannes : callbacks de mutation dans `src/queries/`, `save-error.ts`,
@@ -268,11 +269,11 @@ d’énergie ou l’ensemble du trafic (fond OSM et GBFS restent distincts).
 Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur la confie à MOTIS, un moteur multimodal open source qui calcule sur un graphe unique : la voirie OpenStreetMap, les flux GBFS Vélo’v/Dott et les horaires GTFS officiels TCL.
 
 1. Un appel `plan` autorise la marche et les moyens demandés en accès, en sortie et en trajet direct. Les engins partagés exigent les flux GBFS en direct. Les types publics choisis sont transmis à MOTIS lorsque le transport est activé. En parallèle, un appel `one-to-many` mesure la référence voiture.
-2. `fetchPlan` réunit `direct` et `itineraries`. `fastestItinerary` retient la première arrivée parmi les trajets autorisés ; à arrivée égale, il retient le trajet le plus court. `numItineraries` est un minimum de recherche, jamais un plafond de résultats.
-3. `toRouteOption` traduit ce seul trajet et mesure sa durée depuis l’heure demandée, attente initiale comprise. Exemple : départ dans 12 minutes puis trajet de 10 minutes → durée totale 22 minutes. La référence carbone voiture est appliquée au résultat.
+2. `fetchPlan` réunit `direct` et `itineraries`. `searchRouteOptions` filtre les candidats autorisés et exploitables, puis les trie avec `compareItineraries` par arrivée ; à arrivée égale, la durée MOTIS départ–arrivée départage les candidats. `numItineraries` est un minimum de recherche, jamais un plafond de résultats.
+3. `toRouteOption` traduit chaque trajet et mesure sa durée depuis l’heure demandée, attente initiale comprise. Exemple : départ dans 12 minutes puis trajet de 10 minutes → durée totale 22 minutes. La même référence carbone voiture est appliquée à chaque résultat. Un identifiant stable fondé sur le contenu distingue les variantes utilisant les mêmes moyens.
 
-La réponse HTTP est un objet `routeOption`, validé par le contrat partagé, et non
-une collection. Une panne du moteur ou l’absence de trajet exploitable répond
+La réponse HTTP est un tableau non vide `routeOptions`, validé par le contrat
+partagé. La liste défile horizontalement sur mobile et bureau, sans troncature. Une panne du moteur ou l’absence de trajet exploitable répond
 503, sans moteur externe ni tracé inventé. Le client garde la recherche en cache
 mémoire pendant cinq minutes ; chaque appel serveur interroge MOTIS.
 
@@ -291,7 +292,7 @@ CO2e voiture = distance routière voiture x 142 gCO2e/km
 CO2e evite   = CO2e voiture - CO2e de l'option mesuree
 ```
 
-Le trajet retenu utilise cette référence mesurée entre les extrémités de la recherche,
+Tous les trajets utilisent cette même référence mesurée entre les extrémités de la recherche,
 même si sa propre distance diffère de celle de la voiture. Une économie négative
 est conservée et affichée comme des `gCO2e supplementaires`. Si le profil
 voiture est indisponible, le trajet reste visible avec leur propre
@@ -601,7 +602,7 @@ Puis `./infra/motis-prepare.sh` et `docker compose --env-file .env -f infra/comp
 Le service worker charge le HTML depuis le réseau lors d’une navigation en ligne, puis actualise son cache. Hors ligne, il conserve le dernier écran chargé. `scripts/e2e-app-update.mjs` vérifie une mise à jour avec un ancien HTML déjà en cache.
 
 
-**Arrivée piétonne et tracés (B75–B77).** Une recherche utilise normalement un plan MOTIS et une référence voiture. Si aucun trajet direct partagé exploitable ne revient malgré des moyens partagés demandés, `recoverRentalArrival` reprend le calcul via un point du chemin piéton réel situé à au moins 150 m de marche de l’arrivée. Deux plans supplémentaires mesurent en parallèle l’approche multimodale et la fin à pied ; la destination exacte et les contraintes GBFS sont conservées. Le meilleur trajet complet reste comparé aux résultats initiaux. Cette reprise limitée ne garantit pas l’optimalité globale du moteur ; un échec conserve les résultats initiaux, sans tracé inventé. Les segments annulés, leurs quais annulés et les locations sans engin identifié sont exclus. `transitShape` raccorde les tracés officiels, avec les quais physiques dans le bon ordre pour le bus ; les types de bus étendus suivent le mode BUS de MOTIS pour le libellé et le facteur carbone. Sur la carte, le trajet avec contour blanc passe au-dessus des marqueurs. Vérifications : `server/src/__tests__/planning.test.ts`, `transit-shape.test.ts`, `scripts/e2e-tcl.mjs` et `scripts/e2e-arrival.mjs` (vrai moteur, destination exacte, trajet plus rapide que la marche et pixels du tracé mobile).
+**Arrivée piétonne et tracés (B75–B77).** Une recherche utilise normalement un plan MOTIS et une référence voiture. Si aucun trajet direct partagé exploitable ne revient malgré des moyens partagés demandés, `recoverRentalArrival` reprend le calcul via un point du chemin piéton réel situé à au moins 150 m de marche de l’arrivée. Deux plans supplémentaires mesurent en parallèle l’approche multimodale et la fin à pied ; la destination exacte et les contraintes GBFS sont conservées. Les trajets complets récupérés rejoignent les résultats initiaux avant filtrage et tri. Cette reprise limitée ne garantit pas l’optimalité globale du moteur ; un échec conserve les résultats initiaux, sans tracé inventé. Les segments annulés, leurs quais annulés et les locations sans engin identifié sont exclus. `transitShape` raccorde les tracés officiels, avec les quais physiques dans le bon ordre pour le bus ; les types de bus étendus suivent le mode BUS de MOTIS pour le libellé et le facteur carbone. Sur la carte, le trajet avec contour blanc passe au-dessus des marqueurs. Vérifications : `server/src/__tests__/planning.test.ts`, `transit-shape.test.ts`, `scripts/e2e-tcl.mjs` et `scripts/e2e-arrival.mjs` (vrai moteur, destination exacte, trajet plus rapide que la marche et pixels du tracé mobile).
 
 
 **Transfert mobile (B78).** Les GET publics `/api/transport/context`, `/api/transport/stops` et `/api/transport/nearby-stops` négocient gzip via `Accept-Encoding` et `Vary`, après validation du JSON. `transportCompression` utilise `Bun.gzipSync` sans dépendance supplémentaire, à partir de 1 024 octets. Les refus `gzip;q=0`, petits corps, erreurs et réponses du compte restent non compressés. Un instantané des disponibilités passe de 1 063 426 à 138 168 octets sans retirer aucun véhicule. Avant correction, le transfert public de cet instantané prenait 14–20 s et approchait le délai de 20 s du contexte transport. Les tests de `transport-compression.test.ts` vérifient identité du JSON, négociation et en-têtes ; `e2e-arrival.mjs` exige la compression des disponibilités, et `e2e-transport-map.mjs` distingue octets transférés et JSON décompressé. Aucun gain énergétique n’est déduit de cette mesure.

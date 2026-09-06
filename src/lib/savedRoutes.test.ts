@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { SAVED_ROUTES_LIMIT } from '../contracts/limits';
+import { savedRoute } from '../contracts/trips';
 import { addSavedRoute, createSavedRouteRecord, removeSavedRoute } from './savedRoutes';
 import type { GeoPoint, RouteOption } from '../types';
 
@@ -27,6 +28,14 @@ const option: RouteOption = {
 };
 
 describe('savedRoutes', () => {
+    it('enregistre une variante avec de longues adresses sans dépasser le contrat de son identifiant', () => {
+        const start = { ...origin, label: 'Adresse de départ '.repeat(7) };
+        const end = { ...destination, label: 'Adresse d’arrivée '.repeat(7) };
+        const variant = { ...option, id: `transit-${'a'.repeat(64)}` };
+        const record = createSavedRouteRecord('user-1', start, end, variant);
+        expect(savedRoute.safeParse(record).success).toBe(true);
+        expect(createSavedRouteRecord('user-1', origin, destination, variant).id).toBe(record.id);
+    });
     it('génère un identifiant stable: sauvegarder deux fois le même trajet ne crée pas de doublon', () => {
         const first = createSavedRouteRecord('user-1', origin, destination, option);
         const second = createSavedRouteRecord('user-1', origin, destination, option);
@@ -51,7 +60,7 @@ describe('savedRoutes', () => {
     it('borne la liste aux plus récents', () => {
         let records = addSavedRoute([], createSavedRouteRecord('user-1', origin, destination, option));
         for (let index = 0; index < SAVED_ROUTES_LIMIT + 5; index += 1) {
-            const point = { ...destination, label: `Point ${index}` };
+            const point = { ...destination, lat: destination.lat + index / 1000, label: `Point ${index}` };
             records = addSavedRoute(records, createSavedRouteRecord('user-1', origin, point, option));
         }
 

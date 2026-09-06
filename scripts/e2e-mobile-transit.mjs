@@ -40,7 +40,7 @@ try {
     const filter = page.getByRole('button', { name: /^Moyens de transport :/ });
     const sheet = page.locator('[data-tour="routes"]:visible');
     assert(await detailToggle.locator('..').getAttribute('open') === null, 'Détails ouverts au départ');
-    assert(await page.getByRole('group', { name: 'Options d’itinéraire' }).count() === 0, 'Ancienne liste conservée');
+    assert(await page.getByRole('group', { name: 'Trajets disponibles' }).count() === 1, 'Liste des trajets absente');
     for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 844 });
         const panel = await sheet.boundingBox();
@@ -61,11 +61,11 @@ try {
     const metroResponse = page.waitForResponse(response => response.url().endsWith('/api/transport/journeys') && response.request().postDataJSON().transitTypes.join() === '1');
     await page.getByRole('checkbox', { name: 'Bus', exact: true }).uncheck();
     const metro = await (await metroResponse).json();
-    assert(metro.legs.every(leg => leg.mode !== 'transit' || leg.mapLabel.startsWith('Métro ')), 'Type de transport non demandé');
+    assert(metro.every(option => option.legs.every(leg => leg.mode !== 'transit' || leg.mapLabel.startsWith('Métro '))), 'Type de transport non demandé');
     const walkResponse = page.waitForResponse(response => response.url().endsWith('/api/transport/journeys') && response.request().postDataJSON().transitTypes.length === 0);
     await page.getByRole('checkbox', { name: 'Métro', exact: true }).uncheck();
     const walk = await (await walkResponse).json();
-    assert(walk.modes.length === 1 && walk.modes[0] === 'walk', 'Un transport reste proposé sans type autorisé');
+    assert(walk.every(option => option.modes.length === 1 && option.modes[0] === 'walk'), 'Un transport reste proposé sans type autorisé');
     await page.keyboard.press('Escape');
     await filter.waitFor();
     await page.setViewportSize({ width: 844, height: 390 });
@@ -75,7 +75,7 @@ try {
     await page.setViewportSize({ width: 1280, height: 900 });
     await filter.waitFor();
     await page.screenshot({ path: 'tmp/screenshots/mobile-types-desktop.png' });
-    console.log('Trajet unique : bus seul, métro seul, marche seule, filtres récupérables, détails et paysage vérifiés.');
+    console.log('Trajets autorisés : bus seul, métro seul, marche seule, filtres récupérables, détails et paysage vérifiés.');
 } catch (error) {
     await page.screenshot({ path: 'tmp/screenshots/bus-failure.png' });
     console.log((await page.locator('body').innerText()).slice(-5000));

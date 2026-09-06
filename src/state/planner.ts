@@ -7,6 +7,9 @@ import type { TripSource } from '../lib/trips';
 /** Filtres de la recherche en cours ; `null` tant que l'utilisateur n'a pas dérogé à son profil. */
 export const searchFiltersAtom = atom<SearchFilters | null>(null);
 
+/** Le choix appartient à une recherche précise ; les résultats restent dans React Query. */
+export const routeSelectionAtom = atom<{ queryKey: string; routeId: string } | null>(null);
+
 export type TripsHubTab = 'upcoming' | 'recurring' | 'history' | 'saved';
 
 /** Trajet en cours de planification, ou null si le formulaire est ferme. */

@@ -26,7 +26,7 @@ export const routeLeg = z.object({
     durationMinutes: z.number(), carbonGrams: z.number(), accessible: z.boolean(), detail: z.string(), estimate: legEstimate,
 });
 export const carbonReference = z.object({ distanceKm: z.number(), carbonGrams: z.number(), factorVersion: z.string() });
-/** Le trajet le plus rapide avec les moyens demandés : celui qui arrive le premier, attentes comprises. */
+/** Un trajet autorisé, avec ses mesures et ses attentes depuis l'heure demandée. */
 export const routeOption = z.object({
     id: z.string(), title: z.string(), summary: z.string(), modes: z.array(mobilityMode),
     legs: z.array(routeLeg), path: z.array(geoPoint), distanceKm: z.number(), durationMinutes: z.number(),
@@ -34,6 +34,8 @@ export const routeOption = z.object({
     carbonGrams: z.number(), carbonSavedGrams: z.number().nullable(), carbonReference: carbonReference.nullable(),
     accessible: z.boolean(), instructions: z.array(routeInstruction),
 });
+/** Toutes les variantes autorisées, par arrivée croissante ; le client sélectionne la première. */
+export const routeOptions = z.array(routeOption).min(1);
 export type RouteSearchRequest = z.infer<typeof routeSearch>;
 export type LegEstimate = z.infer<typeof legEstimate>;
 export type RouteLeg = z.infer<typeof routeLeg>;

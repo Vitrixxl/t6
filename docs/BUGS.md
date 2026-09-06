@@ -94,7 +94,7 @@ Trois cas : Paris ne propose aucune trottinette ; une destination locale conserv
 
 Mesurer toutes les options dans `measureRoutes`, écarter celles dont la géométrie est incomplète, puis recalculer leur classement. Liste et détail utilisent les mêmes options mesurées.
 
-**Où le montrer :** `src/queries/routes.ts` → `POST /api/transport/journeys` → `server/src/services/planning.ts` → `searchFastestRoute` ; `server/src/services/motis/options.ts` → `fastestItinerary` et `toRouteOption` ; `server/src/__tests__/planning.test.ts`.
+**Où le montrer :** `src/queries/routes.ts` → `POST /api/transport/journeys` → `server/src/services/planning.ts` → `searchRouteOptions` ; `server/src/services/motis/options.ts` → `compareItineraries` et `toRouteOption` ; `server/src/__tests__/planning.test.ts`.
 
 ### Tester et valider
 
@@ -104,7 +104,7 @@ Un routeur de test double les mesures et fournit une géométrie. Vérifier que 
 
 **Niveau de verrouillage : automatisé** pour les propriétés testées.
 
-**État actuel et limite à annoncer :** Le produit propose désormais un seul trajet : la première arrivée avec les moyens autorisés, attente initiale comprise. La PR historique reste la preuve du défaut de comparaison ; aujourd’hui, MOTIS fournit directement les mesures et les tracés du résultat retenu.
+**État actuel et limite à annoncer :** Le produit propose tous les candidats MOTIS autorisés, triés par arrivée avec le premier sélectionné par défaut, attente initiale comprise. La PR historique reste la preuve du défaut de comparaison ; aujourd’hui, MOTIS fournit directement les mesures des alternatives ; la carte montre les tracés du choix courant.
 
 ## Préparer la démonstration
 

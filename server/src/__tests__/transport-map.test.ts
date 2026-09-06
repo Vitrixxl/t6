@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, spyOn } from 'bun:test';
 import { createTestApi } from './helpers';
 import { stopCollection, transportContext, nearbyStops } from '../../../src/contracts/transport';
 import { createTransportRepository } from '../repositories/transport';
-import { routeOption } from '../../../src/contracts/planning';
+import { routeOptions } from '../../../src/contracts/planning';
 
 let api: ReturnType<typeof createTestApi>;
 let network: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
@@ -93,7 +93,9 @@ it('traduit les itinéraires MOTIS en options et leur applique la même référe
         departureAt: '2022-04-20T08:00:00+02:00',
     } });
     expect(response.status).toBe(200);
-    const option = routeOption.parse(await response.json());
+    const options = routeOptions.parse(await response.json());
+    const option = options[0];
+    expect(options.every(candidate => candidate.carbonReference?.distanceKm === 4.3038)).toBe(true);
     expect(option.legs.some(leg => leg.mapLabel === 'Métro D')).toBe(true);
     expect(option.modes).toEqual(['walk', 'transit']);
     expect(option.carbonReference?.distanceKm).toBe(4.3038);

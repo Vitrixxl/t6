@@ -3,10 +3,10 @@ import type { AppContext } from '../plugins/context.ts';
 import type { ServerConfig } from '../config/index.ts';
 import { transportContext, stopCellQuery, stopCollection, nearbyStopsQuery, nearbyStops } from '../../../src/contracts/transport.ts';
 import { errorResponse } from '../../../src/contracts/primitives.ts';
-import { routeSearch, routeOption } from '../../../src/contracts/planning.ts';
+import { routeSearch, routeOptions } from '../../../src/contracts/planning.ts';
 import { createTransportService } from '../services/transport/index.ts';
 import { transportCompression } from '../plugins/transport-compression.ts';
-import { searchFastestRoute } from '../services/planning.ts';
+import { searchRouteOptions } from '../services/planning.ts';
 
 export function transportRoutes(ctx: AppContext, config: ServerConfig) {
     const transport = createTransportService(ctx.decorator.repositories.transport, config.motisTransitEnabled);
@@ -29,14 +29,14 @@ export function transportRoutes(ctx: AppContext, config: ServerConfig) {
         })
         .post('/journeys', async ({ body, request, set }) => {
             const context = await transport.context();
-            const route = await searchFastestRoute(body, config.motisUrl, { sharedMobility: context.sharedMobility !== null, transit: context.transitRoutingAvailable, lineShapes: transport.lineShapes }, request.signal);
-            if (!route) {
+            const options = await searchRouteOptions(body, config.motisUrl, { sharedMobility: context.sharedMobility !== null, transit: context.transitRoutingAvailable, lineShapes: transport.lineShapes }, request.signal);
+            if (options.length === 0) {
                 set.status = 503;
                 return { error: 'Aucun trajet : le moteur d’itinéraires est indisponible ou les points sont inaccessibles.' };
             }
-            return route;
+            return options;
         }, {
-            body: routeSearch, response: { 200: routeOption, 503: errorResponse },
-            detail: { summary: 'Le trajet le plus rapide avec les moyens choisis, calculé par MOTIS avec reprise piétonne conditionnelle et tracés TCL officiels vérifiés' },
+            body: routeSearch, response: { 200: routeOptions, 503: errorResponse },
+            detail: { summary: 'Tous les trajets autorisés par arrivée croissante, calculés par MOTIS avec reprise piétonne conditionnelle et tracés TCL officiels vérifiés' },
         });
 }

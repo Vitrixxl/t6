@@ -34,8 +34,8 @@ function Problem() {
                 <Card kicker="Le frein" title="Chaque service a son application">
                     Comparer un trajet suppose d'ouvrir quatre outils et de refaire le calcul soi-même.
                 </Card>
-                <Card kicker="La réponse" title="Un seul trajet, tous les modes" tone="pine">
-                    La plateforme retient le trajet le plus rapide parmi les moyens utilisables et affiche son coût en CO₂e.
+                <Card kicker="La réponse" title="Tous les trajets autorisés" tone="pine">
+                    La plateforme compare les trajets autorisés, sélectionne le premier par défaut et affiche leur coût en CO₂e.
                 </Card>
             </div>
         </SlideFrame>
@@ -127,7 +127,7 @@ function ExternalApis() {
                 rows={[
                     [<b>BAN</b>, 'Géocodage des adresses, service public sans clé.', 'Résultats Photon conservés.'],
                     [<b>Photon</b>, 'Second géocodeur, données OpenStreetMap.', 'Résultats BAN conservés ; erreur si les deux échouent.'],
-                    [<b>MOTIS</b>, 'Trajet le plus rapide sur la voirie OSM, les horaires TCL et les flux GBFS. Moteur local.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
+                    [<b>MOTIS</b>, 'Trajets autorisés sur la voirie OSM, les horaires TCL et les flux GBFS. Moteur local.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
                     [<b>Tuiles OSM</b>, 'Le fond de plan.', "Carte vide, l'itinéraire reste lisible en liste."],
                     [<b>GBFS Vélo'v et Dott</b>, 'Stations et véhicules disponibles. Transfert gzip, flotte complète.', 'Message explicite, aucun véhicule partagé ni secours local.'],
                     [<b>Réseau TCL et WFS Grand Lyon</b>, 'Arrêts et tracés officiels ingérés hors ligne. Horaires TCL chargés dans MOTIS.', "Sans effet à l'exécution."],
@@ -268,7 +268,7 @@ function Reversals() {
                     <ul>
                         <li>Le serveur est la seule source de vérité : une commande par ressource, React Query en cache.</li>
                         <li>Le clic « Fait » remplacé par la comptabilisation à la date, côté serveur.</li>
-                        <li>Les familles et le score remplacés par un trajet unique : la première arrivée, attente comprise.</li>
+                        <li>Tous les trajets autorisés, triés par arrivée ; le premier sélectionné par défaut, attente comprise.</li>
                         <li>Un appel plan compare les moyens autorisés, avec mesure voiture en parallèle.</li>
                     </ul>
                 </Card>
@@ -353,9 +353,9 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="172" label="commits depuis le code remis au jury" />
+                <Stat value="174" label="commits depuis le code remis au jury" />
                 <Stat value="24" label="PR fusionnées, chacune avec ses tests" />
-                <Stat value="199" label="tests, 34 fichiers, 0 échec" />
+                <Stat value="201" label="tests, 34 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
                 <Stat value="0" label="violation axe-core sur quatre écrans" />
                 <Stat value="CI verte" label="sur le dernier commit poussé" />

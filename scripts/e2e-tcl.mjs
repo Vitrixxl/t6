@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright-core';
+import { checkRouteChoices } from './check-route-choices.mjs';
 
 const base = process.env.E2E_BASE_URL || 'https://localhost:4103';
 const browser = await chromium.launch({ executablePath: process.env.CHROME_BIN || '/usr/sbin/chromium', args: ['--no-sandbox', '--ignore-certificate-errors'] });
@@ -24,9 +25,10 @@ try {
     assert.equal(network.transitRoutingAvailable, true, 'Les TCL sont désactivés');
     const response = await context.request.post(base + '/api/transport/journeys', { data: search });
     assert(response.ok(), `Routage TCL : ${response.status()}`);
-    const route = await response.json();
+    const options = await response.json();
+    const route = options[0];
     assert(route.modes.includes('transit'), 'Le moteur ne propose encore que la marche');
-    const walk = await (await context.request.post(base + '/api/transport/journeys', { data: { ...search, modes: [] } })).json();
+    const [walk] = await (await context.request.post(base + '/api/transport/journeys', { data: { ...search, modes: [] } })).json();
     assert(route.durationMinutes < walk.durationMinutes, 'Le TCL choisi ne bat pas la marche');
     for (const leg of route.legs.filter(leg => leg.mode === 'transit')) {
         assert(leg.mapLabel, 'Ligne absente');
@@ -61,7 +63,7 @@ try {
     assert((await planned).ok());
     await page.getByText(status, { exact: true }).waitFor();
     assert.equal(await page.getByText(/Les horaires TCL seront intégrés/).count(), 0);
-    const sequence = page.getByRole('list', { name: 'Moyens de transport du trajet' });
+    const sequence = page.getByRole('button', { pressed: true }).getByRole('list', { name: 'Moyens de transport du trajet' });
     await sequence.waitFor();
     assert.equal(await page.getByText(/^Attente :/).filter({ visible: true }).count(), 0, 'Les détails doivent être repliés');
     const visibleLabels = await sequence.locator('li').evaluateAll(items => items.map(item => {
@@ -87,6 +89,7 @@ try {
     await page.locator('.ufm-endpoint-destination').waitFor();
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `tmp/screenshots/tcl-${tb12 ? 'tb12' : 'official'}-desktop.png` });
+    await checkRouteChoices(page, options);
     console.log(`TCL : ${route.summary} ${route.durationMinutes} min, marche ${walk.durationMinutes} min. Lignes, horaires et tracés officiels vérifiés sur mobile et bureau.`);
 } catch (error) {
     await page.screenshot({ path: 'tmp/screenshots/tcl-failure.png' });

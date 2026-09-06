@@ -1,5 +1,5 @@
-// Le serveur calcule le trajet le plus rapide sur le réseau complet ; le
-// navigateur ne reçoit que ses mesures et son tracé, indépendamment de la zone affichée.
+// Le serveur classe tous les trajets autorisés sur le réseau complet ; la zone
+// affichée sur la carte ne limite jamais la recherche.
 import { queryOptions, skipToken } from '@tanstack/react-query';
 import type { AvailableMode, GeoPoint, TransportContext } from '../types';
 import { api, treatyRequest } from '../lib/api/client';
@@ -18,7 +18,7 @@ function requestedModes(filters: SearchFilters, network: TransportContext): Avai
     return filters.modes.filter(mode => mode === 'transit' ? network.transitRoutingAvailable : network.sharedMobility !== null);
 }
 
-export function fastestRouteQuery(search: RouteSearch | null, network: TransportContext) {
+export function routeOptionsQuery(search: RouteSearch | null, network: TransportContext) {
     const body = search ? {
         origin: search.origin,
         destination: search.destination,
@@ -27,7 +27,7 @@ export function fastestRouteQuery(search: RouteSearch | null, network: Transport
         accessibilityNeed: search.accessibilityNeed,
     } : null;
     return queryOptions({
-        queryKey: body ? [...queryKeys.fastestRoute(body), network.version] : ['fastest-route', null],
+        queryKey: body ? [...queryKeys.routeOptions(body), network.version] : ['route-options', null],
         queryFn: body ? ({ signal }) => treatyRequest(api.transport.journeys.post(
             body,
             { fetch: { signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) } },

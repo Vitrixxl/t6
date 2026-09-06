@@ -37,7 +37,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] F2 - Planificateur d'itinéraires multimodal.
 - [x] F2 - Utilisation de la géolocalisation en temps réel.
 - [x] F2 - Carte interactive affichant la position, la destination et les trajets disponibles.
-- [ ] F2 - Comparaison visuelle de plusieurs alternatives : écart assumé, remplacée par le seul trajet le plus rapide avec filtres de moyens.
+- [x] F2 - Tous les candidats MOTIS autorisés sont affichés par arrivée croissante, sans troncature. Le premier est sélectionné par défaut ; changer de choix actualise la carte, les détails, l’enregistrement et la planification.
 - [x] F2 - Prise en compte des préférences utilisateur dans le calcul d'itinéraire.
 - [x] F3 - Intégration de données type GTFS pour les transports publics.
 - [x] F3 - Intégration de données de vélos/trottinettes partagés.
@@ -114,7 +114,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Application PWA: `package.json`, `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/icons/icon-192.png`, `public/icons/icon-512.png`.
 - F1 inscription/connexion/profil: `src/lib/api/auth.ts`, `src/queries/session.ts`, `src/App.tsx` (`AuthScreen`, `ProfileDrawer`).
 - F2 planificateur multimodal + géolocalisation temps réel: `src/lib/planner/`, `src/components/app/MobilityMapApp.tsx`, `src/components/app/hooks/useGeolocation.ts`.
-- Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, trajet unique, position utilisateur, destination, arrêts GTFS et stations partagées.
+- Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, trajet sélectionné parmi toutes les alternatives autorisées, position utilisateur, destination, arrêts GTFS et stations partagées.
 - UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `src/styles.css`.
 - APIs réelles: `src/lib/transport/` pour BAN, Photon et les flux ; MOTIS appelé par le service serveur de `/api/transport/journeys`, référence voiture en `one-to-many` et aucune géométrie inventée.
 - F3 intégration transport: `src/lib/transport/feeds/`, `data/transport/gtfs-feed.json`.
@@ -153,7 +153,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 - [x] API découpée par responsabilité : `config/`, `db/`, `repositories/`, `services/`, `plugins/`, `routes/`, contrats zod dans `src/contracts/` ; un fichier garde une seule raison de changer, sans seuil de lignes artificiel.
 - [x] Module trajets eclate : 955 lignes -> 11 fichiers (hub, quatre listes, formulaire, objectifs, briques, formats).
-- [x] Moteur d’itinéraires : sélection de la première arrivée et traduction MOTIS du trajet retenu dans `server/src/services/motis/`, sans générateurs ni fichiers relais.
+- [x] Moteur d’itinéraires : tri par arrivée et traduction de tous les candidats MOTIS autorisés dans `server/src/services/motis/`, sans générateurs ni fichiers relais.
 - [x] Couche transport éclatée : 780 lignes -> 14 fichiers (`geocoding/`, `feeds/` ; routage dans les services serveur), une source externe par fichier.
 - [x] Module d'authentification : appels API, cache de session, normalisation du profil.
 - [x] Carte éclatée : cycle de vie dans `UrbanMap`, définitions dans `layers`, données GeoJSON, popups et marqueurs isoles.
@@ -183,7 +183,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Tests métier et API : recalcul, idempotence, pauses, isolement des comptes, fuseaux et refus visibles.
 - [x] Vérification navigateur du hub avec `bun run e2e:trips` : quatre onglets, cinq largeurs et persistance après rechargement.
 
-- [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, ancienne liste de six options mobiles sans troncature (remplacée par le trajet unique) et hauteur automatique du panneau, avec défilement du contenu long et fermeture toujours accessible. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.
+- [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, ancienne liste de six options mobiles sans troncature (remplacée par le trajet sélectionné parmi toutes les alternatives autorisées) et hauteur automatique du panneau, avec défilement du contenu long et fermeture toujours accessible. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.
 
 - [x] B37–B39 : cadrage borné à la taille du canvas avec rotation E2E ; certificat local reconnu comme certificat serveur par Chromium ; image Docker contenant les contrats et règles partagées, démarrée après migration d’une copie de la base.
 - [x] B41–B42 : moteurs OSRM locaux, profil vélo `bicycle.lua`, accès piétons en étoile ; six options vérifiées vers Cuvier. Panneau mobile de hauteur automatique sous la recherche, sans commandes de taille ; E2E planification 9/9 et scénario hors ligne réussis.
@@ -229,7 +229,7 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 
 - [x] Bus WFS par sens, ordre des quais, accessibilité quai/ligne, hypothèses affichées et recette TB11 mobile/bureau.
 
-- [x] Types publics filtrés avant le calcul, sélecteur visible quand transit est autorisé ; trajet unique et carte préservée (recette 320/390 px et paysage).
+- [x] Types publics filtrés avant le calcul, sélecteur visible quand transit est autorisé ; trajet sélectionné parmi toutes les alternatives autorisées et carte préservée (recette 320/390 px et paysage).
 - [x] Documentation Scalar : CSP distincte du JSON, version fixée, agent et polices externes désactivés ; test serveur et recette navigateur dédiés.
 
 - [x] Avant push : `bun run ci`, identique au workflow GitHub, avec un MOTIS dédié sur extrait OSM et horaire GTFS de recette versionnés, base vide, disponibilité contrôlée, audit et recettes navigateur bloquantes, dont onboarding et mode sans horaires.

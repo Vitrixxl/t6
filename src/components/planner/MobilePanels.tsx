@@ -8,16 +8,18 @@ import { openHubAtom } from '../../state';
 import { Button } from '../ui/button';
 import type { GeoPoint, RouteOption } from '../../types';
 import { formatCarbonComparisonCompact } from '../../lib/carbon-comparison';
-import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useFastestRoute';
+import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
 import { Metric } from '../app/shared';
-import { RouteSequence } from './RouteSequence';
 import { RouteSteps } from './RouteSteps';
+import { RouteChoices } from './RouteChoices';
 
 export const NO_ROUTE_MESSAGE = 'Aucun trajet avec ces moyens de transport. Modifie-les, ou réessaie si le moteur ne répond pas.';
 
 export function MobileTripPanel({
     destination,
     route,
+    options,
+    queryKey,
     savedRouteId,
     routingStatus,
     coverageWarning,
@@ -27,6 +29,8 @@ export function MobileTripPanel({
     onClose }: {
         destination: GeoPoint | null;
         route: RouteOption | null;
+        options: RouteOption[];
+        queryKey: string;
         savedRouteId: string;
         routingStatus: RoutingStatus;
         coverageWarning: string | null;
@@ -56,6 +60,7 @@ export function MobileTripPanel({
 
                 <div className="px-4 pb-3"><SearchFilters /></div>
                 {routingStatus === 'unavailable' ? <p role="status" className="px-4 pb-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
+                <div className="px-4 pb-2"><RouteChoices options={options} queryKey={queryKey} /></div>
                 <MobileRouteSelection
                     routeOption={route}
                     savedRouteId={savedRouteId}
@@ -84,7 +89,7 @@ function MobileTripHeader({
     return (
         <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Trajet le plus rapide</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Trajets disponibles</p>
                 <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Où vas-tu ?'}</h1>
                 <p className={`truncate text-[11px] font-medium ${routingStatus === 'unavailable' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {ROUTING_STATUS_LABEL[routingStatus]}
@@ -144,9 +149,6 @@ function MobileRouteSelection({
 
     return (
         <>
-            <div className="px-4 pb-3">
-                <MobileRouteHeadline routeOption={routeOption} />
-            </div>
             <div className="grid grid-cols-[1.2fr_0.8fr] gap-2 px-4 pb-3">
                 <Button type="button" size="sm" onClick={() => onPlanRoute(routeOption)}>
                     <CalendarPlus className="size-4" aria-hidden="true" />
@@ -157,24 +159,11 @@ function MobileRouteSelection({
                     {saved ? 'Enregistré' : 'Enregistrer'}
                 </Button>
             </div>
-            <details className="mx-4 mb-3 rounded-xl border border-border bg-background">
+            <details key={routeOption.id} className="mx-4 mb-3 rounded-xl border border-border bg-background">
                 <summary className="cursor-pointer px-3 py-3 text-sm font-semibold">Détails du trajet · {formatDuration(routeOption.durationMinutes)}</summary>
                 <MobileSelectedRouteCard routeOption={routeOption} />
             </details>
         </>
-    );
-}
-
-/** Ce qu'il faut savoir avant d'ouvrir les détails : le trajet, quand il part, quand il arrive. */
-function MobileRouteHeadline({ routeOption }: { routeOption: RouteOption }) {
-    return (
-        <div className="rounded-xl border border-primary bg-primary/10 px-3 py-2.5 text-primary">
-            <strong className="block text-sm">{routeOption.title}</strong>
-            <RouteSequence route={routeOption} />
-            <span className="block font-mono text-[11px]">
-                {formatClockTime(routeOption.departureAt)} → {formatClockTime(routeOption.arrivalAt)} · {formatDuration(routeOption.durationMinutes)} · {routeOption.distanceKm.toFixed(1)} km
-            </span>
-        </div>
     );
 }
 

@@ -35,14 +35,12 @@ export function removeSavedRoute(records: SavedRouteRecord[], recordId: string):
     return records.filter((record) => record.id !== recordId);
 }
 
-/** Identifiant déterministe : même origine, même destination, même option. */
+/** Les coordonnées identifient les lieux ; leurs longs libellés n'ont pas à tenir dans l'identifiant HTTP. */
 function stableSavedRouteId(origin: GeoPoint, destination: GeoPoint, routeId: string): string {
     return [
         routeId,
-        origin.label,
         origin.lat.toFixed(5),
         origin.lon.toFixed(5),
-        destination.label,
         destination.lat.toFixed(5),
         destination.lon.toFixed(5),
     ].join(':');

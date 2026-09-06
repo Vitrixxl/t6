@@ -1,10 +1,13 @@
-// Calcul du trajet : le serveur interroge MOTIS avec les moyens de la recherche
-// et rend le trajet qui arrive le premier, mesuré et tracé.
+// Les résultats restent dans React Query ; seul le choix de l'utilisateur vit
+// dans l'état d'écran. La première arrivée est sélectionnée par défaut.
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { hashKey, useQuery } from '@tanstack/react-query';
 import type { GeoPoint, MobilityProfile, RouteOption, TransportContext } from '../../../types';
-import { fastestRouteQuery, type RouteSearch } from '../../../queries';
+import { routeOptionsQuery, type RouteSearch } from '../../../queries';
 import { useSearchFilters } from '../../planner/useSearchFilters';
+import { useRouteSelection } from '../../planner/useRouteSelection';
+
+const NO_OPTIONS: RouteOption[] = [];
 
 /**
  * État du tracé. `pending` et `unavailable` sont deux choses différentes pour
@@ -21,12 +24,12 @@ export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
     unavailable: 'Service de routage indisponible',
 };
 
-export function useFastestRoute(input: {
+export function useRouteOptions(input: {
     origin: GeoPoint | null;
     destination: GeoPoint | null;
     profile: MobilityProfile;
     network: TransportContext;
-}): { route: RouteOption | null; routingStatus: RoutingStatus } {
+}) {
     const { origin, destination, profile, network } = input;
     const { filters } = useSearchFilters();
 
@@ -36,10 +39,13 @@ export function useFastestRoute(input: {
     );
     // Changer d'extrémités ou de filtres annule la requête en vol : le trajet
     // affiché est toujours celui de la recherche courante.
-    const query = useQuery(fastestRouteQuery(search, network));
-    const route = query.data ?? null;
+    const request = routeOptionsQuery(search, network);
+    const query = useQuery(request);
+    const options = query.data ?? NO_OPTIONS;
+    const queryKey = hashKey(request.queryKey);
+    const { route } = useRouteSelection(options, queryKey);
     const routeStatus: RoutingStatus = !route ? 'unavailable' : route.legs.some(leg => leg.path.length < 2) ? 'partial' : 'ready';
     const routingStatus: RoutingStatus = !search ? 'idle' : query.isPending ? 'pending' : routeStatus;
 
-    return { route, routingStatus };
+    return { route, options, queryKey, routingStatus };
 }

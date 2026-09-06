@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import type { RouteSearchRequest } from '../../../src/contracts/planning.ts';
 import { loadConfig } from '../config/index.ts';
-import { searchFastestRoute } from '../services/planning.ts';
+import { searchRouteOptions } from '../services/planning.ts';
 import { recoverRentalArrival } from '../services/motis/arrival.ts';
 import { fetchPlan } from '../services/motis/client.ts';
 import { fastestItinerary, toRouteOption } from '../services/motis/options.ts';
@@ -40,10 +40,31 @@ async function itineraries(plan: unknown) {
     return result;
 }
 
-describe('searchFastestRoute', () => {
+describe('searchRouteOptions', () => {
+    it('rend toutes les variantes autorisées par arrivée, avec des identifiants distincts et une référence commune', async () => {
+        const [transit] = await itineraries(transitPlan);
+        const early = { ...transit, endTime: '2022-04-20T06:20:00Z', duration: 1200 };
+        const late = { ...transit, endTime: '2022-04-20T06:22:00Z', duration: 600 };
+        const walk = { ...transit, endTime: '2022-04-20T06:30:00Z', duration: 1800, legs: [{ ...transit.legs[0], mode: 'WALK' }] };
+        const cancelled = { ...early, legs: [{ ...early.legs[0], cancelled: true }] };
+        const denied = { ...early, legs: [{ ...early.legs[0], mode: 'CAR' }] };
+        const urls = stubMotis({ direct: [walk], itineraries: [late, cancelled, early, denied, early] });
+        const options = await searchRouteOptions({ ...search, modes: ['transit'] }, MOTIS, { sharedMobility: true, transit: true });
+        expect(options.map(option => option.arrivalAt)).toEqual([early.endTime, late.endTime, walk.endTime]);
+        expect(options.map(option => option.durationMinutes)).toEqual([20, 22, 30]);
+        expect(new Set(options.map(option => option.id)).size).toBe(3);
+        expect(options[0].title).toBe(options[1].title);
+        expect(options.every(option => option.carbonReference?.distanceKm === 4.3038)).toBe(true);
+        expect(options.every(option => option.carbonSavedGrams === 611 - option.carbonGrams)).toBe(true);
+        expect(urls.filter(url => url.pathname === '/api/v1/one-to-many')).toHaveLength(1);
+        stubMotis({ direct: [walk], itineraries: [early, late] });
+        const reordered = await searchRouteOptions({ ...search, modes: ['transit'] }, MOTIS, { sharedMobility: true, transit: true });
+        expect(reordered.map(option => option.id)).toEqual(options.map(option => option.id));
+    });
+
     it('demande un seul plan avec tous les moyens et une référence voiture', async () => {
         const urls = stubMotis();
-        const route = await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: true });
+        const [route] = await searchRouteOptions(search, MOTIS, { sharedMobility: true, transit: true });
         const plans = urls.filter(url => url.pathname === '/api/v6/plan');
         expect(plans).toHaveLength(1);
         expect(plans[0].searchParams.get('preTransitModes')).toBe('WALK,RENTAL');
@@ -57,10 +78,10 @@ describe('searchFastestRoute', () => {
 
     it('respecte la marche seule, les types demandés et le profil fauteuil', async () => {
         let urls = stubMotis();
-        expect(await searchFastestRoute({ ...search, modes: [] }, MOTIS, { sharedMobility: true, transit: true })).toBeNull();
+        expect(await searchRouteOptions({ ...search, modes: [] }, MOTIS, { sharedMobility: true, transit: true })).toEqual([]);
         expect(urls[1].searchParams.get('directModes')).toBe('WALK');
         urls = stubMotis();
-        await searchFastestRoute({ ...search, accessibilityNeed: true, transitTypes: [1] }, MOTIS, { sharedMobility: true, transit: true });
+        await searchRouteOptions({ ...search, accessibilityNeed: true, transitTypes: [1] }, MOTIS, { sharedMobility: true, transit: true });
         expect(urls[1].searchParams.get('pedestrianProfile')).toBe('WHEELCHAIR');
         expect(urls[1].searchParams.get('directModes')).toBe('WALK');
         expect(urls[1].searchParams.get('transitModes')).toBe('SUBWAY');
@@ -68,7 +89,7 @@ describe('searchFastestRoute', () => {
 
     it('exclut les engins quand le flux GBFS est indisponible', async () => {
         const urls = stubMotis(rentalPlan);
-        const route = await searchFastestRoute(search, MOTIS, { sharedMobility: false, transit: true });
+        const [route] = await searchRouteOptions(search, MOTIS, { sharedMobility: false, transit: true });
         expect(urls[1].searchParams.get('directModes')).toBe('WALK');
         expect(urls[1].searchParams.has('directRentalFormFactors')).toBe(false);
         expect(route?.modes.includes('bike') ?? false).toBe(false);
@@ -79,7 +100,7 @@ describe('searchFastestRoute', () => {
         expect(loadConfig({}).motisTransitEnabled).toBe(false);
         expect(loadConfig({ MOTIS_TRANSIT_ENABLED: 'true' }).motisTransitEnabled).toBe(true);
         const urls = stubMotis(transitPlan);
-        expect(await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: false })).toBeNull();
+        expect(await searchRouteOptions(search, MOTIS, { sharedMobility: true, transit: false })).toEqual([]);
         expect(urls[1].searchParams.get('transitModes')).toBe('');
         expect(urls[1].searchParams.get('directModes')).toBe('WALK,RENTAL');
         expect(urls[1].searchParams.has('maxTravelTime')).toBe(false);
@@ -89,19 +110,19 @@ describe('searchFastestRoute', () => {
         const plans = await itineraries(transitPlan);
         const denied = plans.map(plan => ({ ...plan, legs: plan.legs.map(leg => ({ ...leg, wheelchairAccessible: 'NOT_ACCESSIBLE' })) }));
         stubMotis({ direct: [], itineraries: denied });
-        expect(await searchFastestRoute({ ...search, accessibilityNeed: true }, MOTIS, { sharedMobility: true, transit: true })).toBeNull();
+        expect(await searchRouteOptions({ ...search, accessibilityNeed: true }, MOTIS, { sharedMobility: true, transit: true })).toEqual([]);
     });
 
     it('garde la comparaison indisponible si la mesure voiture échoue', async () => {
         stubMotis(transitPlan, false);
-        const route = await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: true });
+        const [route] = await searchRouteOptions(search, MOTIS, { sharedMobility: true, transit: true });
         expect(route?.carbonReference).toBeNull();
         expect(route?.carbonSavedGrams).toBeNull();
     });
 
     it('ne fabrique aucun trajet quand le moteur tombe', async () => {
         network.mockRejectedValue(new Error('Panne MOTIS'));
-        expect(await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: true })).toBeNull();
+        expect(await searchRouteOptions(search, MOTIS, { sharedMobility: true, transit: true })).toEqual([]);
     });
 });
 

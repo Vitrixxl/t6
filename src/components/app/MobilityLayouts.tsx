@@ -6,17 +6,20 @@ import { CarbonPanel } from '../carbon/CarbonPanel';
 import { ShellSidebar } from '../layout/Shell';
 import { MobileActionRail } from '../planner/MobileQuickPanels';
 import { SearchFilters } from '../planner/SearchFilters';
+import { RouteChoices } from '../planner/RouteChoices';
 import { MobileTripPanel, NO_ROUTE_MESSAGE } from '../planner/MobilePanels';
 import { MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
 import { MergeFillet, UrbanMap, type LayerState } from './shared';
-import type { RoutingStatus } from './hooks/useFastestRoute';
+import type { RoutingStatus } from './hooks/useRouteOptions';
 import type { PickedPoint } from '../map/longPress';
 
 export interface TripMapState {
     origin: GeoPoint | null;
     destination: GeoPoint | null;
     route: RouteOption | null;
+    options: RouteOption[];
+    queryKey: string;
     network: TransportContext;
     layers: LayerState;
     navigationPoint: GeoPoint | null;
@@ -144,6 +147,7 @@ export function DesktopMobilityLayout(props: DesktopMobilityLayoutProps) {
                 <CoverageWarning message={props.coverageWarning} />
                 {props.routeRequested ? <SearchFilters /> : null}
                 {props.routingStatus === 'unavailable' ? <p role="status" className="p-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
+                <RouteChoices options={map.options} queryKey={map.queryKey} />
                 {route ? (
                     <RouteDetailPanel
                         routeOption={route}
@@ -224,6 +228,8 @@ export function MobileMobilityLayout(props: MobileMobilityLayoutProps) {
                 <MobileTripPanel
                     destination={map.destination}
                     route={map.route}
+                    options={map.options}
+                    queryKey={map.queryKey}
                     savedRouteId={props.savedRouteId}
                     routingStatus={props.routingStatus}
                     coverageWarning={props.coverageWarning}

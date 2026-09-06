@@ -25,9 +25,10 @@ try {
     assert.equal(network.transitRoutingAvailable, true, 'Les TCL sont désactivés');
     const response = await context.request.post(base + '/api/transport/journeys', { data: search });
     assert(response.ok(), `Routage partagé : ${response.status()}`);
-    const route = await response.json();
+    const options = await response.json();
+    const route = options[0];
     assert(route.modes.some(mode => mode === 'bike' || mode === 'scooter'), 'Aucun trajet partagé vers l’impasse');
-    const walk = await (await context.request.post(base + '/api/transport/journeys', { data: { ...search, modes: [] } })).json();
+    const [walk] = await (await context.request.post(base + '/api/transport/journeys', { data: { ...search, modes: [] } })).json();
     assert(route.durationMinutes < walk.durationMinutes, 'La location ne bat pas la marche');
     assert(route.legs.every(leg => leg.path.length >= 2), 'Un segment manque sur la carte');
     assert.deepEqual(route.legs.at(-1).toPoint, destination, 'La destination a été déplacée');

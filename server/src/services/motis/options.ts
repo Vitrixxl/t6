@@ -1,9 +1,10 @@
-// Choix et traduction du trajet MOTIS retenu.
+// Classement et traduction des trajets MOTIS autorisés.
 //
-// MOTIS rend des trajets non dominés ; UrbanFlow n'en propose qu'un, celui qui
-// arrive le premier avec les moyens demandés, attentes comprises. Les horaires et
+// MOTIS rend des trajets non dominés ; UrbanFlow les propose par arrivée
+// croissante avec les moyens demandés, attentes comprises. Les horaires et
 // lignes viennent de MOTIS. Les droites du GTFS sans shapes ne sont pas tracées.
 import type { AvailableMode, GeoPoint, GtfsRoute, MobilityMode, RouteLeg, RouteOption } from '../../../../src/types.ts';
+import { createHash } from 'node:crypto';
 import { ROAD_EMISSION_FACTORS, transitEmissionFactor } from '../../../../src/lib/planner/emissions.ts';
 import { haversineDistanceKm } from '../../../../src/lib/planner/geo.ts';
 import { lineLabel } from '../../../../src/lib/planner/labels.ts';
@@ -170,10 +171,12 @@ export function usableItinerary(itinerary: MotisItinerary): boolean {
  */
 export function fastestItinerary(itineraries: MotisItinerary[]): MotisItinerary | null {
     return itineraries.filter(usableItinerary).reduce<MotisItinerary | null>((best, candidate) => {
-        if (!best) return candidate;
-        const arrival = Date.parse(candidate.endTime) - Date.parse(best.endTime);
-        return arrival < 0 || (arrival === 0 && candidate.duration < best.duration) ? candidate : best;
+        return !best || compareItineraries(candidate, best) < 0 ? candidate : best;
     }, null);
+}
+
+export function compareItineraries(left: MotisItinerary, right: MotisItinerary): number {
+    return Date.parse(left.endTime) - Date.parse(right.endTime) || left.duration - right.duration;
 }
 
 export function toRouteOption(itinerary: MotisItinerary, ends: SearchEnds): RouteOption {
@@ -183,9 +186,10 @@ export function toRouteOption(itinerary: MotisItinerary, ends: SearchEnds): Rout
         return mode ? [toLeg(leg, mode, `leg-${index}`, ends, waits[index])] : [];
     });
     const sequence = modeSequence(legs);
-    // L'identifiant nomme la forme du trajet : un enregistrement « Vélo’v puis
-    // transport » entre deux mêmes lieux reste le même enregistrement.
-    const id = sequence.join('-') || 'walk';
+    // Deux variantes avec les mêmes moyens doivent pouvoir être sélectionnées
+    // et enregistrées séparément, sans dépendre de leur position dans la liste.
+    const fingerprint = createHash('sha256').update(JSON.stringify(itinerary)).digest('hex');
+    const id = `${sequence.join('-') || 'walk'}-${fingerprint}`;
     return buildOption({
         id,
         title: sequence.map((mode) => AVAILABLE_MODE_LABELS[mode]).join(' + ') || 'À pied',

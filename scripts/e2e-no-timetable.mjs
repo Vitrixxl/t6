@@ -32,7 +32,9 @@ try {
     await page.getByRole('button', { name: 'Charger', exact: true }).click();
     const result = await response;
     assert(result.ok(), `Routage sans GTFS refusé : ${result.status()}`);
-    const route = await result.json();
+    const options = await result.json();
+    assert(options.every(option => option.modes.every(mode => mode !== 'transit')), 'Transport public proposé sans horaires');
+    const route = options[0];
     assert(route.modes.every(mode => mode !== 'transit'), 'Transport public proposé sans horaires');
     assert(route.legs.every(leg => leg.path.length >= 2), 'Géométrie réelle absente');
     assert(route.durationMinutes > 0 && route.carbonReference.distanceKm > 0, 'Mesures absentes');

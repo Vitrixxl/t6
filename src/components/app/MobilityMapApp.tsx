@@ -6,7 +6,7 @@ import { useSetAtom } from 'jotai';
 import type { GeoPoint, RouteOption, SavedRouteRecord, TransportContext } from '../../types';
 import { ALL_TRANSIT_TYPES, availableModesOf, haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
-import { useFastestRoute } from './hooks/useFastestRoute';
+import { useRouteOptions } from './hooks/useRouteOptions';
 import { useDesktopLayout } from './hooks/useDesktopLayout';
 import { CITY_CENTER, METRO_RADIUS_KM, describePoint } from '../../lib/transport';
 import { useProfile, useSaveError, useSaveRoute } from '../../queries';
@@ -55,7 +55,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
         // l'utilisateur qui a refusé.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    const { route, routingStatus } = useFastestRoute({
+    const { route, options, queryKey, routingStatus } = useRouteOptions({
         origin,
         destination,
         profile,
@@ -170,6 +170,8 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
         origin,
         destination,
         route,
+        options,
+        queryKey,
         network,
         layers,
         navigationPoint,

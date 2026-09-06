@@ -37,8 +37,8 @@ const DESKTOP_STEPS: TourStep[] = [
     {
         id: 'route-detail',
         target: 'route-detail',
-        title: 'Le trajet le plus rapide',
-        body: "Un seul trajet : le plus rapide avec les moyens de ton profil. « Moyens de transport » permet d'en ajouter ou d'en retirer pour cette recherche. Le détail donne les horaires, l'empreinte en gCO₂e comparée au même trajet en voiture, et chaque étape. « Planifier » date le trajet ou en fait une routine, « Enregistrer » le garde sous la main.",
+        title: 'Choisir un trajet',
+        body: "Tous les trajets autorisés sont classés par arrivée. Le premier est sélectionné ; touche une autre carte pour changer de trajet. « Moyens de transport » permet d'en ajouter ou d'en retirer pour cette recherche. Le détail donne les horaires, l'empreinte en gCO₂e comparée au même trajet en voiture, et chaque étape. « Planifier » date le trajet ou en fait une routine, « Enregistrer » le garde sous la main.",
     },
     {
         id: 'trips',
