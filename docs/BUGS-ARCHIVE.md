@@ -1938,6 +1938,42 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé pour le parcours, faible pour le renouvellement.** `scripts/e2e-tcl.mjs` exige un trajet TCL plus rapide que la marche pour les deux adresses, puis vérifie la restitution sur mobile et bureau. Exécuté sur l’archive officielle et le lien public : Bus C27 puis C25, 46 min contre 56 min à pied à l’heure de recherche de la recette ; ces valeurs sont datées et ne constituent pas un horaire permanent. La CI rejoue le parcours avec son propre GTFS de recette. La préparation locale du ZIP est passée et Compose résout les TCL activés et le bon dossier de graphe. Le renouvellement automatique et le temps réel restent hors de cette livraison.
 
+### B75 — La marche gagne alors que les locations sont plus rapides vers l’impasse
+
+**Symptôme observé.** Rue Étienne Richerand → impasse Saint-Gervais : 37 min à pied, avec Vélo’v et Dott demandés ; les locations apparaissent pourtant en visant une rue voisine.
+
+**Cause racine.** MOTIS 2.11.2 ne reconstruit pas l’accès final de cette impasse avec son profil location, alors que le profil marche le calcule. La réponse directe ne contient donc que la marche.
+
+**Correctif.** [bcc38aa](https://github.com/Vitrixxl/t6/commit/bcc38aae59e9335f907d69646be580e5db17aebb) : `recoverRentalArrival` reprend seulement les recherches sans location directe exploitable, via un point du chemin piéton réel à au moins 150 m de l’arrivée. Deux plans mesurent l’approche et l’arrivée à pied ; les contraintes GBFS, la destination exacte, la comparaison initiale et la référence voiture restent conservées. Cette reprise limitée ne garantit pas l’optimalité globale.
+
+**Où le montrer.** `server/src/services/motis/arrival.ts`, `server/src/services/planning.ts`.
+
+**Test et niveau de verrouillage : automatisé.** `server/src/__tests__/planning.test.ts` contrôle la durée ajoutée, la dépose et l’absence de reprise inutile ou inventée en panne. `scripts/e2e-arrival.mjs` utilise le moteur réel : location plus rapide que la marche, destination exacte et géométrie de tous les segments, sur mobile et bureau. Le contrôle local officiel trouve Dott en 23–24 min contre 37 min à pied ; ces valeurs dépendent des disponibilités.
+
+### B76 — Un tronçon annulé est présenté comme une location utilisable
+
+**Symptôme observé.** Un trajet TCL + Vélo’v annonce 22 min et 1,4 km alors que la fin du trajet n’est pas dessinée et ne précise aucun véhicule ni station de dépose.
+
+**Cause racine.** Le contrat de lecture supprimait le champ `cancelled` de MOTIS. Une location sans métadonnées était classée arbitrairement en vélo ; son tronçon annulé restait candidat à la première arrivée.
+
+**Correctif.** [bcc38aa](https://github.com/Vitrixxl/t6/commit/bcc38aae59e9335f907d69646be580e5db17aebb) : conserver l’annulation des segments et des quais, exclure ces trajets dans `usableItinerary`, exiger un engin identifié et respecter les modes partagés demandés lors de la sélection.
+
+**Où le montrer.** `server/src/services/motis/client.ts`, `options.ts`, `server/src/services/planning.ts`.
+
+**Test et niveau de verrouillage : automatisé.** `server/src/__tests__/planning.test.ts` refuse explicitement segment annulé, quai annulé et location sans engin. La recette d’arrivée exige une géométrie complète et la vraie destination.
+
+### B77 — Le trajet ne se voit pas entre les marqueurs de la carte
+
+**Symptôme observé.** Le téléphone montre les extrémités et des centaines de marqueurs mais aucun parcours lisible ; les segments TCL sont annoncés indisponibles.
+
+**Cause racine.** Les couches de trajet étaient sous les marqueurs. Le GTFS officiel ne contient pas `shapes.txt`, et les tracés SYTRAL normalisés disponibles n’étaient pas raccordés aux segments MOTIS. Les identifiants de quais bus portent des préfixes distincts dans les deux sources ; certains types de bus GTFS sont étendus.
+
+**Correctif.** [bcc38aa](https://github.com/Vitrixxl/t6/commit/bcc38aae59e9335f907d69646be580e5db17aebb) : tracer au-dessus des marqueurs avec un contour blanc ; `transitShape` sélectionne une géométrie officielle par ligne, quais et ordre de passage, avec projection à 60 m maximum. Refuser sens inverse du bus, quai différent, ordre incompatible et variantes ambiguës. Utiliser le mode BUS reconnu par MOTIS pour les tracés, libellés et facteurs des bus de type étendu. Les segments non reconnus restent explicitement sans tracé.
+
+**Où le montrer.** `server/src/services/motis/transit-shape.ts`, `options.ts`, `src/components/map/layers.ts`, `src/components/app/hooks/useFastestRoute.ts`.
+
+**Test et niveau de verrouillage : automatisé pour les règles et la présence du tracé, faible pour toute la lisibilité visuelle.** `transit-shape.test.ts` couvre les courbes, les sens, les quais et les variantes. `scripts/e2e-tcl.mjs` vérifie les tracés officiels ; `scripts/e2e-arrival.mjs` compte les pixels du trajet sur la carte mobile. Les captures mobile et bureau sont inspectées. Le rendu ne prouve pas à lui seul la lisibilité à tous les zooms.
+
 ## Ouverts
 
-Le renouvellement du GTFS officiel reste manuel. Le raccordement à des tracés TCL vérifiés et le temps réel sont des évolutions annoncées ; aucune géométrie de ligne ni donnée temps réel de remplacement n’est inventée.
+Le renouvellement du GTFS officiel reste manuel. Le temps réel reste à intégrer. Les variantes TCL sans correspondance vérifiée avec les tracés SYTRAL restent sans géométrie. La reprise piétonne après échec du profil location est limitée à un accès du chemin réel : elle ne prouve pas l’optimalité globale du moteur.
