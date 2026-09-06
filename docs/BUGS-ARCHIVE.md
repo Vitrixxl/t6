@@ -1878,6 +1878,18 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé.** La recette tactile Chromium, intégrée à `bun run ci`, envoie de vrais événements au navigateur à 320 × 844, 390 × 844 et 844 × 390. Elle vérifie aller/retour, première et dernière diapositives, gestes ignorés, clavier, reprise après rechargement et ouverture tactile d’un lien de PR sans navigation involontaire. Le balayage a aussi été vérifié sur le lien public temporaire. La compatibilité Safari reste une vérification manuelle, non couverte par Chromium.
 
+### B71 — Le choix départ/arrivée disparaît après l’appui long
+
+**Symptôme observé.** Sur téléphone, maintenir le doigt sur la carte affiche le menu puis le fait disparaître immédiatement. Le test navigateur sur la version antérieure échoue avec « Le clic de relâchement ferme le sélecteur ».
+
+**Cause racine.** Le navigateur émet un clic de compatibilité au relâchement ; MapLibre l’interprète comme une fermeture de popup. Par ailleurs, `pickPointFromMap` changeait d’identité à chaque rendu : l’effet qui branche le sélecteur nettoyait le popup lors d’une actualisation GPS ou des flux. Un geste à plusieurs doigts pouvait aussi démarrer la temporisation.
+
+**Correctif.** [94d3ead](https://github.com/Vitrixxl/t6/commit/94d3ead9480bfdd204c038b50b54e2ea030dd002) : capturer le clic de relâchement avant MapLibre, réarmer la fermeture au prochain geste volontaire, stabiliser le gestionnaire avec `useCallback` et exclure les appuis multiples ou les boutons souris secondaires. Une fiche de station ouverte est retirée avant le choix départ/arrivée.
+
+**Où le montrer.** `src/components/map/longPress.ts` (`bindLongPress`), `src/components/app/MobilityMapApp.tsx` (`pickPointFromMap`), `src/components/map/UrbanMap.tsx` et `scripts/e2e-map-picker.mjs`.
+
+**Test et niveau de verrouillage : automatisé.** Le scénario Chromium intégré à `bun run ci` échoue avant correction et passe après : vrais événements tactiles, relâchement, actualisation GPS observée, rotation, départ puis arrivée avec calcul d’itinéraire, déplacements et gestes annulés ou multiples ignorés, réouverture, fermeture extérieure et explicite, écran de 320 px et souris. Le même scénario est exécuté sur le build Docker de production. Les captures du menu mobile et bureau sont relues ; les navigateurs mobiles autres que Chromium ne disposent pas d’une recette dédiée.
+
 ## Ouverts
 
 ### B45 — Les horaires TCL courants restent à intégrer
