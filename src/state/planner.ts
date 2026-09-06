@@ -1,10 +1,11 @@
-// État d'écran du planificateur : le trajet en cours de planification et le
-// hub. Rien ici ne vient du serveur ; l'état du compte vit dans src/queries/.
+// État d'écran du planificateur : la recherche en cours, le trajet en cours de
+// planification et le hub. Rien ici ne vient du serveur ; l'état du compte vit dans src/queries/.
 import { atom } from 'jotai';
-import { ALL_TRANSIT_TYPES, type TransitType } from '../lib/planner/transit-filter';
-
-export const transitTypesAtom = atom<TransitType[]>(ALL_TRANSIT_TYPES);
+import type { SearchFilters } from '../lib/planner/search-filters';
 import type { TripSource } from '../lib/trips';
+
+/** Filtres de la recherche en cours ; `null` tant que l'utilisateur n'a pas dérogé à son profil. */
+export const searchFiltersAtom = atom<SearchFilters | null>(null);
 
 export type TripsHubTab = 'upcoming' | 'recurring' | 'history' | 'saved';
 

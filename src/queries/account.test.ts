@@ -45,10 +45,11 @@ const OPTION: RouteOption = {
     carbonGrams: 10,
     carbonSavedGrams: 420,
     carbonReference: { distanceKm: 3, carbonGrams: 426, factorVersion: 'test-car-factor' },
-    reliabilityScore: 86,
-    score: 84,
+
+
     accessible: true,
-    warnings: [],
+
+    departureAt: '2026-09-06T08:00:00Z', arrivalAt: '2026-09-06T08:01:00Z',
     instructions: [],
 };
 

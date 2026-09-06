@@ -22,7 +22,6 @@ export function createSavedRouteRecord(
         durationMinutes: option.durationMinutes,
         carbonGrams: option.carbonGrams,
         carbonSavedGrams: option.carbonSavedGrams,
-        score: option.score,
         createdAt: now.toISOString(),
     };
 }

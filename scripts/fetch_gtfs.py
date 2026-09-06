@@ -1,8 +1,8 @@
 """Intègre le GTFS statique réel du réseau TCL (SYTRAL, licence ODbL).
 
 Telecharge le zip GTFS officiel (ressource "Réseau urbain TCL" référencée sur
-transport.data.gouv.fr, distribuee via une URL a jeton fournie par la variable
-d'environnement GTFS_SOURCE_URL), extrait les arrêts et lignes structurantes
+transport.data.gouv.fr, distribuée par Data Grand Lyon ; URL et identifiants
+fournis par GTFS_SOURCE_URL, GTFS_USERNAME et GTFS_PASSWORD), extrait les arrêts et lignes structurantes
 autour du centre de la métropole et génère `data/transport/gtfs-feed.json`.
 
 Aucune dépendance externe: stdlib uniquement. Aucun secret dans le code.
@@ -10,6 +10,7 @@ Aucune dépendance externe: stdlib uniquement. Aucun secret dans le code.
 
 from __future__ import annotations
 
+import base64
 import csv
 import io
 import json
@@ -25,10 +26,8 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / "tmp" / "gtfs" / "lyon_tcl.zip"
 OUTPUT = ROOT / "data" / "transport" / "gtfs-feed.json"
 
-# La ressource GTFS "Réseau urbain TCL" (SYTRAL, ODbL) est référencée sur
-# transport.data.gouv.fr et distribuee via une URL a jeton. Ce jeton est un
-# SECRET: il n'est jamais code en dur ni versionne. Il est fourni au build par
-# la variable d'environnement GTFS_SOURCE_URL (voir .env.example et le README).
+# L’archive officielle utilise HTTP Basic ; les secrets viennent uniquement
+# de l’environnement chargé par Bun ou du shell (voir .env.example).
 GTFS_URL = os.environ.get("GTFS_SOURCE_URL", "").strip()
 
 # Périmètre produit: la métropole de Lyon entière (le réseau metro/tram/funiculaire
@@ -62,14 +61,21 @@ def download_gtfs() -> Path:
         print(
             "Erreur: variable d'environnement GTFS_SOURCE_URL absente.\n"
             "Définir l'URL du GTFS TCL (voir .env.example), par exemple:\n"
-            "  export GTFS_SOURCE_URL='https://.../lyon_tcl.zip?apikey=...'\n"
-            "puis relancer: npm run generate:gtfs\n"
+            "  renseigner GTFS_SOURCE_URL, GTFS_USERNAME et GTFS_PASSWORD dans .env\n"
+            "puis relancer: bun run generate:gtfs\n"
             "Le feed data/transport/gtfs-feed.json déjà versionne reste utilisable sans re-telechargement.",
             file=sys.stderr,
         )
         raise SystemExit(1)
     print("Téléchargement du GTFS TCL (~43 Mo)...")
     request = urllib.request.Request(GTFS_URL, headers={"User-Agent": "urbanflow-mobility-build"})
+    username = os.environ.get("GTFS_USERNAME", "")
+    password = os.environ.get("GTFS_PASSWORD", "")
+    if username or password:
+        if not username or not password:
+            raise SystemExit("GTFS_USERNAME et GTFS_PASSWORD doivent être renseignés ensemble.")
+        credentials = base64.b64encode(f"{username}:{password}".encode()).decode()
+        request.add_header("Authorization", f"Basic {credentials}")
     with urllib.request.urlopen(request, timeout=180) as response, CACHE.open("wb") as target:
         target.write(response.read())
     print(f"GTFS telecharge: {CACHE}")

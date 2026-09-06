@@ -1,10 +1,8 @@
 // Éléments partagés par les modules d'interface : carte différée, constantes de
 // modes, états de calques et micro-composants transverses.
-import { formatDuration } from '../../lib/duration';
 import { type ComponentProps, lazy, Suspense } from 'react';
 import { Bike, Bus, Footprints, Zap } from 'lucide-react';
-import type { MobilityMode, RouteOption } from '../../types';
-import { getRouteColor } from '../../lib/routeColors';
+import type { MobilityMode } from '../../types';
 
 // La carte embarque MapLibre (~2/3 du poids applicatif). On la charge à la
 // demande, après l'écran de connexion, pour alleger le bundle initial.
@@ -23,13 +21,6 @@ export function UrbanMap(props: ComponentProps<typeof LazyUrbanMap>) {
         </Suspense>
     );
 }
-
-export const MODE_OPTIONS: Array<{ mode: MobilityMode; label: string }> = [
-    { mode: 'walk', label: 'Marche' },
-    { mode: 'bike', label: 'Vélo' },
-    { mode: 'scooter', label: 'Trottinette' },
-    { mode: 'transit', label: 'Transport public' },
-];
 
 export const MODE_ICON: Record<MobilityMode, typeof Footprints> = {
     walk: Footprints,
@@ -75,29 +66,6 @@ export function MergeFillet({
                 background: `radial-gradient(circle at ${at}, rgb(from var(--shell) r g b / 0) ${size - 1}px, var(--shell) ${size}px)`
             }}
         />
-    );
-}
-
-export function RouteChip({ routeOption, selected, onClick }: { routeOption: RouteOption; selected: boolean; onClick: () => void }) {
-    return (
-        <button
-            type="button"
-            className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2.5 py-2 text-left transition ${selected ? 'bg-primary/10 text-primary' : 'bg-muted/35 hover:bg-muted/60'
-                }`}
-            onClick={onClick}
-        >
-            <span className="grid h-9 min-w-14 shrink-0 place-items-center rounded-xl px-1.5 text-xs font-bold text-white" style={{ background: getRouteColor(routeOption) }}>
-                {formatDuration(routeOption.durationMinutes)}
-            </span>
-            <span className="min-w-0">
-                <strong className="flex min-w-0 items-center gap-1.5 text-sm">
-                    <span className="truncate">{routeOption.title}</span>
-                </strong>
-                <span className="block truncate text-xs text-muted-foreground">
-                    {routeOption.distanceKm.toFixed(1)} km - {routeOption.carbonGrams} gCO₂e
-                </span>
-            </span>
-        </button>
     );
 }
 

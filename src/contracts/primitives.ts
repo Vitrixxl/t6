@@ -12,7 +12,15 @@ export const mobilityMode = z.enum(MOBILITY_MODES);
 export type MobilityMode = z.infer<typeof mobilityMode>;
 
 export const modes = z.array(mobilityMode).max(MOBILITY_MODES.length);
-export const requiredModes = z.array(mobilityMode).min(1, 'Choisis au moins un mode.').max(MOBILITY_MODES.length);
+
+/**
+ * Ce dont un utilisateur peut disposer en plus de la marche : Vélo'v, Dott et
+ * le transport en commun. La marche est toujours possible, elle ne se coche pas.
+ */
+export const AVAILABLE_MODES = ['bike', 'scooter', 'transit'] as const satisfies readonly MobilityMode[];
+export const availableMode = z.enum(AVAILABLE_MODES);
+export type AvailableMode = z.infer<typeof availableMode>;
+export const availableModes = z.array(availableMode).max(AVAILABLE_MODES.length);
 
 export const identifier = z.string().min(1).max(200);
 export const label = z.string().min(1, 'Le nom est obligatoire.').max(200, '200 caractères au plus.');

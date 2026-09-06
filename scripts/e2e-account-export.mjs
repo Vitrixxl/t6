@@ -32,6 +32,9 @@ try {
     assert.equal(saved.status(), 200);
     const { state } = await (await context.request.get(`${baseURL}/api/auth/session`)).json();
     await page.goto(baseURL, { waitUntil: 'networkidle' });
+    await page.getByRole('dialog', { name: 'Bienvenue sur UrbanFlow', exact: true }).getByRole('button', { name: 'Commencer', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Bienvenue sur UrbanFlow', exact: true }).waitFor({ state: 'hidden' });
+    state.profile = await (await context.request.get(`${baseURL}/api/me/profile`)).json();
     await page.getByRole('button', { name: /passer le tutoriel/i }).click({ timeout: 1500 }).catch(() => undefined);
     await page.getByRole('button', { name: 'Ouvrir le profil', exact: true }).click();
     const profile = page.getByRole('dialog', { name: 'Profil et préférences', exact: true });

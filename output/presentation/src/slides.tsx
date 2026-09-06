@@ -35,7 +35,7 @@ function Problem() {
                     Comparer un trajet suppose d'ouvrir quatre outils et de refaire le calcul soi-même.
                 </Card>
                 <Card kicker="La réponse" title="Un seul trajet, tous les modes" tone="pine">
-                    La plateforme compare les modes sur un même trajet et affiche ce que chaque choix coûte en CO₂e.
+                    La plateforme retient le trajet le plus rapide parmi les moyens utilisables et affiche son coût en CO₂e.
                 </Card>
             </div>
         </SlideFrame>
@@ -52,19 +52,19 @@ function Requirements() {
                         <>
                             <b>F1</b> Inscription, connexion, profil de mobilité
                         </>,
-                        'Mots de passe argon2id, sessions opaques révocables, profil qui pèse sur le score et la présélection.',
+                        'Sessions révocables. Premier accueil : moyens utilisables et besoin PMR, enregistrés dans le profil.',
                     ],
                     [
                         <>
                             <b>F2</b> Planificateur multimodal, géolocalisation temps réel
                         </>,
-                        'Six options comparées, position en direct, tracé réel segment par segment.',
+                        'Un trajet : la première arrivée, attente comprise. Position en direct et tracé réel par segment.',
                     ],
                     [
                         <>
                             <b>F3</b> Intégration d'API transport
                         </>,
-                        "GTFS TCL, desserte et tracés SYTRAL, GBFS Vélo'v et Dott, géocodage.",
+                        "Arrêts TCL et tracés SYTRAL, GBFS Vélo'v et Dott, géocodage. Horaires reportés.",
                     ],
                     [
                         <>
@@ -87,7 +87,7 @@ function PhoneDemo() {
                 </h1>
             </Reveal>
             <Reveal as="p" className="cover-sub">
-                Le parcours complet, en conditions réelles : connexion, carte, trajet, suivi carbone, coupure réseau.
+                Le parcours complet : inscription, moyens et PMR, carte, trajet, suivi carbone, coupure réseau.
             </Reveal>
         </SlideFrame>
     );
@@ -127,10 +127,10 @@ function ExternalApis() {
                 rows={[
                     [<b>BAN</b>, 'Géocodage des adresses, service public sans clé.', 'Résultats Photon conservés.'],
                     [<b>Photon</b>, 'Second géocodeur, données OpenStreetMap.', 'Résultats BAN conservés ; erreur si les deux échouent.'],
-                    [<b>MOTIS</b>, 'Itinéraires multimodaux sur un graphe unique : voirie OSM, horaires GTFS, flux GBFS. Un moteur local.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
+                    [<b>MOTIS</b>, 'Trajet le plus rapide sur la voirie OSM et les flux GBFS. Moteur local, sans horaires TCL pour cette version.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
                     [<b>Tuiles OSM</b>, 'Le fond de plan.', "Carte vide, l'itinéraire reste lisible en liste."],
                     [<b>GBFS Vélo'v et Dott</b>, 'Stations, vélos disponibles, trottinettes libres.', 'Message explicite, aucun véhicule partagé ni secours local.'],
-                    [<b>GTFS TCL et WFS Grand Lyon</b>, 'Desserte et tracés officiels, ingérés hors ligne.', "Sans effet à l'exécution."],
+                    [<b>Réseau TCL et WFS Grand Lyon</b>, 'Arrêts, desserte et tracés officiels, ingérés hors ligne. Horaires à intégrer.', "Sans effet à l'exécution."],
                 ]}
             />
         </SlideFrame>
@@ -149,9 +149,9 @@ function Docker() {
                         <li>Deux volumes : la base et le certificat. Compte de recette réinitialisé au démarrage.</li>
                     </ul>
                 </Card>
-                <Card kicker="Le calculateur d'itinéraires" title="MOTIS : voirie, horaires, engins partagés">
+                <Card kicker="Le calculateur d'itinéraires" title="MOTIS : voirie et engins partagés">
                     <ul>
-                        <li>Un seul processus : osr route la voirie (marche, vélo, référence voiture), nigiri exécute RAPTOR sur le GTFS.</li>
+                        <li>Un seul processus route la marche, les engins et la référence voiture. Aucun accès GTFS requis au démarrage.</li>
                         <li>Les flux GBFS Vélo'v et Dott sont lus à l'exécution : prise et dépose décidées par le moteur.</li>
                         <li>La voiture est une référence carbone invisible, jamais proposée.</li>
                         <li>Appelé par nom de service, aucun port publié, aucun routage public en secours.</li>
@@ -257,19 +257,19 @@ function Reversals() {
                 </Card>
                 <Card kicker="Ajouté" title="Ce que la démo exigeait" tone="pine">
                     <ul>
-                        <li>Les bus TCL : 92 lignes régulières, quais et tracés par sens.</li>
-                        <li>Le vélo et la trottinette en rabattement vers le réseau : six familles d'options.</li>
+                        <li>La carte TCL : 92 lignes de bus, quais et tracés par sens.</li>
+                        <li>Un accueil obligatoire : moyens utilisables et PMR, avec reprise en cas d’erreur.</li>
                         <li>Les quais chargés par zone visible au lieu du fichier complet.</li>
-                        <li>Un moteur MOTIS local après le quota du routage public : horaires, correspondances et rabattements calculés sur un graphe unique.</li>
-                        <li>L'information RGPD acceptée à l'inscription, la conservation à six mois et le registre des traitements.</li>
+                        <li>MOTIS local pour la marche et les engins partagés. Horaires TCL reportés.</li>
+                        <li>Information RGPD, conservation à six mois et registre des traitements.</li>
                     </ul>
                 </Card>
                 <Card kicker="Remplacé" title="Ce qui a changé de forme">
                     <ul>
                         <li>Le serveur est la seule source de vérité : une commande par ressource, React Query en cache.</li>
                         <li>Le clic « Fait » remplacé par la comptabilisation à la date, côté serveur.</li>
-                        <li>Le plafond de marche du profil retiré : toutes les options calculables sont proposées.</li>
-                        <li>Le moteur maison (huit candidats à vol d'oiseau, fréquences moyennes) et trois OSRM remplacés par MOTIS : deux mille lignes en moins.</li>
+                        <li>Les familles et le score remplacés par un trajet unique : la première arrivée, attente comprise.</li>
+                        <li>Un appel plan compare les moyens autorisés, avec mesure voiture en parallèle.</li>
                     </ul>
                 </Card>
             </div>
@@ -327,10 +327,9 @@ function NextIterations() {
     return (
         <SlideFrame eyebrow="06 · Prochaines itérations" title="Les ajustements à effectuer, dans l'ordre">
             <div className="tiles tiles-4">
-                <Card kicker="1 · Données" title="Charger l'archive TCL du jour">
-                    MOTIS calcule sur les calendriers de l'archive GTFS chargée ; celle du développement date de 2022.
-                    Il reste à automatiser le téléchargement quotidien de l'archive officielle et à brancher le temps
-                    réel GTFS-RT quand SYTRAL le publiera.
+                <Card kicker="1 · Données" title="Intégrer les horaires TCL">
+                    Cette version calcule la marche et les trajets partagés, sans transports publics. Les arrêts restent visibles.
+                    Prochaine étape : charger un GTFS actuel, activer le calcul TCL et automatiser son renouvellement.
                 </Card>
                 <Card kicker="2 · Exploitation" title="Passer à PostgreSQL et Kubernetes">
                     SQLite sur un nœud suffit à la démonstration, pas à une métropole. Le schéma Drizzle migre vers
@@ -354,9 +353,9 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="156" label="commits depuis le code remis au jury" />
-                <Stat value="23" label="PR fusionnées, chacune avec ses tests" />
-                <Stat value="191" label="tests, 30 fichiers, 0 échec" />
+                <Stat value="160" label="commits depuis le code remis au jury" />
+                <Stat value="24" label="PR fusionnées, chacune avec ses tests" />
+                <Stat value="187" label="tests, 31 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
                 <Stat value="0" label="violation axe-core sur quatre écrans" />
                 <Stat value="CI verte" label="sur le dernier commit poussé" />

@@ -5,6 +5,7 @@
 // réexporte ici pour que le reste du code n'ait qu'un point d'import. Les
 // types ci-dessous décrivent les structures internes du moteur et du suivi.
 export type {
+    AvailableMode,
     GeoPoint,
     MobilityMode,
     MobilityProfile,
@@ -12,7 +13,6 @@ export type {
     PlannedTripStatus,
     RecurringTrip,
     RouteInstruction,
-    RoutePreselection,
     RoutinePeriod,
     SavedRouteRecord,
     SessionUser,

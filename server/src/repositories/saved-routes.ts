@@ -17,7 +17,6 @@ function toSavedRoute(row: SavedRouteRow): SavedRouteRecord {
         routeTitle: row.routeTitle,
         ...endpoints(row),
         ...measures(row),
-        score: row.score,
         createdAt: row.createdAt,
     };
 }
@@ -75,7 +74,6 @@ export function createSavedRouteRepository(db: Executor) {
                         durationMinutes: row.durationMinutes,
                         carbonGrams: row.carbonGrams,
                         carbonSavedGrams: row.carbonSavedGrams,
-                        score: row.score,
                         createdAt: row.createdAt,
                     },
                 })

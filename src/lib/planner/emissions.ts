@@ -146,17 +146,14 @@ export function createCarbonReference(measure: RouteMeasure | null): CarbonRefer
 }
 
 /**
- * Applique une référence unique à toutes les options déjà mesurées.
- * Une valeur négative est conservée : elle signifie que l'option émet plus que
- * le scénario voiture, information que l'interface doit assumer.
+ * Applique la référence voiture au trajet retenu. Une valeur négative est
+ * conservée : elle signifie que le trajet émet plus que le scénario voiture,
+ * information que l'interface doit assumer.
  */
-export function applyCarbonReference(
-    routes: RouteOption[],
-    reference: CarbonReference | null,
-): RouteOption[] {
-    return routes.map((option) => ({
+export function applyCarbonReference(option: RouteOption, reference: CarbonReference | null): RouteOption {
+    return {
         ...option,
         carbonReference: reference,
         carbonSavedGrams: reference ? reference.carbonGrams - option.carbonGrams : null,
-    }));
+    };
 }

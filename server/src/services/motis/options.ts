@@ -1,31 +1,17 @@
-// Traduction des itinéraires MOTIS en options UrbanFlow.
+// Choix et traduction du trajet MOTIS retenu.
 //
-// MOTIS rend des trajets non dominés, sans notion de famille. UrbanFlow en
-// garde une lecture par famille (transport, vélo + transport, ...) parce que
-// c'est ainsi que l'interface compare et présélectionne. La famille se déduit
-// des segments ; les mesures, tracés et lignes viennent tels quels de MOTIS.
-import type { GeoPoint, MobilityMode, MobilityProfile, RouteLeg, RouteOption } from '../../../../src/types.ts';
+// MOTIS rend des trajets non dominés ; UrbanFlow n'en propose qu'un, celui qui
+// arrive le premier avec les moyens demandés, attentes comprises. Ses mesures,
+// tracés et lignes viennent tels quels de MOTIS ; seuls les libellés sont ici.
+import type { AvailableMode, GeoPoint, MobilityMode, RouteLeg, RouteOption } from '../../../../src/types.ts';
 import { ROAD_EMISSION_FACTORS, transitEmissionFactor } from '../../../../src/lib/planner/emissions.ts';
 import { haversineDistanceKm } from '../../../../src/lib/planner/geo.ts';
 import { lineLabel } from '../../../../src/lib/planner/labels.ts';
 import { buildOption } from '../../../../src/lib/planner/legs.ts';
 import { round } from '../../../../src/lib/planner/metrics.ts';
+import { AVAILABLE_MODE_LABELS } from '../../../../src/lib/planner/search-filters.ts';
 import type { MotisItinerary, MotisLeg } from './client.ts';
 import { decodePolyline } from './polyline.ts';
-
-export type Family = 'transit' | 'bike-transit' | 'scooter-transit' | 'bike' | 'scooter' | 'walk';
-
-const FAMILIES: Record<Family, { title: string; reliabilityScore: number }> = {
-    transit: { title: 'Transport en commun', reliabilityScore: 88 },
-    'bike-transit': { title: 'Vélo + transport en commun', reliabilityScore: 90 },
-    'scooter-transit': { title: 'Trottinette + transport en commun', reliabilityScore: 84 },
-    bike: { title: 'Vélo', reliabilityScore: 86 },
-    scooter: { title: 'Trottinette', reliabilityScore: 80 },
-    walk: { title: 'À pied', reliabilityScore: 92 },
-};
-
-/** Variantes de transport proposées pour un même trajet : des lignes différentes. */
-const TRANSIT_VARIANTS = 3;
 
 const STREET_MODES = new Set(['WALK', 'BIKE', 'RENTAL', 'CAR', 'HGV', 'CAR_PARKING', 'CAR_DROPOFF', 'ODM', 'RIDE_SHARING', 'FLEX']);
 
@@ -37,17 +23,11 @@ function legMode(leg: MotisLeg): MobilityMode | null {
     return STREET_MODES.has(leg.mode) ? null : 'transit';
 }
 
-function familyOf(modes: MobilityMode[]): Family {
-    const transit = modes.includes('transit');
-    if (modes.includes('bike')) return transit ? 'bike-transit' : 'bike';
-    if (modes.includes('scooter')) return transit ? 'scooter-transit' : 'scooter';
-    return transit ? 'transit' : 'walk';
-}
-
-interface SearchEnds {
+export interface SearchEnds {
     origin: GeoPoint;
     destination: GeoPoint;
-    profile: MobilityProfile;
+    accessibilityNeed: boolean;
+    departureAt: string;
 }
 
 /** MOTIS nomme START et END les extrémités saisies ; un engin en libre-service peut n'avoir aucun nom. */
@@ -106,11 +86,11 @@ function carbonFactor(leg: MotisLeg, mode: MobilityMode): number {
         : ROAD_EMISSION_FACTORS[mode].gramsCo2ePerPassengerKm;
 }
 
-/** La marche est toujours accessible ; le transport doit le publier ; un engin dépend du profil. */
-function accessibleLeg(leg: MotisLeg, mode: MobilityMode, profile: MobilityProfile): boolean {
+/** La marche est toujours accessible ; le transport doit le publier ; les engins partagés ne sont pas accessibles en fauteuil. */
+function accessibleLeg(leg: MotisLeg, mode: MobilityMode): boolean {
     if (mode === 'walk') return true;
     if (mode === 'transit') return leg.wheelchairAccessible === 'ACCESSIBLE';
-    return !profile.accessibilityNeed;
+    return false;
 }
 
 function fallbackLabels(mode: MobilityMode): { from: string; to: string } {
@@ -140,63 +120,73 @@ function toLeg(leg: MotisLeg, mode: MobilityMode, id: string, ends: SearchEnds):
         distanceKm,
         durationMinutes: Math.max(1, Math.round(leg.duration / 60)),
         carbonGrams: Math.round(distanceKm * carbonGramsPerKm),
-        accessible: accessibleLeg(leg, mode, ends.profile),
+        accessible: accessibleLeg(leg, mode),
         estimate: { travelFactor: 1, overheadMinutes: 0, carbonGramsPerKm },
     };
 }
 
+/** Suite des moyens empruntés, la marche exclue et les répétitions fondues : vélo, transport, trottinette. */
+function modeSequence(legs: RouteLeg[]): AvailableMode[] {
+    return legs.reduce<AvailableMode[]>((sequence, leg) => {
+        const mode = leg.mode;
+        return mode === 'walk' || sequence.at(-1) === mode ? sequence : [...sequence, mode];
+    }, []);
+}
+
+function transfersLabel(transfers: number): string {
+    return transfers === 0 ? 'sans correspondance' : transfers === 1 ? '1 correspondance' : `${transfers} correspondances`;
+}
+
+/** « Vélo Vélov jusqu’à Bellecour, puis Métro D puis Tram T1, 1 correspondance, puis Trottinette Dott jusqu’à Part-Dieu. » */
 function summaryOf(legs: RouteLeg[], transfers: number): string {
-    const lines = legs.filter((leg) => leg.mode === 'transit').map((leg) => leg.mapLabel).join(' puis ');
-    const feeder = legs.find((leg) => leg.mode === 'bike' || leg.mode === 'scooter');
-    if (!lines) {
-        return feeder ? `${feeder.title} de ${feeder.from} à ${feeder.to}.` : 'Itinéraire piéton direct, zéro émission.';
+    const transit = legs.filter((leg) => leg.mode === 'transit');
+    const rentals = legs.filter((leg) => leg.mode === 'bike' || leg.mode === 'scooter');
+    if (transit.length === 0) {
+        const rental = rentals[0];
+        return rental ? `${rental.title} de ${rental.from} à ${rental.to}.` : 'Itinéraire piéton direct, zéro émission.';
     }
-    const correspondances = transfers === 0 ? 'sans correspondance' : transfers === 1 ? '1 correspondance' : `${transfers} correspondances`;
-    return feeder ? `${feeder.title} jusqu’à ${feeder.to}, puis ${lines}, ${correspondances}.` : `${lines}, ${correspondances}.`;
+    const lines = transit.map((leg) => leg.mapLabel).join(' puis ');
+    const access = rentals.find((leg) => legs.indexOf(leg) < legs.indexOf(transit[0]));
+    const egress = rentals.find((leg) => legs.indexOf(leg) > legs.indexOf(transit[transit.length - 1]));
+    const before = access ? `${access.title} jusqu’à ${access.to}, puis ` : '';
+    const after = egress ? `, puis ${egress.title} jusqu’à ${egress.to}` : '';
+    return `${before}${lines}, ${transfersLabel(transfers)}${after}.`;
 }
 
-function toRouteOption(itinerary: MotisItinerary, family: Family, index: number, ends: SearchEnds): RouteOption {
-    const id = `${family}-${index}`;
-    const legs = itinerary.legs.flatMap((leg, legIndex) => {
-        const mode = legMode(leg);
-        return mode ? [toLeg(leg, mode, `${id}-${legIndex}`, ends)] : [];
-    });
-    const modes = [...new Set(legs.map((leg) => leg.mode))];
-    const option = buildOption({
-        id,
-        title: FAMILIES[family].title,
-        summary: summaryOf(legs, itinerary.transfers),
-        modes,
-        legs,
-        reliabilityScore: FAMILIES[family].reliabilityScore,
-        warnings: [],
-    });
-    // La durée MOTIS comprend les attentes à quai, absentes des segments.
-    return { ...option, durationMinutes: Math.max(1, Math.round(itinerary.duration / 60)) };
-}
-
-function linesKey(itinerary: MotisItinerary): string {
-    return itinerary.legs.map((leg) => leg.routeShortName ?? '').filter(Boolean).join('>');
+/** Un itinéraire dont tous les segments sont des modes que l'application propose. */
+function supported(itinerary: MotisItinerary): boolean {
+    return itinerary.legs.every((leg) => legMode(leg) !== null);
 }
 
 /**
- * Regroupe les itinéraires par famille : la plus rapide de chaque famille, et
- * jusqu'à trois variantes de transport qui n'empruntent pas les mêmes lignes.
+ * Le trajet qui arrive le premier ; à arrivée égale, le plus court. L'attente
+ * avant de partir compte donc, ce qui est le sens d'une recherche « maintenant ».
  */
-export function selectOptions(itineraries: MotisItinerary[], ends: SearchEnds): RouteOption[] {
-    const byFamily = new Map<Family, MotisItinerary[]>();
-    for (const itinerary of itineraries) {
-        const modes = itinerary.legs.map(legMode);
-        if (modes.some((mode) => mode === null)) continue;
-        const family = familyOf(modes as MobilityMode[]);
-        byFamily.set(family, [...(byFamily.get(family) ?? []), itinerary]);
-    }
-    return [...byFamily.entries()].flatMap(([family, candidates]) => {
-        const sorted = [...candidates].sort((a, b) => a.duration - b.duration);
-        const seen = new Set<string>();
-        const kept = family === 'transit'
-            ? sorted.filter((itinerary) => !seen.has(linesKey(itinerary)) && seen.add(linesKey(itinerary)).size > 0).slice(0, TRANSIT_VARIANTS)
-            : sorted.slice(0, 1);
-        return kept.map((itinerary, index) => toRouteOption(itinerary, family, index, ends));
+export function fastestItinerary(itineraries: MotisItinerary[]): MotisItinerary | null {
+    return itineraries.filter(supported).reduce<MotisItinerary | null>((best, candidate) => {
+        if (!best) return candidate;
+        const arrival = Date.parse(candidate.endTime) - Date.parse(best.endTime);
+        return arrival < 0 || (arrival === 0 && candidate.duration < best.duration) ? candidate : best;
+    }, null);
+}
+
+export function toRouteOption(itinerary: MotisItinerary, ends: SearchEnds): RouteOption {
+    const legs = itinerary.legs.flatMap((leg, index) => {
+        const mode = legMode(leg);
+        return mode ? [toLeg(leg, mode, `leg-${index}`, ends)] : [];
+    });
+    const sequence = modeSequence(legs);
+    // L'identifiant nomme la forme du trajet : un enregistrement « Vélo’v puis
+    // transport » entre deux mêmes lieux reste le même enregistrement.
+    const id = sequence.join('-') || 'walk';
+    return buildOption({
+        id,
+        title: sequence.map((mode) => AVAILABLE_MODE_LABELS[mode]).join(' + ') || 'À pied',
+        summary: summaryOf(legs, itinerary.transfers),
+        modes: [...new Set(legs.map((leg) => leg.mode))],
+        legs: legs.map((leg) => ({ ...leg, id: `${id}-${leg.id}` })),
+        departureAt: itinerary.startTime,
+        arrivalAt: itinerary.endTime,
+        durationMinutes: Math.max(1, Math.ceil((Date.parse(itinerary.endTime) - Date.parse(ends.departureAt)) / 60_000)),
     });
 }

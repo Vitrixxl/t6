@@ -21,6 +21,8 @@ export interface ServerConfig {
      * Docker ; hors conteneur, son adresse loopback (voir README).
      */
     motisUrl: string;
+    /** Activé uniquement après import d’une archive GTFS courante. */
+    motisTransitEnabled: boolean;
     /**
      * Dossier du client construit, servi par l'API elle-même. Une seule origine
      * pour l'application et son API : cookie de première partie, aucun CORS.
@@ -69,6 +71,7 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
         webRoot: text(env.WEB_ROOT, 'dist'),
         tlsCertPath: text(env.TLS_CERT_PATH, ''),
         tlsKeyPath: text(env.TLS_KEY_PATH, ''),
+        motisTransitEnabled: env.MOTIS_TRANSIT_ENABLED === 'true',
         motisUrl: text(env.MOTIS_URL, 'http://motis:8080').replace(/\/+$/, ''),
     };
 }

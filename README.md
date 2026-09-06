@@ -34,25 +34,30 @@ des ressources déjà chargées, mais il ne met jamais les réponses de l’API 
 
 ## Planificateur et annulations
 
-Toutes les options calculables sont proposées sur mobile et sur bureau, jusqu’aux
-six familles du moteur (marche, vélo, trottinette, transport public et les deux
-rabattements vers le transport public). La liste mobile n’est jamais tronquée.
-Les options sont triées par durée croissante après mesure réelle. Les préférences
-influencent leur score et la présélection ; aucun plafond de
-marche n’est configurable ni appliqué. Les anciens profils restent lisibles et
-leur champ retiré n’est plus exposé par l’API ni son OpenAPI, générée depuis le
-contrat partagé. La disponibilité des engins, la desserte et les mesures réelles
-déterminent toujours les options calculables.
+Une recherche propose **un seul trajet : celui qui arrive le premier**, avec les
+moyens autorisés, attente initiale et correspondances comprises. MOTIS renvoie
+les trajets directs et les itinéraires avec transport ; le serveur compare leurs
+arrivées et traduit uniquement le gagnant. Il n’y a plus de score, de famille
+ni de présélection d’itinéraire.
 
-Les durées longues se lisent en heures et minutes (`63 min` → `1h03`), dans les
-options, les étapes et les trajets. Sur mobile, le panneau prend automatiquement
-la hauteur de son contenu, limitée à la moitié de la carte (45 % en paysage bas).
-Toutes les options défilent horizontalement ; les détails se déplient à la demande.
-L’en-tête et la fermeture restent accessibles. Aucun réglage de taille.
+À la première connexion, l’accueil demande l’accès à **Vélo’v, Dott et aux
+transports en commun**, ainsi que le besoin **PMR**. Les réponses sont persistées
+dans le profil ; un refus serveur laisse le dialogue ouvert et permet un nouvel
+essai. La migration 0012 conserve les objectifs et le besoin PMR des anciens
+comptes, puis leur demande de confirmer leurs moyens. Les moyens personnels
+(vélo ou trottinette privés) ne sont pas proposés par cette version.
 
-Une option contenant des transports en commun affiche le choix Bus, Métro, Tramway
-et Funiculaire. Ces types sont les modes de transport demandés à MOTIS.
-Ce choix est temporaire : sélectionner une option sans transport public le remet à Tous.
+Les filtres de recherche partent du profil et permettent un choix temporaire.
+Le choix Bus/Métro/Tramway/Funiculaire apparaît dès que le transport public est
+autorisé, même si aucun trajet n’est trouvé. Sans moyen supplémentaire, la marche
+reste recherchée. PMR utilise le profil fauteuil de MOTIS, exclut Vélo’v/Dott et
+exige une accessibilité déclarée pour les segments de transport public.
+
+Les durées longues se lisent en heures et minutes (`63 min` → `1h03`). Le départ
+et l’arrivée sont affichés ; la durée totale compte aussi l’attente avant le
+départ effectif. Sur mobile, le panneau suit le contenu, limité à 50 % de la
+carte (45 % en paysage bas). Les détails sont repliés à l’ouverture ; le contenu
+long défile et la fermeture reste accessible, sans réglage de taille.
 
 Le hub comporte quatre onglets : **Une fois**, **Récurrents**, **Historique** et
 **Enregistrés**. Les trajets ponctuels futurs n’ont pas de bouton « Fait ». Après leur date prévue,
@@ -102,7 +107,7 @@ commande pas la création d'un module.
 
 | Dossier | Rôle |
 | --- | --- |
-| `lib/planner/` | ce qui reste métier autour des itinéraires : score du profil, présélection, facteurs carbone, outils géographiques |
+| `lib/planner/` | ce qui reste métier autour des itinéraires : filtres de recherche, facteurs carbone, outils géographiques |
 | `lib/transport/` | intégration open data : `geocoding/`, `feeds/`, cellules cartographiques |
 | `contracts/` | schémas zod partagés avec l'API : validation, types derives, OpenAPI |
 | `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une commande par ressource du compte |
@@ -136,12 +141,12 @@ fonctions de l’application.
    `src/lib/api/planned-trips.ts` → route → service → dépôt du même nom.
    Lire ensuite `completeDueTrips` et sa transaction trajet + historique carbone.
 4. Calcul : `src/queries/routes.ts` → `POST /api/transport/journeys`
-   → `server/src/services/planning.ts` → `fetchPlan` (MOTIS) → `selectOptions`
-   → `rankRoutes` → `applyCarbonReference`.
+   → `server/src/services/planning.ts` → `fetchPlan` (MOTIS) → `fastestItinerary` → `toRouteOption`
+   → `applyCarbonReference`.
 
 **Comprendre le fonctionnement des écrans et les garanties** :
 
-1. Affichage : `MobilityMapApp` → `useRouteOptions` → `MobilityLayouts`
+1. Affichage : `MobilityMapApp` → `useFastestRoute` → `MobilityLayouts`
    → `UrbanMap`, ses sources et son cadrage.
 2. Récurrences : `src/lib/trips/operations.ts` (pause d’une seule routine),
    `routines.ts` (passages), `history.ts` (annulations), puis les services serveur.
@@ -151,7 +156,7 @@ fonctions de l’application.
    scripts de développement et build, données transport et migrations.
 
 Le guide détaille aussi les contrats partagés, la recherche BAN/Photon, la
-construction des segments et la distinction entre score, ordre et présélection.
+construction des segments et le choix de la première arrivée, attentes comprises.
 
 Pour chaque fonction : identifier ses entrées, sa sortie et ses effets, puis
 suivre le prochain appel. Les contrats, transactions et dépôts ont des rôles
@@ -214,7 +219,7 @@ Recette : `bun run e2e:trips` pour les confirmations et rétablissements ;
 | --- | --- | --- |
 | Géocodage adresses | `api-adresse.data.gouv.fr` (BAN) | live navigateur |
 | Géocodage lieux/quartiers | Photon (`photon.komoot.io`, OSM) | live navigateur |
-| Routage multimodal | MOTIS (voirie OSM, horaires GTFS, flux GBFS), auto-hébergé | appelé par le serveur à chaque recherche de `/api/transport/journeys` |
+| Routage multimodal | MOTIS (voirie OSM, flux GBFS, horaires GTFS optionnels), auto-hébergé | appelé par le serveur à chaque recherche de `/api/transport/journeys` |
 | Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | serveur, chargement mutualisé 60 s |
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | serveur, chargement mutualisé 60 s |
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | artefact normalisé (`bun run generate:gtfs`), import SQLite au démarrage |
@@ -249,9 +254,8 @@ Les appels GBFS sont mutualisés côté serveur pendant 60 secondes ;
 une erreur GBFS après expiration produit `null`, sans réutiliser un ancien flux.
 Le contexte est demandé après la connexion, puis relu chaque minute lorsque l’application est active.
 
-Les six familles d’itinéraires restent calculées côté serveur sur tout le réseau.
-Seules les options mesurées et leurs tracés sont envoyés au client. Les horaires
-TCL restent estimés : ce changement n’active pas le chantier horaire préparatoire.
+Le calcul porte sur tout le réseau, indépendamment du cadrage. Seul le trajet
+retenu, ses mesures et son tracé sont envoyés au client. Le calcul public est désactivé tant que les horaires ne sont pas intégrés.
 Les anciennes routes `/api/route` et `/api/route-matrix` n’ont plus d’appelant et
 sont retirées. `bun run e2e:transport` vérifie le volume TCL initial, l’absence de
 fichier global, le cache au déplacement, le zoom régional et la reprise après
@@ -260,15 +264,20 @@ d’énergie ou l’ensemble du trafic (fond OSM et GBFS restent distincts).
 
 ## Calcul d'itinéraires
 
-Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur la confie à MOTIS, un moteur multimodal open source qui calcule sur un graphe unique : la voirie OpenStreetMap, les horaires GTFS et les flux GBFS Vélo'v et Dott.
+Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur la confie à MOTIS, un moteur multimodal open source qui calcule sur un graphe unique : la voirie OpenStreetMap, les flux GBFS et, après activation future, les horaires GTFS Vélo'v et Dott.
 
-1. Un plan par moyen d'accès : à pied, en Vélo'v et en trottinette Dott quand les flux sont disponibles. MOTIS choisit lui-même les quais, les lignes et les correspondances (RAPTOR sur les horaires) et rend les trajets non dominés avec leurs tracés. En parallèle, un appel `one-to-many` en voiture mesure la référence carbone entre les deux extrémités.
-2. Le serveur traduit chaque itinéraire en option UrbanFlow et le classe dans une famille (marche, vélo, trottinette, transport public, vélo + transport, trottinette + transport). Il garde la plus rapide de chaque famille et jusqu'à trois variantes de transport qui n'empruntent pas les mêmes lignes.
-3. La même référence voiture est appliquée à toutes les options, puis elles sont affichées de la plus rapide à la plus lente. Les durées comprennent les attentes à quai.
+1. Un seul appel `plan` autorise la marche et les moyens demandés en accès, en sortie et en trajet direct. Les engins partagés exigent les flux GBFS en direct. Après activation des horaires, les types publics choisis sont transmis à MOTIS. En parallèle, un appel `one-to-many` mesure la référence voiture.
+2. `fetchPlan` réunit `direct` et `itineraries`. `fastestItinerary` retient la première arrivée parmi les trajets autorisés ; à arrivée égale, il retient le trajet le plus court. `numItineraries` est un minimum de recherche, jamais un plafond de résultats.
+3. `toRouteOption` traduit ce seul trajet et mesure sa durée depuis l’heure demandée, attente initiale comprise. Exemple : départ dans 12 minutes puis trajet de 10 minutes → durée totale 22 minutes. La référence carbone voiture est appliquée au résultat.
 
-Rien n'est conservé côté serveur : une recherche vient toujours d'un calcul frais, en quelques dizaines de millisecondes. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopié dans le front.
+La réponse HTTP est un objet `routeOption`, validé par le contrat partagé, et non
+une collection. Une panne du moteur ou l’absence de trajet exploitable répond
+503, sans moteur externe ni tracé inventé. Le client garde la recherche en cache
+mémoire pendant cinq minutes ; chaque appel serveur interroge MOTIS.
 
-Une correspondance entre deux quais est un segment piéton routé par MOTIS sur la voirie, avec son tracé. Sans `shapes.txt` dans l'archive GTFS, le tracé d'une ligne relie ses arrêts en ligne droite : c'est le cas de l'archive TCL 2022 utilisée en développement.
+Référence du protocole : [OpenAPI MOTIS](https://github.com/motis-project/motis/blob/master/openapi.yaml).
+
+Une correspondance entre deux quais est un segment piéton routé par MOTIS sur la voirie, avec son tracé. Sans `shapes.txt` dans l'archive GTFS, le tracé d'une ligne relie ses arrêts en ligne droite : cette limite devra être vérifiée lors de l’intégration future des horaires.
 
 ## Facteurs carbone
 
@@ -281,10 +290,10 @@ CO2e voiture = distance routière voiture x 142 gCO2e/km
 CO2e evite   = CO2e voiture - CO2e de l'option mesuree
 ```
 
-Toutes les options d'une recherche utilisent donc strictement la même
-référence, même si leurs propres distances diffèrent. Une économie négative
+Le trajet retenu utilise cette référence mesurée entre les extrémités de la recherche,
+même si sa propre distance diffère de celle de la voiture. Une économie négative
 est conservée et affichée comme des `gCO2e supplementaires`. Si le profil
-voiture est indisponible, les alternatives restent visibles avec leur propre
+voiture est indisponible, le trajet reste visible avec leur propre
 empreinte et l'interface indique `Comparaison voiture indisponible` ; aucun zéro
 ni trajet approche n'est inventé.
 
@@ -337,11 +346,14 @@ publique par défaut, ni bascule vers un hébergeur externe en cas de panne.
 Pour héberger le moteur localement (les flux GBFS et le géocodage restent externes) :
 
 ```bash
-./infra/motis-prepare.sh                     # télécharge l'extrait OSM et l'archive GTFS, puis construit le graphe (une fois)
+./infra/motis-prepare.sh                     # prépare la voirie, sans horaires ni identifiants GTFS (une fois)
 docker compose -f infra/compose.yml up -d    # application + moteur
 ```
 
-`infra/motis-prepare.sh` exige `GTFS_SOURCE_URL` dans `.env` : MOTIS calcule sur les calendriers de l'archive, une archive périmée ne produit aucun trajet en transport aux dates courantes. Il télécharge l'extrait Rhône-Alpes, le découpe autour de Lyon si `osmium` est présent, écrit `infra/motis-data/config.yml` avec les flux GBFS Vélo'v et Dott, puis lance `motis import`. Le graphe est prêt en quelques minutes.
+Les horaires TCL sont reportés à une prochaine itération. Par défaut, `MOTIS_TRANSIT_ENABLED=false` : marche et véhicules partagés uniquement, arrêts TCL consultables et limite annoncée dans l’interface. Aucun accès GTFS n’est requis. Le serveur publie `transitRoutingAvailable=false` et force `transitModes=` vers MOTIS. Les horaires de recette servent uniquement à la CI. Une activation future exige une archive actuelle et `MOTIS_TRANSIT_ENABLED=true` à la préparation et au lancement.
+
+Le script requiert Docker et curl. `osmium` est facultatif : il découpe Lyon si disponible ; sinon la région Rhône-Alpes est importée. Un extrait `infra/motis-data/lyon.osm.pbf` déjà présent est réutilisé. L’import utilise l’utilisateur courant pour écrire le graphe sans privilège administrateur.
+
 
 `infra/compose.yml` lance **l'application et le moteur ensemble** : l'API appelle `motis:8080` sur le réseau Docker, sans port publié. L'application écoute en **HTTPS** sur le port 4000, avec un certificat auto-signé généré au premier démarrage. Pour y accéder depuis le réseau local, inscrire l'adresse de la machine dans le certificat : `TLS_EXTRA_HOSTS=IP:192.168.1.37 docker compose -f infra/compose.yml up -d`.
 
@@ -355,7 +367,7 @@ Absente ou vide, la variable vaut `http://motis:8080`. En cas de panne du moteur
 
 Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et l'import est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée.
 
-MOTIS tient dans un seul processus : son routeur de voirie `osr` sert les accès à pied, à vélo et la référence voiture, son moteur horaire `nigiri` exécute RAPTOR sur le GTFS, et il lit lui-même les flux GBFS pour proposer les engins partagés. Mesuré sur Lyon : moins de 120 Mio de mémoire au repos, environ 200 ms pour une recherche complète (trois plans et la référence voiture).
+MOTIS tient dans un seul processus : son routeur de voirie `osr` sert les accès à pied, à vélo et la référence voiture, son moteur horaire `nigiri` exécute RAPTOR sur le GTFS, et il lit lui-même les flux GBFS pour proposer les engins partagés. Mesuré sur Lyon : moins de 120 Mio de mémoire au repos, la recherche effectue désormais un plan et une mesure voiture ; les performances de l’ancien parcours à trois plans ne décrivent plus ce coût.
 
 ### Certificat local et service worker
 
@@ -514,8 +526,7 @@ vérifiables, les boucles de même terminus, les morceaux discontinus et les ser
 spéciaux ne sont pas importés. Le rayon de 16 km reste celui du produit.
 
 Ces séquences alimentent l'horaire GTFS de recette (`scripts/build-gtfs-fixture.py`) et
-les cellules de la carte ; le calcul d'itinéraires lui-même utilise l'archive GTFS
-officielle chargée dans MOTIS, avec ses horaires réels.
+les cellules de la carte. En production, le calcul public reste désactivé jusqu’à l’intégration d’une archive GTFS officielle actuelle.
 
 Le bus utilise une référence
 [bus thermique ADEME Impact CO₂](https://impactco2.fr/outils/transport/busthermique)

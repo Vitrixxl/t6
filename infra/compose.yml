@@ -11,7 +11,7 @@
 #   docker compose -f infra/compose.yml up -d
 #
 # Le moteur exige un préalable : ./infra/motis-prepare.sh, qui télécharge la
-# voirie et l'archive GTFS puis construit le graphe dans motis-data/data. Sans
+# voirie puis construit le graphe (horaires désactivés par défaut) dans motis-data/data. Sans
 # lui, le service motis démarre puis s'arrête faute de jeu de données.
 services:
   app:
@@ -23,6 +23,7 @@ services:
       # la résolution, aucun port MOTIS n'a besoin d'être publié.
       TEST_PASSWORD: ${TEST_PASSWORD:-UrbanFlow2026!}
       MOTIS_URL: http://motis:8080
+      MOTIS_TRANSIT_ENABLED: ${MOTIS_TRANSIT_ENABLED:-false}
       # Adresses supplémentaires à inscrire dans le certificat. Renseigner l'IP
       # de la machine sur le réseau local pour y accéder depuis un téléphone :
       #   TLS_EXTRA_HOSTS=IP:192.168.1.37

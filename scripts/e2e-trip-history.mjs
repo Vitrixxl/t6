@@ -77,6 +77,7 @@ try {
     await put('/trips/planned/future', { ...trip, scheduledFor: new Date(today.getTime() + 86_400_000).toISOString(), status: 'planned', completedAt: null });
     await put('/saved-routes/saved', { ...trip, routeId: 'bike', routeTitle: trip.label, score: 80 });
     await page.goto(baseURL, { waitUntil: 'networkidle' });
+    await page.getByRole('dialog', { name: 'Bienvenue sur UrbanFlow', exact: true }).getByRole('button', { name: 'Commencer', exact: true }).click();
     await openHub();
     for (const width of [320, 390, 540, 768, 1280]) {
         await page.setViewportSize({ width, height: 844 });

@@ -20,7 +20,9 @@ if (config.isProduction && !Bun.env.DEMO_PASSWORD) {
 const db = openDatabase(config.databasePath);
 const { users } = createRepositories(db);
 
-const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: 'Démo UrbanFlow' };
+const now = new Date().toISOString();
+// Le compte de démonstration a déjà répondu aux questions d'accueil : la recette part de la carte.
+const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: 'Démo UrbanFlow', onboardedAt: now };
 
 // Reinitialisation plutôt que mise à jour : la démonstration repart toujours
 // d'un compte propre, sans trajet hérité d'une session précédente.
@@ -29,7 +31,6 @@ if (existing) {
     users.delete(existing.id);
 }
 
-const now = new Date().toISOString();
 users.insert({
     id: crypto.randomUUID(),
     email: DEMO_EMAIL,

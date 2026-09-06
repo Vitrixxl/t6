@@ -206,7 +206,8 @@ describe('profil de mobilité', () => {
         await api.putResource(cookie, '/api/trips/planned/trip-1', PLANNED_TRIP);
         const profile = {
             displayName: 'Camille',
-            preferredModes: ['bike', 'transit'],
+            availableModes: ['bike', 'transit'],
+            onboardedAt: '2026-09-06T08:00:00Z',
             accessibilityNeed: true,
             carbonGoalGramsPerWeek: 1800,
             weeklyTripsGoal: 8,

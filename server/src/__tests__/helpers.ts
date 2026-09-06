@@ -33,6 +33,7 @@ export function createTestApi(overrides: Partial<ServerConfig> = {}): TestApi {
     const app = createApp({
         databasePath: ':memory:',
         motisUrl: 'http://motis:8080',
+        motisTransitEnabled: true,
         ...overrides,
     });
     // Les compteurs de débit sont partagés par le processus : on repart de zéro

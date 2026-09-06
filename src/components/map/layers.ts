@@ -5,55 +5,6 @@ import type { MutableRefObject } from 'react';
 import { WALK_DASH_ARRAY, legWidthExpression } from './legStyle';
 import { bindPointPopup, escapeHtml } from './popup';
 
-function installRouteLayers(map: MaplibreMap): void {
-    if (!map.getLayer('routes-casing')) {
-        // Lisere blanc sous le tracé : le rend lisible sur tous les fonds de rue.
-        map.addLayer({
-            id: 'routes-casing',
-            type: 'line',
-            source: 'routes',
-            layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: {
-                'line-color': '#ffffff',
-                // Le zoom doit être dans un interpolate de premier niveau (contrainte
-                // des expressions camera MapLibre), le case porte sur les sorties.
-                'line-width': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    11,
-                    ['case', ['==', ['get', 'selected'], true], 9, 5],
-                    15,
-                    ['case', ['==', ['get', 'selected'], true], 16, 8],
-                ],
-                'line-opacity': ['case', ['==', ['get', 'selected'], true], 0.9, 0.35],
-            },
-        });
-    }
-
-    if (!map.getLayer('routes-line')) {
-        map.addLayer({
-            id: 'routes-line',
-            type: 'line',
-            source: 'routes',
-            layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: {
-                'line-color': ['get', 'color'],
-                'line-width': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    11,
-                    ['case', ['==', ['get', 'selected'], true], 6, 3],
-                    15,
-                    ['case', ['==', ['get', 'selected'], true], 11, 5],
-                ],
-                'line-opacity': ['case', ['==', ['get', 'selected'], true], 0.98, 0.45],
-            },
-        });
-    }
-}
-
 function installLegLayers(map: MaplibreMap): void {
     if (!map.getLayer('legs-line')) {
         map.addLayer({
@@ -220,7 +171,6 @@ export function installMapLayers(
     map: MaplibreMap,
     popupRef: MutableRefObject<maplibregl.Popup | null>,
 ): void {
-    installRouteLayers(map);
     installLegLayers(map);
     installPositionLayers(map);
     installTransitLayer(map, popupRef);

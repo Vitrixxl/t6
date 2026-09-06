@@ -20,10 +20,11 @@ function option(id: string, distanceKm: number, carbonGrams: number): RouteOptio
         carbonGrams,
         carbonSavedGrams: null,
         carbonReference: null,
-        reliabilityScore: 100,
-        score: 100,
+    departureAt: '2026-09-06T08:00:00Z', arrivalAt: '2026-09-06T08:01:00Z',
+
+
         accessible: true,
-        warnings: [],
+
         instructions: [],
     };
 }
@@ -45,10 +46,8 @@ describe('référence carbone voiture', () => {
 
     it('applique exactement la même référence a des options de distances diffèrentes', () => {
         const reference = createCarbonReference({ distanceMeters: 3000, durationSeconds: 600 });
-        const [shortOption, longOption] = applyCarbonReference(
-            [option('court', 2, 100), option('long', 5, 500)],
-            reference,
-        );
+        const shortOption = applyCarbonReference(option('court', 2, 100), reference);
+        const longOption = applyCarbonReference(option('long', 5, 500), reference);
 
         expect(shortOption.carbonReference).toBe(reference);
         expect(longOption.carbonReference).toBe(reference);
@@ -59,7 +58,7 @@ describe('référence carbone voiture', () => {
 
 
     it("n'invente aucune économie quand la mesure voiture est indisponible", () => {
-        const [result] = applyCarbonReference([option('marche', 5, 0)], null);
+        const result = applyCarbonReference(option('marche', 5, 0), null);
 
         expect(result.carbonReference).toBeNull();
         expect(result.carbonSavedGrams).toBeNull();

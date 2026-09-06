@@ -1,26 +1,37 @@
-// Le serveur calcule toutes les options avec le réseau complet ; le navigateur
-// ne reçoit que leurs mesures et tracés, indépendamment de la zone affichée.
+// Le serveur calcule le trajet le plus rapide sur le réseau complet ; le
+// navigateur ne reçoit que ses mesures et son tracé, indépendamment de la zone affichée.
 import { queryOptions, skipToken } from '@tanstack/react-query';
-import type { GeoPoint, MobilityProfile, TransportContext } from '../types';
+import type { AvailableMode, GeoPoint, TransportContext } from '../types';
 import { api, treatyRequest } from '../lib/api/client';
+import type { SearchFilters } from '../lib/planner/search-filters';
 import { queryKeys } from './keys';
-import { ALL_TRANSIT_TYPES, type TransitType } from '../lib/planner/transit-filter';
 
 export interface RouteSearch {
     origin: GeoPoint;
     destination: GeoPoint;
-    profile: MobilityProfile;
-    transitTypes?: readonly TransitType[];
+    filters: SearchFilters;
+    accessibilityNeed: boolean;
 }
 
-export function measuredRoutesQuery(search: RouteSearch | null, network: TransportContext) {
+/** Sans flux GBFS, aucun engin partagé n'est demandé : le moteur ne propose que ce qui se prend vraiment. */
+function requestedModes(filters: SearchFilters, network: TransportContext): AvailableMode[] {
+    return filters.modes.filter(mode => mode === 'transit' ? network.transitRoutingAvailable : network.sharedMobility !== null);
+}
+
+export function fastestRouteQuery(search: RouteSearch | null, network: TransportContext) {
+    const body = search ? {
+        origin: search.origin,
+        destination: search.destination,
+        modes: requestedModes(search.filters, network),
+        transitTypes: search.filters.transitTypes,
+        accessibilityNeed: search.accessibilityNeed,
+    } : null;
     return queryOptions({
-        queryKey: [...(search ? queryKeys.measuredRoutes(search.origin, search.destination, search.profile, search.transitTypes) : ['measured-routes', null]), network.version, Boolean(network.sharedMobility)],
-        queryFn: search ? ({ signal }) => treatyRequest(api.transport.journeys.post({
-            ...search,
-            transitTypes: [...(search.transitTypes ?? ALL_TRANSIT_TYPES)],
-            sharedMobilityAvailable: network.sharedMobility !== null,
-        }, { fetch: { signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) } })) : skipToken,
+        queryKey: body ? [...queryKeys.fastestRoute(body), network.version] : ['fastest-route', null],
+        queryFn: body ? ({ signal }) => treatyRequest(api.transport.journeys.post(
+            body,
+            { fetch: { signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) } },
+        )) : skipToken,
         staleTime: 5 * 60_000,
     });
 }

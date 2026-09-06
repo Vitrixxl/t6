@@ -5,20 +5,18 @@ import type { GeoPoint, RouteOption, TransportContext } from '../../types';
 import { CarbonPanel } from '../carbon/CarbonPanel';
 import { ShellSidebar } from '../layout/Shell';
 import { MobileActionRail } from '../planner/MobileQuickPanels';
-import { TransitTypeFilters } from '../planner/TransitTypeFilters';
-import { MobileTripPanel } from '../planner/MobilePanels';
-import { DesktopRouteStrip, MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
+import { SearchFilters } from '../planner/SearchFilters';
+import { MobileTripPanel, NO_ROUTE_MESSAGE } from '../planner/MobilePanels';
+import { MapStatusBar, RouteDetailPanel } from '../planner/RoutePanels';
 import { CommandSearchBar, MobileSearchShell } from '../planner/SearchPanels';
 import { MergeFillet, UrbanMap, type LayerState } from './shared';
-import type { RoutingStatus } from './hooks/useRouteOptions';
+import type { RoutingStatus } from './hooks/useFastestRoute';
 import type { PickedPoint } from '../map/longPress';
 
 export interface TripMapState {
     origin: GeoPoint | null;
     destination: GeoPoint | null;
-    routes: RouteOption[];
-    selectedRoute: RouteOption | null;
-    transitSelected: boolean;
+    route: RouteOption | null;
     network: TransportContext;
     layers: LayerState;
     navigationPoint: GeoPoint | null;
@@ -31,8 +29,7 @@ function TripMap({ state }: { state: TripMapState }) {
         <UrbanMap
             origin={state.origin}
             destination={state.destination}
-            routes={state.routes}
-            selectedRoute={state.selectedRoute}
+            route={state.route}
             network={state.network}
             layers={state.layers}
             navigationPoint={state.navigationPoint}
@@ -63,6 +60,7 @@ function CoverageWarning({ message }: { message: string | null }) {
 interface DesktopMobilityLayoutProps {
     map: TripMapState;
     leftRailOpen: boolean;
+    routeRequested: boolean;
     routingStatus: RoutingStatus;
     geoStatus: string;
     saveError: string | null;
@@ -76,14 +74,13 @@ interface DesktopMobilityLayoutProps {
     onCurrentPositionRequest: () => Promise<GeoPoint | null>;
     onOriginSelect: (point: GeoPoint) => void;
     onDestinationSelect: (point: GeoPoint) => void;
-    onSelectRoute: (id: string) => void;
     onSaveRoute: (route: RouteOption) => void;
     onPlanRoute: (route: RouteOption) => void;
 }
 
 export function DesktopMobilityLayout(props: DesktopMobilityLayoutProps) {
     const { map } = props;
-    const selectedRoute = map.selectedRoute;
+    const route = map.route;
 
     return (
         <div
@@ -129,11 +126,10 @@ export function DesktopMobilityLayout(props: DesktopMobilityLayoutProps) {
                             <MergeFillet corner="br" className="bottom-0 left-0 translate-y-[calc(100%_-_1px)]" />
                         </div>
 
-                        <div className="pointer-events-auto absolute bottom-0 left-0 z-30 max-w-[calc(100%-0.5rem)]" data-tour="routes">
+                        <div className="pointer-events-auto absolute bottom-0 left-0 z-30 max-w-[calc(100%-0.5rem)]">
                             <div className="relative">
-                                <div className="flex max-w-[calc(100vw-780px)] items-center gap-2 overflow-hidden rounded-tr-2xl bg-[var(--shell)] p-1.5 shadow-[0_0_20px_-2px_rgba(0,0,0,0.28)]">
+                                <div className="flex items-center gap-2 overflow-hidden rounded-tr-2xl bg-[var(--shell)] p-1.5 shadow-[0_0_20px_-2px_rgba(0,0,0,0.28)]">
                                     <MapStatusBar routingStatus={props.routingStatus} geoStatus={props.geoStatus} />
-                                    <DesktopRouteStrip routes={map.routes} selectedRoute={map.selectedRoute} onSelect={props.onSelectRoute} />
                                 </div>
                                 <MergeFillet corner="tr" size={18} className="bottom-0 right-0 translate-x-[calc(100%_-_1px)]" />
                                 <MergeFillet corner="tr" size={18} className="left-0 top-0 translate-y-[calc(-100%_+_1px)]" />
@@ -146,14 +142,14 @@ export function DesktopMobilityLayout(props: DesktopMobilityLayoutProps) {
             <aside className="relative z-20 flex min-h-0 flex-col gap-2 overflow-y-auto bg-[var(--shell)] p-3 pl-0" data-tour="route-detail">
                 <SaveErrorBanner message={props.saveError} />
                 <CoverageWarning message={props.coverageWarning} />
-                {map.transitSelected ? <TransitTypeFilters /> : null}
-                {map.transitSelected && !selectedRoute && props.routingStatus !== 'pending' ? <p role="status" className="p-3 text-sm">Aucun trajet en transport en commun avec ces types. Modifie les types autorisés ou choisis une autre option.</p> : null}
-                {selectedRoute ? (
+                {props.routeRequested ? <SearchFilters /> : null}
+                {props.routingStatus === 'unavailable' ? <p role="status" className="p-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
+                {route ? (
                     <RouteDetailPanel
-                        routeOption={selectedRoute}
-                        saved={props.savedRouteId === selectedRoute.id}
-                        onSave={() => props.onSaveRoute(selectedRoute)}
-                        onPlan={() => props.onPlanRoute(selectedRoute)}
+                        routeOption={route}
+                        saved={props.savedRouteId === route.id}
+                        onSave={() => props.onSaveRoute(route)}
+                        onPlan={() => props.onPlanRoute(route)}
                     />
                 ) : null}
                 <div data-tour="carbon">
@@ -179,7 +175,6 @@ interface MobileMobilityLayoutProps {
     onOriginSelect: (point: GeoPoint) => void;
     onDestinationSelect: (point: GeoPoint) => void;
     onSwap: () => void;
-    onSelectRoute: (id: string) => void;
     onSaveRoute: (route: RouteOption) => void;
     onPlanRoute: (route: RouteOption) => void;
     onCloseRoute: () => void;
@@ -228,13 +223,10 @@ export function MobileMobilityLayout(props: MobileMobilityLayoutProps) {
             {props.routeRequested ? (
                 <MobileTripPanel
                     destination={map.destination}
-                    routes={map.routes}
-                    selectedRoute={map.selectedRoute}
-                    transitSelected={map.transitSelected}
+                    route={map.route}
                     savedRouteId={props.savedRouteId}
                     routingStatus={props.routingStatus}
                     coverageWarning={props.coverageWarning}
-                    onSelectRoute={props.onSelectRoute}
                     onSaveRoute={props.onSaveRoute}
                     onPlanRoute={props.onPlanRoute}
                     onOpenProfile={props.onOpenProfile}

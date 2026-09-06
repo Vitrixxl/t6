@@ -1,4 +1,4 @@
-// Module profil : préférences de mobilité, objectifs carbone et compte.
+// Module profil : moyens de transport, besoin PMR, objectifs carbone et compte.
 import { AccountExport } from './AccountExport';
 import { CarbonReference } from '../carbon/CarbonReference';
 import { useState } from 'react';
@@ -10,15 +10,17 @@ import { ConfirmDialog } from '../ui/confirm-dialog';
 import { Button } from '../ui/button';
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../ui/drawer';
 import { Input } from '../ui/input';
-import type { MobilityMode, MobilityProfile } from '../../types';
+import type { AvailableMode, MobilityProfile } from '../../types';
 import {
+    AVAILABLE_MODES,
     DEFAULT_MONTHLY_SAVED_GOAL_GRAMS,
     DEFAULT_WEEKLY_SAVED_GOAL_GRAMS,
     DEFAULT_WEEKLY_TRIPS_GOAL,
     mobilityProfile,
 } from '../../contracts';
+import { AVAILABLE_MODE_LABELS } from '../../lib/planner';
 import { useDeleteAccount, useLogout, useUpdateProfile, useUser } from '../../queries';
-import { MODE_ICON, MODE_OPTIONS } from '../app/shared';
+import { MODE_ICON } from '../app/shared';
 
 function FieldError({ message }: { message?: string }) {
     return message ? <p className="text-xs font-normal text-destructive">{message}</p> : null;
@@ -69,7 +71,7 @@ export function ProfileDrawer({
                                 </span>
                             </div>
                             <p className="text-xs leading-5 text-muted-foreground">
-                                Préférences utilisées pour calculer les itinéraires, filtrer les options PMR et suivre tes objectifs carbone.
+                                Ce dont tu disposes et ton besoin PMR déterminent le trajet calculé ; tes objectifs carbone servent au suivi.
                             </p>
                             <Button type="button" variant="outline" className="w-full justify-center" onClick={onStartTutorial}>
                                 <CircleHelp className="size-4" aria-hidden="true" />
@@ -139,18 +141,20 @@ export function ProfilePanel() {
         },
     });
     const { errors } = form.formState;
-    const preferredModes = form.watch('preferredModes');
+    const availableModes = form.watch('availableModes');
     const [saved, setSaved] = useState(false);
 
-    const toggleMode = (mode: MobilityMode) => {
-        const next = preferredModes.includes(mode) ? preferredModes.filter((item) => item !== mode) : [...preferredModes, mode];
-        form.setValue('preferredModes', next, { shouldValidate: form.formState.isSubmitted, shouldDirty: true });
+    const toggleMode = (mode: AvailableMode) => {
+        const next = AVAILABLE_MODES.filter((item) => item === mode ? !availableModes.includes(item) : availableModes.includes(item));
+        form.setValue('availableModes', next, { shouldValidate: form.formState.isSubmitted, shouldDirty: true });
     };
 
     const onSubmit = form.handleSubmit((profile) => {
-        updateProfile(profile);
-        setSaved(true);
-        window.setTimeout(() => setSaved(false), 1600);
+        setSaved(false);
+        updateProfile.mutate(profile, { onSuccess: () => {
+            setSaved(true);
+            window.setTimeout(() => setSaved(false), 1600);
+        } });
     });
 
     return (
@@ -171,49 +175,32 @@ export function ProfilePanel() {
                     <FieldError message={errors.displayName?.message} />
                 </label>
                 <fieldset className="grid gap-2">
-                    <legend className="text-sm font-medium">Modes préférés</legend>
-                    <div className="grid grid-cols-2 gap-2">
-                        {MODE_OPTIONS.map((option) => {
-                            const Icon = MODE_ICON[option.mode];
-                            const active = preferredModes.includes(option.mode);
+                    <legend className="text-sm font-medium">Ce dont je dispose</legend>
+                    <div className="grid grid-cols-3 gap-2">
+                        {AVAILABLE_MODES.map((mode) => {
+                            const Icon = MODE_ICON[mode];
+                            const active = availableModes.includes(mode);
                             return (
                                 <button
-                                    key={option.mode}
+                                    key={mode}
                                     type="button"
                                     aria-pressed={active}
                                     className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${active ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground'
                                         }`}
-                                    onClick={() => toggleMode(option.mode)}
+                                    onClick={() => toggleMode(mode)}
                                 >
                                     <Icon className="size-4" aria-hidden="true" />
-                                    {option.label}
+                                    {AVAILABLE_MODE_LABELS[mode]}
                                 </button>
                             );
                         })}
                     </div>
-                    <FieldError message={errors.preferredModes?.message} />
-                </fieldset>
-                <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-route-preselection">
-                    Option retenue par défaut
-                    <select
-                        id="profile-route-preselection"
-                        // Hauteur en pixels : la racine du document est à 14 px, une valeur
-                        // en rem raterait la cible tactile de 44 px.
-                        className="h-[44px] rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground"
-                        {...form.register('routePreselection')}
-                    >
-                        <option value="fastest">Le plus rapide</option>
-                        {MODE_OPTIONS.map((option) => (
-                            <option key={option.mode} value={option.mode}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
                     <span className="text-xs font-normal text-muted-foreground">
-                        Toutes les options restent proposées : ce réglage ne décide que de celle qui s&apos;ouvre en premier. Si le
-                        mode choisi n&apos;existe pas sur un trajet, la plus rapide est retenue.
+                        Chaque recherche propose le trajet le plus rapide avec ces moyens ; la marche est toujours possible.
+                        Le filtre de la recherche permet d&apos;y déroger pour un trajet.
                     </span>
-                </label>
+                    <FieldError message={errors.availableModes?.message} />
+                </fieldset>
                 <label className="grid gap-1.5 text-sm font-medium" htmlFor="profile-carbon-goal">
                     Maximum carbone hebdomadaire (gCO₂e)
                     <Input
@@ -267,7 +254,7 @@ export function ProfilePanel() {
                     <input type="checkbox" className="size-4 accent-primary" {...form.register('accessibilityNeed')} />
                     Priorité PMR
                 </label>
-                <Button type="submit" size="sm">
+                <Button type="submit" size="sm" disabled={updateProfile.isPending}>
                     {saved ? <Check className="size-4" aria-hidden="true" /> : null}
                     Enregistrer
                 </Button>

@@ -107,7 +107,7 @@ export function TripGoalsCard() {
     const draft = form.watch();
 
     const commit = form.handleSubmit((values) => {
-        updateProfile({ ...profile, ...values });
+        updateProfile.mutate({ ...profile, ...values });
         setEditing(false);
     });
 

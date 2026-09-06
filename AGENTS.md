@@ -144,10 +144,10 @@ assumé. La génération du dossier PDF est gelée par la règle ci-dessus.
 
 Le calcul d'itinéraires est délégué à MOTIS, appelé directement depuis l'API
 (`MOTIS_URL`, par défaut le service Compose `motis:8080`, aucun port publié).
-MOTIS calcule sur un graphe unique — voirie OSM, horaires GTFS, flux GBFS — et
-rend des trajets non dominés ; le serveur les traduit en options par famille
-(`server/src/services/motis/`), les classe et y applique la référence voiture
-mesurée par `one-to-many`. Ce moteur local est la seule source de routage :
+MOTIS calcule sur un graphe unique — voirie OSM, flux GBFS, horaires GTFS optionnels — et
+rend des trajets non dominés ; le serveur retient la première arrivée parmi les trajets autorisés, traduit ce seul
+trajet (`server/src/services/motis/`) et y applique la référence voiture mesurée
+par `one-to-many`. Un seul appel plan autorise tous les moyens demandés. Ce moteur local est la seule source de routage :
 aucun défaut public, aucune bascule externe. En cas de panne, l’API répond 503.
 La voiture reste une référence, jamais une option.
 
@@ -169,7 +169,7 @@ Le schéma vit dans `server/src/db/schema.ts`. Toute modification passe par
 committe avec le schéma : elle est appliquée au démarrage, y compris sur la
 base `:memory:` des tests.
 
-**Client** (`src/`) : `lib/planner/` (score, présélection, facteurs carbone, outils géographiques),
+**Client** (`src/`) : `lib/planner/` (filtres de recherche, facteurs carbone, outils géographiques),
 `lib/transport/` (`geocoding/`, `feeds/`, cellules cartographiques), `lib/api/` (client HTTP,
 authentification, une commande par ressource du compte), `queries/` (les ressources
 servies par l'API dans le cache React Query : une ressource par fichier, sa
@@ -195,16 +195,18 @@ les types ni les bornes.
 
 ## Règles de fond
 
-**Toutes les options calculables sont proposées, sur mobile comme sur bureau.**
-Ne jamais tronquer leur liste. Les options sont triées par durée réelle croissante. Les préférences influencent
-le score et la présélection, pas l’ordre ni la visibilité des options. Il n’y a plus de plafond de marche
-dans le profil ni de pénalité associée. Les contraintes de disponibilité,
-de desserte et de mesure réelle restent celles du moteur. Les durées sont
-formatées par `src/lib/duration.ts` : `63 min` se lit `1h03`.
-Le panneau mobile prend la hauteur de son contenu, limitée à 50 % de la carte
-(45 % en paysage bas). Toutes les options défilent horizontalement et les détails
-sont repliés à l’ouverture. Son contenu long défile ; l’en-tête et la fermeture restent accessibles.
-Aucune poignée ni commande ne règle sa taille.
+**Une recherche propose un seul trajet : celui qui arrive le premier.** La durée
+compte l’attente depuis l’heure demandée, même avant le départ effectif. Aucun
+score, famille ou mécanisme de présélection. L’accueil demande les moyens
+utilisables (Vélo’v, Dott, transport public) et le besoin PMR avant la première
+recherche ; `onboardedAt` est persisté après validation, et un refus permet de
+réessayer. Les anciens profils sont migrés sans perdre leurs objectifs.
+Les filtres temporaires partent de `availableModes`. PMR utilise le profil fauteuil,
+exclut les engins partagés et exige l’accessibilité publiée des segments publics.
+Les durées sont formatées par `src/lib/duration.ts` : `63 min` se lit `1h03`.
+Le panneau mobile suit son contenu, limité à 50 % de la carte (45 % en paysage
+bas). Les détails sont repliés à l’ouverture ; le contenu long défile et
+l’en-tête avec la fermeture reste accessible. Aucun contrôle de taille.
 Le cadrage de carte utilise les dimensions du canvas : les marges doivent
 laisser une zone de dessin positive, même en paysage ou après redimensionnement.
 
@@ -268,7 +270,7 @@ courantes, et sans `shapes.txt` le tracé d'une ligne relie ses arrêts en ligne
 droite. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
-Les horaires viennent de l'archive GTFS chargée dans MOTIS (`infra/motis-prepare.sh`).
+Après activation future, les horaires viendront de l’archive GTFS chargée dans MOTIS (`infra/motis-prepare.sh`).
 L'horaire de recette de `scripts/fixtures/` est dérivé du réseau livré et ne sert
 qu'à `bun run ci` : ne jamais le présenter ni le charger comme horaire réel.
 
@@ -283,7 +285,7 @@ ou presser Échap ne déclenche aucune écriture. Utiliser le dialogue existant.
 Le maximum carbone hebdomadaire porte sur les émissions des trajets suivis,
 jamais sur les économies comparées à la voiture. Afficher le reste ou le
 dépassement réel ; seul le remplissage graphique se borne à 100 %. Ce maximum
-ne filtre pas les itinéraires et ne change pas leur score. Tout repère national
+ne filtre pas les itinéraires et ne change pas le choix de la première arrivée. Tout repère national
 a une source, un millésime et un périmètre explicites.
 
 Les objectifs d'économie de CO2 hebdomadaire et mensuel sont deux valeurs de
@@ -294,8 +296,7 @@ est comparée à son propre objectif persisté par l'API.
 `MobilityMode`, les préférences ni la liste des itinéraires : seul
 le client MOTIS connaît `CAR`. Un appel `one-to-many` en voiture mesure sa
 distance entre les extrémités de la recherche, une seule fois et en parallèle
-du reste. Cette même référence est appliquée à toutes les options après leurs
-mesures réelles. Le facteur est versionné dans `src/lib/planner/emissions.ts` ;
+du reste. Cette référence est appliquée au trajet retenu après ses mesures réelles. Le facteur est versionné dans `src/lib/planner/emissions.ts` ;
 une économie négative reste négative, et une référence indisponible reste
 `null` jusque dans les contrats et la base. Aucun zéro de repli n'est inventé.
 
@@ -317,7 +318,7 @@ navigateur**, pas au compilateur. `bun run check` ne prouve pas qu'une carte
 s'affiche ni qu'un bouton fait ce qu'il annonce.
 
 Le scénario `bun run e2e` couvre le parcours critique : connexion, GPS, calcul
-d'options, planification, comptabilisation automatique après la date prévue. Le relancer après toute
+du trajet le plus rapide, planification, comptabilisation automatique après la date prévue. Le relancer après toute
 modification qui touche ce chemin.
 
 ## Git
@@ -343,8 +344,7 @@ ou fait avec son bilan daté au départ prévu si elle est passée. La commande 
 
 **Bus TCL.** Les bus réguliers vérifiés sont intégrés par `scripts/fetch_tcl_bus.py`.
 Conserver les quais physiques et les tracés par sens ; `stopSequence` interdit le
-contresens. Pas de transfert inventé entre quais distincts. La vitesse 15 km/h et
-l’intervalle 15 min sont des hypothèses affichées, sans horaires réels. La référence
+contresens. Pas de transfert inventé entre quais distincts. Les anciens calculs par vitesse moyenne et intervalle constant sont retirés. Sans GTFS courant, les bus restent consultables sur la carte et ne sont pas proposés comme trajets. La référence
 carbone bus thermique ADEME (122 gCO₂e/passager-km) reste une approximation explicite
 lorsque la motorisation est inconnue. PMR exige le quai et la ligne accessibles.
 
@@ -354,10 +354,10 @@ Le fichier contient les données actuelles du compte et les lieux des trajets,
 sans mot de passe ni jeton de session. Un échec reste visible dans le profil
 et permet de réessayer. Vérifier avec `bun scripts/e2e-account-export.mjs`.
 
-**Types publics et documentation.** Le choix Bus/Métro/Tramway/Funiculaire apparaît
-uniquement si la famille sélectionnée contient transit, même si le filtre ne donne
-aucun résultat. Choisir une option sans transit remet les types à Tous. Les types
-choisis sont les modes de transport demandés à MOTIS. `/api/doc` et `/api/doc/` ont une
+**Types publics et documentation.** Bus/Métro/Tramway/Funiculaire apparaît dès
+que les filtres autorisent transit, même sans résultat. Les types sélectionnés
+sont transmis à MOTIS. Revenir au profil réinitialise les filtres temporaires.
+`/api/doc` et `/api/doc/` ont une
 CSP propre à Scalar ; `/api/doc/json` conserve la politique JSON stricte.
 
 **Avant chaque push.** Exécuter `bun run ci` sur le code qui sera envoyé et
@@ -382,14 +382,19 @@ après le mouvement, avec cache React Query par cellule et version. Sous le zoom
 11, demander de zoomer sans télécharger les quais. Ne pas confondre le nombre
 total d’arrêts du contexte et le sous-ensemble affiché. `nearby-stops` conserve
 le vrai compte du rayon et ses quatre résultats les plus proches.
-`POST /api/transport/journeys` calcule toutes les options côté serveur sur le
+`POST /api/transport/journeys` calcule le trajet le plus rapide côté serveur sur le
 réseau complet : le cadrage ne doit jamais limiter une destination ou une
 correspondance. Les anciennes routes `/api/route` et `/api/route-matrix` sont
-retirées ; l’appel à MOTIS reste interne. Les réponses d’options
-sont validées dans `src/contracts/planning.ts`, les flux et ressources de carte
+retirées ; l’appel à MOTIS reste interne. La réponse objet `routeOption`
+est validée dans `src/contracts/planning.ts`, les flux et ressources de carte
 dans `src/contracts/transport.ts`. GBFS est mutualisé côté serveur
 pendant 60 s ; le client relit le contexte chaque minute. Une panne après
 expiration n’autorise aucune réutilisation d’un ancien flux GBFS.
 Rejouer `bun run e2e:transport`, la planification et le hors-ligne après une
 modification de ce parcours ; annoncer les octets mesurés, pas une économie
 d’énergie supposée.
+
+
+## Livraison sans horaires TCL
+
+Les horaires TCL sont reportés à une prochaine itération. Par défaut, `MOTIS_TRANSIT_ENABLED=false` : marche et véhicules partagés uniquement, arrêts TCL consultables et limite annoncée dans l’interface. Aucun accès GTFS n’est requis. Le serveur publie `transitRoutingAvailable=false` et force `transitModes=` vers MOTIS. Les horaires de recette servent uniquement à la CI. Une activation future exige une archive actuelle et `MOTIS_TRANSIT_ENABLED=true` à la préparation et au lancement.

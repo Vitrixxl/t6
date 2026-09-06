@@ -39,7 +39,7 @@ export function CarbonPanel() {
                         ))}
                     </ul>
                 ) : (
-                    <p className="text-sm text-muted-foreground">Marque un trajet planifié comme fait pour alimenter le suivi.</p>
+                    <p className="text-sm text-muted-foreground">Les trajets planifiés alimentent le suivi automatiquement après leur départ prévu, sauf annulation.</p>
                 )}
                 <Button type="button" variant="outline" size="sm" onClick={() => setConfirmClear(true)} disabled={records.length === 0}>
                     Effacer l'historique

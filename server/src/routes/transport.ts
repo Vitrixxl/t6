@@ -3,12 +3,12 @@ import type { AppContext } from '../plugins/context.ts';
 import type { ServerConfig } from '../config/index.ts';
 import { transportContext, stopCellQuery, stopCollection, nearbyStopsQuery, nearbyStops } from '../../../src/contracts/transport.ts';
 import { errorResponse } from '../../../src/contracts/primitives.ts';
-import { routeSearch, routeOptions } from '../../../src/contracts/planning.ts';
+import { routeSearch, routeOption } from '../../../src/contracts/planning.ts';
 import { createTransportService } from '../services/transport/index.ts';
-import { searchRoutes } from '../services/planning.ts';
+import { searchFastestRoute } from '../services/planning.ts';
 
 export function transportRoutes(ctx: AppContext, config: ServerConfig) {
-    const transport = createTransportService(ctx.decorator.repositories.transport);
+    const transport = createTransportService(ctx.decorator.repositories.transport, config.motisTransitEnabled);
     return new Elysia({ prefix: '/transport', tags: ['Transport'] })
         .get('/context', () => transport.context(), {
             response: transportContext,
@@ -26,14 +26,15 @@ export function transportRoutes(ctx: AppContext, config: ServerConfig) {
             detail: { summary: 'Nombre réel d’arrêts dans un rayon et quatre quais les plus proches' },
         })
         .post('/journeys', async ({ body, request, set }) => {
-            const options = await searchRoutes(body, config.motisUrl, request.signal);
-            if (options.length === 0) {
+            const context = await transport.context();
+            const route = await searchFastestRoute(body, config.motisUrl, { sharedMobility: context.sharedMobility !== null, transit: context.transitRoutingAvailable }, request.signal);
+            if (!route) {
                 set.status = 503;
-                return { error: 'Aucun itinéraire : le moteur d’itinéraires est indisponible ou les points sont inaccessibles.' };
+                return { error: 'Aucun trajet : le moteur d’itinéraires est indisponible ou les points sont inaccessibles.' };
             }
-            return options;
+            return route;
         }, {
-            body: routeSearch, response: { 200: routeOptions, 503: errorResponse },
-            detail: { summary: 'Options multimodales calculées par MOTIS sur la voirie, les horaires GTFS et les flux GBFS' },
+            body: routeSearch, response: { 200: routeOption, 503: errorResponse },
+            detail: { summary: 'Le trajet le plus rapide avec les moyens choisis, calculé par MOTIS sur la voirie, les horaires GTFS et les flux GBFS' },
         });
 }

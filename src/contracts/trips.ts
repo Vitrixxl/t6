@@ -112,7 +112,6 @@ export const savedRoute = z.object({
     routeId: identifier,
     routeTitle: label,
     ...journeyShape,
-    score: z.number().min(-1000).max(1000),
     createdAt: isoDate,
 });
 export const savedRouteInput = savedRoute.omit({ id: true, userId: true });

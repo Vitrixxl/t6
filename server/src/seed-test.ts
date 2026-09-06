@@ -23,7 +23,8 @@ export async function seedTestAccount(db: Db, password: string, now = new Date()
         const existing = repositories.users.findByEmail(TEST_EMAIL);
         if (existing) repositories.users.delete(existing.id);
         const userId = crypto.randomUUID();
-        const profile = { ...DEFAULT_PROFILE, displayName: 'Test · données fictives', carbonGoalGramsPerWeek: 2500 };
+        // Un compte de recette a déjà répondu aux questions d'accueil : les scénarios partent de la carte.
+        const profile = { ...DEFAULT_PROFILE, displayName: 'Test · données fictives', carbonGoalGramsPerWeek: 2500, onboardedAt: createdAt };
         repositories.users.insert({
             id: userId, email: TEST_EMAIL, displayName: profile.displayName, passwordHash, createdAt, profile,
             termsAcceptedAt: createdAt, termsVersion: TERMS_VERSION,
@@ -75,7 +76,7 @@ export async function seedTestAccount(db: Db, password: string, now = new Date()
         repositories.recurringTrips.upsert({ ...daily, id: crypto.randomUUID(), label: 'Test · routine en pause',
             returnTime: null, periods: [{ from: dateAt(-35, '00:00'), to: dateAt(-7, '00:00') }], cancelledPassages: [] });
         repositories.savedRoutes.upsert(savedRoute.parse({ ...journey, id: crypto.randomUUID(),
-            routeId: 'test-velo', routeTitle: 'Test · vélo enregistré', score: 75 }));
+            routeId: 'bike', routeTitle: 'Test · vélo enregistré' }));
         return userId;
     });
 }

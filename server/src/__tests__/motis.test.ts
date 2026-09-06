@@ -26,7 +26,7 @@ afterEach(() => {
 
 describe('planUrl', () => {
     it('demande à pied les modes de transport retenus, en profil fauteuil si besoin', () => {
-        const url = new URL(planUrl(MOTIS, { ...base, access: 'WALK', wheelchair: true }));
+        const url = new URL(planUrl(MOTIS, { ...base, rentalFormFactors: [], wheelchair: true }));
         expect(url.pathname).toBe('/api/v6/plan');
         expect(url.searchParams.get('fromPlace')).toBe('45.7578,4.832');
         expect(url.searchParams.get('toPlace')).toBe('45.7606,4.8594');
@@ -41,20 +41,20 @@ describe('planUrl', () => {
     });
 
     it('demande un engin partagé en rabattement et en trajet direct', () => {
-        const url = new URL(planUrl(MOTIS, { ...base, access: 'SCOOTER_STANDING' }));
-        expect(url.searchParams.get('preTransitModes')).toBe('RENTAL');
+        const url = new URL(planUrl(MOTIS, { ...base, rentalFormFactors: ['SCOOTER_STANDING'] }));
+        expect(url.searchParams.get('preTransitModes')).toBe('WALK,RENTAL');
         expect(url.searchParams.get('preTransitRentalFormFactors')).toBe('SCOOTER_STANDING');
-        expect(url.searchParams.get('directModes')).toBe('RENTAL');
+        expect(url.searchParams.get('directModes')).toBe('WALK,RENTAL');
         expect(url.searchParams.get('directRentalFormFactors')).toBe('SCOOTER_STANDING');
-        expect(url.searchParams.get('postTransitModes')).toBe('WALK');
-        // Un engin partagé au-delà d'une heure et demie n'est plus une option.
-        expect(url.searchParams.get('maxDirectTime')).toBe('5400');
+        expect(url.searchParams.get('postTransitModes')).toBe('WALK,RENTAL');
+        // Les trajets directs ont la même borne que la marche.
+        expect(url.searchParams.get('maxDirectTime')).toBe('14400');
     });
 
     it('sans type de transport, ne garde que les trajets directs', () => {
-        const url = new URL(planUrl(MOTIS, { ...base, transitModes: [], access: 'WALK' }));
-        expect(url.searchParams.has('transitModes')).toBe(false);
-        expect(url.searchParams.get('maxTravelTime')).toBe('1');
+        const url = new URL(planUrl(MOTIS, { ...base, transitModes: [], rentalFormFactors: [] }));
+        expect(url.searchParams.get('transitModes')).toBe('');
+        expect(url.searchParams.has('maxTravelTime')).toBe(false);
     });
 });
 
@@ -62,7 +62,7 @@ describe('fetchPlan', () => {
     it('rend les trajets directs puis les itinéraires validés', async () => {
         const fixture = await Bun.file(new URL('./fixtures/motis-plan-rental.json', import.meta.url)).json();
         stub(() => Response.json(fixture));
-        const itineraries = await fetchPlan(MOTIS, { ...base, access: 'BICYCLE' });
+        const itineraries = await fetchPlan(MOTIS, { ...base, rentalFormFactors: ['BICYCLE'] });
         expect(itineraries).toHaveLength(4);
         expect(itineraries?.[0].legs.map((leg) => leg.mode)).toEqual(['WALK', 'RENTAL', 'WALK']);
         expect(itineraries?.[2].legs.some((leg) => leg.mode === 'TRAM')).toBe(true);
@@ -70,11 +70,11 @@ describe('fetchPlan', () => {
 
     it('ne fabrique aucun itinéraire quand le moteur tombe ou répond hors contrat', async () => {
         stub(() => { throw new Error('Panne MOTIS'); });
-        expect(await fetchPlan(MOTIS, { ...base, access: 'WALK' })).toBeNull();
+        expect(await fetchPlan(MOTIS, { ...base, rentalFormFactors: [] })).toBeNull();
         stub(() => Response.json({ itineraries: [{ legs: [] }] }));
-        expect(await fetchPlan(MOTIS, { ...base, access: 'WALK' })).toBeNull();
+        expect(await fetchPlan(MOTIS, { ...base, rentalFormFactors: [] })).toBeNull();
         stub(() => Response.json({}, { status: 503 }));
-        expect(await fetchPlan(MOTIS, { ...base, access: 'WALK' })).toBeNull();
+        expect(await fetchPlan(MOTIS, { ...base, rentalFormFactors: [] })).toBeNull();
     });
 });
 

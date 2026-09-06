@@ -1,5 +1,5 @@
-// Règles de gestion appliquées aux options produites.
-import type { RouteLeg, RouteOption, RoutePreselection } from '../../types';
+// Règles de gestion appliquées au trajet produit.
+import type { RouteLeg, RouteOption } from '../../types';
 
 /**
  * Segments à montrer à l'utilisateur. Un raccord piéton de quelques mètres
@@ -9,28 +9,4 @@ import type { RouteLeg, RouteOption, RoutePreselection } from '../../types';
  */
 export function visibleLegs(option: RouteOption): RouteLeg[] {
     return option.legs.filter((leg) => leg.transfer || leg.mode !== 'walk' || leg.distanceKm >= 0.05);
-}
-
-/**
- * Option retenue par défaut à l'ouverture des résultats.
- *
- * La liste est triée par durée croissante. La présélection peut retenir un mode
- * préféré sans modifier cet ordre ni masquer les autres options.
- */
-export function preselectRoute(routes: RouteOption[], preselection: RoutePreselection = 'fastest'): RouteOption | null {
-    if (routes.length === 0) {
-        return null;
-    }
-
-    const fastest = (candidates: RouteOption[]) =>
-        candidates.reduce((best, option) => (option.durationMinutes < best.durationMinutes ? option : best));
-
-    if (preselection === 'fastest') {
-        return fastest(routes);
-    }
-
-    // Un mode preselectionne qui n'existe pas sur ce trajet ne doit pas laisser
-    // l'utilisateur sans sélection : on retombe sur la plus rapide.
-    const matching = routes.filter((option) => option.modes.includes(preselection));
-    return matching.length > 0 ? fastest(matching) : fastest(routes);
 }

@@ -37,6 +37,7 @@ export const sharedMobilityFeed = z.object({
 export const transportContext = z.object({
     version: z.string(), stopCount: z.number().int().nonnegative(), agency: gtfsAgency,
     sharedMobility: sharedMobilityFeed.nullable(),
+    transitRoutingAvailable: z.boolean(),
     sources: z.object({ gtfs: z.enum(['tcl-odbl', 'local']) }),
 });
 

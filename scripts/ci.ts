@@ -32,6 +32,24 @@ async function run(command: string[], environment = env) {
     if (code !== 0) throw new Error(`${command.join(' ')} : code ${code}`);
 }
 
+/** Chaque scénario repart avec sa propre fenêtre de débit, comme une nouvelle session de recette. */
+async function runBrowser(command: string[], environment: typeof env & { MOTIS_URL: string }) {
+    const name = command.at(-1)?.replaceAll(/[^a-zA-Z0-9-]/g, '-') ?? 'browser';
+    server = Bun.spawn(['bun', 'server/src/index.ts'], {
+        env: { ...environment, NODE_ENV: 'production' },
+        stdout: Bun.file(resolve(logDir, `${name}-server.log`)),
+        stderr: Bun.file(resolve(logDir, `${name}-server-errors.log`)),
+    });
+    try {
+        await waitForHttp(`${base}/api/health`);
+        await run(command);
+    } finally {
+        server.kill();
+        await server.exited;
+        server = undefined;
+    }
+}
+
 async function waitForHttp(url: string) {
     for (let attempt = 0; attempt < 60; attempt++) {
         try {
@@ -50,29 +68,31 @@ async function waitForHttp(url: string) {
  * Lyon et l'horaire GTFS de recette dérivé du réseau livré. Les flux GBFS
  * restent les vrais.
  */
-async function startMotis() {
-    const name = `${prefix}-motis`;
-    await copyFile('scripts/fixtures/lyon-roads.osm.pbf', resolve(directory, 'lyon-roads.osm.pbf'));
-    await copyFile('scripts/fixtures/lyon-ci.gtfs.zip', resolve(directory, 'lyon-ci.gtfs.zip'));
-    await Bun.write(resolve(directory, 'config.yml'), [
+async function startMotis(withTransit: boolean) {
+    const name = `${prefix}-motis-${withTransit ? "transit" : "streets"}`;
+    const motorDirectory = resolve(directory, withTransit ? "transit" : "streets");
+    await mkdir(motorDirectory);
+    await copyFile('scripts/fixtures/lyon-roads.osm.pbf', resolve(motorDirectory, 'lyon-roads.osm.pbf'));
+    if (withTransit) await copyFile('scripts/fixtures/lyon-ci.gtfs.zip', resolve(motorDirectory, 'lyon-ci.gtfs.zip'));
+    await Bun.write(resolve(motorDirectory, 'config.yml'), [
         'server:', '  port: 8080',
         'osm: lyon-roads.osm.pbf',
-        'timetable:', '  first_day: TODAY', '  num_days: 2',
-        '  datasets:', '    tcl:', '      path: lyon-ci.gtfs.zip',
-        'street_routing: true', 'osr_footpath: true', 'geocoding: false', 'reverse_geocoding: false',
+        ...(withTransit ? ['timetable:', '  first_day: TODAY', '  num_days: 2',
+            '  datasets:', '    tcl:', '      path: lyon-ci.gtfs.zip', 'osr_footpath: true'] : []),
+        'street_routing: true', 'geocoding: false', 'reverse_geocoding: false',
         'gbfs:', '  feeds:',
         '    velov:', '      url: https://api.cyclocity.fr/contracts/lyon/gbfs/v3/gbfs.json',
         '    dott:', '      url: https://gbfs.api.ridedott.com/public/v2/lyon/gbfs.json',
         '',
     ].join('\n'));
-    await mkdir(resolve(directory, 'data'), { recursive: true });
+    await mkdir(resolve(motorDirectory, 'data'), { recursive: true });
     // Le conteneur tourne sous l'utilisateur courant : il lit le dossier temporaire
     // (né en 0700) et le graphe qu'il écrit reste supprimable à la fin.
     const user = `${process.getuid?.() ?? 0}:${process.getgid?.() ?? 0}`;
-    await run(['docker', 'run', '--rm', '-u', user, '-v', `${directory}:/data`, '-w', '/data', image,
+    await run(['docker', 'run', '--rm', '-u', user, '-v', `${motorDirectory}:/data`, '-w', '/data', image,
         '/motis', 'import', '-c', '/data/config.yml', '-d', '/data/data']);
     containers.push(name);
-    await run(['docker', 'run', '-d', '--name', name, '-u', user, '-v', `${directory}:/data`, '-w', '/data',
+    await run(['docker', 'run', '-d', '--name', name, '-u', user, '-v', `${motorDirectory}:/data`, '-w', '/data',
         '-p', '127.0.0.1::8080', image, '/motis', 'server', '-d', '/data/data']);
     const address = (await $`docker port ${name} 8080/tcp`.text()).trim();
     const url = `http://${address}`;
@@ -88,23 +108,25 @@ try {
     await run(['bun', 'run', 'check']);
     await run(['bun', 'run', 'metrics:build']);
     await run(['docker', 'pull', image]);
-    const routingEnv = { ...env, MOTIS_URL: await startMotis() };
+    const routingEnv = { ...env, MOTIS_TRANSIT_ENABLED: 'true', MOTIS_URL: await startMotis(true) };
     await run(['bun', 'run', 'seed:demo'], routingEnv);
-    server = Bun.spawn(['bun', 'server/src/index.ts'], {
-        env: { ...routingEnv, NODE_ENV: 'production' }, stdout: Bun.file(resolve(logDir, 'server.log')), stderr: Bun.file(resolve(logDir, 'server-errors.log')),
-    });
-    await waitForHttp(`${base}/api/health`);
-    await run(['bun', 'run', 'audit:a11y']);
-    await run(['bun', 'run', 'e2e']);
-    await run(['bun', 'run', 'e2e:transport']);
-    await run(['bun', 'scripts/e2e-mobile-transit.mjs']);
-    await run(['bun', 'scripts/e2e-api-doc.mjs']);
+    await runBrowser(['bun', 'run', 'audit:a11y'], routingEnv);
+    await runBrowser(['bun', 'scripts/e2e-onboarding.mjs'], routingEnv);
+    await runBrowser(['bun', 'run', 'e2e'], routingEnv);
+    await runBrowser(['bun', 'run', 'e2e:transport'], routingEnv);
+    await runBrowser(['bun', 'scripts/e2e-mobile-transit.mjs'], routingEnv);
+    await runBrowser(['bun', 'scripts/e2e-api-doc.mjs'], routingEnv);
+    await runBrowser(['bun', 'run', 'e2e:offline'], routingEnv);
+    await runBrowser(['bun', 'run', 'e2e:trips'], routingEnv);
+    await runBrowser(['bun', 'scripts/e2e-account-export.mjs'], routingEnv);
     // La performance reste indicative, comme dans le workflow précédent.
     try {
-        await run(['bun', 'run', 'bench:perf']);
+        await runBrowser(['bun', 'run', 'bench:perf'], routingEnv);
     } catch (error) {
         console.warn('Banc de performance non bloquant :', error);
     }
+    const streetsEnv = { ...env, MOTIS_TRANSIT_ENABLED: 'false', MOTIS_URL: await startMotis(false) };
+    await runBrowser(['bun', 'scripts/e2e-no-timetable.mjs'], streetsEnv);
     console.log('\nCI complète réussie.');
 } finally {
     server?.kill();

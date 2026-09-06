@@ -20,31 +20,25 @@ const DESKTOP_STEPS: TourStep[] = [
     {
         id: 'welcome',
         title: 'Bienvenue sur UrbanFlow',
-        body: "Ton planificateur de mobilité urbaine : compare les options d'itinéraire bas carbone, planifie tes déplacements, automatise tes routines et suis tes objectifs. Ce tour rapide te montre l'essentiel — quitte-le à tout moment avec « Passer » ou Échap.",
+        body: "Ton planificateur de mobilité urbaine : trouve le trajet le plus rapide avec ce dont tu disposes, mesure son empreinte carbone, planifie tes déplacements, automatise tes routines et suis tes objectifs. Ce tour rapide te montre l'essentiel — quitte-le à tout moment avec « Passer » ou Échap.",
     },
     {
         id: 'search',
         target: 'search',
         title: 'Recherche départ / arrivée',
-        body: "Saisis une adresse : les suggestions viennent du géocodeur national (BAN). « Ma position » utilise le GPS comme point de départ. Dès que les deux champs sont remplis, les options d'itinéraire se calculent automatiquement.",
+        body: "Saisis une adresse : les suggestions viennent du géocodeur national (BAN). « Ma position » utilise le GPS comme point de départ. Dès que les deux champs sont remplis, le trajet se calcule automatiquement.",
     },
     {
         id: 'map',
         target: 'map',
         title: 'La carte',
-        body: "Les itinéraires calculés s'affichent avec une couleur par option, l'option sélectionnée en trait épais. En fond : arrêts de transport public et stations de vélos/trottinettes en temps réel.",
-    },
-    {
-        id: 'routes',
-        target: 'routes',
-        title: "Comparer les options",
-        body: "Chaque option affiche sa durée, sa distance et son empreinte en gCO₂e. La comparaison utilise le même trajet voiture invisible pour toutes les options. Clique une option pour voir son détail.",
+        body: "Le trajet retenu s'affiche segment par segment, une couleur par moyen de transport. En fond : arrêts de transport public et stations de vélos/trottinettes en temps réel.",
     },
     {
         id: 'route-detail',
         target: 'route-detail',
-        title: 'Détail et actions',
-        body: "Le détail d'une option liste chaque étape (marche, vélo, transport...). Deux actions clés : « Planifier » pour dater le trajet ou en faire une routine, « Enregistrer » pour le garder sous la main.",
+        title: 'Le trajet le plus rapide',
+        body: "Un seul trajet : le plus rapide avec les moyens de ton profil. « Moyens de transport » permet d'en ajouter ou d'en retirer pour cette recherche. Le détail donne les horaires, l'empreinte en gCO₂e comparée au même trajet en voiture, et chaque étape. « Planifier » date le trajet ou en fait une routine, « Enregistrer » le garde sous la main.",
     },
     {
         id: 'trips',
@@ -74,7 +68,7 @@ const DESKTOP_STEPS: TourStep[] = [
         id: 'profile',
         target: 'profile',
         title: 'Profil et préférences',
-        body: "Les modes préférés et la priorité PMR influencent les itinéraires. Le maximum carbone sert au suivi de tes dépenses dans la semaine ; il ne filtre pas les trajets.",
+        body: "Ce dont tu disposes (Vélo'v, Dott, transport en commun) et ton besoin PMR déterminent le trajet calculé. Le maximum carbone sert au suivi de tes dépenses dans la semaine ; il ne filtre pas les trajets.",
     },
     {
         id: 'done',
@@ -129,12 +123,12 @@ const MOBILE_STEPS: TourStep[] = [
         id: 'profile',
         target: 'mobile-profile',
         title: 'Profil et préférences',
-        body: "Règle tes modes préférés, la priorité PMR et tes objectifs carbone. Ces préférences influencent directement les options proposées.",
+        body: "Règle ce dont tu disposes (Vélo'v, Dott, transport en commun), ton besoin PMR et tes objectifs carbone. Le trajet calculé en dépend directement.",
     },
     {
         id: 'done',
         title: "C'est tout !",
-        body: 'Tu peux relancer ce tutoriel depuis ton profil. Choisis maintenant une destination pour comparer les itinéraires et leur empreinte en gCO₂e.',
+        body: 'Tu peux relancer ce tutoriel depuis ton profil. Choisis maintenant une destination pour obtenir ton trajet le plus rapide et son empreinte en gCO₂e.',
     },
 ];
 
@@ -253,7 +247,12 @@ function desktopCardPosition(rect: Rect | null, cardH: number, cardW: number): R
     return { left: clampLeft(rect.left), top: clampTop(rect.top - MARGIN - cardH) };
 }
 
-export function TutorialOverlay({ desktop, relaunchSignal = 0 }: { desktop: boolean; relaunchSignal?: number }) {
+export function TutorialOverlay({ desktop, ready, relaunchSignal = 0 }: {
+    desktop: boolean;
+    /** Le tour ne démarre pas tant qu'un autre dialogue attend une réponse. */
+    ready: boolean;
+    relaunchSignal?: number;
+}) {
     const steps = desktop ? DESKTOP_STEPS : MOBILE_STEPS;
     const [active, setActive] = useState(false);
     const [step, setStep] = useState(0);
@@ -270,8 +269,11 @@ export function TutorialOverlay({ desktop, relaunchSignal = 0 }: { desktop: bool
         setActive(false);
     };
 
-    // Lancement auto à la première visite.
+    // Lancement auto à la première visite, une fois l'écran libre.
     useEffect(() => {
+        if (!ready) {
+            return;
+        }
         try {
             if (window.localStorage.getItem(TUTORIAL_DONE_KEY)) {
                 return;
@@ -284,7 +286,7 @@ export function TutorialOverlay({ desktop, relaunchSignal = 0 }: { desktop: bool
             setActive(true);
         }, 900);
         return () => window.clearTimeout(timeout);
-    }, []);
+    }, [ready]);
 
     // Relance manuelle (bouton "?").
     useEffect(() => {

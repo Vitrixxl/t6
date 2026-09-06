@@ -62,18 +62,6 @@ function overlapArea(a, b) {
     return width * height;
 }
 
-async function checkRouteOrder(buttons) {
-    const labels = await buttons.allTextContents();
-    const durations = labels.map((label) => {
-        const match = label.match(/(\d+)h(\d{2})|(\d+) min/);
-        if (!match) throw new Error(`Durée absente : ${label}`);
-        return match[3] ? Number(match[3]) : Number(match[1]) * 60 + Number(match[2]);
-    });
-    if (durations.some((duration, index) => index > 0 && duration < durations[index - 1])) {
-        failures.push(`options non triées par durée : ${durations.join(', ')}`);
-    }
-}
-
 async function testMobileSheet() {
     const sheet = page.locator('[data-tour="routes"]:visible');
     const content = page.getByTestId('mobile-route-content');
@@ -97,28 +85,26 @@ async function testMobileSheet() {
         await content.evaluate((element) => { element.scrollTop = 0; });
         await page.screenshot({ path: `tmp/screenshots/routes-auto-${width}.png` });
     }
-    const choices = page.getByRole('group', { name: 'Options d’itinéraire', exact: true }).getByRole('button');
-    await checkRouteOrder(choices);
-    for (const choice of await choices.all()) {
-        await choice.click();
-        if (await choice.getAttribute('aria-pressed') !== 'true') failures.push('option mobile impossible à sélectionner');
-    }
-    // En paysage, les anciennes marges fixes (140 + 300 px) dépassaient
-    // les 390 px de hauteur du canvas. Changer d’option doit encore cadrer.
+    const details = page.getByText(/^Détails du trajet/);
+    if (await details.locator('..').getAttribute('open') !== null) failures.push('détails ouverts au départ');
+    await details.click();
+    await page.getByRole('heading', { level: 2 }).filter({ hasText: /À pied|Vélo|Dott|Transport/ }).waitFor();
+    await details.click();
     await page.setViewportSize({ width: 844, height: 390 });
-    await choices.first().click();
     await page.waitForTimeout(800);
     await page.screenshot({ path: 'tmp/screenshots/routes-landscape.png' });
-    await page.setViewportSize({ width: 390, height: 844 });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.locator('[data-tour="route-detail"]').waitFor();
-    const desktopChoices = page.locator('[data-tour="routes"]:visible').getByRole('button');
-    await desktopChoices.first().waitFor();
-    await checkRouteOrder(desktopChoices);
-    await page.screenshot({ path: 'tmp/screenshots/routes-sorted-desktop.png' });
+    await page.getByText('Trajet le plus rapide', { exact: true }).waitFor();
+    const panel = page.locator('[data-tour="route-detail"] section').filter({ hasText: 'Trajet le plus rapide' });
+    if (await panel.evaluate(element => element.scrollHeight > element.clientHeight + 1)) failures.push('détail desktop comprimé et tronqué');
+    await page.locator('.ufm-endpoint-destination').waitFor();
+    await page.waitForTimeout(800);
+    await page.getByRole('button', { name: 'Planifier', exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: 'tmp/screenshots/route-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator('[data-tour="mobile-map"]').waitFor();
-    log('panneau mobile : hauteur limitée, défilement horizontal, sélection, rotation et tri mobile/bureau vérifiés');
+    log('trajet unique : détails repliés, défilement du contenu, rotation et bureau vérifiés');
 }
 
 async function testMobileTutorial() {
@@ -231,7 +217,7 @@ try {
     await browser.close();
     throw error;
 }
-log('destination définie, options calculées');
+log('destination définie, trajet calculé');
 
 // La destination choisie, la barre passe a deux champs et le départ doit
 // porter la position courante sans que l'utilisateur l'ait désignée.
@@ -241,11 +227,11 @@ if (!originAfter) {
 }
 log(`départ implicite : "${originAfter}"`);
 
-// 4. Des options d'itinéraire sont proposées
+// 4. Le trajet le plus rapide est proposé
 const bodyText = async () => page.locator('body').innerText();
 let text = await bodyText();
-if (!/(?:min|h\d{2}) - [\d.,]+ km/i.test(text)) {
-    failures.push("aucune option d'itinéraire affichée après la recherche");
+if (!/(?:min|h\d{2}) · [\d.,]+ km/i.test(text)) {
+    failures.push("aucun trajet affiché après la recherche");
 }
 await page.screenshot({ path: 'tmp/screenshots/plan-options.png' });
 await testMobileSheet();

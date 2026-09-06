@@ -32,8 +32,7 @@ export function useProfile(): MobilityProfile {
     return useQuery(profileQuery(client)).data;
 }
 
-export function useUpdateProfile(): (profile: MobilityProfile) => void {
+export function useUpdateProfile() {
     const client = useQueryClient();
-    const save = useMutation(saveProfileOptions(client));
-    return save.mutate;
+    return useMutation(saveProfileOptions(client));
 }

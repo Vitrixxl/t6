@@ -1,26 +1,21 @@
-// Assemblage d'une option à partir de ses segments : distance, durée, carbone
-// et accessibilité sont dérivés des segments, jamais saisis en double.
+// Assemblage d'un trajet à partir de ses segments : distance, carbone et
+// accessibilité sont dérivés des segments, jamais saisis en double.
 import type { GeoPoint, MobilityMode, RouteInstruction, RouteLeg, RouteOption } from '../../types';
 import { round } from './metrics';
 
-/** Mesures d'une option, toutes dérivées de ses segments. */
+/** Mesures dérivées des segments. */
 export interface LegSummary {
     path: GeoPoint[];
     distanceKm: number;
-    durationMinutes: number;
     carbonGrams: number;
     accessible: boolean;
 }
 
 export function summarizeLegs(legs: RouteLeg[]): LegSummary {
-    const distanceKm = round(legs.reduce((sum, leg) => sum + leg.distanceKm, 0), 2);
-    const carbonGrams = Math.round(legs.reduce((sum, leg) => sum + leg.carbonGrams, 0));
-
     return {
         path: mergeLegPaths(legs),
-        distanceKm,
-        durationMinutes: Math.ceil(legs.reduce((sum, leg) => sum + leg.durationMinutes, 0)),
-        carbonGrams,
+        distanceKm: round(legs.reduce((sum, leg) => sum + leg.distanceKm, 0), 2),
+        carbonGrams: Math.round(legs.reduce((sum, leg) => sum + leg.carbonGrams, 0)),
         accessible: legs.every((leg) => leg.accessible),
     };
 }
@@ -31,24 +26,25 @@ export function buildOption(input: {
     summary: string;
     modes: MobilityMode[];
     legs: RouteLeg[];
-    reliabilityScore: number;
-    warnings: string[];
+    /** Horaires et durée du moteur : la durée comprend les attentes, que les segments ne portent pas. */
+    departureAt: string;
+    arrivalAt: string;
+    durationMinutes: number;
 }): RouteOption {
     return {
         ...input,
         ...summarizeLegs(input.legs),
         // La référence voiture dépend des extrémités de la recherche, pas de la
-        // distance de l'option : elle est appliquée une fois la liste constituée.
+        // distance du trajet : elle est appliquée une fois le trajet retenu.
         carbonSavedGrams: null,
         carbonReference: null,
         instructions: buildFallbackInstructions(input.legs),
-        score: 0,
     };
 }
 
 
 /**
- * Trace complet d'une option. Un segment dont la géométrie n'est pas encore
+ * Trace complet d'un trajet. Un segment dont la géométrie n'est pas encore
  * connue n'apporte rien : le tracé reste partiel plutôt que d'être complète par
  * une ligne droite qui ferait croire à un itinéraire.
  */
@@ -95,4 +91,3 @@ export function buildFallbackInstructions(legs: RouteLeg[]): RouteInstruction[] 
         },
     ];
 }
-

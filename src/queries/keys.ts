@@ -1,8 +1,7 @@
 // Clés du cache de requêtes. Les declarer ici, et nulle part ailleurs, évite
 // qu'une lecture et une invalidation désignent la même donnée par deux
 // chaines différentes.
-import type { GeoPoint, MobilityProfile } from '../types';
-import { ALL_TRANSIT_TYPES, type TransitType } from '../lib/planner/transit-filter';
+import type { RouteSearchRequest } from '../contracts/planning';
 
 export const queryKeys = {
     session: ['session'],
@@ -14,12 +13,12 @@ export const queryKeys = {
     recurringTrips: ['account', 'recurringTrips'],
     savedRoutes: ['account', 'savedRoutes'],
     transportContext: ['transport-context'],
-    // Les extrémités et le profil determinent les options calculées, donc leur
-    // mesure ; le libellé d'un point n'y change rien.
-    measuredRoutes: (origin: GeoPoint, destination: GeoPoint, profile: MobilityProfile, transitTypes: readonly TransitType[] = ALL_TRANSIT_TYPES) =>
+    // Les extrémités, les moyens demandés et le besoin PMR déterminent le trajet
+    // calculé ; le libellé d'un point n'y change rien.
+    fastestRoute: ({ origin, destination, modes, transitTypes, accessibilityNeed }: RouteSearchRequest) =>
         [
-            'measured-routes',
-            { origin: { lat: origin.lat, lon: origin.lon }, destination: { lat: destination.lat, lon: destination.lon }, profile, transitTypes },
+            'fastest-route',
+            { origin: { lat: origin.lat, lon: origin.lon }, destination: { lat: destination.lat, lon: destination.lon }, modes, transitTypes, accessibilityNeed },
         ],
 } as const;
 

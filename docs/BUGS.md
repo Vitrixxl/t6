@@ -76,7 +76,7 @@ Trois cas : Paris ne propose aucune trottinette ; une destination locale conserv
 
 **Niveau de verrouillage : automatisé** pour les propriétés testées.
 
-**État actuel et limite à annoncer :** Le périmètre actuel repose sur une distance au centre et un rayon métropolitain ; ce n’est pas un polygone réglementaire Dott actualisé. Le correctif verrouille ce filtre géographique. Les disponibilités exigent désormais les flux en direct ; le covoiturage mentionné dans la PR historique a été retiré.
+**État actuel et limite à annoncer :** Le rayon métropolitain sert à l’avertissement d’interface ; le routage et les contraintes de prise et de restitution sont ceux de MOTIS et du flux GBFS. La preuve historique ne valide pas à elle seule les données actuelles de l’opérateur. Les disponibilités exigent désormais les flux en direct ; le covoiturage mentionné dans la PR historique a été retiré.
 
 ## B20 — Les chiffres changeaient quand on sélectionnait une option
 
@@ -94,17 +94,17 @@ Trois cas : Paris ne propose aucune trottinette ; une destination locale conserv
 
 Mesurer toutes les options dans `measureRoutes`, écarter celles dont la géométrie est incomplète, puis recalculer leur classement. Liste et détail utilisent les mêmes options mesurées.
 
-**Où le montrer :** `src/queries/routes.ts` → `POST /api/transport/journeys` → `server/src/services/planning.ts` → `searchRoutes` ; `server/src/services/motis/options.ts` → `selectOptions` ; `src/lib/planner/index.ts` → `rankRoutes` ; `server/src/__tests__/planning.test.ts`.
+**Où le montrer :** `src/queries/routes.ts` → `POST /api/transport/journeys` → `server/src/services/planning.ts` → `searchFastestRoute` ; `server/src/services/motis/options.ts` → `fastestItinerary` et `toRouteOption` ; `server/src/__tests__/planning.test.ts`.
 
 ### Tester et valider
 
-Un routeur de test double les mesures et fournit une géométrie. Vérifier que toutes les options sont mesurées, qu’un segment sans géométrie exclut son option et que le classement est refait après mesure. Le test actuel inverse les durées initiales et vérifie l’ordre croissant des durées réelles, indépendamment du score.
+Un routeur de test double les mesures et fournit une géométrie. Vérifier que toutes les options sont mesurées, qu’un segment sans géométrie exclut son option et que le classement est refait après mesure. Le test actuel compare les arrivées avec attente initiale, conserve les géométries MOTIS et contrôle la référence voiture.
 
 **Preuve historique dans la PR :** distance non doublée (`expected 2.67 to be close to 5.34`), options incomplètes conservées et scores inchangés produisaient trois échecs, puis les tests passaient.
 
 **Niveau de verrouillage : automatisé** pour les propriétés testées.
 
-**État actuel et limite à annoncer :** Le tri se fait par durée réelle croissante ; la PR initiale décrivait un classement par score. Depuis le passage à MOTIS, toutes les options arrivent mesurées et tracées par le même moteur, attentes comprises : deux méthodes de mesure ne peuvent plus coexister par construction.
+**État actuel et limite à annoncer :** Le produit propose désormais un seul trajet : la première arrivée avec les moyens autorisés, attente initiale comprise. La PR historique reste la preuve du défaut de comparaison ; aujourd’hui, MOTIS fournit directement les mesures et les tracés du résultat retenu.
 
 ## Préparer la démonstration
 
@@ -116,5 +116,5 @@ bun test src/lib/carbon.test.ts src/lib/planner/planner.test.ts server/src/__tes
 ```
 
 Vérification du 5 septembre 2026 : **35 tests réussis, 0 échec, 100 assertions**.
-Ce rejeu confirme les tests actuels ; les observations rouge/vert historiques
+Ce rejeu historique confirme les tests de cette date ; les observations rouge/vert historiques
 sont celles consignées dans les PR, pas une nouvelle exécution des anciennes versions.

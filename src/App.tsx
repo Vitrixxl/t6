@@ -2,6 +2,7 @@ import { useSession, useTransportContext } from './queries';
 import { Card, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { MobilityMapApp } from './components/app/MobilityMapApp';
+import { TransportStatus } from './components/app/TransportStatus';
 import { OfflineBanner } from './components/app/OfflineBanner';
 
 function AppContent() {
@@ -35,11 +36,7 @@ function AppContent() {
     // La clé remet l'interface a zéro quand un autre compte se connecte.
     return (
         <div className="flex h-full flex-col">
-            {network.data.sharedMobility === null && (
-                <div role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-                    Impossible de récupérer les disponibilités Vélo’v et Dott. Les itinéraires vélo et trottinette sont indisponibles.
-                </div>
-            )}
+            <TransportStatus network={network.data} />
             <div className="min-h-0 flex-1">
                 <MobilityMapApp key={session.data.user.id} network={network.data} />
             </div>

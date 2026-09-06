@@ -2,8 +2,7 @@ import { afterEach, beforeEach, expect, it, spyOn } from 'bun:test';
 import { createTestApi } from './helpers';
 import { stopCollection, transportContext, nearbyStops } from '../../../src/contracts/transport';
 import { createTransportRepository } from '../repositories/transport';
-import { routeOptions } from '../../../src/contracts/planning';
-import { DEFAULT_PROFILE } from '../../../src/contracts/profile';
+import { routeOption } from '../../../src/contracts/planning';
 
 let api: ReturnType<typeof createTestApi>;
 let network: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
@@ -90,21 +89,20 @@ it('traduit les itinéraires MOTIS en options et leur applique la même référe
     const response = await api.call('/api/transport/journeys', { body: {
         origin: { lat: 45.7578, lon: 4.832, label: 'Bellecour' },
         destination: { lat: 45.7606, lon: 4.8594, label: 'Part-Dieu' },
-        profile: DEFAULT_PROFILE, transitTypes: [0, 1, 3, 7], sharedMobilityAvailable: false,
+        modes: ['transit'], transitTypes: [0, 1, 3, 7], accessibilityNeed: false,
         departureAt: '2022-04-20T08:00:00+02:00',
     } });
     expect(response.status).toBe(200);
-    const options = routeOptions.parse(await response.json());
-    expect(options.some(option => option.legs.some(leg => leg.mapLabel === 'Métro D'))).toBe(true);
-    expect(options.every(option => !option.modes.includes('bike') && !option.modes.includes('scooter'))).toBe(true);
-    expect(options.map(option => option.durationMinutes)).toEqual(options.map(option => option.durationMinutes).sort((a, b) => a - b));
-    expect(options.every(option => option.carbonReference?.distanceKm === 4.3038)).toBe(true);
+    const option = routeOption.parse(await response.json());
+    expect(option.legs.some(leg => leg.mapLabel === 'Métro D')).toBe(true);
+    expect(option.modes).toEqual(['walk', 'transit']);
+    expect(option.carbonReference?.distanceKm).toBe(4.3038);
     // Sans disponibilités partagées, seul l'accès à pied est demandé, plus la référence voiture.
-    expect(network).toHaveBeenCalledTimes(2);
+    expect(network).toHaveBeenCalledTimes(5);
 });
 
 it('refuse les recherches invalides et annonce l’indisponibilité du moteur', async () => {
-    const search = { origin: { lat: 45.7524835251712, lon: 4.8687553636982, label: 'Départ précis' }, destination: { lat: 45.7548502313005, lon: 4.85748756866509, label: 'Arrivée précise' }, profile: DEFAULT_PROFILE, transitTypes: [0, 1, 3, 7], sharedMobilityAvailable: false };
+    const search = { origin: { lat: 45.7524835251712, lon: 4.8687553636982, label: 'Départ précis' }, destination: { lat: 45.7548502313005, lon: 4.85748756866509, label: 'Arrivée précise' }, modes: ['transit'], transitTypes: [0, 1, 3, 7], accessibilityNeed: false };
     expect((await api.call('/api/transport/journeys', { body: { ...search, transitTypes: [99] } })).status).toBe(422);
     expect(network).not.toHaveBeenCalled();
     expect((await api.call('/api/transport/journeys', { body: search })).status).toBe(503);

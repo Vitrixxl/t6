@@ -37,7 +37,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] F2 - Planificateur d'itinéraires multimodal.
 - [x] F2 - Utilisation de la géolocalisation en temps réel.
 - [x] F2 - Carte interactive affichant la position, la destination et les trajets disponibles.
-- [x] F2 - Sélection visuelle des différents trajets alternatifs.
+- [ ] F2 - Comparaison visuelle de plusieurs alternatives : écart assumé, remplacée par le seul trajet le plus rapide avec filtres de moyens.
 - [x] F2 - Prise en compte des préférences utilisateur dans le calcul d'itinéraire.
 - [x] F3 - Intégration de données type GTFS pour les transports publics.
 - [x] F3 - Intégration de données de vélos/trottinettes partagés.
@@ -79,7 +79,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 ## 7. Intégration d'APIs réelles (mise à jour finale)
 
 - [x] Geocodage live: api-adresse.data.gouv.fr (BAN).
-- [x] Routage local : MOTIS (voirie OSM, horaires GTFS, flux GBFS Vélo'v et Dott), trajets non dominés traduits par famille, référence voiture en `one-to-many`. Aucun recours à une API publique.
+- [x] Routage local : MOTIS (voirie OSM, flux GBFS, horaires GTFS optionnels Vélo'v et Dott), trajets non dominés comparés par arrivée, seul le gagnant traduit, référence voiture en `one-to-many`. Aucun recours à une API publique.
 - [x] GBFS live Vélo'v v3 (station_information + station_status, api.cyclocity.fr) fusionne dans la carte.
 - [x] GBFS live Dott Lyon v2.3 (free_bike_status) pour les trottinettes free-floating.
 - [x] GTFS statique réel TCL/SYTRAL (ODbL) normalisé puis importé dans SQLite au démarrage: scripts/fetch_gtfs.py + scripts/fetch_tcl_lines.py, 5 366 entrées d’arrêts (stations rail et quais bus) et 204 tracés, dont 191 pour 92 lignes de bus régulières, avec desserte et tracé réel (métropole entière, rayon 16 km).
@@ -96,7 +96,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 - [x] Secret retire du code : jeton GTFS en variable d'environnement (GTFS_SOURCE_URL), .env.example versionne, .env ignore.
 - [x] Scoring : coefficients centralisés dans SCORING_WEIGHTS + test unitaire ; dossier aligne sur la formule réelle (fini le 40/30/20/10 inexistant).
-- [x] RG3 (station à 400 m) implémentée et testée. RG5 retirée : aucun plafond de marche dans le profil ou le score ; toutes les options calculables restent proposées.
+- [x] Les accès et correspondances sont calculés par MOTIS ; la borne historique de station à 400 m n’est plus une règle du moteur. Le trajet le plus rapide est retenu avec les moyens autorisés.
 - [x] Plus de nom de ligne non garanti affiche (fini "Métro A vers Part-Dieu") ; encadre "limites assumées du MVP" ajoute (section 7.3).
 - [x] CO2 ventile par leg conserve à l'enrichissement live (vélo+transport 136 g < transport seul 159 g).
 - [x] Référence voiture contrefactuelle commune : mesure MOTIS `one-to-many` en voiture, facteur versionne a 142 gCO2e/km, applique après la mesure réelle des options ; surplus et indisponibilité affiches sans faux zéro.
@@ -107,14 +107,14 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] CI GitHub Actions (.github/workflows/ci.yml) : lint + tests + build sur push/PR ; contradiction CI du dossier levée.
 - [x] theme-color aligne (index.html/manifest), scripts Bun e2e/screens exposés, chemin Chromium configurable, filtre Rhonexpress.
 - [x] Dossier : 30 pages, diagrammes UML aux normes (include/extend, fragment alt, barres d'activation), RACI chiffre, deroule de sprint, économie chiffrée, table de nomenclature, identifiant F4, justification IA et registre de preuves.
-- [x] 219 tests verts (26 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core : 0 violation WCAG 2.1 A/AA sur les 4 écrans, rejoué après ajout du suivi du budget. Le dossier PDF reste gelé.
+- [x] 219 tests lors de la validation historique verts (26 fichiers), lint 0 erreur, build OK, scénario E2E tutoriel mobile + planification bloquant vert (9/9 assertions), audit axe-core : 0 violation WCAG 2.1 A/AA sur les 4 écrans, rejoué après ajout du suivi du budget. Le dossier PDF reste gelé.
 
 ## 9. Preuves concrètes
 
 - Application PWA: `package.json`, `index.html`, `public/manifest.webmanifest`, `public/sw.js`, `public/icons/icon-192.png`, `public/icons/icon-512.png`.
 - F1 inscription/connexion/profil: `src/lib/api/auth.ts`, `src/queries/session.ts`, `src/App.tsx` (`AuthScreen`, `ProfileDrawer`).
 - F2 planificateur multimodal + géolocalisation temps réel: `src/lib/planner/`, `src/components/app/MobilityMapApp.tsx`, `src/components/app/hooks/useGeolocation.ts`.
-- Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, route sélectionnée, alternatives, position utilisateur, destination, arrêts GTFS et stations partagées.
+- Carte mobile-first: `src/components/map/UrbanMap.tsx`, MapLibre GL, trajet unique, position utilisateur, destination, arrêts GTFS et stations partagées.
 - UI shadcn: `src/components/ui/button.tsx`, `card.tsx`, `badge.tsx`, `input.tsx`, `src/styles.css`.
 - APIs réelles: `src/lib/transport/` pour BAN, Photon et les flux ; MOTIS appelé par le service serveur de `/api/transport/journeys`, référence voiture en `one-to-many` et aucune géométrie inventée.
 - F3 intégration transport: `src/lib/transport/feeds/`, `data/transport/gtfs-feed.json`.
@@ -122,7 +122,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - Contraintes C1-C12: matrice de couverture dans `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf`, section 12.
 - Dossier projet PDF: `scripts/generate_dossier.py`, rendu final `output/pdf/CASCALES_Vitrice_Titre6_B3DEV_Septembre2026.pdf` (30 pages, limite 40 pages respectée).
 - Rendu visuel PDF inspecte: 30 pages rendues temporairement et contrôlées en planche-contact et pleine page.
-- Vérification de la simplification : `bun run check` OK (`eslint .`, TypeScript 7 strict, 219 tests, `Bun.build`), audit `bun run audit:a11y` OK (0 violation sur 4 écrans, rejoué après ajout du suivi du budget) et `bun run e2e` OK (9/9).
+- Vérification de la simplification : `bun run check` OK (`eslint .`, TypeScript 7 strict, 219 tests lors de la validation historique, `Bun.build`), audit `bun run audit:a11y` OK (0 violation sur 4 écrans, rejoué après ajout du suivi du budget) et `bun run e2e` OK (9/9).
 
 ## 10. Backend (ajout post-audit)
 
@@ -141,7 +141,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Tous les appels du front vers l'API UrbanFlow passent par Eden Treaty et sont inférés depuis l'arbre Elysia ; aucun type HTTP duplique.
 - [x] Profil : objectifs d'économie de CO2 hebdomadaire et mensuel configurables indépendamment, validés par zod, persistés par `PUT /api/me/profile` et visibles dans le planificateur.
 - [x] Points d'accès et correspondances choisis par MOTIS sur le graphe complet (RAPTOR sur horaires, voirie OSM pour les accès) ; plus de sélection bornée à huit candidats.
-- [x] Correspondance entre deux lignes rendue comme étape à pied de 4 min, sans trace intérieur invente en l'absence de `pathways.txt`.
+- [x] Correspondance entre deux lignes calculée par MOTIS et rendue comme étape à pied avec sa géométrie réelle.
 - [x] Une seule origine : l'API sert le client, pas de mode sans serveur  ; une écriture refusée par le réseau est signalée à l'utilisateur.
 - [x] Export accessible sur mobile et bureau dans « Profil et préférences » : téléchargement JSON, erreur visible et nouvel essai (`bun scripts/e2e-account-export.mjs`).
 - [x] RGPD : export complet du compte (`GET /api/me/export`, art. 20), suppression en cascade (`DELETE /api/me`, art. 17), information et acceptation des conditions à l'inscription (art. 13), purge des ponctuels passés à six mois, registre des traitements (art. 30).
@@ -153,7 +153,7 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 - [x] API découpée par responsabilité : `config/`, `db/`, `repositories/`, `services/`, `plugins/`, `routes/`, contrats zod dans `src/contracts/` ; un fichier garde une seule raison de changer, sans seuil de lignes artificiel.
 - [x] Module trajets eclate : 955 lignes -> 11 fichiers (hub, quatre listes, formulaire, objectifs, briques, formats).
-- [x] Moteur d’itinéraires : traduction MOTIS → options par famille dans `server/src/services/motis/`, sans générateurs ni fichiers relais.
+- [x] Moteur d’itinéraires : sélection de la première arrivée et traduction MOTIS du trajet retenu dans `server/src/services/motis/`, sans générateurs ni fichiers relais.
 - [x] Couche transport éclatée : 780 lignes -> 14 fichiers (`geocoding/`, `feeds/` ; routage dans les services serveur), une source externe par fichier.
 - [x] Module d'authentification : appels API, cache de session, normalisation du profil.
 - [x] Carte éclatée : cycle de vie dans `UrbanMap`, définitions dans `layers`, données GeoJSON, popups et marqueurs isoles.
@@ -168,10 +168,10 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] API : `bun server/src/index.ts`, sans étape de compilation ni dépendance native.
 - [x] Serveur de développement et build du client exécutés par Bun (`bun scripts/dev.ts`, `Bun.build`).
 - [x] TypeScript 7 conserve ; `tsc` strict contrôle types et symboles inutilisés, ESLint utilise le parseur Babel tant que `typescript-eslint` ne prend pas TS7 en charge.
-- [x] Tests client / métier : 142 tests verts dans `src/`.
-- [x] Tests d'API : `bun test server`, 77 tests verts.
+- [x] Tests client / métier dans `src/` : décompte courant produit par `bun run test`.
+- [x] Tests d’API et migration : `bun test server`, décompte courant produit par la recette.
 - [x] Scripts d'outillage (E2E, audit a11y, banc de performance, metriques, captures) exécutés par Bun.
-- [x] Vérifications de simplification : `bun run check` complet (219 tests), E2E 9/9, `e2e:trips` et `e2e:offline` réussis. L’audit axe-core rejoué après ajout du suivi du budget reste à 0 violation sur 4 écrans. Le scénario `e2e:trips` vérifie aussi les confirmations et la dépense face au maximum.
+- [x] Vérifications de simplification : `bun run check` complet (219 tests lors de la validation historique), E2E 9/9, `e2e:trips` et `e2e:offline` réussis. L’audit axe-core rejoué après ajout du suivi du budget reste à 0 violation sur 4 écrans. Le scénario `e2e:trips` vérifie aussi les confirmations et la dépense face au maximum.
 - [x] Limite assumée : l'ingestion GTFS et la génération du dossier restent en Python, faute d'équivalent JavaScript.
 
 ## Correctif du hub et des annulations
@@ -183,19 +183,19 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 - [x] Tests métier et API : recalcul, idempotence, pauses, isolement des comptes, fuseaux et refus visibles.
 - [x] Vérification navigateur du hub avec `bun run e2e:trips` : quatre onglets, cinq largeurs et persistance après rechargement.
 
-- [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, six options mobiles sans troncature et hauteur automatique du panneau, avec défilement du contenu long et fermeture toujours accessible. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.
+- [x] B34–B36 : durées en heures dès 60 min, plafond de marche retiré, ancienne liste de six options mobiles sans troncature (remplacée par le trajet unique) et hauteur automatique du panneau, avec défilement du contenu long et fermeture toujours accessible. Régression du rendu, contrat et anciens profils couverts ; parcours mobile vérifié à 320 et 390 px.
 
 - [x] B37–B39 : cadrage borné à la taille du canvas avec rotation E2E ; certificat local reconnu comme certificat serveur par Chromium ; image Docker contenant les contrats et règles partagées, démarrée après migration d’une copie de la base.
 - [x] B41–B42 : moteurs OSRM locaux, profil vélo `bicycle.lua`, accès piétons en étoile ; six options vérifiées vers Cuvier. Panneau mobile de hauteur automatique sous la recherche, sans commandes de taille ; E2E planification 9/9 et scénario hors ligne réussis.
 
-- [x] B43–B44 : options triées par durée réelle croissante sur mobile et bureau, même si les mesures inversent les estimations. OSRM exclusivement local, adresses par défaut et panne sans bascule vérifiées.
+- [x] B43–B44 : ancien tri des options par durée réelle croissante sur mobile et bureau (remplacé par la première arrivée), même si les mesures inversent les estimations. OSRM exclusivement local, adresses par défaut et panne sans bascule vérifiées.
 
 
 ## Horaires GTFS par MOTIS
 
 - [x] Le calcul d'itinéraires est délégué à MOTIS : voirie OSM, horaires GTFS (RAPTOR) et flux GBFS sur un graphe unique ; le pipeline horaire maison et ses cinq tables sont retirés (migration 0011).
 - [x] Recette : horaire GTFS de recette dérivé du réseau livré (`scripts/build-gtfs-fixture.py`), importé dans un MOTIS jetable par `bun run ci`.
-- [ ] Production : charger une archive TCL récente avec `infra/motis-prepare.sh` (`GTFS_SOURCE_URL`) et automatiser son renouvellement.
+- [ ] Production : charger une archive TCL récente avec `infra/motis-prepare.sh` (`MOTIS_TRANSIT_ENABLED=true`, `GTFS_SOURCE_URL`) et automatiser son renouvellement.
 
 ## Simplification pour l’apprentissage
 
@@ -228,10 +228,10 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 
 - [x] Bus WFS par sens, ordre des quais, accessibilité quai/ligne, hypothèses affichées et recette TB11 mobile/bureau.
 
-- [x] Types publics filtrés avant le calcul, sélecteur visible uniquement pour une option TC ; mobile horizontal et carte préservée (recette 320/390 px et paysage).
+- [x] Types publics filtrés avant le calcul, sélecteur visible quand transit est autorisé ; trajet unique et carte préservée (recette 320/390 px et paysage).
 - [x] Documentation Scalar : CSP distincte du JSON, version fixée, agent et polices externes désactivés ; test serveur et recette navigateur dédiés.
 
-- [x] Avant push : `bun run ci`, identique au workflow GitHub, avec un MOTIS dédié sur extrait OSM et horaire GTFS de recette versionnés, base vide, disponibilité contrôlée, audit et trois recettes navigateur bloquantes.
+- [x] Avant push : `bun run ci`, identique au workflow GitHub, avec un MOTIS dédié sur extrait OSM et horaire GTFS de recette versionnés, base vide, disponibilité contrôlée, audit et recettes navigateur bloquantes, dont onboarding et mode sans horaires.
 
 - [x] Surface API auditée : trois GET non consommés retirés, 30 méthodes/chemins conservés avec leurs appelants dans `docs/API-USAGE.md` ; absence vérifiée dans OpenAPI et en HTTP.
 
@@ -240,8 +240,26 @@ La recette `e2e:evolution` couvre aussi cette barre à 320, 390 et 540 px.
 - [x] Artefact TCL retiré de `public/` et du service worker ; import serveur versionné et transactionnel.
 - [x] Quais dans SQLite avec index R*Tree, cellules de 0,05 degré et limites exactes sans doublon aux frontières.
 - [x] Carte : cellules visibles seulement, cache réutilisé, requêtes après mouvement, aucune requête sous le zoom 11 ou couche masquée.
-- [x] Calcul complet côté serveur : six familles par MOTIS, filtres de modes de transport, tracés et référence voiture mesurés.
+- [x] Calcul complet côté serveur : trajet le plus rapide par MOTIS, filtres de modes de transport, tracés et référence voiture mesurés.
 - [x] Panne des cellules explicite et bouton Réessayer ; Autour de moi conserve son vrai compte, indépendant de la carte.
 - [x] Contrats zod, OpenAPI et Eden partagent les requêtes et réponses ; les anciennes routes de matrice et géométrie sont retirées.
 - [x] GBFS mutualisé 60 s côté serveur ; aucun repli sur des disponibilités expirées en cas de panne.
 - [x] Recette dédiée `bun run e2e:transport` intégrée à `bun run ci` ; comparaison des octets TCL, sans revendication de gain énergétique non mesuré.
+
+## Trajet unique et accueil du compte — septembre 2026
+
+- [x] Une seule requête plan MOTIS ; comparaison de `direct` et `itineraries`, sélection par arrivée, attente initiale incluse.
+- [x] Accueil initial : moyens partagés/publics et besoin PMR persistés, refus visible et nouvel essai.
+- [x] Migration 0012 : retrait du score enregistré, conversion des profils anciens, objectifs et PMR conservés.
+- [x] Filtres temporaires de recherche ; PMR exclut Vélo’v/Dott et exige une accessibilité publique déclarée.
+- [x] Contrats et OpenAPI : un trajet objet, aucun score ni présélection ; voiture seulement comme référence.
+- [x] Recettes dédiées : `scripts/e2e-onboarding.mjs`, planification, filtres/mobile, transport, hors ligne, historique et export intégrés à `bun run ci`.
+- [ ] Itération suivante : intégrer les horaires TCL officiels. La version actuelle fonctionne sans GTFS ; les fixtures de CI ne sont pas des horaires réels.
+
+Le PDF et ses scripts sont gelés. Les anciennes cases de génération et de
+contrôle décrivent leur livraison historique ; elles ne demandent aucun rejeu.
+
+
+## Livraison sans horaires TCL
+
+Les horaires TCL sont reportés à une prochaine itération. Par défaut, `MOTIS_TRANSIT_ENABLED=false` : marche et véhicules partagés uniquement, arrêts TCL consultables et limite annoncée dans l’interface. Aucun accès GTFS n’est requis. Le serveur publie `transitRoutingAvailable=false` et force `transitModes=` vers MOTIS. Les horaires de recette servent uniquement à la CI. Une activation future exige une archive actuelle et `MOTIS_TRANSIT_ENABLED=true` à la préparation et au lancement.

@@ -147,7 +147,6 @@ export const savedRoutes = sqliteTable(
         routeTitle: text('route_title').notNull(),
         ...endpointColumns(),
         ...measureColumns(),
-        score: real('score').notNull(),
         createdAt: text('created_at').notNull(),
     },
     (t) => [primaryKey({ columns: [t.userId, t.id] })],

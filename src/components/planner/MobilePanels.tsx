@@ -1,40 +1,34 @@
-// Options, étapes et actions de planification du panneau mobile.
-import { useEffect, useRef } from 'react';
-import { TransitTypeFilters } from './TransitTypeFilters';
-import { formatDuration } from '../../lib/duration';
+// Trajet retenu, étapes et actions de planification du panneau mobile.
+import { SearchFilters } from './SearchFilters';
+import { formatClockTime, formatDuration } from '../../lib/duration';
 import { useSetAtom } from 'jotai';
 import { CalendarClock, CalendarPlus, Check, Route, UserRound, X } from 'lucide-react';
 import { useActivitySummary } from '../../queries';
 import { openHubAtom } from '../../state';
 import { Button } from '../ui/button';
 import type { GeoPoint, RouteOption } from '../../types';
-import { getRouteColor } from '../../lib/routeColors';
 import { formatCarbonComparisonCompact } from '../../lib/carbon-comparison';
-import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useRouteOptions';
-import { Metric, MODE_ICON } from '../app/shared';
+import { ROUTING_STATUS_LABEL, type RoutingStatus } from '../app/hooks/useFastestRoute';
+import { Metric } from '../app/shared';
 import { RouteSteps } from './RouteSteps';
+
+export const NO_ROUTE_MESSAGE = 'Aucun trajet avec ces moyens de transport. Modifie-les, ou réessaie si le moteur ne répond pas.';
 
 export function MobileTripPanel({
     destination,
-    routes,
-    selectedRoute,
-    transitSelected,
+    route,
     savedRouteId,
     routingStatus,
     coverageWarning,
-    onSelectRoute,
     onSaveRoute,
     onPlanRoute,
     onOpenProfile,
     onClose }: {
         destination: GeoPoint | null;
-        routes: RouteOption[];
-        selectedRoute: RouteOption | null;
-        transitSelected: boolean;
+        route: RouteOption | null;
         savedRouteId: string;
         routingStatus: RoutingStatus;
         coverageWarning: string | null;
-        onSelectRoute: (id: string) => void;
         onSaveRoute: (routeOption: RouteOption) => void;
         onPlanRoute: (routeOption: RouteOption) => void;
         onOpenProfile: () => void;
@@ -59,11 +53,10 @@ export function MobileTripPanel({
                     </div>
                 ) : null}
 
-                {transitSelected ? <div className="px-4 pb-2"><TransitTypeFilters /></div> : null}
-                <MobileRouteChoices routes={routes} selectedRoute={selectedRoute} onSelectRoute={onSelectRoute} />
-                {transitSelected && !selectedRoute && routingStatus !== 'pending' ? <p role="status" className="px-4 pb-3 text-sm">Aucun trajet en transport en commun avec ces types. Modifie les types autorisés ou choisis une autre option.</p> : null}
+                <div className="px-4 pb-3"><SearchFilters /></div>
+                {routingStatus === 'unavailable' ? <p role="status" className="px-4 pb-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
                 <MobileRouteSelection
-                    routeOption={selectedRoute}
+                    routeOption={route}
                     savedRouteId={savedRouteId}
                     onSaveRoute={onSaveRoute}
                     onPlanRoute={onPlanRoute}
@@ -90,7 +83,7 @@ function MobileTripHeader({
     return (
         <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Options d'itinéraire</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Trajet le plus rapide</p>
                 <h1 className="truncate text-lg font-semibold tracking-normal">{destination?.label ?? 'Où vas-tu ?'}</h1>
                 <p className={`truncate text-[11px] font-medium ${routingStatus === 'unavailable' ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {ROUTING_STATUS_LABEL[routingStatus]}
@@ -132,39 +125,6 @@ function MobileTripHeader({
     );
 }
 
-export function MobileRouteChoices({
-    routes,
-    selectedRoute,
-    onSelectRoute,
-}: {
-    routes: RouteOption[];
-    selectedRoute: RouteOption | null;
-    onSelectRoute: (id: string) => void;
-}) {
-    if (routes.length === 0) {
-        return (
-            <div className="px-4 pb-3">
-                <div className="rounded-xl border border-border bg-background/80 px-3 py-3 text-sm font-medium text-muted-foreground">
-                    Aucun trajet pour cette combinaison.
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div role="group" aria-label="Options d’itinéraire" className="flex gap-2 overflow-x-auto overscroll-x-contain snap-x snap-proximity px-4 pb-3">
-            {routes.map((routeOption) => (
-                <MobileRouteTab
-                    key={routeOption.id}
-                    routeOption={routeOption}
-                    selected={routeOption.id === selectedRoute?.id}
-                    onSelect={() => onSelectRoute(routeOption.id)}
-                />
-            ))}
-        </div>
-    );
-}
-
 function MobileRouteSelection({
     routeOption,
     savedRouteId,
@@ -183,6 +143,9 @@ function MobileRouteSelection({
 
     return (
         <>
+            <div className="px-4 pb-3">
+                <MobileRouteHeadline routeOption={routeOption} />
+            </div>
             <div className="grid grid-cols-[1.2fr_0.8fr] gap-2 px-4 pb-3">
                 <Button type="button" size="sm" onClick={() => onPlanRoute(routeOption)}>
                     <CalendarPlus className="size-4" aria-hidden="true" />
@@ -201,56 +164,26 @@ function MobileRouteSelection({
     );
 }
 
-
-export function MobileRouteTab({
-    routeOption,
-    selected,
-    onSelect }: {
-        routeOption: RouteOption;
-        selected: boolean;
-        onSelect: () => void;
-    }) {
-    const Icon = MODE_ICON[routeOption.modes.at(-1) ?? 'walk'];
-    const button = useRef<HTMLButtonElement>(null);
-    useEffect(() => {
-        if (selected) button.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-    }, [selected]);
-
+/** Ce qu'il faut savoir avant d'ouvrir les détails : le trajet, quand il part, quand il arrive. */
+function MobileRouteHeadline({ routeOption }: { routeOption: RouteOption }) {
     return (
-        <button
-            type="button"
-            ref={button}
-            className={`grid w-[180px] shrink-0 snap-start min-h-14 min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border/70 bg-background text-foreground'
-                }`}
-            onClick={onSelect}
-            aria-pressed={selected}
-        >
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg text-white" style={{ background: getRouteColor(routeOption) }}>
-                <Icon className="size-4" aria-hidden="true" />
+        <div className="rounded-xl border border-primary bg-primary/10 px-3 py-2.5 text-primary">
+            <strong className="block text-sm">{routeOption.title}</strong>
+            <span className="block font-mono text-[11px]">
+                {formatClockTime(routeOption.departureAt)} → {formatClockTime(routeOption.arrivalAt)} · {formatDuration(routeOption.durationMinutes)} · {routeOption.distanceKm.toFixed(1)} km
             </span>
-            <span className="min-w-0 flex-1">
-                <strong className="block text-xs">{routeOption.title}</strong>
-                <span className="block truncate font-mono text-[10px] text-muted-foreground">
-                    {formatDuration(routeOption.durationMinutes)} - {routeOption.distanceKm.toFixed(1)} km
-                </span>
-            </span>
-        </button>
+        </div>
     );
 }
 
 export function MobileSelectedRouteCard({ routeOption }: { routeOption: RouteOption }) {
     return (
         <article className="rounded-xl border border-primary bg-primary/8 p-3">
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-                <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold tracking-normal">{routeOption.title}</h2>
-                    <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">{routeOption.summary}</p>
-                </div>
-                <span className="grid size-11 place-items-center rounded-xl text-base font-bold text-white" style={{ background: getRouteColor(routeOption) }}>
-                    {routeOption.score}
-                </span>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-1.5">
+            <h2 className="truncate text-base font-semibold tracking-normal">{routeOption.title}</h2>
+            <p className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">{routeOption.summary}</p>
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+                <Metric label="Départ" value={formatClockTime(routeOption.departureAt)} compact />
+                <Metric label="Arrivée" value={formatClockTime(routeOption.arrivalAt)} compact />
                 <Metric label="Durée" value={formatDuration(routeOption.durationMinutes)} compact />
                 <Metric label="km" value={routeOption.distanceKm.toFixed(1)} compact />
                 <Metric label="CO₂e" value={`${routeOption.carbonGrams}g`} compact />

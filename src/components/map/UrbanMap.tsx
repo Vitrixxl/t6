@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl, { type Map as MaplibreMap } from 'maplibre-gl';
 import type { GeoPoint, RouteOption, TransportContext } from '../../types';
-import { getRouteColor } from '../../lib/routeColors';
 import type { LayerState } from '../app/shared';
 import type { FeatureCollection } from './geojson';
 import { setGeoJsonSource, setLayerVisibility } from './sources';
@@ -55,8 +54,7 @@ function toStationFeatures(stations: SharedStation[]): FeatureCollection {
 export function UrbanMap({
     origin,
     destination,
-    routes,
-    selectedRoute,
+    route,
     network,
     layers,
     navigationPoint,
@@ -65,8 +63,8 @@ export function UrbanMap({
 }: {
     origin: GeoPoint | null;
     destination: GeoPoint | null;
-    routes: RouteOption[];
-    selectedRoute: RouteOption | null;
+    /** Le trajet retenu, dessiné par ses segments ; `null` tant qu'aucun n'est calculé. */
+    route: RouteOption | null;
     network: TransportContext;
     layers: LayerState;
     /** Position GPS de l'utilisateur ("Ma position"), affichée comme repere. */
@@ -93,42 +91,16 @@ export function UrbanMap({
     const initialCenterRef = useRef<Pick<GeoPoint, 'lat' | 'lon'>>(origin ?? { lat: 45.758, lon: 4.845 });
     const [loaded, setLoaded] = useState(false);
     const visibleStops = useVisibleMapStops(mapRef, loaded, layers.transitStops, network.version);
-    const selectedLegs = selectedRoute?.legs ?? NO_LEGS;
+    const legs = route?.legs ?? NO_LEGS;
 
-    // Le trajet selectionne est dessine par ses segments (couches `legs`), avec
-    // une géométrie routée mode par mode. L'inclure ici aussi superposerait deux
-    // traces différents du même trajet : la couche ne porte donc que les
-    // alternatives, en retrait.
-    const routeData = useMemo<FeatureCollection>(
-        () => ({
-            type: 'FeatureCollection',
-            features: routes
-                // Le trajet selectionne est rendu par ses segments (couches `legs`) ;
-                // une option sans géométrie n'est pas dessinée du tout.
-                .filter((route) => route.id !== selectedRoute?.id && route.path.length >= 2)
-                .map((route) => ({
-                    type: 'Feature',
-                    properties: {
-                        id: route.id,
-                        title: route.title,
-                        color: getRouteColor(route),
-                        selected: route.id === selectedRoute?.id,
-                    },
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: route.path.map((point) => [point.lon, point.lat]),
-                    },
-                })),
-        }),
-        [routes, selectedRoute],
-    );
-
+    // Le trajet est dessiné par ses segments (couches `legs`), avec une
+    // géométrie routée mode par mode.
     const legData = useMemo<FeatureCollection>(
         () => ({
             type: 'FeatureCollection',
             // Un segment sans géométrie ne produit aucune entité : la carte reste
             // vide pour lui plutôt que d'afficher une ligne inventée (B14).
-            features: selectedLegs.filter((leg) => leg.path.length >= 2).map((leg) => ({
+            features: legs.filter((leg) => leg.path.length >= 2).map((leg) => ({
                 type: 'Feature' as const,
                 properties: { mode: leg.mode, label: leg.mapLabel ?? '', color: legColor(leg) },
                 geometry: {
@@ -137,7 +109,7 @@ export function UrbanMap({
                 },
             })),
         }),
-        [selectedLegs],
+        [legs],
     );
 
     const pointData = useMemo<FeatureCollection>(
@@ -237,7 +209,6 @@ export function UrbanMap({
             return;
         }
 
-        setGeoJsonSource(map, 'routes', routeData);
         setGeoJsonSource(map, 'legs', legData);
         setGeoJsonSource(map, 'points', pointData);
         setGeoJsonSource(map, 'stops', stopData);
@@ -249,18 +220,18 @@ export function UrbanMap({
         setLayerVisibility(map, 'stops-circle', layers.transitStops);
         setLayerVisibility(map, 'velov-circle', layers.velov);
         setLayerVisibility(map, 'scooters-circle', layers.scooters);
-    }, [layers, legData, loaded, pointData, routeData, scooterData, stopData, velovData]);
+    }, [layers, legData, loaded, pointData, scooterData, stopData, velovData]);
 
     useEffect(() => {
         const map = mapRef.current;
-        if (!map || !loaded || !selectedRoute) {
+        if (!map || !loaded || !route) {
             return;
         }
 
         // Le cadrage ne dépend pas du tracé : tant que le routage n'a pas répondu,
         // il se fait sur les extrémités, connues dès la sélection.
         const bounds = new maplibregl.LngLatBounds();
-        selectedRoute.path.forEach((point) => bounds.extend([point.lon, point.lat]));
+        route.path.forEach((point) => bounds.extend([point.lon, point.lat]));
         if (origin) {
             bounds.extend([origin.lon, origin.lat]);
         }
@@ -292,15 +263,15 @@ export function UrbanMap({
             observer.disconnect();
             map.off('resize', fitRoute);
         };
-    }, [destination, loaded, origin, selectedRoute]);
+    }, [destination, loaded, origin, route]);
 
     useEffect(() => {
         const map = mapRef.current;
         if (!map || !loaded) {
             return;
         }
-        legLabelsRef.current = syncLegLabels(map, legLabelsRef.current, selectedLegs);
-    }, [loaded, selectedLegs]);
+        legLabelsRef.current = syncLegLabels(map, legLabelsRef.current, legs);
+    }, [loaded, legs]);
 
     // Recentrage sur demande explicite. Déclaré après le cadrage d'itinéraire :
     // à rendu égal, l'effet le plus bas s'exécute en dernier et l'emporte, ce qui

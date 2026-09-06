@@ -12,5 +12,5 @@ export { useDeleteSavedRoute, useSaveRoute, useSavedRoutes, type SaveRouteInput 
 export { useActivitySummary, useCarbonSummary } from './summaries';
 export { useSaveError } from './save-error';
 export { useTransportContext } from './transport';
-export { measuredRoutesQuery, type RouteSearch } from './routes';
+export { fastestRouteQuery, type RouteSearch } from './routes';
 export { useExportAccount } from './account-export';

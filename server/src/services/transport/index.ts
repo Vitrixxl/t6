@@ -4,7 +4,7 @@ import { findWithinRadius } from '../../../../src/lib/planner/nearby.ts';
 import { STOP_CELLS_PER_DEGREE } from '../../../../src/contracts/transport.ts';
 import type { TransportRepository } from '../../repositories/transport.ts';
 
-export function createTransportService(repository: TransportRepository) {
+export function createTransportService(repository: TransportRepository, transitRoutingAvailable: boolean) {
     const gtfs = repository.readNetwork();
     const metadata = repository.metadata();
     if (!metadata) throw new Error('Réseau TCL non importé.');
@@ -29,6 +29,7 @@ export function createTransportService(repository: TransportRepository) {
             return {
                 version, stopCount: gtfs.stops.length, agency: gtfs.agency,
                 sharedMobility: current.sharedMobility,
+                transitRoutingAvailable,
                 sources: current.sources ?? { gtfs: 'tcl-odbl' },
             };
         },

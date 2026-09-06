@@ -10,22 +10,27 @@ import type { GeoPoint, RouteMeasure } from '../../../../src/types.ts';
 const MOTIS_TIMEOUT_MS = 15_000;
 /**
  * MOTIS coupe les trajets directs à 30 min par défaut. La marche reste toujours
- * proposée, même sur une traversée de la métropole ; un engin partagé au-delà
- * d'une heure et demie n'est plus une option raisonnable.
+ * proposée, même sur une traversée de la métropole : quatre heures.
  */
-const MAX_DIRECT_SECONDS: Record<MotisAccess, number> = { WALK: 4 * 3600, BICYCLE: 90 * 60, SCOOTER_STANDING: 90 * 60 };
+const MAX_DIRECT_SECONDS = 4 * 3600;
+/**
+ * Nombre minimal de trajets recherchés, jamais un plafond. Le choix final
+ * compare les arrivées de tous les résultats, trajets directs compris.
+ */
+const ITINERARIES = 5;
 
-/** Moyen d'accès au transport, et trajet direct du même mode. */
-export type MotisAccess = 'WALK' | 'BICYCLE' | 'SCOOTER_STANDING';
+/** Engins partagés, dans le vocabulaire GBFS repris par MOTIS. */
+export type RentalFormFactor = 'BICYCLE' | 'SCOOTER_STANDING';
 
 export interface PlanQuery {
     from: Pick<GeoPoint, 'lat' | 'lon'>;
     to: Pick<GeoPoint, 'lat' | 'lon'>;
     /** Heure de départ ISO 8601. */
     departureAt: string;
-    /** Modes de transport MOTIS autorisés (TRAM, SUBWAY, BUS, FUNICULAR). */
+    /** Modes de transport MOTIS autorisés (TRAM, SUBWAY, BUS, FUNICULAR) ; vide, aucun transport. */
     transitModes: string[];
-    access: MotisAccess;
+    /** Engins autorisés pour rejoindre le réseau, le quitter ou faire tout le trajet ; vide, la marche seule. */
+    rentalFormFactors: RentalFormFactor[];
     wheelchair: boolean;
 }
 
@@ -61,8 +66,8 @@ const leg = z.object({
 const itinerary = z.object({
     /** Secondes, attentes comprises. */
     duration: z.number(),
-    startTime: z.string(),
-    endTime: z.string(),
+    startTime: z.iso.datetime({ offset: true }),
+    endTime: z.iso.datetime({ offset: true }),
     transfers: z.number().int(),
     legs: z.array(leg).min(1),
 });
@@ -94,32 +99,30 @@ function coordinate(point: Pick<GeoPoint, 'lat' | 'lon'>, separator: ',' | ';'):
 }
 
 export function planUrl(baseUrl: string, query: PlanQuery): string {
+    // Un engin peut servir à rejoindre le réseau, à le quitter, ou à faire tout
+    // le trajet : les trois positions reçoivent les mêmes autorisations. Entre
+    // deux transports, MOTIS ne connaît que la marche.
+    const streetModes = ['WALK', ...(query.rentalFormFactors.length > 0 ? ['RENTAL'] : [])].join(',');
     const params = new URLSearchParams({
         fromPlace: coordinate(query.from, ','),
         toPlace: coordinate(query.to, ','),
         time: query.departureAt,
         pedestrianProfile: query.wheelchair ? 'WHEELCHAIR' : 'FOOT',
-        postTransitModes: 'WALK',
-        numItineraries: '5',
-        maxDirectTime: String(MAX_DIRECT_SECONDS[query.access]),
+        numItineraries: String(ITINERARIES),
+        maxDirectTime: String(MAX_DIRECT_SECONDS),
+        preTransitModes: streetModes,
+        postTransitModes: streetModes,
+        directModes: streetModes,
     });
-    if (query.transitModes.length > 0) {
-        params.set('transitModes', query.transitModes.join(','));
-    } else {
-        // Sans mode de transport, MOTIS ne rend rien du tout, pas même les trajets
-        // directs. Une durée maximale d'une minute exclut tout trajet avec
-        // transport ; les trajets directs ne sont pas concernés par cette borne.
-        params.set('maxTravelTime', '1');
+    if (query.rentalFormFactors.length > 0) {
+        const formFactors = query.rentalFormFactors.join(',');
+        params.set('preTransitRentalFormFactors', formFactors);
+        params.set('postTransitRentalFormFactors', formFactors);
+        params.set('directRentalFormFactors', formFactors);
     }
-    if (query.access === 'WALK') {
-        params.set('preTransitModes', 'WALK');
-        params.set('directModes', 'WALK');
-    } else {
-        params.set('preTransitModes', 'RENTAL');
-        params.set('preTransitRentalFormFactors', query.access);
-        params.set('directModes', 'RENTAL');
-        params.set('directRentalFormFactors', query.access);
-    }
+    // Une valeur vide désactive le transport public tout en conservant les
+    // trajets directs, y compris sur un moteur sans archive horaire.
+    params.set('transitModes', query.transitModes.join(','));
     return `${baseUrl}/api/v6/plan?${params.toString()}`;
 }
 

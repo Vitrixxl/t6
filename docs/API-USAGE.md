@@ -10,7 +10,7 @@ n’est pas considérée comme utilisée par l’application.
 | `GET /api/health` | Sonde du conteneur dans `infra/api.Dockerfile` et attente du serveur dans `scripts/ci.ts`. |
 | `POST /api/auth/register`, `POST /api/auth/login` | `src/lib/api/auth.ts`, appelé par les formulaires et les mutations de session. L’inscription exige `termsAccepted: true` (422 sinon) et enregistre la date et la version des conditions acceptées. La réponse contient l’état initial du compte. |
 | `POST /api/auth/logout`, `GET /api/auth/session` | `src/lib/api/auth.ts` : fermeture et reprise de la session, avec état du compte. |
-| `GET /api/me/profile`, `PUT /api/me/profile` | `src/lib/api/profile.ts` et `src/queries/profile.ts` : lecture, modification et relecture après un échec. |
+| `GET /api/me/profile`, `PUT /api/me/profile` | `src/lib/api/profile.ts` et `src/queries/profile.ts` : lecture, onboarding (moyens, PMR, date de validation), modification et relecture après un échec. |
 | `GET /api/me/export` | `src/lib/api/account-export.ts`, appelé par le bouton d’export du profil. |
 | `DELETE /api/me/` | `deleteAccount` dans `src/lib/api/auth.ts`, appelé depuis les actions du compte. |
 | `GET /api/trips/planned`, `PUT /api/trips/planned/:id`, `DELETE /api/trips/planned/:id` | `src/lib/api/planned-trips.ts` et `src/queries/planned-trips.ts` : suivi, planification et suppression des ponctuels. |
@@ -22,7 +22,7 @@ n’est pas considérée comme utilisée par l’application.
 | `GET /api/transport/context` | `src/queries/transport.ts` : métadonnées et disponibilités GBFS, sans réseau TCL complet. |
 | `GET /api/transport/stops` | `src/queries/map-stops.ts` : tous les quais des cellules visibles de la carte, en cache par version. |
 | `GET /api/transport/nearby-stops` | `src/queries/nearby-stops.ts` : compte réel et quatre quais les plus proches dans le rayon choisi. |
-| `POST /api/transport/journeys` | `src/queries/routes.ts` : calcul complet côté serveur, filtres de transport avant accès et mesure de toutes les options. |
+| `POST /api/transport/journeys` | `src/queries/routes.ts` : un objet trajet, le plus rapide avec les moyens et types publics demandés, attentes comprises ; un seul plan MOTIS et sa référence voiture. |
 
 Supprimés :
 
@@ -44,3 +44,5 @@ conservé pour les anciens tests.
 Le montage de production est aussi vérifié par `server/src/__tests__/static-site.test.ts` :
 le repli vers `index.html` refuse tous les chemins `/api` inconnus avec une erreur
 JSON 404. La route `/*` sert le client et reste masquée dans OpenAPI.
+
+Le contexte transport expose `transitRoutingAvailable` : faux par défaut dans cette version sans horaires TCL. Le client et le serveur excluent alors le mode public de la recherche ; les quais restent consultables.

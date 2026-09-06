@@ -53,7 +53,8 @@ describe('profil de mobilité', () => {
     });
 
     it('exige au moins un mode', () => {
-        expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, preferredModes: [] }).success).toBe(false);
+        expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, availableModes: [] }).success).toBe(true);
+        expect(mobilityProfile.safeParse({ ...DEFAULT_PROFILE, availableModes: ['car'] }).success).toBe(false);
     });
 
     it('refuse les chevrons dans le nom affiché, avec un message en français', () => {

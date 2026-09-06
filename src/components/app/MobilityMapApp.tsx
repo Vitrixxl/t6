@@ -1,20 +1,20 @@
-// Orchestrateur principal : recherche d'itinéraires, comparaison des options et
-// carte. Il ne tient que l'état de l'écran (départ, arrivée, calques, panneaux
+// Orchestrateur principal : recherche d'itinéraire, trajet retenu et carte. Il ne tient que l'état de l'écran (départ, arrivée, calques, panneaux
 // ouverts) : l'état du compte vit dans le cache de requêtes (src/queries/),
 // que chaque module lit.
 import { useEffect, useState } from 'react';
 import { useSetAtom } from 'jotai';
 import type { GeoPoint, RouteOption, SavedRouteRecord, TransportContext } from '../../types';
-import { haversineDistanceKm } from '../../lib/planner';
+import { ALL_TRANSIT_TYPES, availableModesOf, haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
-import { useRouteOptions } from './hooks/useRouteOptions';
+import { useFastestRoute } from './hooks/useFastestRoute';
 import { useDesktopLayout } from './hooks/useDesktopLayout';
 import { CITY_CENTER, METRO_RADIUS_KM, describePoint } from '../../lib/transport';
 import { useProfile, useSaveError, useSaveRoute } from '../../queries';
-import { closeHubAtom, planSourceAtom } from '../../state';
+import { closeHubAtom, planSourceAtom, searchFiltersAtom } from '../../state';
 import { DEFAULT_LAYERS, type LayerState } from './shared';
 import { PlanTripDialog, TripsHubDialog } from '../planner/trips';
 import { ProfileDrawer } from '../profile/ProfilePanels';
+import { OnboardingDialog } from '../profile/OnboardingDialog';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 import { DesktopMobilityLayout, MobileMobilityLayout, type TripMapState } from './MobilityLayouts';
 
@@ -27,6 +27,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
     const persistRoute = useSaveRoute();
     const startPlanning = useSetAtom(planSourceAtom);
     const closeHub = useSetAtom(closeHubAtom);
+    const setSearchFilters = useSetAtom(searchFiltersAtom);
 
     // Le départ choisi explicitement. Tant qu'il est vide, c'est la position
     // courante qui fait office de départ : ouvrir l'application et saisir une
@@ -54,7 +55,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
         // l'utilisateur qui a refusé.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    const { routes, selectedRoute, setSelectedRouteId, routingStatus, transitSelected } = useRouteOptions({
+    const { route, routingStatus } = useFastestRoute({
         origin,
         destination,
         profile,
@@ -114,20 +115,22 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
         window.setTimeout(() => setJustSavedRouteId(''), SAVE_CONFIRMATION_MS);
     };
 
-    // Fermer l'itinéraire remet l'écran à son état de départ : la feuille
-    // d'options cédé la place à la barre d'actions, et la barre de recherche
-    // repasse à son unique champ. Les requêtes en vol s'annulent d'elles-memes,
-    // leurs effets dépendant du couple départ / arrivée.
+    // Fermer l'itinéraire remet l'écran à son état de départ : la feuille du
+    // trajet cède la place à la barre d'actions, la barre de recherche repasse
+    // à son unique champ et les filtres reviennent au profil. Les requêtes en
+    // vol s'annulent d'elles-mêmes, leurs effets dépendant du couple départ / arrivée.
     const closeItinerary = () => {
         setChosenOrigin(null);
         setDestination(null);
-        setSelectedRouteId('');
+        setSearchFilters(null);
     };
 
+    // Un trajet enregistré se recalcule avec les moyens qu'il empruntait : le
+    // recharger avec d'autres moyens donnerait un autre trajet.
     const loadSavedRoute = (entry: SavedRouteRecord) => {
         setOrigin(entry.origin);
         setDestination(entry.destination);
-        setSelectedRouteId(entry.routeId);
+        setSearchFilters({ modes: availableModesOf(entry.modes), transitTypes: ALL_TRANSIT_TYPES });
         closeHub();
     };
 
@@ -165,9 +168,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
     const map: TripMapState = {
         origin,
         destination,
-        routes,
-        selectedRoute,
-        transitSelected,
+        route,
         network,
         layers,
         navigationPoint,
@@ -181,6 +182,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
                 <DesktopMobilityLayout
                     map={map}
                     leftRailOpen={leftRailOpen}
+                    routeRequested={routeRequested}
                     routingStatus={routingStatus}
                     geoStatus={geoStatus}
                     saveError={saveError}
@@ -194,7 +196,6 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
                     onCurrentPositionRequest={requestCurrentPosition}
                     onOriginSelect={setOrigin}
                     onDestinationSelect={setDestination}
-                    onSelectRoute={setSelectedRouteId}
                     onSaveRoute={saveRoute}
                     onPlanRoute={planRoute}
                 />
@@ -214,7 +215,6 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
                     onOriginSelect={setOrigin}
                     onDestinationSelect={setDestination}
                     onSwap={swapEndpoints}
-                    onSelectRoute={setSelectedRouteId}
                     onSaveRoute={saveRoute}
                     onPlanRoute={planRoute}
                     onCloseRoute={closeItinerary}
@@ -231,7 +231,9 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
             />
             <TripsHubDialog onNewTrip={startNewTrip} onLoadSavedRoute={loadSavedRoute} />
             <PlanTripDialog />
-            <TutorialOverlay desktop={desktop} relaunchSignal={tutorialSignal} />
+            <OnboardingDialog />
+            {/* Le tour guidé attend que les questions d'accueil soient posées. */}
+            <TutorialOverlay desktop={desktop} ready={profile.onboardedAt !== null} relaunchSignal={tutorialSignal} />
         </main>
     );
 }

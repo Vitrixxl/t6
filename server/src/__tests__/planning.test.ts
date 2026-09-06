@@ -1,114 +1,137 @@
-// Tests de la recherche d'itinéraires : les réponses MOTIS enregistrées sont
-// traduites en options par famille, classées et comparées à la voiture.
-import { afterEach, describe, expect, it } from 'bun:test';
-import { DEFAULT_PROFILE } from '../../../src/contracts/profile.ts';
-import { searchRoutes } from '../services/planning.ts';
+// Une seule recherche, des modes explicitement autorisés et l’attente initiale incluse.
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import type { RouteSearchRequest } from '../../../src/contracts/planning.ts';
+import { loadConfig } from '../config/index.ts';
+import { searchFastestRoute } from '../services/planning.ts';
+import { fetchPlan } from '../services/motis/client.ts';
+import { fastestItinerary, toRouteOption } from '../services/motis/options.ts';
 
-const realFetch = globalThis.fetch;
+let network: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>>;
+beforeEach(() => { network = spyOn(globalThis, 'fetch'); });
 const MOTIS = 'http://motis:8080';
 const transitPlan = await Bun.file(new URL('./fixtures/motis-plan-transit.json', import.meta.url)).json();
 const rentalPlan = await Bun.file(new URL('./fixtures/motis-plan-rental.json', import.meta.url)).json();
-
-const search = {
+const search: RouteSearchRequest = {
     origin: { lat: 45.7578, lon: 4.832, label: 'Bellecour' },
     destination: { lat: 45.7606, lon: 4.8594, label: 'Part-Dieu' },
-    profile: DEFAULT_PROFILE,
-    transitTypes: [0, 1, 3, 7] as Array<0 | 1 | 3 | 7>,
-    sharedMobilityAvailable: true,
-    departureAt: '2022-04-20T08:00:00+02:00',
+    modes: ['bike', 'scooter', 'transit'], accessibilityNeed: false,
+    transitTypes: [0, 1, 3, 7], departureAt: '2022-04-20T08:00:00+02:00',
 };
-
-/** MOTIS enregistré : le plan à pied, le plan vélo pour tout engin, la voiture en one-to-many. */
-function stubMotis(options: { car?: boolean } = {}): { urls: URL[] } {
+function stubMotis(plan: unknown = transitPlan, car = true) {
     const urls: URL[] = [];
-    globalThis.fetch = (async (input: Parameters<typeof globalThis.fetch>[0]) => {
+    network.mockImplementation(Object.assign(async (input: Parameters<typeof fetch>[0]) => {
         const url = new URL(String(input));
         urls.push(url);
-        if (url.pathname === '/api/v1/one-to-many') {
-            return Response.json(options.car === false ? [] : [{ duration: 469, distance: 4303.8 }]);
-        }
-        return Response.json(url.searchParams.get('preTransitModes') === 'RENTAL' ? rentalPlan : transitPlan);
-    }) as unknown as typeof fetch;
-    return { urls };
+        return Response.json(url.pathname === '/api/v1/one-to-many'
+            ? car ? [{ duration: 469, distance: 4303.8 }] : [] : plan);
+    }, { preconnect: fetch.preconnect }));
+    return urls;
+}
+afterEach(() => network.mockRestore());
+
+async function itineraries(plan: unknown) {
+    stubMotis(plan);
+    const result = await fetchPlan(MOTIS, {
+        from: search.origin, to: search.destination, departureAt: '2022-04-20T08:00:00+02:00',
+        transitModes: ['SUBWAY', 'TRAM'], rentalFormFactors: ['BICYCLE'], wheelchair: false,
+    });
+    if (!result) throw new Error('Fixture MOTIS invalide');
+    return result;
 }
 
-afterEach(() => {
-    globalThis.fetch = realFetch;
+describe('searchFastestRoute', () => {
+    it('demande un seul plan avec tous les moyens et une référence voiture', async () => {
+        const urls = stubMotis();
+        const route = await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: true });
+        const plans = urls.filter(url => url.pathname === '/api/v6/plan');
+        expect(plans).toHaveLength(1);
+        expect(plans[0].searchParams.get('preTransitModes')).toBe('WALK,RENTAL');
+        expect(plans[0].searchParams.get('preTransitRentalFormFactors')).toBe('BICYCLE,SCOOTER_STANDING');
+        expect(plans[0].searchParams.get('postTransitRentalFormFactors')).toBe('BICYCLE,SCOOTER_STANDING');
+        expect(plans[0].searchParams.get('transitModes')).toBe('TRAM,SUBWAY,BUS,FUNICULAR');
+        expect(urls.filter(url => url.pathname === '/api/v1/one-to-many')).toHaveLength(1);
+        expect(route?.carbonReference?.distanceKm).toBe(4.3038);
+        expect(route?.carbonSavedGrams).toBe(611 - (route?.carbonGrams ?? 0));
+    });
+
+    it('respecte la marche seule, les types demandés et le profil fauteuil', async () => {
+        let urls = stubMotis();
+        expect(await searchFastestRoute({ ...search, modes: [] }, MOTIS, { sharedMobility: true, transit: true })).toBeNull();
+        expect(urls[1].searchParams.get('directModes')).toBe('WALK');
+        urls = stubMotis();
+        await searchFastestRoute({ ...search, accessibilityNeed: true, transitTypes: [1] }, MOTIS, { sharedMobility: true, transit: true });
+        expect(urls[1].searchParams.get('pedestrianProfile')).toBe('WHEELCHAIR');
+        expect(urls[1].searchParams.get('directModes')).toBe('WALK');
+        expect(urls[1].searchParams.get('transitModes')).toBe('SUBWAY');
+    });
+
+    it('exclut les engins quand le flux GBFS est indisponible', async () => {
+        const urls = stubMotis(rentalPlan);
+        const route = await searchFastestRoute(search, MOTIS, { sharedMobility: false, transit: true });
+        expect(urls[1].searchParams.get('directModes')).toBe('WALK');
+        expect(urls[1].searchParams.has('directRentalFormFactors')).toBe(false);
+        expect(route?.modes.includes('bike') ?? false).toBe(false);
+        expect(route?.modes.includes('scooter') ?? false).toBe(false);
+    });
+
+    it('désactive les horaires par défaut et exclut les transports sans archive', async () => {
+        expect(loadConfig({}).motisTransitEnabled).toBe(false);
+        expect(loadConfig({ MOTIS_TRANSIT_ENABLED: 'true' }).motisTransitEnabled).toBe(true);
+        const urls = stubMotis(transitPlan);
+        expect(await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: false })).toBeNull();
+        expect(urls[1].searchParams.get('transitModes')).toBe('');
+        expect(urls[1].searchParams.get('directModes')).toBe('WALK,RENTAL');
+        expect(urls[1].searchParams.has('maxTravelTime')).toBe(false);
+    });
+
+    it('ne propose aucun segment public sans accessibilité déclarée au profil PMR', async () => {
+        const plans = await itineraries(transitPlan);
+        const denied = plans.map(plan => ({ ...plan, legs: plan.legs.map(leg => ({ ...leg, wheelchairAccessible: 'NOT_ACCESSIBLE' })) }));
+        stubMotis({ direct: [], itineraries: denied });
+        expect(await searchFastestRoute({ ...search, accessibilityNeed: true }, MOTIS, { sharedMobility: true, transit: true })).toBeNull();
+    });
+
+    it('garde la comparaison indisponible si la mesure voiture échoue', async () => {
+        stubMotis(transitPlan, false);
+        const route = await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: true });
+        expect(route?.carbonReference).toBeNull();
+        expect(route?.carbonSavedGrams).toBeNull();
+    });
+
+    it('ne fabrique aucun trajet quand le moteur tombe', async () => {
+        network.mockRejectedValue(new Error('Panne MOTIS'));
+        expect(await searchFastestRoute(search, MOTIS, { sharedMobility: true, transit: true })).toBeNull();
+    });
 });
 
-describe('searchRoutes', () => {
-    it('demande un plan par moyen d’accès et la référence voiture', async () => {
-        const { urls } = stubMotis();
-        await searchRoutes(search, MOTIS);
-        const plans = urls.filter((url) => url.pathname === '/api/v6/plan');
-        expect(plans.map((url) => url.searchParams.get('preTransitRentalFormFactors'))).toEqual([null, 'BICYCLE', 'SCOOTER_STANDING']);
-        expect(plans[0].searchParams.get('transitModes')).toBe('TRAM,SUBWAY,BUS,FUNICULAR');
-        expect(plans[0].searchParams.get('time')).toBe(search.departureAt);
-        expect(urls.filter((url) => url.pathname === '/api/v1/one-to-many')).toHaveLength(1);
+describe('choix et traduction', () => {
+    it('compare directs et transports par arrivée, attente initiale comprise', async () => {
+        const [first] = await itineraries(transitPlan);
+        const late = { ...first, startTime: '2022-04-20T06:12:00Z', endTime: '2022-04-20T06:22:00Z', duration: 600 };
+        const early = { ...first, startTime: '2022-04-20T06:00:00Z', endTime: '2022-04-20T06:20:00Z', duration: 1200 };
+        expect(fastestItinerary([late, early])).toBe(early);
+        expect(toRouteOption(late, { ...search, departureAt: '2022-04-20T06:00:00Z' }).durationMinutes).toBe(22);
+        expect(fastestItinerary([])).toBeNull();
+        const unsupported = { ...early, legs: [{ ...early.legs[0], mode: 'CAR' }] };
+        expect(fastestItinerary([unsupported, late])).toBe(late);
     });
 
-    it('ne demande que l’accès à pied sans disponibilités partagées', async () => {
-        const { urls } = stubMotis();
-        const options = await searchRoutes({ ...search, sharedMobilityAvailable: false }, MOTIS);
-        expect(urls.filter((url) => url.pathname === '/api/v6/plan')).toHaveLength(1);
-        expect(options.every((option) => !option.modes.includes('bike') && !option.modes.includes('scooter'))).toBe(true);
-    });
-
-    it('garde la plus rapide de chaque famille et jusqu’à trois variantes de transport', async () => {
-        stubMotis();
-        const options = await searchRoutes(search, MOTIS);
-        const families = options.map((option) => option.id.replace(/-\d+$/, ''));
-        expect(new Set(families)).toEqual(new Set(['transit', 'bike', 'scooter-transit']));
-        expect(families.filter((family) => family === 'transit').length).toBeLessThanOrEqual(3);
-        // Deux variantes de transport ne partagent jamais la même suite de lignes.
-        const lines = options.filter((option) => option.id.startsWith('transit-')).map((option) => option.summary);
-        expect(new Set(lines).size).toBe(lines.length);
-        expect(options.map((option) => option.durationMinutes)).toEqual([...options.map((option) => option.durationMinutes)].sort((a, b) => a - b));
-    });
-
-    it('traduit les segments : lignes, correspondances, tracés, engins et carbone', async () => {
-        stubMotis();
-        const options = await searchRoutes(search, MOTIS);
-        const transit = options.find((option) => option.id === 'transit-0')!;
-        expect(transit.title).toBe('Transport en commun');
-        expect(transit.modes).toEqual(['walk', 'transit']);
-        expect(transit.legs.map((leg) => leg.mode)).toEqual(['walk', 'transit', 'walk', 'transit', 'walk']);
-        expect(transit.legs[1].mapLabel).toBe('Métro D');
-        expect(transit.legs[1].mapColor).toBe('#009e3d');
-        expect(transit.legs[1].detail).toContain('Métro D direction');
-        expect(transit.legs[2].transfer).toBe(true);
-        expect(transit.legs[0].from).toBe('Bellecour');
-        expect(transit.legs[4].to).toBe('Part-Dieu');
-        expect(transit.legs.every((leg) => leg.path.length >= 2)).toBe(true);
-        expect(transit.path.length).toBeGreaterThan(transit.legs[0].path.length);
-        // La durée d'une option comprend les attentes, absentes des segments.
-        expect(transit.durationMinutes).toBe(25);
-        expect(transit.summary).toBe('Métro D puis Tram T1, 1 correspondance.');
-
-        const bike = options.find((option) => option.id === 'bike-0')!;
-        expect(bike.modes).toEqual(['walk', 'bike']);
+    it('conserve lignes, correspondances, géométries et facteurs carbone', async () => {
+        const plans = await itineraries(transitPlan);
+        const best = fastestItinerary(plans);
+        if (!best) throw new Error('Trajet absent');
+        const route = toRouteOption(best, { ...search, departureAt: '2022-04-20T06:00:00Z' });
+        expect(route.legs[1].mapLabel).toBe('Métro D');
+        expect(route.legs[1].mapColor).toBe('#009e3d');
+        expect(route.legs[2].transfer).toBe(true);
+        expect(route.legs[0].from).toBe('Bellecour');
+        expect(route.legs.at(-1)?.to).toBe('Part-Dieu');
+        expect(route.legs.every(leg => leg.path.length >= 2)).toBe(true);
+        expect(route.summary).toBe('Métro D puis Tram T1, 1 correspondance.');
+        const rentals = await itineraries(rentalPlan);
+        const bike = toRouteOption(rentals[0], { ...search, departureAt: '2022-04-20T06:00:00Z' });
         expect(bike.legs[1].title).toBe('Vélo Vélov');
+        expect(bike.accessible).toBe(false);
         expect(bike.legs[1].carbonGrams).toBe(Math.round(bike.legs[1].distanceKm * 4));
-        expect(bike.legs[1].detail).toContain('PLACE ANTONIN PONCET');
-
-        const feeder = options.find((option) => option.id === 'scooter-transit-0')!;
-        expect(feeder.modes).toEqual(['walk', 'scooter', 'transit']);
-        expect(feeder.legs[1].detail).toBe('Prise à Rue Emile Zola/Pl. Bellecour, dépose à 16 rue Mazenod/Cr de la Liberté.');
-    });
-
-    it('applique la même référence voiture à toutes les options, ou aucune', async () => {
-        stubMotis();
-        const compared = await searchRoutes(search, MOTIS);
-        expect(compared.every((option) => option.carbonReference?.distanceKm === 4.3038)).toBe(true);
-        expect(compared.every((option) => option.carbonSavedGrams === 611 - option.carbonGrams)).toBe(true);
-
-        stubMotis({ car: false });
-        const alone = await searchRoutes(search, MOTIS);
-        expect(alone.every((option) => option.carbonReference === null && option.carbonSavedGrams === null)).toBe(true);
-    });
-
-    it('rend une liste vide quand MOTIS ne répond pas', async () => {
-        globalThis.fetch = (async () => { throw new Error('Panne MOTIS'); }) as unknown as typeof fetch;
-        expect(await searchRoutes(search, MOTIS)).toEqual([]);
     });
 });
