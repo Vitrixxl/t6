@@ -1866,6 +1866,18 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé pour la confirmation, faible pour le texte.** `scripts/e2e-onboarding.mjs` force un refus du profil, exige l’absence de coche, puis vérifie son apparition après une nouvelle écriture acceptée. Le libellé du suivi a été relu dans le rendu.
 
+### B70 — Impossible de changer de diapositive sur téléphone
+
+**Symptôme observé.** La présentation s’ouvrait depuis le lien distant, mais le téléphone ne permettait pas de passer à la suite sans modifier manuellement le numéro dans l’adresse.
+
+**Cause racine.** `Deck` n’écoutait que le clavier et les changements de fragment d’URL. Aucun geste tactile ne déclenchait ses fonctions de navigation.
+
+**Correctif.** [6940f1b](https://github.com/Vitrixxl/t6/commit/6940f1beb19cd025eb3be9e8c08ff023b813c5d5) : reconnaître un balayage horizontal volontaire sur le viewport, vers la gauche pour avancer et vers la droite pour revenir. Réutiliser la navigation existante, conserver les limites et les étapes, ignorer les liens, les gestes courts, verticaux, annulés ou à plusieurs doigts. `touch-action` conserve le déplacement vertical et le zoom du navigateur. La mise en page reste identique.
+
+**Où le montrer.** `output/presentation/src/useSlideSwipe.ts`, `output/presentation/src/Deck.tsx`, `scripts/e2e-presentation.mjs`.
+
+**Test et niveau de verrouillage : automatisé.** La recette tactile Chromium, intégrée à `bun run ci`, envoie de vrais événements au navigateur à 320 × 844, 390 × 844 et 844 × 390. Elle vérifie aller/retour, première et dernière diapositives, gestes ignorés, clavier, reprise après rechargement et ouverture tactile d’un lien de PR sans navigation involontaire. Le balayage a aussi été vérifié sur le lien public temporaire. La compatibilité Safari reste une vérification manuelle, non couverte par Chromium.
+
 ## Ouverts
 
 ### B45 — Les horaires TCL courants restent à intégrer
