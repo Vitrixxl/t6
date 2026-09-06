@@ -58,7 +58,7 @@ function Requirements() {
                         <>
                             <b>F2</b> Planificateur multimodal, géolocalisation temps réel
                         </>,
-                        'Un trajet : la première arrivée, attente comprise. Position en direct et tracé réel par segment.',
+                        'Un trajet : la première arrivée calculée, attente et marche finale comprises. Tracés vérifiés par segment.',
                     ],
                     [
                         <>
@@ -130,7 +130,7 @@ function ExternalApis() {
                     [<b>MOTIS</b>, 'Trajet le plus rapide sur la voirie OSM, les horaires TCL et les flux GBFS. Moteur local.', 'Aucune option : 503 et message explicite, jamais un tracé inventé.'],
                     [<b>Tuiles OSM</b>, 'Le fond de plan.', "Carte vide, l'itinéraire reste lisible en liste."],
                     [<b>GBFS Vélo'v et Dott</b>, 'Stations, vélos disponibles, trottinettes libres.', 'Message explicite, aucun véhicule partagé ni secours local.'],
-                    [<b>Réseau TCL et WFS Grand Lyon</b>, 'Arrêts, desserte et tracés officiels, ingérés hors ligne. Horaires à intégrer.', "Sans effet à l'exécution."],
+                    [<b>Réseau TCL et WFS Grand Lyon</b>, 'Arrêts et tracés officiels ingérés hors ligne. Horaires TCL chargés dans MOTIS.', "Sans effet à l'exécution."],
                 ]}
             />
         </SlideFrame>
@@ -329,7 +329,7 @@ function NextIterations() {
             <div className="tiles tiles-4">
                 <Card kicker="1 · Données" title="Renouveler les horaires TCL">
                     Les horaires théoriques TCL sont intégrés. Leur renouvellement reste à automatiser.
-                    Le ZIP ne fournit pas les tracés : les segments TCL sont décrits, sans ligne droite affichée. Temps réel à venir.
+                    Les tracés SYTRAL sont raccordés aux lignes et quais vérifiés. Les variantes non reconnues restent sans tracé. Temps réel à venir.
                 </Card>
                 <Card kicker="2 · Exploitation" title="Passer à PostgreSQL et Kubernetes">
                     SQLite sur un nœud suffit à la démonstration, pas à une métropole. Le schéma Drizzle migre vers
@@ -353,9 +353,9 @@ function SinceDelivery() {
     return (
         <SlideFrame eyebrow="07 · Depuis la remise du dossier" title="Ce qui a été corrigé, vérifié et mesuré">
             <div className="stats">
-                <Stat value="166" label="commits depuis le code remis au jury" />
+                <Stat value="168" label="commits depuis le code remis au jury" />
                 <Stat value="24" label="PR fusionnées, chacune avec ses tests" />
-                <Stat value="187" label="tests, 31 fichiers, 0 échec" />
+                <Stat value="192" label="tests, 32 fichiers, 0 échec" />
                 <Stat value="9 / 9" label="assertions du parcours de planification" />
                 <Stat value="0" label="violation axe-core sur quatre écrans" />
                 <Stat value="CI verte" label="sur le dernier commit poussé" />

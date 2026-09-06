@@ -39,6 +39,7 @@ const place = z.object({
     lat: z.number(),
     lon: z.number(),
     stopId: z.string().optional(),
+    cancelled: z.boolean().optional(),
 });
 const encodedPolyline = z.object({ points: z.string(), precision: z.number().int() });
 const rental = z.object({
@@ -62,6 +63,8 @@ const leg = z.object({
     headsign: z.string().optional(),
     wheelchairAccessible: z.string().optional(),
     rental: rental.optional(),
+    cancelled: z.boolean().optional(),
+    intermediateStops: z.array(place).optional(),
 });
 const itinerary = z.object({
     /** Secondes, attentes comprises. */

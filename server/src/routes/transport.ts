@@ -27,7 +27,7 @@ export function transportRoutes(ctx: AppContext, config: ServerConfig) {
         })
         .post('/journeys', async ({ body, request, set }) => {
             const context = await transport.context();
-            const route = await searchFastestRoute(body, config.motisUrl, { sharedMobility: context.sharedMobility !== null, transit: context.transitRoutingAvailable }, request.signal);
+            const route = await searchFastestRoute(body, config.motisUrl, { sharedMobility: context.sharedMobility !== null, transit: context.transitRoutingAvailable, lineShapes: transport.lineShapes }, request.signal);
             if (!route) {
                 set.status = 503;
                 return { error: 'Aucun trajet : le moteur d’itinéraires est indisponible ou les points sont inaccessibles.' };
@@ -35,6 +35,6 @@ export function transportRoutes(ctx: AppContext, config: ServerConfig) {
             return route;
         }, {
             body: routeSearch, response: { 200: routeOption, 503: errorResponse },
-            detail: { summary: 'Le trajet le plus rapide avec les moyens choisis, calculé par MOTIS sur la voirie, les horaires GTFS et les flux GBFS' },
+            detail: { summary: 'Le trajet le plus rapide avec les moyens choisis, calculé par MOTIS avec reprise piétonne conditionnelle et tracés TCL officiels vérifiés' },
         });
 }

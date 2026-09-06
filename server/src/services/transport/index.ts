@@ -24,6 +24,7 @@ export function createTransportService(repository: TransportRepository, transitR
 
     return {
         network,
+        lineShapes: gtfs.routes,
         async context(): Promise<TransportContext> {
             const current = await network();
             return {

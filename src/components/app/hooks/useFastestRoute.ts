@@ -17,7 +17,7 @@ export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
     idle: 'En attente d\'un trajet',
     pending: 'Calcul du tracé en cours',
     ready: 'Tracé réel affiché',
-    partial: 'Tracé TCL indisponible',
+    partial: 'Une partie du tracé est indisponible',
     unavailable: 'Service de routage indisponible',
 };
 

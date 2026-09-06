@@ -6,6 +6,13 @@ import { WALK_DASH_ARRAY, legWidthExpression } from './legStyle';
 import { bindPointPopup, escapeHtml } from './popup';
 
 function installLegLayers(map: MaplibreMap): void {
+    if (!map.getLayer('legs-casing')) {
+        map.addLayer({
+            id: 'legs-casing', type: 'line', source: 'legs',
+            layout: { 'line-cap': 'round', 'line-join': 'round' },
+            paint: { 'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 8, 15, 12] },
+        });
+    }
     if (!map.getLayer('legs-line')) {
         map.addLayer({
             id: 'legs-line',
@@ -171,9 +178,10 @@ export function installMapLayers(
     map: MaplibreMap,
     popupRef: MutableRefObject<maplibregl.Popup | null>,
 ): void {
-    installLegLayers(map);
-    installPositionLayers(map);
     installTransitLayer(map, popupRef);
     installVelovLayer(map, popupRef);
     installScooterLayer(map, popupRef);
+    // Le trajet doit rester lisible au-dessus des disponibilités, même denses.
+    installLegLayers(map);
+    installPositionLayers(map);
 }

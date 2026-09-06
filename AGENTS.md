@@ -266,8 +266,8 @@ sont apparus le jour où le service tiers a cessé de répondre.
 
 **Nommer les limites plutôt que les masquer.** MOTIS calcule sur l'archive GTFS
 chargée : sans archive récente, aucun trajet en transport n'existe aux dates
-courantes, et sans `shapes.txt` le tracé d'une ligne relie ses arrêts en ligne
-droite. Ces limites sont écrites dans le code et dans les
+courantes. Sans `shapes.txt`, MOTIS relie les arrêts par des droites : seuls les
+tracés SYTRAL vérifiés les remplacent ; sinon le segment reste sans géométrie. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
 Les horaires théoriques viennent de l’archive GTFS officielle chargée dans MOTIS (`infra/motis-prepare.sh`).
@@ -397,7 +397,7 @@ d’énergie supposée.
 
 ## Livraison avec horaires TCL officiels
 
-La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours. `MOTIS_TRANSIT_ENABLED=true` active les TCL à la préparation et au lancement. `GTFS_SOURCE_FILE` accepte le ZIP local ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour le téléchargement. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les segments TCL ont leurs lignes et horaires, mais aucun tracé affiché ; leur distance et leur bilan carbone sont explicitement estimés entre arrêts. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
+La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours. `MOTIS_TRANSIT_ENABLED=true` active les TCL à la préparation et au lancement. `GTFS_SOURCE_FILE` accepte le ZIP local ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour le téléchargement. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les tracés officiels SYTRAL complètent les segments dont la ligne, les quais et leur ordre concordent. Leur distance est mesurée sur ce tracé ; un segment sans correspondance vérifiée reste sans géométrie, avec une estimation de distance et de carbone annoncée. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
 
 
 ## Navigation mobile de la présentation
@@ -405,3 +405,6 @@ La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par 
 La présentation conserve sa mise en page et se pilote aussi au toucher : balayage horizontal à gauche pour avancer, à droite pour revenir, en portrait ou paysage. Les petits gestes, le déplacement vertical, le zoom à plusieurs doigts et les liens ne déclenchent pas de changement de diapositive. `useSlideSwipe` dans `output/presentation/src/useSlideSwipe.ts` réutilise les fonctions de navigation de `Deck`. `scripts/e2e-presentation.mjs` vérifie de vrais événements tactiles Chromium et fait partie de `bun run ci`.
 
 **Sélection sur la carte.** L’appui long de 500 ms ouvre le choix départ/arrivée. Le menu reste ouvert au relâchement et pendant les actualisations GPS ; un nouveau toucher extérieur ou la fermeture explicite le referme. Les déplacements, gestes annulés et appuis à plusieurs doigts ne sélectionnent aucun point. Rejouer `bun scripts/e2e-map-picker.mjs` après modification du sélecteur ou de son cycle de vie ; cette recette fait partie de `bun run ci`.
+
+
+**Arrivée piétonne et tracés (B75–B77).** Une recherche utilise normalement un plan MOTIS et une référence voiture. Si aucun trajet direct partagé exploitable ne revient malgré des moyens partagés demandés, `recoverRentalArrival` reprend le calcul via un point du chemin piéton réel situé à au moins 150 m de marche de l’arrivée. Deux plans supplémentaires mesurent en parallèle l’approche multimodale et la fin à pied ; la destination exacte et les contraintes GBFS sont conservées. Le meilleur trajet complet reste comparé aux résultats initiaux. Cette reprise limitée ne garantit pas l’optimalité globale du moteur ; un échec conserve les résultats initiaux, sans tracé inventé. Les segments annulés, leurs quais annulés et les locations sans engin identifié sont exclus. `transitShape` raccorde les tracés officiels, avec les quais physiques dans le bon ordre pour le bus ; les types de bus étendus suivent le mode BUS de MOTIS pour le libellé et le facteur carbone. Sur la carte, le trajet avec contour blanc passe au-dessus des marqueurs. Vérifications : `server/src/__tests__/planning.test.ts`, `transit-shape.test.ts`, `scripts/e2e-tcl.mjs` et `scripts/e2e-arrival.mjs` (vrai moteur, destination exacte, trajet plus rapide que la marche et pixels du tracé mobile).

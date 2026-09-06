@@ -118,6 +118,7 @@ try {
     await runBrowser(['bun', 'scripts/e2e-map-picker.mjs'], routingEnv);
     await runBrowser(['bun', 'scripts/e2e-app-update.mjs'], routingEnv);
     await runBrowser(['bun', 'scripts/e2e-tcl.mjs'], routingEnv);
+    await runBrowser(['bun', 'scripts/e2e-arrival.mjs'], routingEnv);
     await runBrowser(['bun', 'run', 'e2e'], routingEnv);
     await runBrowser(['bun', 'run', 'e2e:transport'], routingEnv);
     await runBrowser(['bun', 'scripts/e2e-mobile-transit.mjs'], routingEnv);

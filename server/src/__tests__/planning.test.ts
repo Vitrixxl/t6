@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import type { RouteSearchRequest } from '../../../src/contracts/planning.ts';
 import { loadConfig } from '../config/index.ts';
 import { searchFastestRoute } from '../services/planning.ts';
+import { recoverRentalArrival } from '../services/motis/arrival.ts';
 import { fetchPlan } from '../services/motis/client.ts';
 import { fastestItinerary, toRouteOption } from '../services/motis/options.ts';
 
@@ -130,10 +131,53 @@ describe('choix et traduction', () => {
         expect(route.legs.filter(leg => leg.mode === 'transit').every(leg => leg.path.length === 0)).toBe(true);
         expect(route.legs[1].detail).toContain('distance et bilan carbone estimés');
         expect(route.summary).toBe('Métro D puis Tram T1, 1 correspondance.');
+        const extendedBus = toRouteOption({ ...best, legs: [{ ...best.legs[1], mode: 'BUS', routeShortName: 'TB11', routeType: 702 }] }, { ...search, departureAt: '2022-04-20T06:00:00Z' });
+        expect(extendedBus.legs[0].mapLabel).toBe('Bus TB11');
+        expect(extendedBus.legs[0].estimate.carbonGramsPerKm).toBe(122);
         const rentals = await itineraries(rentalPlan);
         const bike = toRouteOption(rentals[0], { ...search, departureAt: '2022-04-20T06:00:00Z' });
         expect(bike.legs[1].title).toBe('Vélo Vélov');
         expect(bike.accessible).toBe(false);
         expect(bike.legs[1].carbonGrams).toBe(Math.round(bike.legs[1].distanceKm * 4));
+    });
+});
+
+
+describe('arrivée piétonne après une location', () => {
+    it('écarte les segments annulés et les locations sans véhicule identifié', async () => {
+        const [route] = await itineraries(rentalPlan);
+        for (const changed of [
+            { ...route.legs[1], cancelled: true },
+            { ...route.legs[1], to: { ...route.legs[1].to, cancelled: true } },
+            { ...route.legs[1], rental: undefined },
+        ]) {
+            expect(fastestItinerary([{ ...route, legs: [changed] }])).toBeNull();
+        }
+    });
+
+    it('mesure la fin à pied et conserve la dépose réelle, sans changer la destination', async () => {
+        const [rental] = await itineraries(rentalPlan);
+        const street = { ...rental.legs[1], mode: 'WALK', rental: undefined };
+        const walk = { ...rental, legs: [street], duration: 3000 };
+        const finish = { ...walk, duration: 180, legs: [{ ...street, duration: 180, from: { ...street.from, name: 'START' }, to: { ...street.to, name: 'END' } }] };
+        network.mockImplementation(Object.assign(async (input: Parameters<typeof fetch>[0]) => {
+            const url = new URL(String(input));
+            return Response.json({ direct: [url.searchParams.get('directModes') === 'WALK' ? finish : rental], itineraries: [] });
+        }, { preconnect: fetch.preconnect }));
+        const query = { from: search.origin, to: search.destination, departureAt: search.departureAt ?? '', transitModes: [], rentalFormFactors: ['BICYCLE' as const], wheelchair: false };
+        const recovered = await recoverRentalArrival(MOTIS, query, [walk]);
+        expect(recovered).toHaveLength(1);
+        expect(recovered[0].duration).toBe(rental.duration + 180);
+        expect(Date.parse(recovered[0].endTime)).toBe(Date.parse(rental.endTime) + 180000);
+        expect(recovered[0].legs[1].rental).toEqual(rental.legs[1].rental);
+        expect(recovered[0].legs.at(-1)?.to.name).toBe('END');
+        expect(recovered[0].legs.at(-1)?.from.name).toBe('Accès piéton à l’arrivée');
+        network.mockClear();
+        expect(await recoverRentalArrival(MOTIS, query, [rental, walk])).toEqual([]);
+        expect(network).not.toHaveBeenCalled();
+        expect(await recoverRentalArrival(MOTIS, { ...query, rentalFormFactors: [] }, [walk])).toEqual([]);
+        expect(network).not.toHaveBeenCalled();
+        network.mockResolvedValue(Response.json({ direct: [] }));
+        expect(await recoverRentalArrival(MOTIS, query, [walk])).toEqual([]);
     });
 });

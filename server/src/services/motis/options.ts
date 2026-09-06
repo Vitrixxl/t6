@@ -3,7 +3,7 @@
 // MOTIS rend des trajets non dominés ; UrbanFlow n'en propose qu'un, celui qui
 // arrive le premier avec les moyens demandés, attentes comprises. Les horaires et
 // lignes viennent de MOTIS. Les droites du GTFS sans shapes ne sont pas tracées.
-import type { AvailableMode, GeoPoint, MobilityMode, RouteLeg, RouteOption } from '../../../../src/types.ts';
+import type { AvailableMode, GeoPoint, GtfsRoute, MobilityMode, RouteLeg, RouteOption } from '../../../../src/types.ts';
 import { ROAD_EMISSION_FACTORS, transitEmissionFactor } from '../../../../src/lib/planner/emissions.ts';
 import { haversineDistanceKm } from '../../../../src/lib/planner/geo.ts';
 import { lineLabel } from '../../../../src/lib/planner/labels.ts';
@@ -11,6 +11,7 @@ import { buildOption } from '../../../../src/lib/planner/legs.ts';
 import { round } from '../../../../src/lib/planner/metrics.ts';
 import { AVAILABLE_MODE_LABELS } from '../../../../src/lib/planner/search-filters.ts';
 import type { MotisItinerary, MotisLeg } from './client.ts';
+import { transitShape } from './transit-shape.ts';
 import { decodePolyline } from './polyline.ts';
 
 const STREET_MODES = new Set(['WALK', 'BIKE', 'RENTAL', 'CAR', 'HGV', 'CAR_PARKING', 'CAR_DROPOFF', 'ODM', 'RIDE_SHARING', 'FLEX']);
@@ -18,7 +19,7 @@ const STREET_MODES = new Set(['WALK', 'BIKE', 'RENTAL', 'CAR', 'HGV', 'CAR_PARKI
 /** Mode UrbanFlow d'un segment, `null` pour un mode que l'application ne propose pas. */
 function legMode(leg: MotisLeg): MobilityMode | null {
     if (leg.mode === 'WALK') return 'walk';
-    if (leg.mode === 'RENTAL') return leg.rental?.formFactor?.startsWith('SCOOTER') ? 'scooter' : 'bike';
+    if (leg.mode === 'RENTAL') return leg.rental?.formFactor === 'SCOOTER_STANDING' ? 'scooter' : leg.rental?.formFactor === 'BICYCLE' ? 'bike' : null;
     if (leg.mode === 'BIKE') return 'bike';
     return STREET_MODES.has(leg.mode) ? null : 'transit';
 }
@@ -28,6 +29,7 @@ export interface SearchEnds {
     destination: GeoPoint;
     accessibilityNeed: boolean;
     departureAt: string;
+    lineShapes?: GtfsRoute[];
 }
 
 /** MOTIS nomme START et END les extrémités saisies ; un engin en libre-service peut n'avoir aucun nom. */
@@ -49,11 +51,11 @@ function pathLengthMeters(path: GeoPoint[]): number {
 
 type LegText = Pick<RouteLeg, 'title' | 'detail' | 'mapLabel' | 'mapColor'>;
 
-function describeTransit(leg: MotisLeg, to: GeoPoint): LegText {
-    const label = lineLabel(leg.routeType ?? -1, leg.routeShortName ?? '');
+function describeTransit(leg: MotisLeg, to: GeoPoint, traced: boolean): LegText {
+    const label = lineLabel(leg.mode === 'BUS' ? 3 : leg.routeType ?? -1, leg.routeShortName ?? '');
     return {
         title: `${label} vers ${to.label}`,
-        detail: `${leg.headsign ? `${label} direction ${leg.headsign}.` : `${label}.`} Horaires théoriques TCL. Tracé de ligne indisponible ; distance et bilan carbone estimés entre les arrêts.`,
+        detail: `${leg.headsign ? `${label} direction ${leg.headsign}.` : `${label}.`} Horaires théoriques TCL. ${traced ? 'Tracé officiel SYTRAL.' : 'Tracé de ligne indisponible ; distance et bilan carbone estimés entre les arrêts.'}`,
         mapLabel: label,
         mapColor: leg.routeColor ? `#${leg.routeColor}` : undefined,
     };
@@ -74,15 +76,15 @@ function describeRental(leg: MotisLeg, mode: 'bike' | 'scooter'): LegText {
     };
 }
 
-function describe(leg: MotisLeg, mode: MobilityMode, transfer: boolean, to: GeoPoint, distanceKm: number): LegText {
-    if (mode === 'transit') return describeTransit(leg, to);
+function describe(leg: MotisLeg, mode: MobilityMode, transfer: boolean, to: GeoPoint, distanceKm: number, traced: boolean): LegText {
+    if (mode === 'transit') return describeTransit(leg, to, traced);
     if (mode === 'walk') return describeWalk(transfer, to, distanceKm);
     return describeRental(leg, mode);
 }
 
 function carbonFactor(leg: MotisLeg, mode: MobilityMode): number {
     return mode === 'transit'
-        ? transitEmissionFactor(leg.routeType ?? -1).gramsCo2ePerPassengerKm
+        ? transitEmissionFactor(leg.mode === 'BUS' ? 3 : leg.routeType ?? -1).gramsCo2ePerPassengerKm
         : ROAD_EMISSION_FACTORS[mode].gramsCo2ePerPassengerKm;
 }
 
@@ -103,22 +105,22 @@ function toLeg(leg: MotisLeg, mode: MobilityMode, id: string, ends: SearchEnds):
     const fallback = fallbackLabels(mode);
     const from = placePoint(leg.from, ends, fallback.from);
     const to = placePoint(leg.to, ends, fallback.to);
-    const path = pathOf(leg, from, to);
-    const distanceKm = round((leg.distance ?? pathLengthMeters(path)) / 1000, 2);
+    const rawPath = pathOf(leg, from, to);
+    const path = mode === 'transit' ? transitShape(leg, ends.lineShapes ?? []) : rawPath;
+    const meters = mode === 'transit' ? pathLengthMeters(path.length > 1 ? path : rawPath) : leg.distance ?? pathLengthMeters(path);
+    const distanceKm = round(meters / 1000, 2);
     const transfer = mode === 'walk' && Boolean(leg.from.stopId && leg.to.stopId);
     const carbonGramsPerKm = carbonFactor(leg, mode);
     return {
         id,
         mode,
         ...(transfer ? { transfer } : {}),
-        ...describe(leg, mode, transfer, to, distanceKm),
+        ...describe(leg, mode, transfer, to, distanceKm, path.length > 1),
         from: from.label,
         to: to.label,
         fromPoint: from,
         toPoint: to,
-        // Le GTFS TCL livré ne contient pas shapes.txt : la polyligne MOTIS
-        // relie seulement les arrêts. Elle estime la distance, pas le tracé.
-        path: mode === 'transit' ? [] : path,
+        path,
         distanceKm,
         durationMinutes: Math.max(1, Math.round(leg.duration / 60)),
         carbonGrams: Math.round(distanceKm * carbonGramsPerKm),
@@ -156,8 +158,8 @@ function summaryOf(legs: RouteLeg[], transfers: number): string {
 }
 
 /** Un itinéraire dont tous les segments sont des modes que l'application propose. */
-function supported(itinerary: MotisItinerary): boolean {
-    return itinerary.legs.every((leg) => legMode(leg) !== null);
+export function usableItinerary(itinerary: MotisItinerary): boolean {
+    return itinerary.legs.every((leg) => !leg.cancelled && !leg.from.cancelled && !leg.to.cancelled && legMode(leg) !== null);
 }
 
 /**
@@ -165,7 +167,7 @@ function supported(itinerary: MotisItinerary): boolean {
  * avant de partir compte donc, ce qui est le sens d'une recherche « maintenant ».
  */
 export function fastestItinerary(itineraries: MotisItinerary[]): MotisItinerary | null {
-    return itineraries.filter(supported).reduce<MotisItinerary | null>((best, candidate) => {
+    return itineraries.filter(usableItinerary).reduce<MotisItinerary | null>((best, candidate) => {
         if (!best) return candidate;
         const arrival = Date.parse(candidate.endTime) - Date.parse(best.endTime);
         return arrival < 0 || (arrival === 0 && candidate.duration < best.duration) ? candidate : best;

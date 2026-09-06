@@ -22,7 +22,7 @@ n’est pas considérée comme utilisée par l’application.
 | `GET /api/transport/context` | `src/queries/transport.ts` : métadonnées et disponibilités GBFS, sans réseau TCL complet. |
 | `GET /api/transport/stops` | `src/queries/map-stops.ts` : tous les quais des cellules visibles de la carte, en cache par version. |
 | `GET /api/transport/nearby-stops` | `src/queries/nearby-stops.ts` : compte réel et quatre quais les plus proches dans le rayon choisi. |
-| `POST /api/transport/journeys` | `src/queries/routes.ts` : un objet trajet, le plus rapide avec les moyens et types publics demandés, attentes comprises ; un seul plan MOTIS et sa référence voiture. |
+| `POST /api/transport/journeys` | `src/queries/routes.ts` : un objet trajet, le plus rapide avec les moyens et types publics demandés, attentes comprises ; un plan MOTIS et sa référence voiture ; reprise conditionnelle en deux plans supplémentaires pour une arrivée piétonne inaccessible au profil location. |
 
 Supprimés :
 
