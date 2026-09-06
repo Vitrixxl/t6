@@ -1,0 +1,81 @@
+# UrbanFlow au complet : l'application, son API et le moteur d'itinéraires.
+#
+#   docker compose up
+#
+# Rien à préparer avant : au premier démarrage, le moteur télécharge la voirie
+# de la métropole et construit son graphe dans un volume (voir infra/motis-entrypoint.sh).
+# L'application attend qu'il réponde, puis écoute sur https://localhost:4000.
+#
+# Le même serveur porte le client et l'API — une seule origine, donc un cookie
+# de session de première partie et aucun en-tête CORS. Il écoute en **HTTPS**,
+# et ce n'est pas une précaution de production : le navigateur réserve au
+# contexte sécurisé la géolocalisation, `crypto.randomUUID` et le service
+# worker. Sans lui l'application ne fonctionne que sur localhost, donc pas
+# depuis un téléphone.
+#
+# Les réglages facultatifs se lisent dans un fichier .env à la racine
+# (modèle : .env.example). Aucun n'est nécessaire pour démarrer.
+name: urbanflow
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    environment:
+      # Le moteur est visé par son nom de service : le réseau du compose fait
+      # la résolution, aucun port MOTIS n'a besoin d'être publié.
+      MOTIS_URL: http://motis:8080
+      MOTIS_TRANSIT_ENABLED: ${MOTIS_TRANSIT_ENABLED:-false}
+      TEST_PASSWORD: ${TEST_PASSWORD:-UrbanFlow2026!}
+      # Adresses supplémentaires à inscrire dans le certificat. Renseigner l'IP
+      # de la machine sur le réseau local pour y accéder depuis un téléphone :
+      #   TLS_EXTRA_HOSTS=IP:192.168.1.37
+      TLS_EXTRA_HOSTS: ${TLS_EXTRA_HOSTS:-}
+    volumes:
+      # Comptes et trajets d'un côté, certificat de l'autre : le conteneur
+      # reste jetable, les données survivent à sa recréation.
+      - app-data:/data
+      - app-certs:/certs
+    # Publié sur toutes les interfaces : sinon le téléphone ne verrait rien.
+    ports:
+      - '${API_PORT:-4000}:4000'
+    depends_on:
+      motis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # MOTIS calcule sur un graphe unique : voirie OSM (accès à pied, à vélo et
+  # référence voiture), horaires GTFS (RAPTOR) et flux GBFS lus à l'exécution.
+  motis:
+    image: ghcr.io/motis-project/motis@sha256:6055f51eec43eeed28524037ca0161b96efe9cd05728eaa9ac04c20c2826d330
+    entrypoint: [/bin/sh, /motis-entrypoint.sh]
+    environment:
+      MOTIS_TRANSIT_ENABLED: ${MOTIS_TRANSIT_ENABLED:-false}
+      # Sans archive déposée dans infra/gtfs/, l'entrypoint télécharge celle-ci
+      # (compte Data Grand Lyon, licence Mobilité).
+      GTFS_SOURCE_URL: ${GTFS_SOURCE_URL:-}
+      GTFS_USERNAME: ${GTFS_USERNAME:-}
+      GTFS_PASSWORD: ${GTFS_PASSWORD:-}
+    volumes:
+      - motis-data:/data
+      - ./infra/motis-entrypoint.sh:/motis-entrypoint.sh:ro
+      - ./infra/gtfs:/gtfs:ro
+    healthcheck:
+      # Une vraie recherche à pied dans Lyon : le graphe est chargé et répond.
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://127.0.0.1:8080/api/v1/one-to-many?one=45.7578;4.832&many=45.76;4.85&mode=WALK&max=3600&maxMatchingDistance=250&arriveBy=false
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      # Le premier démarrage télécharge la voirie et construit le graphe.
+      start_period: 15m
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  app-certs:
+  motis-data:

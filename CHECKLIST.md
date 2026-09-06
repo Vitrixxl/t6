@@ -195,7 +195,8 @@ Source: `/home/vitrix/Downloads/2026 SEPTEMBRE T6 CDSD - SUJET 'URBAN FLOW MOBIL
 
 - [x] Le calcul d'itinéraires est délégué à MOTIS : voirie OSM, horaires GTFS (RAPTOR) et flux GBFS sur un graphe unique ; le pipeline horaire maison et ses cinq tables sont retirés (migration 0011).
 - [x] Recette : horaire GTFS de recette dérivé du réseau livré (`scripts/build-gtfs-fixture.py`), importé dans un MOTIS jetable par `bun run ci`.
-- [x] Archive TCL officielle importée via `GTFS_SOURCE_FILE`, moteur et API activés.
+- [x] Archive TCL officielle déposée dans `infra/gtfs/` et importée par le conteneur MOTIS, moteur et API activés.
+- [x] `docker compose up` seul lance l’application et le moteur sur une machine neuve : voirie téléchargée et graphe construit au premier démarrage, pile vérifiée en CI.
 - [ ] Automatiser le renouvellement de l’archive et compléter les variantes de tracés encore non reconnues.
 
 ## Simplification pour l’apprentissage
@@ -263,7 +264,7 @@ contrôle décrivent leur livraison historique ; elles ne demandent aucun rejeu.
 
 ## Livraison avec horaires TCL officiels
 
-La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours. `MOTIS_TRANSIT_ENABLED=true` active les TCL à la préparation et au lancement. `GTFS_SOURCE_FILE` accepte le ZIP local ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour le téléchargement. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les tracés officiels SYTRAL complètent les segments dont la ligne, les quais et leur ordre concordent. Leur distance est mesurée sur ce tracé ; un segment sans correspondance vérifiée reste sans géométrie, avec une estimation de distance et de carbone annoncée. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
+La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours par `infra/motis-entrypoint.sh` au démarrage du conteneur. `MOTIS_TRANSIT_ENABLED=true` active les TCL dans le moteur et l’API. L’archive se dépose dans `infra/gtfs/tcl.gtfs.zip` ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour que le conteneur la télécharge. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les tracés officiels SYTRAL complètent les segments dont la ligne, les quais et leur ordre concordent. Leur distance est mesurée sur ce tracé ; un segment sans correspondance vérifiée reste sans géométrie, avec une estimation de distance et de carbone annoncée. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
 
 
 ## Navigation mobile de la présentation

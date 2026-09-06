@@ -39,5 +39,8 @@ yarn.lock
 # Worktrees git crees par les sessions d agents : d autres branches, jamais ce depot.
 .claude/worktrees/
 
-# Extraits OSM et index OSRM préparés localement.
-infra/osrm-data/
+# Surcharges Compose propres au poste (port du moteur publié, par exemple).
+compose.override.yml
+# Archive GTFS déposée pour le conteneur MOTIS : licence Mobilité, jamais versionnée.
+infra/gtfs/*
+!infra/gtfs/README.md

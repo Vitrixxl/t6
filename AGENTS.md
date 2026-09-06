@@ -274,7 +274,7 @@ courantes. Sans `shapes.txt`, MOTIS relie les arrêts par des droites : seuls le
 tracés SYTRAL vérifiés les remplacent ; sinon le segment reste sans géométrie. Ces limites sont écrites dans le code et dans les
 supports de revue maintenus ; ne pas produire d'affichage qui les contredit.
 
-Les horaires théoriques viennent de l’archive GTFS officielle chargée dans MOTIS (`infra/motis-prepare.sh`).
+Les horaires théoriques viennent de l’archive GTFS officielle chargée dans MOTIS (`infra/motis-entrypoint.sh`, au démarrage de `docker compose up`).
 L'horaire de recette de `scripts/fixtures/` est dérivé du réseau livré et ne sert
 qu'à `bun run ci` : ne jamais le présenter ni le charger comme horaire réel.
 
@@ -401,7 +401,7 @@ d’énergie supposée.
 
 ## Livraison avec horaires TCL officiels
 
-La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours. `MOTIS_TRANSIT_ENABLED=true` active les TCL à la préparation et au lancement. `GTFS_SOURCE_FILE` accepte le ZIP local ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour le téléchargement. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les tracés officiels SYTRAL complètent les segments dont la ligne, les quais et leur ordre concordent. Leur distance est mesurée sur ce tracé ; un segment sans correspondance vérifiée reste sans géométrie, avec une estimation de distance et de carbone annoncée. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
+La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`), importée dans MOTIS sur 60 jours par `infra/motis-entrypoint.sh` au démarrage du conteneur. `MOTIS_TRANSIT_ENABLED=true` active les TCL dans le moteur et l’API. L’archive se dépose dans `infra/gtfs/tcl.gtfs.zip` ; `GTFS_SOURCE_URL` et les accès Data restent utilisables pour que le conteneur la télécharge. Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les tracés officiels SYTRAL complètent les segments dont la ligne, les quais et leur ordre concordent. Leur distance est mesurée sur ce tracé ; un segment sans correspondance vérifiée reste sans géométrie, avec une estimation de distance et de carbone annoncée. Les accès à pied conservent leur géométrie OSM. Sans archive, le mode `MOTIS_TRANSIT_ENABLED=false` reste disponible avec son bandeau et aucun trajet TCL. Les horaires de recette sont réservés à la CI.
 
 
 ## Navigation mobile de la présentation

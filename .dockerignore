@@ -10,6 +10,8 @@ tmp
 .env
 *.pem
 server/data
-infra/osrm-data
+# Du dossier infra, l'image n'embarque que son entrypoint.
+infra/*
+!infra/entrypoint.sh
 docs
 .github

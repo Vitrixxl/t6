@@ -1,8 +1,10 @@
 # Données de recette du moteur MOTIS
 
 Deux fichiers alimentent le moteur MOTIS jetable de `bun run ci`. Ils ne sont
-ni servis au client ni utilisés par la pile de production, qui repose sur
-`infra/motis-prepare.sh` (extrait métropolitain et archive GTFS officielle).
+ni servis au client ni utilisés par la pile de production, dont le conteneur
+MOTIS télécharge l'extrait du Rhône et importe l'archive GTFS officielle
+(`infra/motis-entrypoint.sh`). Seul le travail « Pile Docker » de la CI dépose
+l'horaire de recette dans `infra/gtfs/` pour vérifier ce chemin.
 
 ## `lyon-roads.osm.pbf` — voirie réelle
 
@@ -20,11 +22,10 @@ peuvent rester dans l’extrait. Ce jeu couvre les parcours de recette, pas tout
 [Open Database License 1.0 (ODbL)](https://opendatacommons.org/licenses/odbl/1-0/).
 [Attribution et droits](https://www.openstreetmap.org/copyright).
 
-Reproduction avec osmium-tool 1.18.0, depuis l’extrait métropolitain produit par
-`infra/motis-prepare.sh` :
+Reproduction avec osmium-tool 1.18.0, depuis l’extrait métropolitain téléchargé par le conteneur MOTIS (`docker cp urbanflow-motis-1:/data/lyon.osm.pbf .`) :
 
 ```bash
-osmium extract -b 4.78,45.72,4.95,45.81 infra/motis-data/lyon.osm.pbf -o lyon-ci.osm.pbf
+osmium extract -b 4.78,45.72,4.95,45.81 lyon.osm.pbf -o lyon-ci.osm.pbf
 osmium tags-filter lyon-ci.osm.pbf w/highway r/type=restriction -o scripts/fixtures/lyon-roads.osm.pbf
 ```
 
