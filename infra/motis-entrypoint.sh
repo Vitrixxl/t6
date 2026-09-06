@@ -33,14 +33,20 @@ REBUILD_AFTER_DAYS=30
 
 # download URL DESTINATION [EN-TÊTE] — écrit dans un fichier temporaire pour ne
 # jamais laisser un téléchargement interrompu passer pour une donnée valide.
+# Un serveur qui cale est repris là où il s'est arrêté, jusqu'à cinq fois.
 download() {
   url=$1; destination=$2; header=${3:-}
   rm -f "$destination.part"
-  if [ -n "$header" ]; then
-    wget -T 120 --header "$header" -O "$destination.part" "$url"
-  else
-    wget -T 120 -O "$destination.part" "$url"
-  fi
+  attempt=1
+  while ! wget -c -T 60 ${header:+--header "$header"} -O "$destination.part" "$url"; do
+    if [ "$attempt" -ge 5 ]; then
+      echo "Téléchargement impossible après $attempt essais : $url" >&2
+      return 1
+    fi
+    attempt=$((attempt + 1))
+    echo "Reprise du téléchargement (essai $attempt)..."
+    sleep 10
+  done
   mv "$destination.part" "$destination"
 }
 
