@@ -257,10 +257,10 @@ function Reversals() {
                 </Card>
                 <Card kicker="Ajouté" title="Ce que la démo exigeait" tone="pine">
                     <ul>
-                        <li>La carte TCL : 98 lignes de bus, quais et tracés officiels par sens, dont TB12.</li>
+                        <li>98 lignes de bus : quais et tracés par sens, dont TB12.</li>
                         <li>Un accueil obligatoire : moyens utilisables et PMR, avec reprise en cas d’erreur.</li>
                         <li>Les quais chargés par zone visible au lieu du fichier complet.</li>
-                        <li>MOTIS local : marche, TCL et engins partagés. Horaires officiels, attente affichée par transport.</li>
+                        <li>MOTIS : marche, TCL et engins partagés. Horaires officiels et attente affichée.</li>
                         <li>Information RGPD, conservation à six mois et registre des traitements.</li>
                     </ul>
                 </Card>

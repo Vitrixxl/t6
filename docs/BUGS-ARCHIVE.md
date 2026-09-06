@@ -1980,7 +1980,7 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Cause racine.** Le contexte des disponibilités était envoyé sans compression : 1 063 426 octets sur l’instantané contrôlé. Le transfert public mesuré prend 14–20 s et approche le délai de 20 s du contexte transport ; un ralentissement supplémentaire peut faire expirer une tentative avant réception du corps complet.
 
-**Correctif.** COMPRESSION_COMMIT : négocier gzip pour les grandes réponses GET publiques du transport, après validation du JSON, avec `Vary: Accept-Encoding`. La flotte reste complète. Sur le même instantané : 138 168 octets compressés. Aucun changement de délai, de compte ou d’interface.
+**Correctif.** [9fe0877](https://github.com/Vitrixxl/t6/commit/9fe0877032d68669c68cf6ffe4fd153ba10c32b1) : négocier gzip pour les grandes réponses GET publiques du transport, après validation du JSON, avec `Vary: Accept-Encoding`. La flotte reste complète. Sur le même instantané : 138 168 octets compressés. Aucun changement de délai, de compte ou d’interface.
 
 **Où le montrer.** `server/src/plugins/transport-compression.ts`, `server/src/routes/transport.ts`, `scripts/e2e-arrival.mjs`, `scripts/e2e-transport-map.mjs`.
 
@@ -1992,7 +1992,7 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Cause racine.** L’import comparait le terminus exactement : « Kimmerling-Genêts » pour la ligne et « Kimmerling - Genêts » pour le quai. Cette différence de ponctuation rejetait la ligne entière avant le raccordement MOTIS.
 
-**Correctif.** DELIVERY_COMMIT : comparer des clés de noms sans ponctuation ni espaces, en conservant les identifiants, libellés et ordre des quais. Actualiser le réseau SYTRAL et l’horaire de recette dérivé. TB12 retrouve les géométries officielles dans les deux sens ; aucune droite de substitution.
+**Correctif.** [9fe0877](https://github.com/Vitrixxl/t6/commit/9fe0877032d68669c68cf6ffe4fd153ba10c32b1) : comparer des clés de noms sans ponctuation ni espaces, en conservant les identifiants, libellés et ordre des quais. Actualiser le réseau SYTRAL et l’horaire de recette dérivé. TB12 retrouve les géométries officielles dans les deux sens ; aucune droite de substitution.
 
 **Où le montrer.** `scripts/fetch_tcl_bus.py` (`stop_name_key`, `route_stops`), `data/transport/gtfs-feed.json`, `server/src/services/motis/transit-shape.ts`.
 
@@ -2004,7 +2004,7 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Cause racine.** La conversion utilisait les horaires globaux pour la durée totale mais perdait les heures d’embarquement et l’attente de chaque segment. Le résumé ne portait que les familles de transport.
 
-**Correctif.** DELIVERY_COMMIT : conserver les heures MOTIS et calculer chaque attente dans `boardingWaits`. Le départ affiché correspond au départ demandé ; son éventuel décalage à pied devient l’attente au premier arrêt. Les correspondances partent de la fin du transport précédent, accès déduits. Aucune attente n’est ajoutée une seconde fois à la durée. Un horaire absent reste inconnu. Ajouter les pictogrammes, flèches et numéros/lettres au résumé, avec libellés uniquement pour les lecteurs d’écran.
+**Correctif.** [9fe0877](https://github.com/Vitrixxl/t6/commit/9fe0877032d68669c68cf6ffe4fd153ba10c32b1) : conserver les heures MOTIS et calculer chaque attente dans `boardingWaits`. Le départ affiché correspond au départ demandé ; son éventuel décalage à pied devient l’attente au premier arrêt. Les correspondances partent de la fin du transport précédent, accès déduits. Aucune attente n’est ajoutée une seconde fois à la durée. Un horaire absent reste inconnu. Ajouter les pictogrammes, flèches et numéros/lettres au résumé, avec libellés uniquement pour les lecteurs d’écran.
 
 **Où le montrer.** `server/src/services/motis/timing.ts`, `options.ts`, `src/contracts/planning.ts`, `src/components/planner/RouteSequence.tsx`, `RouteSteps.tsx`, `RoutePanels.tsx`.
 
