@@ -67,7 +67,7 @@ export function createTestApi(overrides: Partial<ServerConfig> = {}): TestApi {
         call,
         async register(email = 'citoyen@lyon.fr') {
             const response = await call('/api/auth/register', {
-                body: { email, password: PASSWORD, displayName: 'Citoyen' },
+                body: { email, password: PASSWORD, displayName: 'Citoyen', termsAccepted: true },
             });
             if (response.status !== 201) {
                 throw new Error(`inscription impossible (${response.status}) : ${await response.text()}`);
@@ -111,7 +111,7 @@ export interface AuthBody {
 
 export interface ExportBody extends StateBody {
     exportedAt: string;
-    account: { id: string; email: string; displayName: string; createdAt: string };
+    account: { id: string; email: string; displayName: string; createdAt: string; termsAcceptedAt: string | null; termsVersion: string | null };
 }
 
 export interface OpenApiSpec {

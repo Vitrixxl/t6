@@ -1,6 +1,7 @@
 // Compte : droits RGPD.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { count } from 'drizzle-orm';
+import { TERMS_VERSION } from '../../../src/contracts/index.ts';
 import { sessions, tripRecords } from '../db/schema.ts';
 import { PASSWORD, PLANNED_TRIP, createTestApi, json, type ExportBody, type TestApi } from './helpers.ts';
 
@@ -26,6 +27,8 @@ describe('RGPD', () => {
         expect(response.status).toBe(200);
         expect(response.headers.get('content-disposition')).toContain('urbanflow-export.json');
         expect(body.account.email).toBe('export@lyon.fr');
+        expect(body.account.termsVersion).toBe(TERMS_VERSION);
+        expect(body.account.termsAcceptedAt).toBeString();
         expect(body.tripRecords).toHaveLength(1);
     });
 

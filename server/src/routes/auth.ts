@@ -7,7 +7,7 @@ import type { ServerConfig } from '../config/index.ts';
 import { authGuard } from '../plugins/auth.ts';
 import type { AppContext } from '../plugins/context.ts';
 import { rateLimit } from '../plugins/rate-limit.ts';
-import { DEFAULT_PROFILE, credentials, errorResponse, okResponse, registration, session } from '../../../src/contracts/index.ts';
+import { DEFAULT_PROFILE, TERMS_VERSION, credentials, errorResponse, okResponse, registration, session } from '../../../src/contracts/index.ts';
 import { toSessionUser } from '../repositories/index.ts';
 import { hashPassword, verifyPassword } from '../security/password.ts';
 import { hashToken } from '../security/tokens.ts';
@@ -33,12 +33,17 @@ export function authRoutes(ctx: AppContext, config: ServerConfig) {
                 }
 
                 const profile: MobilityProfile = { ...DEFAULT_PROFILE, displayName: body.displayName };
+                const now = new Date().toISOString();
                 const row = {
                     id: crypto.randomUUID(),
                     email: body.email,
                     displayName: body.displayName,
                     passwordHash: await hashPassword(body.password),
-                    createdAt: new Date().toISOString(),
+                    createdAt: now,
+                    // Le contrat garantit l'acceptation ; on garde sa date et la
+                    // version du texte accepté (preuve, RGPD art. 5.2).
+                    termsAcceptedAt: now,
+                    termsVersion: TERMS_VERSION,
                     profile,
                 };
                 users.insert(row);

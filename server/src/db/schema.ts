@@ -20,6 +20,10 @@ export const users = sqliteTable('users', {
     // reste retro-compatible avec les comptes existants.
     passwordHash: text('password_hash').notNull(),
     createdAt: text('created_at').notNull(),
+    // Preuve de l'acceptation des conditions : quand, et quelle version du
+    // texte. Nuls pour les comptes antérieurs à leur introduction.
+    termsAcceptedAt: text('terms_accepted_at'),
+    termsVersion: text('terms_version'),
     // Le profil de mobilité est un agregat de préférences lu et ecrit en bloc :
     // aucune requête ne porte sur un champ isole, JSON est ici le bon grain.
     // Le driver encode et décodé : les routes ne voient jamais la chaîne.

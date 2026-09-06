@@ -1,6 +1,7 @@
 // Inscription, connexion, session : le chemin critique de sécurité.
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { eq } from 'drizzle-orm';
+import { TERMS_VERSION } from '../../../src/contracts/index.ts';
 import { users } from '../db/schema.ts';
 import { PASSWORD, createTestApi, json, type AuthBody, type ErrorBody, type TestApi } from './helpers.ts';
 
@@ -17,7 +18,7 @@ afterEach(() => {
 describe('inscription', () => {
     it('crée un compte et ouvre une session par cookie httpOnly', async () => {
         const response = await api.call('/api/auth/register', {
-            body: { email: 'citoyen@lyon.fr', password: PASSWORD, displayName: 'Citoyen' },
+            body: { email: 'citoyen@lyon.fr', password: PASSWORD, displayName: 'Citoyen', termsAccepted: true },
         });
 
         expect(response.status).toBe(201);
@@ -31,7 +32,7 @@ describe('inscription', () => {
 
     it('hache le mot de passe en argon2id et ne le renvoie jamais', async () => {
         const response = await api.call('/api/auth/register', {
-            body: { email: 'a@lyon.fr', password: PASSWORD, displayName: 'A' },
+            body: { email: 'a@lyon.fr', password: PASSWORD, displayName: 'A', termsAccepted: true },
         });
         const body = await response.text();
 
@@ -45,7 +46,7 @@ describe('inscription', () => {
     it('refuse un mot de passe trop court ou sans chiffre', async () => {
         for (const password of ['court1', 'sansaucunchiffreici']) {
             const response = await api.call('/api/auth/register', {
-                body: { email: 'b@lyon.fr', password, displayName: 'B' },
+                body: { email: 'b@lyon.fr', password, displayName: 'B', termsAccepted: true },
             });
             expect(response.status).toBe(422);
         }
@@ -53,7 +54,7 @@ describe('inscription', () => {
 
     it('refuse un email mal forme', async () => {
         const response = await api.call('/api/auth/register', {
-            body: { email: 'pas-un-email', password: PASSWORD, displayName: 'B' },
+            body: { email: 'pas-un-email', password: PASSWORD, displayName: 'B', termsAccepted: true },
         });
         expect(response.status).toBe(422);
     });
@@ -61,9 +62,30 @@ describe('inscription', () => {
     it('refuse un email déjà enregistré', async () => {
         await api.register('doublon@lyon.fr');
         const response = await api.call('/api/auth/register', {
-            body: { email: 'doublon@lyon.fr', password: PASSWORD, displayName: 'Doublon' },
+            body: { email: 'doublon@lyon.fr', password: PASSWORD, displayName: 'Doublon', termsAccepted: true },
         });
         expect(response.status).toBe(409);
+    });
+
+    it('refuse une inscription sans acceptation des conditions', async () => {
+        for (const termsAccepted of [false, undefined]) {
+            const response = await api.call('/api/auth/register', {
+                body: { email: 'sans@lyon.fr', password: PASSWORD, displayName: 'Sans', termsAccepted },
+            });
+            expect(response.status).toBe(422);
+        }
+        expect(api.db.select({ id: users.id }).from(users).all()).toHaveLength(0);
+    });
+
+    it('conserve la date et la version des conditions acceptées', async () => {
+        await api.register('accepte@lyon.fr');
+        const stored = api.db
+            .select({ termsAcceptedAt: users.termsAcceptedAt, termsVersion: users.termsVersion })
+            .from(users)
+            .where(eq(users.email, 'accepte@lyon.fr'))
+            .get();
+        expect(stored?.termsVersion).toBe(TERMS_VERSION);
+        expect(Date.parse(stored?.termsAcceptedAt ?? '')).not.toBeNaN();
     });
 });
 

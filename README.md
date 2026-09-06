@@ -14,7 +14,8 @@ Le serveur est la seule source de vérité : comptes en SQLite (argon2id), sessi
 en base, état du compte rendu à la connexion, puis collections lues par `GET`. Chaque trajet, routine ou
 itinéraire enregistré s'ecrit seul par `PUT /api/.../:id` et se retire par `DELETE /api/.../:id` ; aucun corps HTTP
 ne contient une collection complète. À la lecture du compte ou des trajets, `completeDueTrips` comptabilise les ponctuels dont la date
-prévue est passée et qui ne sont pas annulés, avec leur historique carbone dans une transaction. Seul `DELETE /api/trips/history` efface volontairement tout
+prévue est passée et qui ne sont pas annulés, avec leur historique carbone dans une transaction, puis efface les
+ponctuels passés depuis plus de six mois. Seul `DELETE /api/trips/history` efface volontairement tout
 l'historique. Les envois sont sérialisés. Pas de cache local persistant : les vues vivent dans le cache React Query
 (`src/queries/`) le temps de la session, et une écriture refusée est signalée à l'utilisateur, la vue concernée
 étant relue depuis le serveur. Exigence C10 (connectivite variable) : cache du
@@ -449,6 +450,16 @@ Vérification navigateur : `bun scripts/e2e-account-export.mjs` sur le serveur l
 
 RGPD : export complet du compte (`GET /api/me/export`, art. 20) et suppression en cascade (`DELETE /api/me`,
 art. 17), historiques bornés à 50 entrées (minimisation), géolocalisation sur action explicite.
+
+Base légale et information (art. 6 et 13) : le texte « Conditions d'utilisation et données personnelles »
+(`src/components/legal/LegalNotice.tsx`) est lisible avant l'inscription et depuis « Profil et préférences →
+Données personnelles ». Il donne, par traitement, la base légale (contrat pour le service, intérêt légitime pour la
+limitation de débit, consentement du navigateur pour la position), les destinataires appelés par le navigateur (BAN,
+Photon, tuiles OSM) et les durées. L'inscription exige la coche d'acceptation (`termsAccepted` dans le contrat
+`registration`, refusée en 422 sans elle) ; la date et la version acceptées (`TERMS_VERSION`) sont stockées avec le
+compte et figurent dans l'export. Les ponctuels passés sont effacés `PAST_TRIP_RETENTION_MONTHS` (6 mois) après leur
+date prévue par `completeDueTrips`, leur entrée carbone sans coordonnées restant bornée à 50. La position temps réel
+n'est jamais persistée. Le [registre des traitements](docs/REGISTRE-TRAITEMENTS.md) (art. 30) reprend le tout.
 
 
 ## Préparation des horaires GTFS — branche de travail

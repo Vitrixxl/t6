@@ -24,6 +24,7 @@ export async function registerUser(input: Registration): Promise<Session> {
         email: input.email.trim(),
         password: input.password,
         displayName: input.displayName,
+        termsAccepted: input.termsAccepted,
     }));
 }
 

@@ -40,7 +40,7 @@ assert(state.tripRecords.length === 28, 'Historique carbone incomplet');
 assert(state.recurringTrips.every(r => new Date(r.createdAt) < new Date()), 'Récurrences non antérieures à aujourd’hui');
 const neighbor = { email: 'voisin@example.test', password: 'VoisinDocker2026!' };
 if (Bun.env.PROBE_PHASE === 'first') {
-    await call('/auth/register', 'POST', { ...neighbor, displayName: 'Voisin conservé' });
+    await call('/auth/register', 'POST', { ...neighbor, displayName: 'Voisin conservé', termsAccepted: true });
     await call('/trips/planned/' + state.plannedTrips[0].id, 'DELETE', undefined, cookie);
     const changed = await (await call('/state', 'GET', undefined, cookie)).json();
     assert(changed.plannedTrips.length === 34, 'La modification de recette a échoué');

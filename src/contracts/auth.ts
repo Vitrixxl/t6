@@ -20,10 +20,20 @@ export const credentials = z.object({
 });
 export type Credentials = z.infer<typeof credentials>;
 
+/**
+ * Version des conditions d'utilisation et de l'information sur les données
+ * personnelles. Elle est enregistrée avec le compte à l'inscription : on sait
+ * quel texte l'utilisateur a accepté. Changer le texte, c'est changer la date.
+ */
+export const TERMS_VERSION = '2026-09-06';
+
 export const registration = z.object({
     email,
     password,
     displayName: z.string().min(1, 'Le nom affiché est obligatoire.').max(60, '60 caractères au plus.'),
+    // Seule la valeur vraie passe : le serveur refuse une inscription sans
+    // acceptation au même titre que le formulaire.
+    termsAccepted: z.literal(true, 'Tu dois accepter les conditions d’utilisation pour créer un compte.'),
 });
 export type Registration = z.infer<typeof registration>;
 

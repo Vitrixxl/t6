@@ -4,7 +4,7 @@
 import type { Db } from '../db/index.ts';
 import { createPlannedTripRepository } from '../repositories/planned-trips.ts';
 import { createTripRecordRepository } from '../repositories/trip-records.ts';
-import type { PlannedTrip, TripRecord } from '../../../src/contracts/index.ts';
+import { PAST_TRIP_RETENTION_MONTHS, type PlannedTrip, type TripRecord } from '../../../src/contracts/index.ts';
 
 function toTripRecord(trip: PlannedTrip): TripRecord {
     return {
@@ -39,7 +39,19 @@ export function savePlannedTrip(db: Db, trip: PlannedTrip): PlannedTrip | null {
     });
 }
 
-/** La date prévue décide de la réalisation ; la transaction garde l’historique cohérent. */
+/** Date avant laquelle un ponctuel passé n'est plus conservé. */
+function retentionCutoff(now: Date): string {
+    const cutoff = new Date(now);
+    cutoff.setUTCMonth(cutoff.getUTCMonth() - PAST_TRIP_RETENTION_MONTHS);
+    return cutoff.toISOString();
+}
+
+/**
+ * La date prévue décide de la réalisation ; la transaction garde l’historique
+ * cohérent. Les ponctuels passés depuis plus de PAST_TRIP_RETENTION_MONTHS
+ * sont ensuite effacés : la réalisation précède la purge, pour qu'un trajet
+ * jamais relu depuis sa date compte quand même dans le bilan carbone.
+ */
 export function completeDueTrips(db: Db, userId: string, now = new Date()): void {
     db.transaction((tx) => {
         const plannedTrips = createPlannedTripRepository(tx);
@@ -63,6 +75,7 @@ export function completeDueTrips(db: Db, userId: string, now = new Date()): void
                 tripRecords.upsert(toTripRecord(completed));
             }
         }
+        plannedTrips.deletePastBefore(userId, retentionCutoff(now));
         tripRecords.prune(userId);
     });
 }

@@ -3,7 +3,7 @@
 // compte a mot de passe connu au démarrage du serveur.
 import { loadConfig } from './config/index.ts';
 import { openDatabase } from './db/index.ts';
-import { DEFAULT_PROFILE } from '../../src/contracts/index.ts';
+import { DEFAULT_PROFILE, TERMS_VERSION } from '../../src/contracts/index.ts';
 import { createRepositories } from './repositories/index.ts';
 import { hashPassword } from './security/password.ts';
 import type { MobilityProfile } from '../../src/types.ts';
@@ -29,12 +29,15 @@ if (existing) {
     users.delete(existing.id);
 }
 
+const now = new Date().toISOString();
 users.insert({
     id: crypto.randomUUID(),
     email: DEMO_EMAIL,
     displayName: profile.displayName,
     passwordHash: await hashPassword(DEMO_PASSWORD),
-    createdAt: new Date().toISOString(),
+    createdAt: now,
+    termsAcceptedAt: now,
+    termsVersion: TERMS_VERSION,
     profile,
 });
 

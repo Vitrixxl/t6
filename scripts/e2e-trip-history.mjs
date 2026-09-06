@@ -56,7 +56,7 @@ async function assertFits(label) {
 try {
     const email = `test-trajets-${randomUUID()}@example.test`;
     const registered = await context.request.post(`${baseURL}/api/auth/register`, {
-        data: { email, password: 'UrbanFlow2026!', displayName: 'Test trajets' },
+        data: { email, password: 'UrbanFlow2026!', displayName: 'Test trajets', termsAccepted: true },
     });
     assert(registered.status() === 201, 'Création du compte de test impossible');
     const today = new Date();

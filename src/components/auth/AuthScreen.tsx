@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Input } from '../ui/input';
 import { credentials, registration, type Credentials, type Registration } from '../../contracts';
 import { useLogin, useRegister } from '../../queries';
+import { LegalDialog } from '../legal/LegalNotice';
 
 function FieldError({ message }: { message?: string }) {
     return message ? <p className="text-xs text-destructive">{message}</p> : null;
@@ -56,8 +57,10 @@ function LoginForm() {
     );
 }
 
-function RegisterForm() {
+function RegisterForm({ onShowTerms }: { onShowTerms: () => void }) {
     const register = useRegister();
+    // Pas de valeur par défaut pour l'acceptation : la case part décochée et le
+    // contrat n'admet que « vrai ».
     const form = useForm<Registration>({
         resolver: zodResolver(registration),
         defaultValues: { displayName: '', email: '', password: '' },
@@ -92,6 +95,28 @@ function RegisterForm() {
                 />
                 <FieldError message={errors.password?.message} />
             </label>
+            <div className="grid gap-1.5">
+                <label className="flex items-start gap-2.5 text-sm" htmlFor="register-terms">
+                    <input
+                        id="register-terms"
+                        type="checkbox"
+                        className="mt-1 size-4 shrink-0 accent-primary"
+                        aria-invalid={Boolean(errors.termsAccepted)}
+                        aria-describedby={errors.termsAccepted ? 'register-terms-error' : undefined}
+                        {...form.register('termsAccepted')}
+                    />
+                    <span>
+                        J’accepte les{' '}
+                        <button type="button" className="font-medium text-primary underline underline-offset-2" onClick={onShowTerms}>
+                            conditions d’utilisation
+                        </button>{' '}
+                        et j’ai lu l’information sur mes données personnelles.
+                    </span>
+                </label>
+                <span id="register-terms-error">
+                    <FieldError message={errors.termsAccepted?.message} />
+                </span>
+            </div>
             <RequestError error={register.error} />
             <Button type="submit" disabled={register.isPending}>
                 {register.isPending ? 'Traitement...' : 'Créer le compte'}
@@ -102,6 +127,7 @@ function RegisterForm() {
 
 export function AuthScreen() {
     const [mode, setMode] = useState<'login' | 'register'>('login');
+    const [termsOpen, setTermsOpen] = useState(false);
 
     return (
         <main className="grid min-h-full place-items-center bg-[radial-gradient(circle_at_18%_12%,oklch(0.93_0.05_130/0.65),transparent_42%),radial-gradient(circle_at_85%_90%,oklch(0.9_0.17_122/0.28),transparent_38%),linear-gradient(160deg,oklch(0.976_0.008_95),oklch(0.955_0.018_110))] p-4">
@@ -176,10 +202,18 @@ export function AuthScreen() {
                                 Inscription
                             </Button>
                         </div>
-                        {mode === 'login' ? <LoginForm /> : <RegisterForm />}
+                        {mode === 'login' ? <LoginForm /> : <RegisterForm onShowTerms={() => setTermsOpen(true)} />}
+                        <button
+                            type="button"
+                            className="mt-4 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                            onClick={() => setTermsOpen(true)}
+                        >
+                            Conditions d’utilisation et données personnelles
+                        </button>
                     </CardContent>
                 </Card>
             </div>
+            <LegalDialog open={termsOpen} onOpenChange={setTermsOpen} />
         </main>
     );
 }

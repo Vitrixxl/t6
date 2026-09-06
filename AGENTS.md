@@ -329,7 +329,10 @@ raisonnement. Ne jamais committer `.env`, la base SQLite, ni le dossier
 
 **Ponctuels automatiques.** Aucun bouton ni endpoint de réalisation manuelle.
 `completeDueTrips` synchronise le compte lors des lectures : seuls les ponctuels
-passés non annulés comptent. Les ressources sont relues toutes les 30 secondes
+passés non annulés comptent, et les ponctuels passés depuis plus de
+`PAST_TRIP_RETENTION_MONTHS` sont effacés dans la même transaction (durée
+annoncée dans `LegalNotice.tsx` et `docs/REGISTRE-TRAITEMENTS.md` : les trois
+doivent dire la même chose). Les ressources sont relues toutes les 30 secondes
 côté client. Ne pas recréer un historique volontairement effacé. Les pauses des
 récurrences restent des intervalles entre leurs périodes d’activité en JSON,
 sans table de pauses ni nettoyage des intervalles sans passage.
