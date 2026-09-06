@@ -314,6 +314,8 @@ export function UrbanMap({
         const detach = bindLongPress(map, {
             onPick: (point) => {
                 closePicker();
+                popupRef.current?.remove();
+                popupRef.current = null;
 
                 const content = createPickerContent(
                     {

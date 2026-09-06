@@ -1,7 +1,7 @@
 // Orchestrateur principal : recherche d'itinéraire, trajet retenu et carte. Il ne tient que l'état de l'écran (départ, arrivée, calques, panneaux
 // ouverts) : l'état du compte vit dans le cache de requêtes (src/queries/),
 // que chaque module lit.
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSetAtom } from 'jotai';
 import type { GeoPoint, RouteOption, SavedRouteRecord, TransportContext } from '../../types';
 import { ALL_TRANSIT_TYPES, availableModesOf, haversineDistanceKm } from '../../lib/planner';
@@ -88,7 +88,8 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
 
     // Appui long sur la carte : le point est nommé par géocodage inverse avant
     // d'atterrir dans le champ, sinon l'utilisateur y verrait des coordonnées.
-    const pickPointFromMap = (picked: { lat: number; lon: number }, role: 'origin' | 'destination') => {
+    // Une position GPS ou un flux rafraîchi ne doit pas détacher le sélecteur ouvert.
+    const pickPointFromMap = useCallback((picked: { lat: number; lon: number }, role: 'origin' | 'destination') => {
         void describePoint(picked.lat, picked.lon).then((point) => {
             if (role === 'origin') {
                 setOrigin(point);
@@ -96,7 +97,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
                 setDestination(point);
             }
         });
-    };
+    }, [setOrigin, setDestination]);
 
     // Le départ bascule sur la position courante quand il n'a jamais été saisi :
     // inverser un trajet dont un bout est implicite doit rester possible.

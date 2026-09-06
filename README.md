@@ -576,3 +576,9 @@ GET de chaque ressource. La lecture globale indépendante a été supprimée.
 ## Navigation mobile de la présentation
 
 La présentation conserve sa mise en page et se pilote aussi au toucher : balayage horizontal à gauche pour avancer, à droite pour revenir, en portrait ou paysage. Les petits gestes, le déplacement vertical, le zoom à plusieurs doigts et les liens ne déclenchent pas de changement de diapositive. `useSlideSwipe` dans `output/presentation/src/useSlideSwipe.ts` réutilise les fonctions de navigation de `Deck`. `scripts/e2e-presentation.mjs` vérifie de vrais événements tactiles Chromium et fait partie de `bun run ci`.
+
+### Sélection sur la carte
+
+L’appui long de 500 ms ouvre le choix départ/arrivée. Le menu reste ouvert au relâchement et pendant les actualisations GPS ; un nouveau toucher extérieur ou la fermeture explicite le referme. Les déplacements, gestes annulés et appuis à plusieurs doigts ne sélectionnent aucun point.
+
+Recette navigateur : `bun scripts/e2e-map-picker.mjs` (`E2E_BASE_URL` désigne le serveur), incluse dans `bun run ci`.
