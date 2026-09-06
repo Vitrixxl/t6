@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { DEFAULT_PROFILE } from '../../contracts';
 import type { RouteOption } from '../../types';
-import { measureRoutes } from '.';
-import { buildOption, createLeg } from './legs';
 import {
     CAR_REFERENCE_FACTOR,
     applyCarbonReference,
@@ -60,47 +57,6 @@ describe('référence carbone voiture', () => {
         expect(longOption.carbonSavedGrams).toBe(-74);
     });
 
-    it('calcule la comparaison après la mesure OSRM réelle des segments', async () => {
-        const from = { label: 'Départ', lat: 45.75, lon: 4.83 };
-        const to = { label: 'Arrivée', lat: 45.77, lon: 4.87 };
-        const estimated = buildOption({
-            id: 'velo-mesure',
-            title: 'Vélo mesure',
-            summary: '',
-            modes: ['bike'],
-            legs: [
-                createLeg({
-                    id: 'velo',
-                    title: 'Vélo',
-                    mode: 'bike',
-                    from,
-                    to,
-                    distanceKm: 2,
-                    accessible: true,
-                }),
-            ],
-            reliabilityScore: 100,
-            warnings: [],
-        });
-
-        const [measured] = await measureRoutes([estimated], DEFAULT_PROFILE, async (legs) =>
-            legs.map((leg) => ({
-                ...leg,
-                distanceKm: 5,
-                carbonGrams: 500,
-                path: [from, to],
-            })),
-        );
-        const [compared] = applyCarbonReference(
-            [measured],
-            createCarbonReference({ distanceMeters: 3000, durationSeconds: 600 }),
-        );
-
-        expect(estimated.distanceKm).toBe(2);
-        expect(measured.distanceKm).toBe(5);
-        expect(compared.carbonGrams).toBe(500);
-        expect(compared.carbonSavedGrams).toBe(-74);
-    });
 
     it("n'invente aucune économie quand la mesure voiture est indisponible", () => {
         const [result] = applyCarbonReference([option('marche', 5, 0)], null);

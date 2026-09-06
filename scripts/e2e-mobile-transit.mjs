@@ -1,4 +1,4 @@
-// Calcul complet avec le feed WFS livré, l’API et les moteurs OSRM locaux.
+// Calcul complet avec le feed WFS livré, l’API et le moteur MOTIS local.
 import { file } from 'bun';
 import { URL } from 'node:url';
 import { chromium } from 'playwright-core';
@@ -35,7 +35,7 @@ try {
     await page.getByRole('button', { name: 'Charger', exact: true }).click();
     console.log('Calcul demandé.');
     const choices = page.getByRole('group', { name: 'Options d’itinéraire', exact: true });
-    const transitChoice = choices.getByRole('button', { name: /^Transport en commun/ });
+    const transitChoice = choices.getByRole('button', { name: /^Transport en commun/ }).first();
     await transitChoice.waitFor({ timeout: 60000 });
     await transitChoice.click();
     const filter = page.getByRole('button', { name: /^Types de transport en commun/ });
@@ -67,15 +67,15 @@ try {
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Types de transport en commun : Bus', exact: true }).waitFor();
     await page.getByText(/^Détails du trajet/).click();
-    await page.getByText(/Bus TB11 au départ/).waitFor({ timeout: 60000 });
+    await page.getByText(/Bus TB11 direction/).first().waitFor({ timeout: 60000 });
     await filter.click();
     await page.getByRole('checkbox', { name: 'Métro', exact: true }).check();
     await page.getByRole('checkbox', { name: 'Bus', exact: true }).uncheck();
     await page.keyboard.press('Escape');
-    await page.getByText(/Métro .*au départ/).first().waitFor({ state: 'attached', timeout: 60000 });
+    await page.getByText(/Métro .*direction/).first().waitFor({ state: 'attached', timeout: 60000 });
     await page.getByText(/^Détails du trajet/).click();
-    await page.getByText(/Métro .*au départ/).first().waitFor();
-    assert(await page.getByText(/Bus TB11 au départ/).count() === 0, 'Bus conservé malgré le filtre métro');
+    await page.getByText(/Métro .*direction/).first().waitFor();
+    assert(await page.getByText(/Bus TB11 direction/).count() === 0, 'Bus conservé malgré le filtre métro');
     await filter.click();
     await page.getByRole('checkbox', { name: 'Métro', exact: true }).uncheck();
     await page.keyboard.press('Escape');

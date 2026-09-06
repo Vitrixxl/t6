@@ -13,13 +13,11 @@ export type {
     RecurringTrip,
     RouteInstruction,
     RoutePreselection,
-    RoutableMode,
     RoutinePeriod,
     SavedRouteRecord,
     SessionUser,
     TripRecord,
 } from './contracts';
-import type { GeoPoint, MobilityProfile } from './contracts';
 
 export type {
     Occupancy, GtfsAgency, GtfsStop, GtfsRoute, GtfsTrip,
@@ -34,17 +32,10 @@ export interface TransportNetwork {
     sources?: NetworkSources;
 }
 
-/** Distance et durée réelles d'un couple de points, telles que mesurées par OSRM. */
+/** Distance et durée réelles d'un couple de points sur la voirie. */
 export interface RouteMeasure {
     distanceMeters: number;
     durationSeconds: number;
-}
-
-export interface RouteRequest {
-    origin: GeoPoint;
-    destination: GeoPoint;
-    profile: MobilityProfile;
-    network: TransportNetwork;
 }
 
 export interface CarbonSummary {

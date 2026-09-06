@@ -26,14 +26,14 @@ export function transportRoutes(ctx: AppContext, config: ServerConfig) {
             detail: { summary: 'Nombre réel d’arrêts dans un rayon et quatre quais les plus proches' },
         })
         .post('/journeys', async ({ body, request, set }) => {
-            const options = await searchRoutes(body, transport, config.osrmUrls, request.signal);
+            const options = await searchRoutes(body, config.motisUrl, request.signal);
             if (options.length === 0) {
                 set.status = 503;
-                return { error: 'Aucun itinéraire mesurable : le service de routage est indisponible ou les points sont inaccessibles.' };
+                return { error: 'Aucun itinéraire : le moteur d’itinéraires est indisponible ou les points sont inaccessibles.' };
             }
             return options;
         }, {
             body: routeSearch, response: { 200: routeOptions, 503: errorResponse },
-            detail: { summary: 'Options multimodales mesurées sur le réseau complet ; fréquences estimées sans horaires GTFS' },
+            detail: { summary: 'Options multimodales calculées par MOTIS sur la voirie, les horaires GTFS et les flux GBFS' },
         });
 }

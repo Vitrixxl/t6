@@ -10,6 +10,8 @@ export const routeSearch = z.object({
     origin: geoPoint, destination: geoPoint, profile: mobilityProfile,
     transitTypes: z.array(transitType).max(4),
     sharedMobilityAvailable: z.boolean(),
+    /** Heure de départ ISO 8601 ; absente, la recherche part maintenant. */
+    departureAt: z.iso.datetime({ offset: true }).optional(),
 });
 export const legEstimate = z.object({
     travelFactor: z.number(), overheadMinutes: z.number(), carbonGramsPerKm: z.number(),

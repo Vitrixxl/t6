@@ -51,7 +51,7 @@ Toutes les options défilent horizontalement ; les détails se déplient à la d
 L’en-tête et la fermeture restent accessibles. Aucun réglage de taille.
 
 Une option contenant des transports en commun affiche le choix Bus, Métro, Tramway
-et Funiculaire. Le moteur filtre le réseau avant de chercher les accès et correspondances.
+et Funiculaire. Ces types sont les modes de transport demandés à MOTIS.
 Ce choix est temporaire : sélectionner une option sans transport public le remet à Tous.
 
 Le hub comporte quatre onglets : **Une fois**, **Récurrents**, **Historique** et
@@ -94,7 +94,7 @@ commande pas la création d'un module.
 | `config/` | lecture et validation des variables d'environnement |
 | `db/` | ouverture SQLite via Drizzle ; le schéma vit dans `schema.ts`, les migrations générées dans `server/drizzle/` |
 | `repositories/` | un dépôt par table — seule couche qui interroge la base (Drizzle, requêtes paramétrées) |
-| `services/` | règles métier qui composent plusieurs opérations : complétion, sessions, routage |
+| `services/` | règles métier qui composent plusieurs opérations : complétion, sessions, recherche d'itinéraires par MOTIS |
 | `plugins/` | contexte, garde d'authentification, débit, en-têtes, journal, erreurs |
 | `routes/` | gestionnaires HTTP, sans règle métier |
 
@@ -102,7 +102,7 @@ commande pas la création d'un module.
 
 | Dossier | Rôle |
 | --- | --- |
-| `lib/planner/` | moteur d'itinéraires : générateurs dans `options/` (rabattements vélo/trottinette réunis), scoring et règles |
+| `lib/planner/` | ce qui reste métier autour des itinéraires : score du profil, présélection, facteurs carbone, outils géographiques |
 | `lib/transport/` | intégration open data : `geocoding/`, `feeds/`, cellules cartographiques |
 | `contracts/` | schémas zod partagés avec l'API : validation, types derives, OpenAPI |
 | `lib/api/` | client Eden Treaty type depuis l'API Elysia, authentification, une commande par ressource du compte |
@@ -136,8 +136,8 @@ fonctions de l’application.
    `src/lib/api/planned-trips.ts` → route → service → dépôt du même nom.
    Lire ensuite `completeDueTrips` et sa transaction trajet + historique carbone.
 4. Calcul : `src/queries/routes.ts` → `POST /api/transport/journeys`
-   → `server/src/services/planning.ts` → `prepareRoutedAccessPlan` → `planRoutes`
-   → `measureRoutes` → `applyCarbonReference`.
+   → `server/src/services/planning.ts` → `fetchPlan` (MOTIS) → `selectOptions`
+   → `rankRoutes` → `applyCarbonReference`.
 
 **Comprendre le fonctionnement des écrans et les garanties** :
 
@@ -146,8 +146,7 @@ fonctions de l’application.
 2. Récurrences : `src/lib/trips/operations.ts` (pause d’une seule routine),
    `routines.ts` (passages), `history.ts` (annulations), puis les services serveur.
 3. Pannes : callbacks de mutation dans `src/queries/`, `save-error.ts`,
-   service de routage et bandeau hors ligne. Lire `docs/PLAN-ATTENTE-GTFS.md`
-   pour distinguer le moteur affiché du chantier horaire non activé.
+   moteur d'itinéraires indisponible et bandeau hors ligne.
 4. Compte et exploitation : profil, itinéraires enregistrés, export/effacement,
    scripts de développement et build, données transport et migrations.
 
@@ -215,7 +214,7 @@ Recette : `bun run e2e:trips` pour les confirmations et rétablissements ;
 | --- | --- | --- |
 | Géocodage adresses | `api-adresse.data.gouv.fr` (BAN) | live navigateur |
 | Géocodage lieux/quartiers | Photon (`photon.komoot.io`, OSM) | live navigateur |
-| Routage | OSRM (foot/bike ; trottinette sur bike, voiture invisible sur driving), auto-hébergeable | appelé par le serveur à chaque recherche de `/api/transport/journeys` |
+| Routage multimodal | MOTIS (voirie OSM, horaires GTFS, flux GBFS), auto-hébergé | appelé par le serveur à chaque recherche de `/api/transport/journeys` |
 | Vélos partagés | GBFS v3 Vélo'v (`api.cyclocity.fr`) | serveur, chargement mutualisé 60 s |
 | Trottinettes | GBFS v2.3 Dott Lyon (`gbfs.api.ridedott.com`) | serveur, chargement mutualisé 60 s |
 | Transport public | GTFS statique TCL/SYTRAL (ODbL, transport.data.gouv.fr) | artefact normalisé (`bun run generate:gtfs`), import SQLite au démarrage |
@@ -261,22 +260,21 @@ d’énergie ou l’ensemble du trafic (fond OSM et GBFS restent distincts).
 
 ## Calcul d'itinéraires
 
-Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur utilise le réseau complet, indépendamment de la carte visible :
+Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur la confie à MOTIS, un moteur multimodal open source qui calcule sur un graphe unique : la voirie OpenStreetMap, les horaires GTFS et les flux GBFS Vélo'v et Dott.
 
-1. Haversine ne garde que huit stations ou arrêts proches, afin de borner le coût.
-2. Deux matrices piétonnes en étoile dans le service serveur OSRM mesurent les accès depuis le départ et vers l’arrivée, sans croiser les stations entre elles ; le moteur choisit donc l'accès le plus rapide à pied ou à vélo, pas le point géométriquement le plus proche. En parallèle, une matrice voiture `1 x 1` mesure la référence carbone entre les deux extrémités.
-3. Le moteur assemble les options, puis le service OSRM mesure et trace chaque segment de voirie avant affichage.
-4. Quand toutes les options portent leurs mesures réelles, la même référence voiture leur est appliquée, puis elles sont affichées de la plus rapide à la plus lente.
+1. Un plan par moyen d'accès : à pied, en Vélo'v et en trottinette Dott quand les flux sont disponibles. MOTIS choisit lui-même les quais, les lignes et les correspondances (RAPTOR sur les horaires) et rend les trajets non dominés avec leurs tracés. En parallèle, un appel `one-to-many` en voiture mesure la référence carbone entre les deux extrémités.
+2. Le serveur traduit chaque itinéraire en option UrbanFlow et le classe dans une famille (marche, vélo, trottinette, transport public, vélo + transport, trottinette + transport). Il garde la plus rapide de chaque famille et jusqu'à trois variantes de transport qui n'empruntent pas les mêmes lignes.
+3. La même référence voiture est appliquée à toutes les options, puis elles sont affichées de la plus rapide à la plus lente. Les durées comprennent les attentes à quai.
 
-Chaque recherche interroge les moteurs OSRM locaux : rien n'est conservé côté serveur, une mesure vient toujours d'un calcul frais. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopie dans le front.
+Rien n'est conservé côté serveur : une recherche vient toujours d'un calcul frais, en quelques dizaines de millisecondes. Les appels à l'API UrbanFlow sont faits avec Eden Treaty : leurs corps et leurs réponses sont inférés directement depuis les routes Elysia, sans type HTTP recopié dans le front.
 
-Une correspondance entre deux lignes apparaît comme une étape piétonne de quatre minutes. Le temps est explicite, mais aucun trait intérieur n'est inventé : le GTFS publie la desserte et les tracés des lignes, pas les cheminements entre quais.
+Une correspondance entre deux quais est un segment piéton routé par MOTIS sur la voirie, avec son tracé. Sans `shapes.txt` dans l'archive GTFS, le tracé d'une ligne relie ses arrêts en ligne droite : c'est le cas de l'archive TCL 2022 utilisée en développement.
 
 ## Facteurs carbone
 
 La voiture n'appartient pas aux modes proposes ni aux préférences. C'est un
-scénario contrefactuel invisible, mesure une seule fois par le profil OSRM
-`driving` pour chaque couple départ-arrivée :
+scénario contrefactuel invisible, mesuré une seule fois en voiture par MOTIS
+(`one-to-many`, mode `CAR`) pour chaque couple départ-arrivée :
 
 ```text
 CO2e voiture = distance routière voiture x 142 gCO2e/km
@@ -333,36 +331,31 @@ montre successivement la recherche, la carte, le GPS, les disponibilités a
 proximité, les couches, les trajets/objectifs et le profil. Sa bulle se place
 au-dessus ou au-dessous du contrôle vise pour ne pas le masquer.
 
-Le routage utilise uniquement les trois moteurs OSRM locaux. Il n’y a ni URL
+Le calcul d'itinéraires utilise uniquement un moteur MOTIS local. Il n’y a ni URL
 publique par défaut, ni bascule vers un hébergeur externe en cas de panne.
 
-Pour héberger le routage localement (les flux GBFS et le géocodage restent externes) :
+Pour héberger le moteur localement (les flux GBFS et le géocodage restent externes) :
 
 ```bash
-./infra/osrm-prepare.sh                      # télécharge et prétraite les 3 profils (une fois)
-docker compose -f infra/compose.yml up -d    # application + calculateur
+./infra/motis-prepare.sh                     # télécharge l'extrait OSM et l'archive GTFS, puis construit le graphe (une fois)
+docker compose -f infra/compose.yml up -d    # application + moteur
 ```
 
-`infra/compose.yml` lance **l'application et les trois moteurs ensemble** : l'API appelle directement `osrm-foot:5000`, `osrm-bike:5000` et `osrm-car:5000` sur le réseau Docker, sans port OSRM publié ni proxy intermédiaire. Les variables `OSRM_FOOT_URL`, `OSRM_BIKE_URL` et `OSRM_CAR_URL` y sont déjà configurées. L'application écoute en **HTTPS** sur le port 4000, avec un certificat auto-signé généré au premier démarrage. Pour y accéder depuis le réseau local, inscrire l'adresse de la machine dans le certificat : `TLS_EXTRA_HOSTS=IP:192.168.1.37 docker compose -f infra/compose.yml up -d`.
+`infra/motis-prepare.sh` exige `GTFS_SOURCE_URL` dans `.env` : MOTIS calcule sur les calendriers de l'archive, une archive périmée ne produit aucun trajet en transport aux dates courantes. Il télécharge l'extrait Rhône-Alpes, le découpe autour de Lyon si `osmium` est présent, écrit `infra/motis-data/config.yml` avec les flux GBFS Vélo'v et Dott, puis lance `motis import`. Le graphe est prêt en quelques minutes.
 
-Pour une API lancée hors conteneur, ajouter temporairement une publication loopback à chaque service dans Compose : `ports: ['127.0.0.1:5001:5000']` pour `osrm-foot`, `5002:5000` pour `osrm-bike` et `5003:5000` pour `osrm-car`, toujours avec `127.0.0.1`. Renseigner ensuite `.env` :
+`infra/compose.yml` lance **l'application et le moteur ensemble** : l'API appelle `motis:8080` sur le réseau Docker, sans port publié. L'application écoute en **HTTPS** sur le port 4000, avec un certificat auto-signé généré au premier démarrage. Pour y accéder depuis le réseau local, inscrire l'adresse de la machine dans le certificat : `TLS_EXTRA_HOSTS=IP:192.168.1.37 docker compose -f infra/compose.yml up -d`.
+
+Pour une API lancée hors conteneur, publier le moteur en loopback dans Compose (`ports: ['127.0.0.1:8080:8080']`) et renseigner `.env` :
 
 ```dotenv
-OSRM_FOOT_URL=http://127.0.0.1:5001
-OSRM_BIKE_URL=http://127.0.0.1:5002
-OSRM_CAR_URL=http://127.0.0.1:5003
+MOTIS_URL=http://127.0.0.1:8080
 ```
 
-Chaque variable absente ou vide utilise son service Docker local :
-`http://osrm-foot:5000`, `http://osrm-bike:5000` ou `http://osrm-car:5000`.
-En cas de panne d’un moteur, l’API répond 503. Aucune file ni limitation de débit propre à un service public
-n’est conservée.
+Absente ou vide, la variable vaut `http://motis:8080`. En cas de panne du moteur, l’API répond 503. Aucune file ni limitation de débit propre à un service public n’est conservée.
 
-Migration : remplacer l'ancienne variable `OSRM_BASE_URL` par ces trois variables. Après mise à jour d'une pile existante, `docker compose -f infra/compose.yml up -d --build --remove-orphans` retire aussi l'ancien conteneur Caddy.
+Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et l'import est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée.
 
-Seul prérequis : **Docker**. `osmium` est facultatif — s'il est présent la région est découpée autour de Lyon et le prétraitement est bien plus rapide ; sinon toute la région Rhône-Alpes est traitée, pour un résultat identique sur Lyon.
-
-OSRM sert un profil par processus : piéton, vélo et voiture n'ont pas les mêmes règles sur les mêmes rues. La trottinette reprend le moteur vélo ; le moteur voiture utilise le profil `driving` et ne fournit que la référence carbone, jamais une option proposée. Trois URL distinctes évitent un conteneur intermédiaire et sa consommation de ressources ; aucun gain mémoire chiffré n'a été mesuré.
+MOTIS tient dans un seul processus : son routeur de voirie `osr` sert les accès à pied, à vélo et la référence voiture, son moteur horaire `nigiri` exécute RAPTOR sur le GTFS, et il lit lui-même les flux GBFS pour proposer les engins partagés. Mesuré sur Lyon : moins de 120 Mio de mémoire au repos, environ 200 ms pour une recherche complète (trois plans et la référence voiture).
 
 ### Certificat local et service worker
 
@@ -462,21 +455,6 @@ date prévue par `completeDueTrips`, leur entrée carbone sans coordonnées rest
 n'est jamais persistée. Le [registre des traitements](docs/REGISTRE-TRAITEMENTS.md) (art. 30) reprend le tout.
 
 
-## Préparation des horaires GTFS — branche de travail
-
-Le service horaire côté serveur est développé, mais **le client utilise encore
-les estimations d’attente actuelles**. Son branchement attend la validation d’une
-archive TCL récente et de la correspondance entre ses quais et les tracés publiés.
-Le [plan d’intégration](docs/PLAN-ATTENTE-GTFS.md) suit ce travail.
-
-- `bun run sync:gtfs` télécharge l’archive désignée par `GTFS_SOURCE_URL`,
-  la normalise en Python puis l’active via Bun et Drizzle.
-- `bun run sync:gtfs --archive /chemin/GTFS_TCL.zip` utilise une archive locale.
-- `bun run import:gtfs /chemin/timetable.json` active un fichier normalisé.
-
-Le jeton reste dans `.env`. Les fichiers normalisés restent dans `tmp/gtfs/`.
-L’activation est transactionnelle et idempotente par empreinte de l’archive ;
-un échec conserve la version précédente. La commande refuse une archive expirée.
 L’import exige des horaires et un tracé ordonné exploitable pour chaque course :
 il n’invente ni passage ni géométrie. Les transferts spécifiques à une ligne ou
 une course et les transferts à bord nécessitent encore un traitement dédié ;
@@ -535,30 +513,21 @@ séparément et ordonnés dans `stopSequence`. Les variantes sans sens/terminus
 vérifiables, les boucles de même terminus, les morceaux discontinus et les services
 spéciaux ne sont pas importés. Le rayon de 16 km reste celui du produit.
 
-Dans `src/lib/planner/transit.ts`, `servesInOrder` exige une montée avant la
-descente dans cette séquence : le retour doit disposer de son propre tracé.
-Le moteur commun propose le bus seul ou en rabattement vélo/trottinette. Une
-correspondance demande toujours un arrêt commun ; les transferts entre deux quais
-distincts, notamment bus/métro, ne sont pas encore recherchés. La limite de huit
-arrêts candidats par extrémité reste une heuristique, pas une recherche exhaustive.
-Le filtre PMR exige l’accessibilité publiée du quai et de la ligne bus.
+Ces séquences alimentent l'horaire GTFS de recette (`scripts/build-gtfs-fixture.py`) et
+les cellules de la carte ; le calcul d'itinéraires lui-même utilise l'archive GTFS
+officielle chargée dans MOTIS, avec ses horaires réels.
 
-Les horaires ne sont pas intégrés : vitesse supposée de 15 km/h, intervalle supposé
-de 15 minutes, donc attente arrondie à 8 minutes, sans retard réel. Ces hypothèses
-figurent dans les étapes, sur mobile et bureau. Le bus utilise une référence
+Le bus utilise une référence
 [bus thermique ADEME Impact CO₂](https://impactco2.fr/outils/transport/busthermique)
 de 122 gCO₂e/passager-km (construction et usage, valeur consultée le 5 septembre 2026).
 Le WFS n’indique pas la motorisation : cette approximation est affichée et s’applique
 aussi aux trolleybus ; ce n’est pas un facteur moyen mesuré de la flotte TCL.
 Les badges de ligne adaptent leur texte à la luminance de la couleur officielle.
 
-Validation : `bun run check` (235 tests, 693 assertions, 31 fichiers), dont
-`src/lib/planner/bus.test.ts` et `scripts/bus-import.test.ts`. Le second exécute
+Validation : `bun run check`, dont `scripts/bus-import.test.ts`, qui exécute
 l’ingestion Python avec de petits jeux de données, puis vérifie son JSON sous Bun.
 `E2E_BASE_URL=https://localhost:4000 bun scripts/e2e-bus.mjs` vérifie une recherche
-réelle Gare Saint-Paul → Laurent Bonnevay (TB11) à 390/1280 px. Le parcours général
-`bun run e2e` reste à 9/9. Le service horaire préparé dans `server/src/services/transit/`
-reste séparé et non branché au client ; ses contrats ne sont pas étendus par cet import WFS.
+réelle Gare Saint-Paul → Laurent Bonnevay (TB11) à 390/1280 px.
 
 La documentation `/api/doc` utilise Scalar 1.67.0 et une politique CSP limitée à cette page.
 Le JSON `/api/doc/json` conserve `default-src 'none'`. Vérification navigateur :
@@ -568,23 +537,23 @@ Le JSON `/api/doc/json` conserve `default-src 'none'`. Vérification navigateur 
 
 `bun run ci` est la commande utilisée aussi par `.github/workflows/ci.yml`.
 Elle installe les dépendances avec le lockfile figé, lance `check` et les métriques,
-prépare puis démarre trois moteurs OSRM dédiés, crée une base SQLite vide et le
+prépare puis démarre un moteur MOTIS dédié sur les fixtures versionnées, crée une base SQLite vide et le
 compte de démonstration, puis exécute axe-core, la planification (9 assertions),
 les filtres TC mobiles et la documentation Scalar. Le banc de performance reste
-indicatif. Une erreur bloquante interrompt la recette ; les moteurs et le serveur
+indicatif. Une erreur bloquante interrompt la recette ; le moteur et le serveur
 sont arrêtés à la fin.
 
 Prérequis : Bun 1.4.0, Docker accessible et Chromium (`CHROME_BIN` si nécessaire).
 Le serveur de recette utilise le port 4101 ; `CI_API_PORT` permet de le changer.
 Un port déjà occupé est refusé pour ne jamais tester un autre serveur par erreur.
 La base et les index sont temporaires ; aucun compte ni moteur de développement
-ou de production n’est réutilisé. L’extrait routier OSM et sa provenance sont dans
+ou de production n’est réutilisé. L’extrait routier OSM, l’horaire GTFS de recette et leur provenance sont dans
 `scripts/fixtures/`. Les diagnostics sont dans `tmp/ci/*.log` et les captures
 dans `tmp/screenshots/`, conservés par GitHub en cas d’échec.
 
 La disponibilité de BAN, des flux GBFS, des tuiles et du CDN Scalar
-reste externe : ce sont toujours les vrais appels. OSRM calcule localement sur
-l’extrait réel versionné ; aucun faux tracé ni service public de routage ne remplace
+reste externe : ce sont toujours les vrais appels. MOTIS calcule localement sur
+l’extrait réel versionné et l’horaire de recette ; aucun faux tracé ni service public de routage ne remplace
 un moteur manquant. Attendre une recette locale réussie avant `git push`, puis
 contrôler le résultat GitHub.
 

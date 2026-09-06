@@ -109,9 +109,19 @@ export function Deck() {
 
     const variants = useMemo(
         () => ({
-            enter: (dir: 1 | -1) => ({ x: reduceMotion ? 0 : dir * 120, opacity: 0, scale: reduceMotion ? 1 : 0.985 }),
-            center: { x: 0, opacity: 1, scale: 1 },
-            exit: (dir: 1 | -1) => ({ x: reduceMotion ? 0 : dir * -120, opacity: 0, scale: reduceMotion ? 1 : 0.985 }),
+            enter: (dir: 1 | -1) => ({
+                x: reduceMotion ? 0 : dir * 90,
+                opacity: 0,
+                scale: reduceMotion ? 1 : 0.97,
+                filter: reduceMotion ? 'blur(0px)' : 'blur(10px)',
+            }),
+            center: { x: 0, opacity: 1, scale: 1, filter: 'blur(0px)' },
+            exit: (dir: 1 | -1) => ({
+                x: reduceMotion ? 0 : dir * -70,
+                opacity: 0,
+                scale: reduceMotion ? 1 : 0.985,
+                filter: reduceMotion ? 'blur(0px)' : 'blur(6px)',
+            }),
         }),
         [reduceMotion],
     );
@@ -131,7 +141,7 @@ export function Deck() {
                         initial="enter"
                         animate="center"
                         exit="exit"
-                        transition={{ type: 'spring', stiffness: 260, damping: 32, mass: 0.9 }}
+                        transition={{ type: 'spring', stiffness: 210, damping: 28, mass: 0.9 }}
                         aria-roledescription="diapositive"
                         aria-label={`Diapositive ${position.index + 1} sur ${slides.length}`}
                     >
@@ -149,7 +159,7 @@ export function Deck() {
                     className="progress"
                     initial={false}
                     animate={{ width: `${((position.index + 1) / slides.length) * 100}%` }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+                    transition={{ type: 'spring', stiffness: 140, damping: 26 }}
                 />
             </div>
         </div>

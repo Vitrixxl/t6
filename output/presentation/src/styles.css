@@ -132,6 +132,36 @@ body {
     font-style: normal;
     color: var(--pine);
     background: linear-gradient(transparent 62%, var(--lime) 62%, var(--lime) 92%, transparent 92%);
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+    animation: mark-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.9s forwards;
+}
+
+@keyframes mark-in {
+    to {
+        background-size: 100% 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cover-title em {
+        animation: none;
+        background-size: 100% 100%;
+    }
+}
+
+.words {
+    display: inline;
+}
+
+.word {
+    display: inline-block;
+    margin-right: 0.26em;
+    will-change: transform, filter;
+}
+
+.word:last-child {
+    margin-right: 0;
 }
 
 .cover-sub {
@@ -147,6 +177,15 @@ body {
     grid-template-columns: repeat(3, 1fr);
     gap: 28px;
     margin-top: 12px;
+}
+
+.tiles-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px 28px;
+}
+
+.tiles-4 .card {
+    padding: 24px 28px;
 }
 
 .columns {

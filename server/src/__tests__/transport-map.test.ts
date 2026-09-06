@@ -75,38 +75,35 @@ it('renvoie le vrai nombre d’arrêts proches même si quatre seulement sont li
     expect(result.items.map(entry => entry.distanceKm)).toEqual(result.items.map(entry => entry.distanceKm).sort((a, b) => a - b));
 });
 
-function osrmResponse(input: Parameters<typeof fetch>[0]) {
+const MOTIS_PLAN = Bun.file(new URL('./fixtures/motis-plan-transit.json', import.meta.url));
+
+/** MOTIS répond ; tout autre flux reste en panne. */
+async function motisResponse(input: Parameters<typeof fetch>[0]) {
     const url = new URL(String(input));
-    if (!url.hostname.startsWith('osrm-')) return Response.json({}, { status: 503 });
-    if (url.pathname.includes('/table/')) {
-        const count = url.searchParams.get('sources')!.split(';').length;
-        const targets = url.searchParams.get('destinations')!.split(';').length;
-        return Response.json({ code: 'Ok', distances: Array.from({ length: count }, () => Array(targets).fill(100)), durations: Array.from({ length: count }, () => Array(targets).fill(60)) });
-    }
-    const coordinates = url.pathname.split('/').at(-1)!.split(';').map(pair => pair.split(',').map(Number));
-    return Response.json({ code: 'Ok', routes: [{ distance: 1000, duration: 600, geometry: { type: 'LineString', coordinates }, legs: [{ steps: [] }] }] });
+    if (url.hostname !== 'motis') return Response.json({}, { status: 503 });
+    if (url.pathname === '/api/v1/one-to-many') return Response.json([{ duration: 469, distance: 4303.8 }]);
+    return Response.json(await MOTIS_PLAN.json());
 }
 
-it('calcule le bus hors du cadrage sans télécharger le réseau et garde la même référence voiture', async () => {
-    network.mockImplementation(Object.assign(async (input: Parameters<typeof fetch>[0]) => osrmResponse(input), { preconnect: globalThis.fetch.preconnect }));
-    const feed = createTransportRepository(api.db).readNetwork();
-    const bus = feed.routes.find(route => route.route_short_name === 'TB11' && route.route_long_name.startsWith('Gare Saint-Paul'))!;
-    const from = feed.stops.find(stop => stop.stop_id === bus.stopSequence?.[0])!;
-    const to = feed.stops.find(stop => stop.stop_id === bus.stopSequence?.at(-1))!;
+it('traduit les itinéraires MOTIS en options et leur applique la même référence voiture', async () => {
+    network.mockImplementation(Object.assign(motisResponse, { preconnect: globalThis.fetch.preconnect }));
     const response = await api.call('/api/transport/journeys', { body: {
-        origin: { lat: from.stop_lat, lon: from.stop_lon, label: from.stop_name },
-        destination: { lat: to.stop_lat, lon: to.stop_lon, label: to.stop_name },
-        profile: DEFAULT_PROFILE, transitTypes: [3], sharedMobilityAvailable: false,
+        origin: { lat: 45.7578, lon: 4.832, label: 'Bellecour' },
+        destination: { lat: 45.7606, lon: 4.8594, label: 'Part-Dieu' },
+        profile: DEFAULT_PROFILE, transitTypes: [0, 1, 3, 7], sharedMobilityAvailable: false,
+        departureAt: '2022-04-20T08:00:00+02:00',
     } });
     expect(response.status).toBe(200);
     const options = routeOptions.parse(await response.json());
-    expect(options.some(option => option.legs.some(leg => leg.mapLabel?.includes('TB11')))).toBe(true);
+    expect(options.some(option => option.legs.some(leg => leg.mapLabel === 'Métro D'))).toBe(true);
     expect(options.every(option => !option.modes.includes('bike') && !option.modes.includes('scooter'))).toBe(true);
     expect(options.map(option => option.durationMinutes)).toEqual(options.map(option => option.durationMinutes).sort((a, b) => a - b));
-    expect(options.every(option => option.carbonReference?.distanceKm === options[0].carbonReference?.distanceKm)).toBe(true);
+    expect(options.every(option => option.carbonReference?.distanceKm === 4.3038)).toBe(true);
+    // Sans disponibilités partagées, seul l'accès à pied est demandé, plus la référence voiture.
+    expect(network).toHaveBeenCalledTimes(2);
 });
 
-it('refuse les recherches invalides et annonce l’absence de mesures OSRM', async () => {
+it('refuse les recherches invalides et annonce l’indisponibilité du moteur', async () => {
     const search = { origin: { lat: 45.7524835251712, lon: 4.8687553636982, label: 'Départ précis' }, destination: { lat: 45.7548502313005, lon: 4.85748756866509, label: 'Arrivée précise' }, profile: DEFAULT_PROFILE, transitTypes: [0, 1, 3, 7], sharedMobilityAvailable: false };
     expect((await api.call('/api/transport/journeys', { body: { ...search, transitTypes: [99] } })).status).toBe(422);
     expect(network).not.toHaveBeenCalled();

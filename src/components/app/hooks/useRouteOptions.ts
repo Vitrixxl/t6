@@ -1,14 +1,8 @@
-// Calcul des itinéraires : OSRM classe d'abord les accès possibles, le moteur
-// assemble les options, puis OSRM mesure tous leurs segments de voirie.
+// Calcul des itinéraires : le serveur interroge MOTIS, qui calcule sur la
+// voirie, les horaires et les flux GBFS, et rend une liste par famille.
 //
-// Les segments de voirie sont mesurés avant affichage. Le transport public
-// suit son tracé publié avec une durée estimée, faute d’horaires branchés.
-// Les types choisis filtrent le réseau avant la recherche des quais.
-//
-// C'est le prix d'une liste comparable. Ne mesurer que l'option sélectionnée
-// coutait trois appels au lieu d'une quinzaine, mais melangeait deux méthodes
-// dans le même tableau : changer de sélection changeait les chiffres (B20). Les
-// moteurs OSRM sont locaux à l'API : la quinzaine d'appels reste bon marché.
+// Toutes les options arrivent mesurées et tracées : la liste est comparable
+// (B20). Les types choisis limitent les modes de transport demandés.
 import { useEffect, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
 import { ALL_TRANSIT_TYPES } from '../../../lib/planner/transit-filter';
@@ -67,7 +61,7 @@ export function useRouteOptions(input: {
     // La sélection manuelle vaut pour la recherche en cours ; une nouvelle
     // recherche repart de la présélection du profil, sans quoi le choix fait sur
     // un trajet précédent se propagerait à tous les suivants.
-    const selectedTransitFamily = ['transit', 'bike-transit', 'scooter-transit'].includes(selectedRouteId);
+    const selectedTransitFamily = selectedRouteId.includes('transit');
     // Un filtre sans résultat ne doit pas sélectionner silencieusement la marche :
     // le choix transport reste actif et ses types restent modifiables.
     const selectedRoute = routes.find(route => route.id === selectedRouteId)

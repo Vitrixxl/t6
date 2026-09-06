@@ -1,0 +1,430 @@
+{
+ "direct": [
+  {
+   "duration": 1086,
+   "startTime": "2022-04-20T06:00:00Z",
+   "endTime": "2022-04-20T06:18:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 45.7578,
+      "lon": 4.832,
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "PLACE ANTONIN PONCET",
+      "lat": 45.756775,
+      "lon": 4.833917,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 288,
+     "distance": 346.0,
+     "legGeometry": {
+      "points": "gvygvAgl|eHxQbI{DjT??bBv@Ib@??o@hD??Ib@xDjEdD|A??bJeg@??jZ}~A??n@{C??Z_B??`@sB??eCkAiB_A`AeF??jBoL",
+      "precision": 6,
+      "length": 28
+     }
+    },
+    {
+     "mode": "RENTAL",
+     "from": {
+      "name": "PLACE ANTONIN PONCET",
+      "lat": 45.756775,
+      "lon": 4.833917,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "PART-DIEU / CUIRASSIERS",
+      "lat": 45.75991,
+      "lon": 4.857555,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 613,
+     "distance": 2294.0,
+     "legGeometry": {
+      "points": "muwgvAyf`fHkBnL??dMoo@x@}D??~Ax@??`DoP??jIac@??nEuWBQ??PcA??@GTgA??oVwM??gYeP??}JmFu@_@??_@M??hBqLLq@ZkB?i@???u@??[cAM_ACaATaDLsC??~Yg{ArPez@??xIm]`@iBPu@??RcA??kEoC??yAu@??OKQI??sAs@s@kAiDcGyAiAsBkAsDoA??iCcA??aMkBgHc@??kD@??k@A??gDH??u@K??yCYoLg@kJa@??DkD??DgBEcB??E}A?Ec@uM??IyC??EiAGwB??o@kS??kAg_@??]_KEmB??GcBEcA??CiA??IoB??OqE??EmBmAmb@??GqC??KoD??i@_QYgK??]qK??]kM??e@}OIqC??UmH??S{F??[{J??QqF??}@}X??KsBO_E??WiH??a@kK??KqC??e@eP??i@mR??K{C??GaC??YwK??eAs`@??KsDEuA??IgD??MyD??}@q\\??GyB??E_B??_Aa]??EiBCy@??GaC??gAq`@??IoC??G{B??sBev@??KaE??KcD??]cMqBuu@KcD??EeB??a@D??mCT??iVfC??uDZaAJ??c@D??gBJ??SwE??YyG??MkC??TSZw@FgA??oC_r@??YwG??eBkb@??UaF??gCss@??WoGe@gM??yA_\\??IkCAwA??BcA??LeBPaA??Lu@Bq@@w@QqEM}A[uAOe@??c@cASe@??mAkCaHoO??_DuHQs@Ei@UcC_Dir@??pCjU",
+      "precision": 6,
+      "length": 265
+     },
+     "rental": {
+      "systemName": "Vélov",
+      "fromStationName": "PLACE ANTONIN PONCET",
+      "toStationName": "PART-DIEU / CUIRASSIERS",
+      "formFactor": "BICYCLE"
+     }
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "PART-DIEU / CUIRASSIERS",
+      "lat": 45.75991,
+      "lon": 4.857555,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "END",
+      "lat": 45.7606,
+      "lon": 4.8594,
+      "vertexType": "NORMAL"
+     },
+     "duration": 185,
+     "distance": 182.0,
+     "legGeometry": {
+      "points": "ky}gvAelngHqCkU??jDsA??qD}H??eBeD??iA_C??aSkd@??uC}H??k@uA_AaC??HgE??_@AiCI??FoI",
+      "precision": 6,
+      "length": 24
+     }
+    }
+   ]
+  },
+  {
+   "duration": 1086,
+   "startTime": "2022-04-20T06:00:00Z",
+   "endTime": "2022-04-20T06:18:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 45.7578,
+      "lon": 4.832,
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "PLACE ANTONIN PONCET",
+      "lat": 45.756775,
+      "lon": 4.833917,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 288,
+     "distance": 346.0,
+     "legGeometry": {
+      "points": "gvygvAgl|eHxQbI{DjT??bBv@Ib@??o@hD??Ib@xDjEdD|A??bJeg@??jZ}~A??n@{C??Z_B??`@sB??eCkAiB_A`AeF??jBoL",
+      "precision": 6,
+      "length": 28
+     }
+    },
+    {
+     "mode": "RENTAL",
+     "from": {
+      "name": "PLACE ANTONIN PONCET",
+      "lat": 45.756775,
+      "lon": 4.833917,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "PART-DIEU / CUIRASSIERS",
+      "lat": 45.75991,
+      "lon": 4.857555,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 613,
+     "distance": 2294.0,
+     "legGeometry": {
+      "points": "muwgvAyf`fHkBnL??dMoo@x@}D??~Ax@??`DoP??jIac@??nEuWBQ??PcA??@GTgA??oVwM??gYeP??}JmFu@_@??_@M??hBqLLq@ZkB?i@???u@??[cAM_ACaATaDLsC??~Yg{ArPez@??xIm]`@iBPu@??RcA??kEoC??yAu@??OKQI??sAs@s@kAiDcGyAiAsBkAsDoA??iCcA??aMkBgHc@??kD@??k@A??gDH??u@K??yCYoLg@kJa@??DkD??DgBEcB??E}A?Ec@uM??IyC??EiAGwB??o@kS??kAg_@??]_KEmB??GcBEcA??CiA??IoB??OqE??EmBmAmb@??GqC??KoD??i@_QYgK??]qK??]kM??e@}OIqC??UmH??S{F??[{J??QqF??}@}X??KsBO_E??WiH??a@kK??KqC??e@eP??i@mR??K{C??GaC??YwK??eAs`@??KsDEuA??IgD??MyD??}@q\\??GyB??E_B??_Aa]??EiBCy@??GaC??gAq`@??IoC??G{B??sBev@??KaE??KcD??]cMqBuu@KcD??EeB??a@D??mCT??iVfC??uDZaAJ??c@D??gBJ??SwE??YyG??MkC??TSZw@FgA??oC_r@??YwG??eBkb@??UaF??gCss@??WoGe@gM??yA_\\??IkCAwA??BcA??LeBPaA??Lu@Bq@@w@QqEM}A[uAOe@??c@cASe@??mAkCaHoO??_DuHQs@Ei@UcC_Dir@??pCjU",
+      "precision": 6,
+      "length": 265
+     },
+     "rental": {
+      "systemName": "Vélov",
+      "fromStationName": "PLACE ANTONIN PONCET",
+      "toStationName": "PART-DIEU / CUIRASSIERS",
+      "formFactor": "BICYCLE"
+     }
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "PART-DIEU / CUIRASSIERS",
+      "lat": 45.75991,
+      "lon": 4.857555,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "END",
+      "lat": 45.7606,
+      "lon": 4.8594,
+      "vertexType": "NORMAL"
+     },
+     "duration": 185,
+     "distance": 182.0,
+     "legGeometry": {
+      "points": "ky}gvAelngHqCkU??jDsA??qD}H??eBeD??iA_C??aSkd@??uC}H??k@uA_AaC??HgE??_@AiCI??FoI",
+      "precision": 6,
+      "length": 24
+     }
+    }
+   ]
+  }
+ ],
+ "itineraries": [
+  {
+   "duration": 1260,
+   "startTime": "2022-04-20T06:04:00Z",
+   "endTime": "2022-04-20T06:25:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 45.7578,
+      "lon": 4.832,
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Rue Emile Zola/Pl. Bellecour",
+      "lat": 45.758499,
+      "lon": 4.832469,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 120,
+     "distance": 190.0,
+     "legGeometry": {
+      "points": "gvygvAgl|eHwUgKuEvU??gCkAUjA??q@xD??ERaEaB??bJef@??aBy@??A???SK??uAq@??}@a@??Y_@??Lw@??Fm@??kBfA",
+      "precision": 6,
+      "length": 31
+     }
+    },
+    {
+     "mode": "RENTAL",
+     "from": {
+      "name": "Rue Emile Zola/Pl. Bellecour",
+      "lat": 45.758499,
+      "lon": 4.832469,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "16 rue Mazenod/Cr de la Liberté",
+      "lat": 45.7584746,
+      "lon": 4.842311769,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 360,
+     "distance": 1267.0,
+     "legGeometry": {
+      "points": "ea{gvAil}eHjBgA??EAiAUm~@gR??sAY??kAU??_f@}H??uBa@GqA??g@sD??`@gAf@wM??IuDBaA??`@{NDiBDgA??@}C???}A??}AD??gAHsK[??aDGuACe@A??c@CeBK??EkE??`AyfA??BwC??DmF??RoY?_@??r@@??f@@??X???hSX??^@??T???~AnA??BuB??RgV??y@{BZuh@??BmE??NaY??BiC??gCYJqE??NsDHwBJmC??NgEd@k@??r@w@??Xq@??Z_A??VmAJwA~Fq~C??FiD??D}C??T@pAF??|AJtAF??dSjA??jH`@|Lr@??dAF??@mBBaB??hB???BwD??E_B_@gMI}C??tAD??\\DB@bc@zB??\\DnAF??G{C??Cy@eCcw@EwA??n@|C",
+      "precision": 6,
+      "length": 146
+     },
+     "rental": {
+      "systemName": "Dott lyon",
+      "fromStationName": "Rue Emile Zola/Pl. Bellecour",
+      "toStationName": "16 rue Mazenod/Cr de la Liberté",
+      "formFactor": "SCOOTER_STANDING"
+     }
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "16 rue Mazenod/Cr de la Liberté",
+      "lat": 45.7584746,
+      "lon": 4.842311769,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "Liberté",
+      "stopId": "tcl_32112",
+      "lat": 45.758865571055,
+      "lon": 4.842485822789999,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 120,
+     "distance": 60.0,
+     "legGeometry": {
+      "points": "u_{gvAospfHo@}C??c@B??w@F??_CP??G{B??Ae@??E_A??CkA??oB|@??yJt@",
+      "precision": 6,
+      "length": 20
+     }
+    },
+    {
+     "mode": "TRAM",
+     "from": {
+      "name": "Liberté",
+      "stopId": "tcl_32112",
+      "lat": 45.758865571055,
+      "lon": 4.842485822789999,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_32121",
+      "lat": 45.76173895947301,
+      "lon": 4.857910001198999,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 420,
+     "headsign": "IUT Feyssine",
+     "routeColor": "8c368c",
+     "routeType": 0,
+     "routeShortName": "T1",
+     "legGeometry": {
+      "points": "cx{gvAk~pfHikAygD}LwkEsTenIubAg~F",
+      "precision": 6,
+      "length": 5
+     },
+     "wheelchairAccessible": "ACCESSIBLE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_32121",
+      "lat": 45.76173895947301,
+      "lon": 4.857910001198999,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "END",
+      "lat": 45.7606,
+      "lon": 4.8594,
+      "vertexType": "NORMAL"
+     },
+     "duration": 240,
+     "distance": 234.0,
+     "legGeometry": {
+      "points": "ukahvAibogHrOaB??dBiA??Es@??IiB??G{B??CiB??tTnA??E{J??EiU??jD_B??rAwG??BiA??d@@??FmDdBF??b@B???mC??hA@??V???\\???`@A??jCFFsI??bFJ??FoI",
+      "precision": 6,
+      "length": 48
+     }
+    }
+   ]
+  },
+  {
+   "duration": 1320,
+   "startTime": "2022-04-20T06:07:00Z",
+   "endTime": "2022-04-20T06:29:00Z",
+   "transfers": 0,
+   "legs": [
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "START",
+      "lat": 45.7578,
+      "lon": 4.832,
+      "vertexType": "NORMAL"
+     },
+     "to": {
+      "name": "Rue Emile Zola/Pl. Bellecour",
+      "lat": 45.758499,
+      "lon": 4.832469,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 120,
+     "distance": 190.0,
+     "legGeometry": {
+      "points": "gvygvAgl|eHwUgKuEvU??gCkAUjA??q@xD??ERaEaB??bJef@??aBy@??A???SK??uAq@??}@a@??Y_@??Lw@??Fm@??kBfA",
+      "precision": 6,
+      "length": 31
+     }
+    },
+    {
+     "mode": "RENTAL",
+     "from": {
+      "name": "Rue Emile Zola/Pl. Bellecour",
+      "lat": 45.758499,
+      "lon": 4.832469,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "96 rue Pierre Corneille/Bonnel",
+      "lat": 45.76165985,
+      "lon": 4.844284872,
+      "vertexType": "BIKESHARE"
+     },
+     "duration": 360,
+     "distance": 1353.0,
+     "legGeometry": {
+      "points": "ea{gvAil}eHjBgA??EAiAUm~@gR??sAY??kAU??_f@}H??uBa@GqA??g@sD??`@gAf@wM??IuDBaA??`@{NDiBDgA??@}C???}A??}AD??gAHsK[??aDGuACe@A??c@CeBK??EkE??`AyfA??BwC??DmF??RoY?_@??r@@??f@@??X???hSX??^@??T???~AnA??BuB??RgV??y@{BZuh@??BmE??NaY??BiC??gCYJqE??NsDHwBJmC??NgEd@k@??r@w@??Xq@??Z_A??VmAJwA~Fq~C??FiD??D}C??wAIiAI??q]iB??eCM??o`@{BaCM??QCg@C??BwAYiB??yAqCe@}@??}Aog@??IyBKwC??MaFCsA??aD{`A??EmAEqA??E_BGgB??gB_i@??Cu@GyB??s@F??cBwA",
+      "precision": 6,
+      "length": 149
+     },
+     "rental": {
+      "systemName": "Dott lyon",
+      "fromStationName": "Rue Emile Zola/Pl. Bellecour",
+      "toStationName": "96 rue Pierre Corneille/Bonnel",
+      "formFactor": "SCOOTER_STANDING"
+     }
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "96 rue Pierre Corneille/Bonnel",
+      "lat": 45.76165985,
+      "lon": 4.844284872,
+      "vertexType": "BIKESHARE"
+     },
+     "to": {
+      "name": "Saxe - Bonnel",
+      "stopId": "tcl_2698",
+      "lat": 45.76160809246,
+      "lon": 4.845927271050999,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 240,
+     "distance": 159.0,
+     "legGeometry": {
+      "points": "wfahvAyntfHbBvA??Cs@??BiA??AoA??}Bou@??NC??TC??HA??XC??~@I??zC_@??t@eA??GaB??KkC??M}C??Cg@UsA??Ou@s@_V",
+      "precision": 6,
+      "length": 36
+     }
+    },
+    {
+     "mode": "BUS",
+     "from": {
+      "name": "Saxe - Bonnel",
+      "stopId": "tcl_2698",
+      "lat": 45.76160809246,
+      "lon": 4.845927271050999,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_39054",
+      "lat": 45.760606003031995,
+      "lon": 4.857799945695,
+      "vertexType": "TRANSIT"
+     },
+     "duration": 360,
+     "headsign": "Hôpitaux Est",
+     "routeColor": "778186",
+     "routeType": 3,
+     "routeShortName": "C9",
+     "legGeometry": {
+      "points": "ocahvAmuwfHaT_jGgPmuD|cBscH",
+      "precision": 6,
+      "length": 4
+     },
+     "wheelchairAccessible": "ACCESSIBLE"
+    },
+    {
+     "mode": "WALK",
+     "from": {
+      "name": "Gare Part-Dieu V.Merle",
+      "stopId": "tcl_39054",
+      "lat": 45.760606003031995,
+      "lon": 4.857799945695,
+      "vertexType": "TRANSIT"
+     },
+     "to": {
+      "name": "END",
+      "lat": 45.7606,
+      "lon": 4.8594,
+      "vertexType": "NORMAL"
+     },
+     "duration": 240,
+     "distance": 223.0,
+     "legGeometry": {
+      "points": "{d_hvAk{ngH|e@eF??jDsA??qD}H??eBeD??iA_C??aSkd@??uC}H??k@uA_AaC??HgE??_@AiCI??FoI",
+      "precision": 6,
+      "length": 24
+     }
+    }
+   ]
+  }
+ ]
+}

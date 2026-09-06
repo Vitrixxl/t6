@@ -17,11 +17,10 @@ export interface ServerConfig {
      */
     trustProxy: boolean;
     /**
-     * Une adresse par moteur, avec le préfixe éventuel de l'hébergeur.
-     * Par défaut, les noms des services Docker désignent les moteurs locaux.
-     * Hors conteneur, configurer leurs adresses loopback (voir README).
+     * Adresse du moteur d'itinéraires MOTIS. Par défaut, le nom du service
+     * Docker ; hors conteneur, son adresse loopback (voir README).
      */
-    osrmUrls: { foot: string; bike: string; car: string };
+    motisUrl: string;
     /**
      * Dossier du client construit, servi par l'API elle-même. Une seule origine
      * pour l'application et son API : cookie de première partie, aucun CORS.
@@ -70,10 +69,6 @@ export function loadConfig(env: Record<string, string | undefined> = Bun.env): S
         webRoot: text(env.WEB_ROOT, 'dist'),
         tlsCertPath: text(env.TLS_CERT_PATH, ''),
         tlsKeyPath: text(env.TLS_KEY_PATH, ''),
-        osrmUrls: {
-            foot: text(env.OSRM_FOOT_URL, 'http://osrm-foot:5000').replace(/\/+$/, ''),
-            bike: text(env.OSRM_BIKE_URL, 'http://osrm-bike:5000').replace(/\/+$/, ''),
-            car: text(env.OSRM_CAR_URL, 'http://osrm-car:5000').replace(/\/+$/, ''),
-        },
+        motisUrl: text(env.MOTIS_URL, 'http://motis:8080').replace(/\/+$/, ''),
     };
 }
