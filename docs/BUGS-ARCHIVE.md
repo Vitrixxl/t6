@@ -1890,18 +1890,54 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé.** Le scénario Chromium intégré à `bun run ci` échoue avant correction et passe après : vrais événements tactiles, relâchement, actualisation GPS observée, rotation, départ puis arrivée avec calcul d’itinéraire, déplacements et gestes annulés ou multiples ignorés, réouverture, fermeture extérieure et explicite, écran de 320 px et souris. Le même scénario est exécuté sur le build Docker de production. Les captures du menu mobile et bureau sont relues ; les navigateurs mobiles autres que Chromium ne disposent pas d’une recette dédiée.
 
+### B72 — Le téléphone garde l’ancienne application après rechargement
+
+**Symptôme observé.** L’appui long fonctionne dans le navigateur de recette, mais le téléphone continue à fermer le menu. Ouvrir l’URL avec un nouveau paramètre de version rend le correctif visible, ce que l’utilisateur confirme.
+
+**Cause racine.** Le service worker rendait le HTML en cache avant la réponse réseau. Le premier rechargement exécutait donc encore les anciens fichiers JavaScript.
+
+**Correctif.** [946941e](https://github.com/Vitrixxl/t6/commit/946941eb99628e73ecba1928d0a9bd69cecbf04d) : une navigation en ligne attend le HTML réseau puis renouvelle le cache ; hors ligne, le dernier écran chargé reste utilisable avec son bandeau et la reconnexion.
+
+**Où le montrer.** `public/sw.js`, `scripts/e2e-app-update.mjs`.
+
+**Test et niveau de verrouillage : automatisé.** La recette place un ancien HTML marqué dans le cache. Elle échoue avant correction au premier rechargement, puis vérifie après correction le document actuel, son cache hors ligne et le retour réseau. Incluse à la CI, elle a aussi été jouée sur le lien public avec un délai de navigation adapté au tunnel.
+
+### B73 — Les droites du GTFS auraient été affichées comme des tracés TCL
+
+**Symptôme observé.** L’archive officielle fournit les horaires mais aucun `shapes.txt`. MOTIS renvoie néanmoins une polyligne entre les arrêts, que la traduction existante aurait affichée avec « Tracé réel affiché ».
+
+**Cause racine.** Une polyligne non vide était considérée comme un tracé réel, sans distinguer la géométrie de voirie et le repli du moteur entre arrêts GTFS.
+
+**Correctif.** [946941e](https://github.com/Vitrixxl/t6/commit/946941eb99628e73ecba1928d0a9bd69cecbf04d) : retirer la géométrie des segments TCL de cette intégration sans shapes, conserver les accès OSM et afficher « Tracé TCL indisponible ». Les lignes et horaires restent exploitables ; la distance et le carbone TCL sont explicitement estimés entre arrêts.
+
+**Où le montrer.** `server/src/services/motis/options.ts`, `src/components/app/hooks/useFastestRoute.ts`.
+
+**Test et niveau de verrouillage : automatisé.** `server/src/__tests__/planning.test.ts` exige un tracé vide pour les segments TCL et conserve celui des autres modes. `scripts/e2e-tcl.mjs` vérifie lignes, horaires, absence de droites et message sur mobile et bureau, sur le moteur officiel puis sur les fixtures en CI. Le raccordement à des tracés de lignes vérifiés reste à implémenter.
+
+### B74 — La recette tactile vise le canvas avant sa rotation
+
+**Symptôme observé.** La CI échoue par délai dépassé lors d’un nouvel appui après rotation, alors que le départ a bien été choisi et que le parcours passe isolément.
+
+**Cause racine.** Le test calculait immédiatement les coordonnées de l’appui après `setViewportSize`, avant que MapLibre ait aligné la taille du canvas sur son conteneur.
+
+**Correctif.** [946941e](https://github.com/Vitrixxl/t6/commit/946941eb99628e73ecba1928d0a9bd69cecbf04d) : attendre l’égalité des dimensions du canvas et de son cadre avant de calculer le point à toucher.
+
+**Où le montrer.** `scripts/e2e-map-picker.mjs`, fonction `pointOnMap`.
+
+**Test et niveau de verrouillage : automatisé.** La recette conserve ses gestes réels et ses assertions de sélection/fermeture. Elle passe sur le build Docker avec TCL et dans la CI complète après la synchronisation du resize.
+
+### B45 — Les TCL sélectionnés ne participaient pas au calcul
+
+**Symptôme observé.** Pour la rue des Petites Sœurs vers l’avenue Paul Santy, le téléphone affiche un trajet à pied malgré le choix « Transport en commun ».
+
+**Cause racine.** Le report des horaires avait désactivé les transports dans MOTIS. La préparation exigeait aussi une URL de téléchargement alors que l’utilisateur pouvait fournir directement l’archive officielle.
+
+**Correctif.** [946941e](https://github.com/Vitrixxl/t6/commit/946941eb99628e73ecba1928d0a9bd69cecbf04d) : prendre en charge `GTFS_SOURCE_FILE`, importer le ZIP TCL reçu le 6 septembre 2026 et activer les horaires dans la pile de démonstration. La commande Compose passe explicitement `--env-file .env` pour conserver la configuration du dépôt. Le moteur importe 60 jours ; l’archive annonce une couverture du 6 septembre 2026 au 4 janvier 2027. Les comptes du volume existant sont conservés.
+
+**Où le montrer.** `infra/motis-prepare.sh`, `infra/compose.yml`, `scripts/e2e-tcl.mjs`, `README.md`, `output/presentation/src/slides.tsx`.
+
+**Test et niveau de verrouillage : automatisé pour le parcours, faible pour le renouvellement.** `scripts/e2e-tcl.mjs` exige un trajet TCL plus rapide que la marche pour les deux adresses, puis vérifie la restitution sur mobile et bureau. Exécuté sur l’archive officielle et le lien public : Bus C27 puis C25, 46 min contre 56 min à pied à l’heure de recherche de la recette ; ces valeurs sont datées et ne constituent pas un horaire permanent. La CI rejoue le parcours avec son propre GTFS de recette. La préparation locale du ZIP est passée et Compose résout les TCL activés et le bon dossier de graphe. Le renouvellement automatique et le temps réel restent hors de cette livraison.
+
 ## Ouverts
 
-### B45 — Les horaires TCL courants restent à intégrer
-
-**Symptôme actuel.** Les arrêts TCL sont consultables mais aucun trajet en transport public n’est proposé dans la configuration livrée. Le bandeau explique cette limite.
-
-**Cause racine.** Aucune archive GTFS officielle actuelle n’est configurée. Les anciennes attentes estimées ont été retirées avec le moteur maison ; elles ne sont plus présentées comme horaires.
-
-**État.** Intégration reportée à une prochaine itération sur décision produit. Le mode livré fonctionne sur la voirie et les flux GBFS, sans archive historique ni horaire de test chargé en production. Une prochaine activation nécessitera une archive actuelle, des tracés vérifiés et un renouvellement fiable.
-
-**Commit préparatoire actuel.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) ; l’ancien service horaire maison a été retiré avec la migration MOTIS.
-
-**Où le montrer.** `infra/motis-prepare.sh`, `server/src/services/planning.ts`, `src/components/app/TransportStatus.tsx`, `scripts/ci.ts`.
-
-**Niveau de verrouillage : ouvert pour les horaires réels.** Les tests de planning et les recettes MOTIS utilisent les fixtures versionnées pour vérifier le protocole horaire. Ils ne valident pas une desserte TCL actuelle. Le fonctionnement sans GTFS, lui, est couvert par une recette navigateur contre un moteur réel sans horaire.
+Le renouvellement du GTFS officiel reste manuel. Le raccordement à des tracés TCL vérifiés et le temps réel sont des évolutions annoncées ; aucune géométrie de ligne ni donnée temps réel de remplacement n’est inventée.
