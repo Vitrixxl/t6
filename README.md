@@ -83,9 +83,10 @@ horaire ; les anciennes routines prennent `Europe/Paris` et aucune annulation.
 `bun run e2e:trips` vérifie les quatre onglets de 320 à 1280 px, les annulations
 et leur conservation après rechargement, sur un serveur local de test.
 
-Le cadrage réserve des marges aux contrôles en fonction de la taille réelle du
-canvas. Une rotation ou un redimensionnement des panneaux recalcule ces marges ;
-elles laissent toujours une zone disponible pour le trajet, même en paysage.
+Le cadrage initial réserve des marges aux contrôles selon les dimensions réelles
+du canvas, avec une zone disponible positive, même en paysage. Ensuite, une
+rotation ou un redimensionnement adapte le canvas sans reprendre la caméra :
+le déplacement et le zoom restent libres jusqu’au prochain trajet.
 
 ## Organisation du code
 

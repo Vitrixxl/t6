@@ -2016,7 +2016,7 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Cause racine.** Le même effet reliait `fitBounds` aux événements `resize` de MapLibre. Un changement de hauteur du navigateur mobile déclenchait donc un nouveau cadrage. L’effet dépendait également des objets de départ/arrivée, au-delà du résultat à cadrer.
 
-**Correctif.** CAMERA_COMMIT : séparer le redimensionnement du canvas de la caméra. Le `ResizeObserver` reste lié à la durée de vie de la carte ; `fitBounds` s’exécute à la réception d’un trajet, avec ses propres extrémités. Les demandes explicites de position et les nouvelles recherches conservent leur cadrage.
+**Correctif.** [a8029ef](https://github.com/Vitrixxl/t6/commit/a8029ef97a50074379fcee1728ded8c130bcd8ba) : séparer le redimensionnement du canvas de la caméra. Le `ResizeObserver` reste lié à la durée de vie de la carte ; `fitBounds` s’exécute à la réception d’un trajet, avec ses propres extrémités. Les demandes explicites de position et les nouvelles recherches conservent leur cadrage.
 
 **Où le montrer.** `src/components/map/UrbanMap.tsx`, `scripts/check-map-camera.mjs`, `scripts/e2e-map-picker.mjs`.
 

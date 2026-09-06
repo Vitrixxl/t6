@@ -45,7 +45,7 @@ export async function checkFreeCamera(page, cdp) {
     await page.getByRole('button', { name: 'Inverser départ et arrivée', exact: true }).click();
     assert((await planned).ok(), 'Le nouveau trajet ne se calcule pas');
     await page.waitForTimeout(1000);
-    const destination = await page.locator('.ufm-endpoint-destination').boundingBox();
+    const destination = await page.locator('.ufm-endpoint-destination .ufm-endpoint-pin').boundingBox();
     const frame = await page.locator('.maplibregl-canvas').boundingBox();
     assert(destination.x > frame.x && destination.x + destination.width < frame.x + frame.width, 'Le nouveau trajet n’est pas cadré');
     assert(destination.y > frame.y && destination.y + destination.height < frame.y + frame.height, 'L’arrivée du nouveau trajet est hors cadre');
