@@ -216,7 +216,8 @@ try {
         data: { ...(await readAccountResources()).profile, carbonGoalGramsPerWeek: 250 },
     });
     assert(profileResponse.ok(), 'Budget de recette refusé');
-    await put('/trips/planned/budget', { ...trip, label: 'Vérification budget', carbonGrams: 300, carbonSavedGrams: 5000, scheduledFor: createdAt, status: 'planned', completedAt: null });
+    // Hier appartient à la semaine précédente le lundi ; ce contrôle porte sur la semaine courante.
+    await put('/trips/planned/budget', { ...trip, label: 'Vérification budget', carbonGrams: 300, carbonSavedGrams: 5000, scheduledFor: new Date().toISOString(), status: 'planned', completedAt: null });
     await readAccountResources();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload({ waitUntil: 'networkidle' });
