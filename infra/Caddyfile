@@ -1,0 +1,16 @@
+# Entrée HTTPS de la pile : Caddy termine TLS et transmet à l'application.
+#
+# DOMAIN vaut un nom public (certificat Let's Encrypt obtenu et renouvelé
+# automatiquement, ports 80 et 443 joignables depuis Internet) ou, à défaut,
+# localhost / une IP du réseau local (certificat de l'autorité interne de
+# Caddy, à accepter une fois dans le navigateur). HTTP redirige vers HTTPS.
+{$DOMAIN:localhost} {
+	encode gzip
+	# L'application écoute elle-même en HTTPS avec son certificat interne,
+	# jamais publié : Caddy est le seul à lui parler.
+	reverse_proxy https://app:4000 {
+		transport http {
+			tls_insecure_skip_verify
+		}
+	}
+}
