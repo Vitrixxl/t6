@@ -58,15 +58,8 @@ jobs:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
 
-      # L'horaire de recette tient lieu d'archive TCL : le chemin avec horaires
-      # est ainsi vérifié sans l'archive officielle, jamais versionnée.
-      - name: Déposer l’horaire de recette
-        run: cp scripts/fixtures/lyon-ci.gtfs.zip infra/gtfs/tcl.gtfs.zip
-
       - name: Démarrer la pile comme sur une machine neuve
-        env:
-          MOTIS_TRANSIT_ENABLED: 'true'
-        run: docker compose up --build --wait --wait-timeout 1200
+        run: docker compose up --build --wait --wait-timeout 900
 
       - name: Vérifier l’application et le moteur
         run: |

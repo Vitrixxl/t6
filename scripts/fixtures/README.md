@@ -2,9 +2,8 @@
 
 Deux fichiers alimentent le moteur MOTIS jetable de `bun run ci`. Ils ne sont
 ni servis au client ni utilisés par la pile de production, dont le conteneur
-MOTIS importe l'extrait métropolitain versionné dans `infra/osm/` et l'archive
-GTFS officielle (`infra/motis-entrypoint.sh`). Seul le travail « Pile Docker » de la CI dépose
-l'horaire de recette dans `infra/gtfs/` pour vérifier ce chemin.
+MOTIS importe l'extrait métropolitain et l'archive GTFS officielle versionnés
+dans `infra/osm/` et `infra/gtfs/` (`infra/motis-entrypoint.sh`).
 
 ## `lyon-roads.osm.pbf` — voirie réelle
 

@@ -348,9 +348,9 @@ Toute la pile tient dans une commande, sur n'importe quelle machine où Docker e
 docker compose up
 ```
 
-`compose.yml` lance **l'application et le moteur ensemble**. Au premier démarrage, le conteneur MOTIS construit son graphe dans un volume à partir de la voirie versionnée dans `infra/osm/` (extrait OpenStreetMap de la métropole, voir son README), en une minute environ ; les démarrages suivants réutilisent ce graphe. L'application attend que le moteur réponde, puis écoute en **HTTPS** sur https://localhost:4000 avec un certificat auto-signé généré au premier démarrage. L'API appelle `motis:8080` sur le réseau Docker, sans port publié. Les flux GBFS et le géocodage restent externes. Tout se règle dans un `.env` facultatif à la racine (modèle : `.env.example`) ; pour ouvrir l'application depuis un téléphone du réseau local, inscrire l'adresse de la machine dans le certificat avec `TLS_EXTRA_HOSTS=IP:192.168.1.37`.
+`compose.yml` lance **l'application et le moteur ensemble**. Au premier démarrage, le conteneur MOTIS construit son graphe dans un volume à partir de la voirie et des horaires TCL versionnés (`infra/osm/` et `infra/gtfs/`, voir leurs README), en une minute environ ; les démarrages suivants réutilisent ce graphe. Rien n'est téléchargé. L'application attend que le moteur réponde, puis écoute en **HTTPS** sur https://localhost:4000 avec un certificat auto-signé généré au premier démarrage. L'API appelle `motis:8080` sur le réseau Docker, sans port publié. Les flux GBFS et le géocodage restent externes. Tout se règle dans un `.env` facultatif à la racine (modèle : `.env.example`) ; pour ouvrir l'application depuis un téléphone du réseau local, inscrire l'adresse de la machine dans le certificat avec `TLS_EXTRA_HOSTS=IP:192.168.1.37`.
 
-**Horaires TCL.** Sans archive GTFS, le moteur calcule marche, vélo, voiture et engins partagés, et l'application affiche son bandeau sans trajet TCL. Pour activer les horaires : déposer l'archive officielle dans `infra/gtfs/tcl.gtfs.zip` (ou renseigner `GTFS_SOURCE_URL` et les accès Data Grand Lyon pour que le conteneur la télécharge), mettre `MOTIS_TRANSIT_ENABLED=true` dans `.env`, puis relancer `docker compose up`. `infra/motis-entrypoint.sh` importe 60 jours d'horaires à partir du jour de l'import et reconstruit le graphe après 30 jours, ou dès que l'archive ou la configuration change. L'archive relève de la licence Mobilité et n'est jamais versionnée ; les horaires de recette de `scripts/fixtures/` sont réservés à la CI.
+**Horaires TCL.** L'archive officielle `infra/gtfs/tcl.gtfs.zip` est versionnée : `infra/motis-entrypoint.sh` importe 60 jours d'horaires à partir du jour de l'import et reconstruit le graphe après 30 jours, ou dès que la voirie, l'archive ou la configuration change. Une archive périmée ne fournit aucun horaire courant : la remplacer par la version courante de Data Grand Lyon, le moteur se reconstruit au démarrage suivant. `MOTIS_TRANSIT_ENABLED=false` dans `.env` désactive les horaires : marche, vélo, voiture et engins partagés seulement, avec bandeau. Les horaires de recette de `scripts/fixtures/` sont réservés à `bun run ci`.
 
 La livraison du 6 septembre 2026 utilise l’archive officielle TCL fournie par l’utilisateur (`feed_start_date=20260906`, `feed_end_date=20270104`). Le renouvellement automatique et le temps réel restent à intégrer. L’archive ne contient pas `shapes.txt` : les tracés officiels SYTRAL complètent les segments dont la ligne, les quais et leur ordre concordent. Leur distance est mesurée sur ce tracé ; un segment sans correspondance vérifiée reste sans géométrie, avec une estimation de distance et de carbone annoncée. Les accès à pied conservent leur géométrie OSM.
 
@@ -546,9 +546,8 @@ Le JSON `/api/doc/json` conserve `default-src 'none'`. Vérification navigateur 
 ## Vérifier avant de pousser
 
 `bun run ci` est la commande utilisée aussi par `.github/workflows/ci.yml`, dont
-un second travail démarre la pile Docker complète (`docker compose up --wait`, avec
-l'horaire de recette déposé dans `infra/gtfs/`) et vérifie que l'application et le
-moteur répondent. Elle installe les dépendances avec le lockfile figé, lance `check` et les métriques,
+un second travail démarre la pile Docker complète (`docker compose up --wait`) et
+vérifie que l'application et le moteur répondent. Elle installe les dépendances avec le lockfile figé, lance `check` et les métriques,
 prépare puis démarre un moteur MOTIS dédié sur les fixtures versionnées, crée une base SQLite vide et le
 compte de démonstration, puis exécute axe-core, la planification (9 assertions),
 les filtres TC mobiles et la documentation Scalar. Le banc de performance reste
@@ -584,9 +583,9 @@ L’appui long de 500 ms ouvre le choix départ/arrivée. Le menu reste ouvert a
 
 Recette navigateur : `bun scripts/e2e-map-picker.mjs` (`E2E_BASE_URL` désigne le serveur), incluse dans `bun run ci`.
 
-### Charger un ZIP TCL téléchargé manuellement
+### Renouveler l'archive TCL
 
-Copier l'archive dans `infra/gtfs/tcl.gtfs.zip` (ignoré par git), mettre `MOTIS_TRANSIT_ENABLED=true` dans `.env`, puis `docker compose up -d`. Le conteneur MOTIS détecte l'archive nouvelle et reconstruit son graphe avant de servir ; une archive périmée ne fournit aucun horaire courant. Après une mise à jour du code, `docker compose up -d --build` reconstruit l'image de l'application en conservant les volumes.
+Remplacer `infra/gtfs/tcl.gtfs.zip` par l'archive courante de Data Grand Lyon, puis `docker compose up -d`. Le conteneur MOTIS détecte l'archive nouvelle et reconstruit son graphe avant de servir. Après une mise à jour du code, `docker compose up -d --build` reconstruit l'image de l'application en conservant les volumes.
 
 Le service worker charge le HTML depuis le réseau lors d’une navigation en ligne, puis actualise son cache. Hors ligne, il conserve le dernier écran chargé. `scripts/e2e-app-update.mjs` vérifie une mise à jour avec un ancien HTML déjà en cache.
 

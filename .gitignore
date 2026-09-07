@@ -41,6 +41,3 @@ yarn.lock
 
 # Surcharges Compose propres au poste (port du moteur publié, par exemple).
 compose.override.yml
-# Archive GTFS déposée pour le conteneur MOTIS : licence Mobilité, jamais versionnée.
-infra/gtfs/*
-!infra/gtfs/README.md

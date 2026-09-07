@@ -3,10 +3,10 @@
 #
 # Tourne dans l'image MOTIS (Alpine, BusyBox), sous son utilisateur `motis`,
 # avec le volume de données monté sur /data. Au premier démarrage : lit la
-# voirie OpenStreetMap versionnée (infra/osm, montée sur /osm), copie ou
-# télécharge l'archive GTFS TCL si les horaires sont activés, puis construit
-# le graphe. Ensuite, le graphe est réutilisé tant que la voirie, la
-# configuration et l'archive n'ont pas changé.
+# voirie OpenStreetMap et l'archive GTFS TCL versionnées (infra/osm et
+# infra/gtfs, montés en lecture seule), puis construit le graphe. Ensuite, le
+# graphe est réutilisé tant que la voirie, la configuration et l'archive n'ont
+# pas changé.
 #
 # L'import fixe le calendrier des horaires au jour de l'import, sur 60 jours :
 # avec horaires, le graphe est reconstruit après 30 jours pour que la fenêtre
@@ -22,30 +22,10 @@ cd "$DATA"
 
 OSM=/osm/lyon.osm.pbf
 
-TRANSIT="${MOTIS_TRANSIT_ENABLED:-false}"
-GTFS=$DATA/tcl.gtfs.zip
-GTFS_DROP=/gtfs/tcl.gtfs.zip
+TRANSIT="${MOTIS_TRANSIT_ENABLED:-true}"
+GTFS=/gtfs/tcl.gtfs.zip
 TIMETABLE_DAYS=60
 REBUILD_AFTER_DAYS=30
-
-# download URL DESTINATION [EN-TÊTE] — écrit dans un fichier temporaire pour ne
-# jamais laisser un téléchargement interrompu passer pour une archive valide.
-# Un serveur qui cale est repris là où il s'est arrêté, jusqu'à cinq fois.
-download() {
-  url=$1; destination=$2; header=${3:-}
-  rm -f "$destination.part"
-  attempt=1
-  while ! wget -c -T 60 ${header:+--header "$header"} -O "$destination.part" "$url"; do
-    if [ "$attempt" -ge 5 ]; then
-      echo "Téléchargement impossible après $attempt essais : $url" >&2
-      return 1
-    fi
-    attempt=$((attempt + 1))
-    echo "Reprise du téléchargement (essai $attempt)..."
-    sleep 10
-  done
-  mv "$destination.part" "$destination"
-}
 
 checksum() { sha256sum "$1" | cut -d ' ' -f 1; }
 
@@ -60,25 +40,9 @@ if [ ! -f "$OSM" ]; then
   exit 1
 fi
 
-if [ "$TRANSIT" = true ]; then
-  if [ -f "$GTFS_DROP" ]; then
-    # Archive déposée sur le poste : toujours reprise, c'est la source de vérité.
-    cp "$GTFS_DROP" "$GTFS.part" && mv "$GTFS.part" "$GTFS"
-  elif [ -n "${GTFS_SOURCE_URL:-}" ]; then
-    # Une archive téléchargée est rafraîchie en même temps que le graphe.
-    if [ ! -f "$GTFS" ] || [ "$stamp_age_days" -ge "$REBUILD_AFTER_DAYS" ]; then
-      echo "Téléchargement de l'archive GTFS TCL : $GTFS_SOURCE_URL"
-      header=
-      if [ -n "${GTFS_USERNAME:-}" ]; then
-        header="Authorization: Basic $(printf '%s:%s' "$GTFS_USERNAME" "$GTFS_PASSWORD" | base64 | tr -d '\n')"
-      fi
-      download "$GTFS_SOURCE_URL" "$GTFS" "$header"
-    fi
-  else
-    echo "MOTIS_TRANSIT_ENABLED=true mais aucune archive GTFS : déposer infra/gtfs/tcl.gtfs.zip" >&2
-    echo "ou renseigner GTFS_SOURCE_URL (et GTFS_USERNAME, GTFS_PASSWORD) dans .env." >&2
-    exit 1
-  fi
+if [ "$TRANSIT" = true ] && [ ! -f "$GTFS" ]; then
+  echo "Archive GTFS absente : $GTFS doit être montée depuis infra/gtfs/tcl.gtfs.zip." >&2
+  exit 1
 fi
 
 cat > "$CONFIG" <<EOF
@@ -103,7 +67,7 @@ timetable:
   num_days: $TIMETABLE_DAYS
   datasets:
     tcl:
-      path: $(basename "$GTFS")
+      path: $GTFS
       default_timezone: Europe/Paris
 osr_footpath: true
 EOF
