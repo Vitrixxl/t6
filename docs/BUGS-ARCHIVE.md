@@ -2035,6 +2035,18 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 **Test et niveau de verrouillage : automatisé.** Le test de `savedRoutes.test.ts` construit un favori avec des adresses longues et un identifiant de variante SHA-256, le valide avec le contrat partagé et vérifie la stabilité après renommage des lieux. Le scénario `scripts/check-route-choices.mjs`, appelé par `e2e-tcl.mjs`, sélectionne la deuxième variante sur mobile et bureau, l’enregistre par l’interface et compare les données persistées à cette variante. La liste complète, le choix initial, les détails et le formulaire de planification sont également contrôlés.
 
 
+### B83 — Un filtre sans trajet est annoncé comme une panne du moteur
+
+**Symptôme observé.** Une recherche sans candidat exploitable reçoit HTTP 503, comme lorsque MOTIS ne répond pas. Avec un onglet de transport sans type coché ou une combinaison indisponible, l’écran annonce ainsi une panne alors que le moteur a répondu.
+
+**Cause racine.** Le service ramenait la réponse MOTIS indisponible et la liste de candidats vide à la même valeur `[]`. La route convertissait ensuite toute liste vide en 503 et le contrat interdisait un tableau vide.
+
+**Correctif.** [b536e81](https://github.com/Vitrixxl/t6/commit/b536e816a22d36b637fa6b83adaa7517ea7b0665) : distinguer `null` (MOTIS indisponible) de `[]` (aucun trajet correspondant). L’API accepte un tableau vide en 200 ; le client affiche un état vide distinct de l’indisponibilité. Une combinaison absente ne devient pas un trajet à pied de remplacement.
+
+**Où le montrer.** `server/src/services/planning.ts` → `searchRouteOptions`, `server/src/routes/transport.ts`, `src/contracts/planning.ts`, `src/components/app/hooks/useRouteOptions.ts`.
+
+**Test et niveau de verrouillage : automatisé.** `server/src/__tests__/transport-map.test.ts` simule une réponse MOTIS vide, exige 200 et `[]`, et conserve le test distinct de panne en 503. Le test passe localement ; l’ancien branchement `options.length === 0` échouerait sur le statut attendu. `planning.test.ts` vérifie aussi que des TCL seuls ne remplacent pas une combinaison demandée.
+
 ## Ouverts
 
 Le renouvellement du GTFS officiel reste manuel. Le temps réel reste à intégrer. Les variantes TCL sans correspondance vérifiée avec les tracés SYTRAL restent sans géométrie. La reprise piétonne après échec du profil location est limitée à un accès du chemin réel : elle ne prouve pas l’optimalité globale du moteur.
