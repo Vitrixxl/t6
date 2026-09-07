@@ -5,7 +5,7 @@ fréquences réelles de chaque ligne, mais pas d'horaires. Ce script en dérive 
 GTFS minimal : une course par ligne et par sens, cadencée par `frequencies.txt`
 à la fréquence publiée, avec des temps de parcours calculés sur la distance
 entre arrêts. Il ne sert qu'à la recette : la production utilise l'archive
-GTFS officielle TCL (voir infra/motis-prepare.sh).
+GTFS officielle TCL (voir infra/motis-entrypoint.sh).
 
 Usage : python3 scripts/build-gtfs-fixture.py
 """

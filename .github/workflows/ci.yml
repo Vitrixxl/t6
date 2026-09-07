@@ -49,3 +49,27 @@ jobs:
             tmp/screenshots/
             tmp/ci/*.log
           if-no-files-found: ignore
+
+  compose:
+    name: Pile Docker complète
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Démarrer la pile comme sur une machine neuve
+        run: docker compose up --build --wait --wait-timeout 900
+
+      - name: Vérifier l’application et le moteur
+        run: |
+          curl --fail --silent --show-error --insecure https://localhost:4000/api/health
+          docker compose exec -T motis wget -qO- 'http://127.0.0.1:8080/api/v6/plan?fromPlace=45.7578,4.832&toPlace=45.76,4.85' > /dev/null
+
+      - name: Journaux en cas d’échec
+        if: failure()
+        run: docker compose logs
+
+      - name: Arrêter la pile
+        if: always()
+        run: docker compose down --volumes

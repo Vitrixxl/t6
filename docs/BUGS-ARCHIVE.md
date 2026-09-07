@@ -1838,7 +1838,7 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Correctif.** [bc3726e](https://github.com/Vitrixxl/t6/commit/bc3726ec2a1720f83ecf7d83f4024818b54a3f64) : préparation sans GTFS par défaut, indicateur serveur et bandeau explicites, paramètre `transitModes=` vide, import sous l’UID/GID courant et image fixée comme Compose. Un extrait lyonnais existant est réutilisable ; les téléchargements ne deviennent définitifs qu’après succès. L’authentification GTFS optionnelle reste prévue pour une activation future.
 
-**Où le montrer.** `infra/motis-prepare.sh`, `server/src/config/index.ts`, `server/src/services/motis/client.ts`, `src/components/app/TransportStatus.tsx`.
+**Où le montrer.** `infra/motis-entrypoint.sh`, `server/src/config/index.ts`, `server/src/services/motis/client.ts`, `src/components/app/TransportStatus.tsx`.
 
 **Test et niveau de verrouillage : automatisé pour le routage, faible pour la préparation.** `scripts/e2e-no-timetable.mjs`, lancé par la CI contre un vrai MOTIS sans GTFS, vérifie contexte, arrêts, trajet et géométrie sur mobile et bureau. Les tests unitaires verrouillent la désactivation par défaut et le paramètre vide. L’import réel de Lyon est passé après correction des droits ; ce script et l’accès authentifié à un futur GTFS ne disposent pas d’une recette automatisée complète.
 
@@ -1934,7 +1934,7 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Correctif.** [946941e](https://github.com/Vitrixxl/t6/commit/946941eb99628e73ecba1928d0a9bd69cecbf04d) : prendre en charge `GTFS_SOURCE_FILE`, importer le ZIP TCL reçu le 6 septembre 2026 et activer les horaires dans la pile de démonstration. La commande Compose passe explicitement `--env-file .env` pour conserver la configuration du dépôt. Le moteur importe 60 jours ; l’archive annonce une couverture du 6 septembre 2026 au 4 janvier 2027. Les comptes du volume existant sont conservés.
 
-**Où le montrer.** `infra/motis-prepare.sh`, `infra/compose.yml`, `scripts/e2e-tcl.mjs`, `README.md`, `output/presentation/src/slides.tsx`.
+**Où le montrer.** `infra/motis-entrypoint.sh`, `compose.yml`, `scripts/e2e-tcl.mjs`, `README.md`, `output/presentation/src/slides.tsx`.
 
 **Test et niveau de verrouillage : automatisé pour le parcours, faible pour le renouvellement.** `scripts/e2e-tcl.mjs` exige un trajet TCL plus rapide que la marche pour les deux adresses, puis vérifie la restitution sur mobile et bureau. Exécuté sur l’archive officielle et le lien public : Bus C27 puis C25, 46 min contre 56 min à pied à l’heure de recherche de la recette ; ces valeurs sont datées et ne constituent pas un horaire permanent. La CI rejoue le parcours avec son propre GTFS de recette. La préparation locale du ZIP est passée et Compose résout les TCL activés et le bon dossier de graphe. Le renouvellement automatique et le temps réel restent hors de cette livraison.
 
