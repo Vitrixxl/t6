@@ -5,7 +5,8 @@
 # Rien à préparer avant : au premier démarrage, le moteur construit son graphe
 # dans un volume à partir de la voirie et des horaires TCL versionnés
 # (voir infra/motis-entrypoint.sh).
-# L'application attend qu'il réponde, puis écoute sur https://localhost:4000.
+# L'application attend qu'il réponde, puis est publiée sur https://localhost
+# (port 443).
 #
 # Le même serveur porte le client et l'API — une seule origine, donc un cookie
 # de session de première partie et aucun en-tête CORS. Il écoute en **HTTPS**,
@@ -29,18 +30,19 @@ services:
       MOTIS_URL: http://motis:8080
       MOTIS_TRANSIT_ENABLED: ${MOTIS_TRANSIT_ENABLED:-true}
       TEST_PASSWORD: ${TEST_PASSWORD:-UrbanFlow2026!}
-      # Adresses supplémentaires à inscrire dans le certificat. Renseigner l'IP
-      # de la machine sur le réseau local pour y accéder depuis un téléphone :
-      #   TLS_EXTRA_HOSTS=IP:192.168.1.37
+      # Adresses supplémentaires à inscrire dans le certificat : le nom public
+      # de l'instance, ou l'IP de la machine pour un téléphone du réseau local.
+      #   TLS_EXTRA_HOSTS=DNS:mon-nom.duckdns.org,IP:192.168.1.37
       TLS_EXTRA_HOSTS: ${TLS_EXTRA_HOSTS:-}
     volumes:
       # Comptes et trajets d'un côté, certificat de l'autre : le conteneur
       # reste jetable, les données survivent à sa recréation.
       - app-data:/data
       - app-certs:/certs
-    # Publié sur toutes les interfaces : sinon le téléphone ne verrait rien.
+    # Publié sur le port HTTPS standard et toutes les interfaces : sinon le
+    # téléphone ne verrait rien. Aucune écoute HTTP : l'adresse est en https.
     ports:
-      - '${API_PORT:-4000}:4000'
+      - '${HTTPS_PORT:-443}:4000'
     depends_on:
       motis:
         condition: service_healthy
