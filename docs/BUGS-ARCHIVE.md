@@ -2059,6 +2059,18 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé.** `scripts/e2e-planning.mjs` exige un ponctuel encore à venir avant d’avancer son échéance, puis contrôle sa comptabilisation automatique. Ce scénario a échoué avant correction. `scripts/check-search-departure.mjs` vérifie séparément qu’une date choisie est persistée exactement et que l’heure récurrente est préremplie. Les deux font partie de `bun run ci`.
 
+### B85 — La recette du budget carbone échoue le lundi
+
+**Symptôme observé.** Le lundi 7 septembre 2026, la CI échoue avec « Les économies ne doivent pas être soustraites aux dépenses », après les scénarios de confirmation. Le budget affiche zéro pour le trajet de recette attendu à 300 gCO₂e.
+
+**Cause racine.** Le scénario datait ce trajet d’hier tout en vérifiant le budget de la semaine courante. Le lundi, hier appartient à la semaine précédente : l’application l’excluait correctement. C’est un défaut de donnée de test, pas du calcul carbone.
+
+**Correctif.** [b7d2625](https://github.com/Vitrixxl/t6/commit/b7d262574c547c252b3adb3fd88676cc9a2b082a) : dater le seul ponctuel de contrôle du budget à l’instant de sa préparation. Les données passées nécessaires aux annulations restent inchangées.
+
+**Où le montrer.** `scripts/e2e-trip-history.mjs`, préparation du trajet `budget`.
+
+**Test et niveau de verrouillage : automatisé le lundi, faible les autres jours.** Le scénario exige 300 gCO₂e d’émissions, un maximum de 250, un dépassement réel de 50 et une barre bornée à 100 %, puis vérifie annulation et rétablissement. L’ancienne donnée reproduit le faux échec lors d’une exécution le lundi ; le calendrier du runner n’est pas figé par ce test.
+
 ## Ouverts
 
 Le renouvellement du GTFS officiel reste manuel. Le temps réel reste à intégrer. Les variantes TCL sans correspondance vérifiée avec les tracés SYTRAL restent sans géométrie. La reprise piétonne après échec du profil location est limitée à un accès du chemin réel : elle ne prouve pas l’optimalité globale du moteur.
