@@ -348,7 +348,9 @@ Toute la pile tient dans une commande, sur n'importe quelle machine où Docker e
 docker compose up
 ```
 
-`compose.yml` lance **l'application et le moteur ensemble**. Au premier démarrage, le conteneur MOTIS construit son graphe dans un volume à partir de la voirie et des horaires TCL versionnés (`infra/osm/` et `infra/gtfs/`, voir leurs README), en une minute environ ; les démarrages suivants réutilisent ce graphe. Rien n'est téléchargé. L'application attend que le moteur réponde, puis est publiée en **HTTPS** sur le port 443 (https://localhost, `HTTPS_PORT` pour en changer) avec un certificat auto-signé généré au premier démarrage ; il n'y a pas d'écoute HTTP. L'API appelle `motis:8080` sur le réseau Docker, sans port publié. Les flux GBFS et le géocodage restent externes. Tout se règle dans un `.env` facultatif à la racine (modèle : `.env.example`) ; pour que le certificat couvre le nom public de l'instance ou l'adresse de la machine sur le réseau local, les inscrire avant le premier démarrage avec `TLS_EXTRA_HOSTS=DNS:mon-nom.duckdns.org,IP:192.168.1.37` (le certificat n'est généré qu'une fois : `docker volume rm urbanflow_app-certs` pour le refaire).
+`compose.yml` lance **l'entrée HTTPS, l'application et le moteur ensemble**. Au premier démarrage, le conteneur MOTIS construit son graphe dans un volume à partir de la voirie et des horaires TCL versionnés (`infra/osm/` et `infra/gtfs/`, voir leurs README), en une minute environ ; les démarrages suivants réutilisent ce graphe. Rien n'est téléchargé. L'application attend que le moteur réponde, puis le proxy Caddy (`infra/Caddyfile`) la publie sur les ports **80 et 443**, HTTP redirigeant vers HTTPS. Seul le proxy est publié : l'API appelle `motis:8080` et Caddy appelle `app:4000` sur le réseau Docker. Les flux GBFS et le géocodage restent externes. Tout se règle dans un `.env` facultatif à la racine (modèle : `.env.example`).
+
+**Certificat.** Avec `DOMAIN=mon-nom.example` dans `.env` et les ports 80 et 443 joignables depuis Internet, Caddy obtient et renouvelle seul un certificat Let's Encrypt : aucun avertissement, service worker et installation sur téléphone compris. Sans `DOMAIN`, l'instance répond sur https://localhost avec un certificat de l'autorité interne de Caddy, à accepter une fois ; une IP du réseau local (`DOMAIN=192.168.1.37`) fonctionne de la même façon pour un téléphone. `HTTP_PORT` et `HTTPS_PORT` déplacent les ports publiés si 80 ou 443 sont déjà pris.
 
 **Horaires TCL.** L'archive officielle `infra/gtfs/tcl.gtfs.zip` est versionnée : `infra/motis-entrypoint.sh` importe 60 jours d'horaires à partir du jour de l'import et reconstruit le graphe après 30 jours, ou dès que la voirie, l'archive ou la configuration change. Une archive périmée ne fournit aucun horaire courant : la remplacer par la version courante de Data Grand Lyon, le moteur se reconstruit au démarrage suivant. `MOTIS_TRANSIT_ENABLED=false` dans `.env` désactive les horaires : marche, vélo, voiture et engins partagés seulement, avec bandeau. Les horaires de recette de `scripts/fixtures/` sont réservés à `bun run ci`.
 
@@ -377,11 +379,11 @@ serveur de confiance (`P,,`, sans lui donner le rôle d’autorité de certifica
 
 ```bash
 mkdir -p tmp/certs
-docker compose cp app:/certs/cert.pem tmp/certs/urbanflow-localhost.pem
-certutil -d sql:$HOME/.pki/nssdb -A -t 'P,,' -n 'UrbanFlow localhost 2026' -i tmp/certs/urbanflow-localhost.pem
+docker compose exec proxy cat /data/caddy/pki/authorities/local/root.crt > tmp/certs/urbanflow-local-ca.pem
+certutil -d sql:$HOME/.pki/nssdb -A -t 'C,,' -n 'UrbanFlow autorité locale' -i tmp/certs/urbanflow-local-ca.pem
 ```
 
-Cet exemple vise le conteneur `app` de la pile Compose et une base NSS existante.
+Cet exemple importe l'autorité interne de Caddy (inutile avec `DOMAIN` et Let's Encrypt) dans une base NSS existante.
 Les installations Chromium récentes utilisent `~/.local/share/pki/nssdb` si
 `~/.pki/nssdb` n’existe pas. La [documentation Chromium](https://chromium.googlesource.com/chromium/src/+/master/docs/linux/cert_management.md)
 précise les chemins et l’import depuis l’interface. Relancer le navigateur si

@@ -1,25 +1,45 @@
-# UrbanFlow au complet : l'application, son API et le moteur d'itinéraires.
+# UrbanFlow au complet : l'entrée HTTPS, l'application avec son API, et le
+# moteur d'itinéraires.
 #
 #   docker compose up
 #
 # Rien à préparer avant : au premier démarrage, le moteur construit son graphe
 # dans un volume à partir de la voirie et des horaires TCL versionnés
-# (voir infra/motis-entrypoint.sh).
-# L'application attend qu'il réponde, puis est publiée sur https://localhost
-# (port 443).
+# (voir infra/motis-entrypoint.sh). L'application attend qu'il réponde, puis
+# Caddy la publie sur https://localhost (ou https://$DOMAIN) avec redirection
+# de HTTP vers HTTPS.
 #
 # Le même serveur porte le client et l'API — une seule origine, donc un cookie
-# de session de première partie et aucun en-tête CORS. Il écoute en **HTTPS**,
-# et ce n'est pas une précaution de production : le navigateur réserve au
-# contexte sécurisé la géolocalisation, `crypto.randomUUID` et le service
-# worker. Sans lui l'application ne fonctionne que sur localhost, donc pas
-# depuis un téléphone.
+# de session de première partie et aucun en-tête CORS. HTTPS n'est pas une
+# précaution de production : le navigateur réserve au contexte sécurisé la
+# géolocalisation, `crypto.randomUUID` et le service worker. Avec un nom
+# public dans DOMAIN, Caddy obtient un certificat Let's Encrypt reconnu
+# partout, téléphone compris.
 #
 # Les réglages facultatifs se lisent dans un fichier .env à la racine
 # (modèle : .env.example). Aucun n'est nécessaire pour démarrer.
 name: urbanflow
 
 services:
+  # Seul service publié : termine TLS et transmet à l'application.
+  proxy:
+    image: caddy@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificats et clés de compte Let's Encrypt : à conserver, sinon
+      # chaque recréation redemande un certificat et épuise le quota.
+      - proxy-data:/data
+    # Publié sur toutes les interfaces : sinon le téléphone ne verrait rien.
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
   app:
     build:
       context: .
@@ -30,19 +50,14 @@ services:
       MOTIS_URL: http://motis:8080
       MOTIS_TRANSIT_ENABLED: ${MOTIS_TRANSIT_ENABLED:-true}
       TEST_PASSWORD: ${TEST_PASSWORD:-UrbanFlow2026!}
-      # Adresses supplémentaires à inscrire dans le certificat : le nom public
-      # de l'instance, ou l'IP de la machine pour un téléphone du réseau local.
-      #   TLS_EXTRA_HOSTS=DNS:mon-nom.duckdns.org,IP:192.168.1.37
-      TLS_EXTRA_HOSTS: ${TLS_EXTRA_HOSTS:-}
+      # Le proxy est le seul à joindre l'application : son X-Forwarded-For
+      # est fiable et sert à la limitation de débit par adresse.
+      TRUST_PROXY: 'true'
     volumes:
-      # Comptes et trajets d'un côté, certificat de l'autre : le conteneur
-      # reste jetable, les données survivent à sa recréation.
+      # Comptes et trajets d'un côté, certificat interne de l'autre : le
+      # conteneur reste jetable, les données survivent à sa recréation.
       - app-data:/data
       - app-certs:/certs
-    # Publié sur le port HTTPS standard et toutes les interfaces : sinon le
-    # téléphone ne verrait rien. Aucune écoute HTTP : l'adresse est en https.
-    ports:
-      - '${HTTPS_PORT:-443}:4000'
     depends_on:
       motis:
         condition: service_healthy
@@ -75,6 +90,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  proxy-data:
   app-data:
   app-certs:
   motis-data:

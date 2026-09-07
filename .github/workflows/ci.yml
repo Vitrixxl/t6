@@ -64,6 +64,8 @@ jobs:
       - name: Vérifier l’application et le moteur
         run: |
           curl --fail --silent --show-error --insecure https://localhost/api/health
+          # HTTP redirige vers HTTPS.
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost/api/health)" = 308
           docker compose exec -T motis wget -qO- 'http://127.0.0.1:8080/api/v6/plan?fromPlace=45.7578,4.832&toPlace=45.76,4.85' > /dev/null
 
       - name: Journaux en cas d’échec
