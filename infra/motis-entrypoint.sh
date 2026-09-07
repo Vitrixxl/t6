@@ -2,10 +2,11 @@
 # Démarre MOTIS après avoir préparé ses données, s'il le faut.
 #
 # Tourne dans l'image MOTIS (Alpine, BusyBox), sous son utilisateur `motis`,
-# avec le volume de données monté sur /data. Au premier démarrage : télécharge
-# la voirie OpenStreetMap de la métropole de Lyon, copie ou télécharge l'archive GTFS TCL si
-# les horaires sont activés, puis construit le graphe. Ensuite, le graphe est
-# réutilisé tant que sa configuration et son archive n'ont pas changé.
+# avec le volume de données monté sur /data. Au premier démarrage : lit la
+# voirie OpenStreetMap versionnée (infra/osm, montée sur /osm), copie ou
+# télécharge l'archive GTFS TCL si les horaires sont activés, puis construit
+# le graphe. Ensuite, le graphe est réutilisé tant que la voirie, la
+# configuration et l'archive n'ont pas changé.
 #
 # L'import fixe le calendrier des horaires au jour de l'import, sur 60 jours :
 # avec horaires, le graphe est reconstruit après 30 jours pour que la fenêtre
@@ -19,11 +20,7 @@ CONFIG=$DATA/config.yml
 # Les chemins de la configuration sont relatifs au répertoire courant.
 cd "$DATA"
 
-# Extrait BBBike de la métropole (emprise 4.58,45.61,5.16,45.93), actualisé
-# chaque semaine, aux chemins complets : les extraits départementaux
-# d'openstreetmap.fr ont des chemins tronqués que l'import refuse.
-OSM_URL="${OSM_SOURCE_URL:-https://download.bbbike.org/osm/bbbike/Lyon/Lyon.osm.pbf}"
-OSM=$DATA/lyon.osm.pbf
+OSM=/osm/lyon.osm.pbf
 
 TRANSIT="${MOTIS_TRANSIT_ENABLED:-false}"
 GTFS=$DATA/tcl.gtfs.zip
@@ -32,7 +29,7 @@ TIMETABLE_DAYS=60
 REBUILD_AFTER_DAYS=30
 
 # download URL DESTINATION [EN-TÊTE] — écrit dans un fichier temporaire pour ne
-# jamais laisser un téléchargement interrompu passer pour une donnée valide.
+# jamais laisser un téléchargement interrompu passer pour une archive valide.
 # Un serveur qui cale est repris là où il s'est arrêté, jusqu'à cinq fois.
 download() {
   url=$1; destination=$2; header=${3:-}
@@ -59,8 +56,8 @@ stamp_time=$(stamp_field time)
 stamp_age_days=$(( (now - ${stamp_time:-$now}) / 86400 ))
 
 if [ ! -f "$OSM" ]; then
-  echo "Téléchargement de la voirie : $OSM_URL"
-  download "$OSM_URL" "$OSM"
+  echo "Voirie absente : $OSM doit être montée depuis infra/osm/lyon.osm.pbf." >&2
+  exit 1
 fi
 
 if [ "$TRANSIT" = true ]; then
@@ -87,7 +84,7 @@ fi
 cat > "$CONFIG" <<EOF
 server:
   port: 8080
-osm: $(basename "$OSM")
+osm: $OSM
 street_routing: true
 geocoding: false
 reverse_geocoding: false
@@ -112,7 +109,7 @@ osr_footpath: true
 EOF
 fi
 
-fingerprint=$(checksum "$CONFIG")
+fingerprint="$(checksum "$CONFIG") $(checksum "$OSM")"
 if [ "$TRANSIT" = true ]; then
   fingerprint="$fingerprint $(checksum "$GTFS")"
 fi
@@ -121,7 +118,7 @@ reason=
 if [ ! -d "$GRAPH" ] || [ ! -f "$STAMP" ]; then
   reason="aucun graphe"
 elif [ "$(stamp_field fingerprint)" != "$fingerprint" ]; then
-  reason="configuration ou archive modifiée"
+  reason="voirie, configuration ou archive modifiée"
 elif [ "$TRANSIT" = true ] && [ "$stamp_age_days" -ge "$REBUILD_AFTER_DAYS" ]; then
   reason="horaires importés il y a $stamp_age_days jours"
 fi

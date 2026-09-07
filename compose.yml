@@ -2,8 +2,8 @@
 #
 #   docker compose up
 #
-# Rien à préparer avant : au premier démarrage, le moteur télécharge la voirie
-# de la métropole et construit son graphe dans un volume (voir infra/motis-entrypoint.sh).
+# Rien à préparer avant : au premier démarrage, le moteur construit son graphe
+# dans un volume à partir de la voirie versionnée (voir infra/motis-entrypoint.sh).
 # L'application attend qu'il réponde, puis écoute sur https://localhost:4000.
 #
 # Le même serveur porte le client et l'API — une seule origine, donc un cookie
@@ -60,6 +60,7 @@ services:
     volumes:
       - motis-data:/data
       - ./infra/motis-entrypoint.sh:/motis-entrypoint.sh:ro
+      - ./infra/osm:/osm:ro
       - ./infra/gtfs:/gtfs:ro
     healthcheck:
       # Une vraie recherche à pied dans Lyon : le graphe est chargé et répond.
@@ -71,8 +72,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-      # Le premier démarrage télécharge la voirie et construit le graphe.
-      start_period: 15m
+      # Le premier démarrage construit le graphe.
+      start_period: 10m
     restart: unless-stopped
 
 volumes:
