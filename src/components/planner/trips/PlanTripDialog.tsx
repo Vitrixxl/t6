@@ -35,9 +35,10 @@ export function PlanTripDialog() {
         if (!source) {
             return;
         }
-        const next = new Date(Date.now() + 45 * 60_000);
-        next.setMinutes(next.getMinutes() >= 30 ? 60 : 30, 0, 0);
-        form.reset({ ...PLAN_FORM_DEFAULTS, label: source.label, date: next, time: toTimeInputValue(next) });
+        const next = source.departureAt ? new Date(source.departureAt) : new Date(Date.now() + 45 * 60_000);
+        if (!source.departureAt) next.setMinutes(next.getMinutes() >= 30 ? 60 : 30, 0, 0);
+        const time = toTimeInputValue(next);
+        form.reset({ ...PLAN_FORM_DEFAULTS, label: source.label, date: next, time, departureTime: time });
         setDatePickerOpen(false);
     }, [form, source]);
 

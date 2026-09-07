@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSetAtom } from 'jotai';
 import type { GeoPoint, RouteOption, SavedRouteRecord, TransportContext } from '../../types';
-import { ALL_TRANSIT_TYPES, availableModesOf, haversineDistanceKm } from '../../lib/planner';
+import { filtersFromRoute, haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
 import { useRouteOptions } from './hooks/useRouteOptions';
 import { useDesktopLayout } from './hooks/useDesktopLayout';
@@ -131,7 +131,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
     const loadSavedRoute = (entry: SavedRouteRecord) => {
         setOrigin(entry.origin);
         setDestination(entry.destination);
-        setSearchFilters({ modes: availableModesOf(entry.modes), transitTypes: ALL_TRANSIT_TYPES });
+        setSearchFilters(filtersFromRoute(entry.modes));
         closeHub();
     };
 
@@ -156,6 +156,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
         }
         startPlanning({
             label: routeOption.title,
+            departureAt: routeOption.departureAt,
             origin,
             destination,
             modes: routeOption.modes,

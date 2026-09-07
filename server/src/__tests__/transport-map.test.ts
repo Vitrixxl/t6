@@ -110,6 +110,22 @@ it('refuse les recherches invalides et annonce l’indisponibilité du moteur', 
     expect((await api.call('/api/transport/journeys', { body: search })).status).toBe(503);
 });
 
+it('distingue un résultat vide d’une panne du moteur', async () => {
+    network.mockImplementation(Object.assign(async (input: Parameters<typeof fetch>[0]) => {
+        const url = new URL(String(input));
+        if (url.pathname === '/api/v6/plan') return Response.json({ direct: [], itineraries: [] });
+        if (url.pathname === '/api/v1/one-to-many') return Response.json([]);
+        return Response.json({}, { status: 503 });
+    }, { preconnect: globalThis.fetch.preconnect }));
+    const response = await api.call('/api/transport/journeys', { body: {
+        origin: { lat: 45.7578, lon: 4.832, label: 'Bellecour' },
+        destination: { lat: 45.7606, lon: 4.8594, label: 'Part-Dieu' },
+        modes: ['transit'], transitTypes: [], accessibilityNeed: false, kind: 'transit',
+    } });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual([]);
+});
+
 it('ne réutilise pas un ancien flux partagé après une panne à l’expiration du cache', async () => {
     let available = true;
     network.mockImplementation(Object.assign(async (input: Parameters<typeof fetch>[0]) => {

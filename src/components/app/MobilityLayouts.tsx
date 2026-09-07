@@ -146,7 +146,7 @@ export function DesktopMobilityLayout(props: DesktopMobilityLayoutProps) {
                 <SaveErrorBanner message={props.saveError} />
                 <CoverageWarning message={props.coverageWarning} />
                 {props.routeRequested ? <SearchFilters /> : null}
-                {props.routingStatus === 'unavailable' ? <p role="status" className="p-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
+                {props.routingStatus === 'unavailable' || props.routingStatus === 'empty' ? <p role="status" className="p-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
                 <RouteChoices options={map.options} queryKey={map.queryKey} />
                 {route ? (
                     <RouteDetailPanel

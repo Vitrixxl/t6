@@ -256,8 +256,7 @@ Les appels GBFS sont mutualisés côté serveur pendant 60 secondes ;
 une erreur GBFS après expiration produit `null`, sans réutiliser un ancien flux.
 Le contexte est demandé après la connexion, puis relu chaque minute lorsque l’application est active.
 
-Le calcul porte sur tout le réseau, indépendamment du cadrage. Seul le trajet
-retenu, ses mesures et son tracé sont envoyés au client. Les TCL sont calculés lorsque l’archive officielle est importée et le transport activé.
+Le calcul porte sur tout le réseau, indépendamment du cadrage. Tous les trajets retenus, leurs mesures et leurs tracés sont envoyés au client. Les TCL sont calculés lorsque l’archive officielle est importée et le transport activé.
 Les anciennes routes `/api/route` et `/api/route-matrix` n’ont plus d’appelant et
 sont retirées. `bun run e2e:transport` vérifie le volume TCL initial, l’absence de
 fichier global, le cache au déplacement, le zoom régional et la reprise après
@@ -268,13 +267,11 @@ d’énergie ou l’ensemble du trafic (fond OSM et GBFS restent distincts).
 
 Le navigateur envoie la recherche à `POST /api/transport/journeys` par Eden. Le serveur la confie à MOTIS, un moteur multimodal open source qui calcule sur un graphe unique : la voirie OpenStreetMap, les flux GBFS Vélo’v/Dott et les horaires GTFS officiels TCL.
 
-1. Un appel `plan` autorise la marche et les moyens demandés en accès, en sortie et en trajet direct. Les engins partagés exigent les flux GBFS en direct. Les types publics choisis sont transmis à MOTIS lorsque le transport est activé. En parallèle, un appel `one-to-many` mesure la référence voiture.
+1. Pour un onglet simple, un appel `plan` autorise ses moyens et la marche d’accès. Multitransport utilise jusqu’à quatre plans : Vélo’v ou Dott, avant ou après les TCL, sans trajet direct concurrent. Les engins partagés exigent les flux GBFS en direct. Les types publics choisis sont transmis à MOTIS lorsque le transport est activé. En parallèle, un appel `one-to-many` mesure la référence voiture.
 2. `fetchPlan` réunit `direct` et `itineraries`. `searchRouteOptions` filtre les candidats autorisés et exploitables, puis les trie avec `compareItineraries` par arrivée ; à arrivée égale, la durée MOTIS départ–arrivée départage les candidats. `numItineraries` est un minimum de recherche, jamais un plafond de résultats.
 3. `toRouteOption` traduit chaque trajet et mesure sa durée depuis l’heure demandée, attente initiale comprise. Exemple : départ dans 12 minutes puis trajet de 10 minutes → durée totale 22 minutes. La même référence carbone voiture est appliquée à chaque résultat. Un identifiant stable fondé sur le contenu distingue les variantes utilisant les mêmes moyens.
 
-La réponse HTTP est un tableau non vide `routeOptions`, validé par le contrat
-partagé. La liste défile horizontalement sur mobile et bureau, sans troncature. Une panne du moteur ou l’absence de trajet exploitable répond
-503, sans moteur externe ni tracé inventé. Le client garde la recherche en cache
+La réponse HTTP est un tableau `routeOptions`, validé par le contrat partagé, vide si aucun trajet ne correspond. La liste défile horizontalement sur mobile et bureau, sans troncature. Une panne du moteur répond 503, sans moteur externe ni tracé inventé. Le client garde la recherche en cache
 mémoire pendant cinq minutes ; chaque appel serveur interroge MOTIS.
 
 Référence du protocole : [OpenAPI MOTIS](https://github.com/motis-project/motis/blob/master/openapi.yaml).
@@ -612,3 +609,17 @@ Le service worker charge le HTML depuis le réseau lors d’une navigation en li
 
 
 **Caméra après recherche (B81).** `UrbanMap` cadre le résultat à sa réception. Son `ResizeObserver` adapte ensuite le canvas sans rappeler `fitBounds` : déplacement et zoom restent libres, y compris lors d’un changement de hauteur du navigateur mobile. Le cadrage dépend du trajet reçu, pas des mises à jour des extrémités GPS pendant un calcul. Une nouvelle recherche cadre son résultat ; « Ma position » reste une demande explicite. `scripts/check-map-camera.mjs`, appelé par `e2e-map-picker.mjs` dans la CI, vérifie déplacement tactile, zoom, événements resize, changement réel de hauteur et cadrage du trajet inversé.
+
+
+## Onglets de recherche — 7 septembre 2026
+
+La recherche propose cinq onglets : À pied, Vélo’v, Dott, Transport en commun et Multitransport. Les onglets restent utilisables même si le moyen est absent du profil ; aucun changement ne s’y écrit. Le profil amorce Transport en commun s’il l’autorise, sinon Vélo’v, Dott ou À pied. Fermer le trajet réinitialise l’onglet et les types TCL depuis le profil. La ligne explicative et le lien de retour au profil sont retirés. Les cinq onglets ont une largeur égale, avec icône au-dessus du libellé ; ils défilent horizontalement si la place manque. Les favoris combinés rouvrent Multitransport. Le bouton Types de transport apparaît dans Transport en commun et Multitransport, avec les quatre cases Bus, Métro, Tramway et Funiculaire.
+
+Chaque onglet conserve seulement ses trajets, accès piétons inclus. Multitransport interroge séparément chaque engin en accès puis en sortie du réseau : jusqu’à quatre plans MOTIS en parallèle, sans candidat direct concurrent. Il propose Vélo’v + TCL et Dott + TCL quand le moteur trouve ces combinaisons, puis trie toutes les variantes par arrivée avec une seule référence voiture. Il ne garantit pas qu’une combinaison existe. Les recherches simples gardent un plan et, pour une location directe, la reprise piétonne conditionnelle. Le transport seul exclut les trajets directs concurrents du calcul. Sans véhicule disponible, type TCL autorisé ou accessibilité compatible, aucun résultat de remplacement n’est inventé. Un tableau vide signifie aucun trajet ; une panne MOTIS répond 503, y compris si un des plans combinés échoue.
+
+Le parcours est décrit dans scripts/check-search-filters.mjs (appelé par e2e-tcl.mjs) : cinq onglets, Dott sur mobile, Vélo’v sur bureau, Multitransport, bouton des types TCL et aucune écriture de profil. server/src/__tests__/planning.test.ts couvre les quatre plans combinés, les deux engins et l’absence de substitution. Les scénarios sont intégrés à bun run ci ; check-search-departure.mjs vérifie aussi l’heure demandée, la date planifiée persistée et l’heure de départ récurrente.
+
+
+### Départ à une date choisie
+
+Le bouton Départ est disponible dans les cinq onglets. Il permet de choisir une date et une heure locales, ou Maintenant. La validation convertit la saisie en instant ISO selon le fuseau de l’appareil ; departureAt traverse la clé React Query, le contrat partagé, l’API et tous les plans MOTIS. Changer d’onglet conserve cette heure ; fermer le trajet la réinitialise. Planifier reprend la date et l’heure du résultat calculé, y compris l’heure de départ d’une récurrence. Un favori planifié sans recalcul conserve sa proposition de date habituelle. Les disponibilités des engins restent celles des flux actuels : elles ne sont pas une prévision à la date choisie.

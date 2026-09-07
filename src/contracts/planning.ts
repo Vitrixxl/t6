@@ -5,14 +5,24 @@ import { availableModes, geoPoint, mobilityMode } from './primitives';
 import { routeInstruction } from './routing';
 
 export const transitType = z.union([z.literal(0), z.literal(1), z.literal(3), z.literal(7)]);
+export const searchKind = z.enum(['walk', 'bike', 'scooter', 'transit', 'multimodal']);
+export type SearchKind = z.infer<typeof searchKind>;
 /** Une recherche : ses extrémités, ce que l'utilisateur peut prendre pour ce trajet, son besoin PMR. */
 export const routeSearch = z.object({
     origin: geoPoint, destination: geoPoint,
     modes: availableModes,
+    /** Onglet demandé ; absent pour les appelants qui comparent tous les moyens autorisés. */
+    kind: searchKind.optional(),
     transitTypes: z.array(transitType).max(4),
     accessibilityNeed: z.boolean(),
     /** Heure de départ ISO 8601 ; absente, la recherche part maintenant. */
     departureAt: z.iso.datetime({ offset: true }).optional(),
+});
+/** Le champ natif saisit une heure locale, convertie en instant ISO pour MOTIS. */
+export const departureSelection = z.object({
+    localDeparture: z.iso.datetime({ local: true, precision: -1, error: 'Choisis une date et une heure valides.' })
+        .transform(value => new Date(value).toISOString())
+        .pipe(routeSearch.shape.departureAt.unwrap()),
 });
 export const legEstimate = z.object({
     travelFactor: z.number(), overheadMinutes: z.number(), carbonGramsPerKm: z.number(),
@@ -35,7 +45,7 @@ export const routeOption = z.object({
     accessible: z.boolean(), instructions: z.array(routeInstruction),
 });
 /** Toutes les variantes autorisées, par arrivée croissante ; le client sélectionne la première. */
-export const routeOptions = z.array(routeOption).min(1);
+export const routeOptions = z.array(routeOption);
 export type RouteSearchRequest = z.infer<typeof routeSearch>;
 export type LegEstimate = z.infer<typeof legEstimate>;
 export type RouteLeg = z.infer<typeof routeLeg>;

@@ -3,7 +3,7 @@
 import { queryOptions, skipToken } from '@tanstack/react-query';
 import type { AvailableMode, GeoPoint, TransportContext } from '../types';
 import { api, treatyRequest } from '../lib/api/client';
-import type { SearchFilters } from '../lib/planner/search-filters';
+import { SEARCH_MODES, type SearchFilters } from '../lib/planner/search-filters';
 import { queryKeys } from './keys';
 
 export interface RouteSearch {
@@ -15,7 +15,7 @@ export interface RouteSearch {
 
 /** Sans flux GBFS, aucun engin partagé n'est demandé : le moteur ne propose que ce qui se prend vraiment. */
 function requestedModes(filters: SearchFilters, network: TransportContext): AvailableMode[] {
-    return filters.modes.filter(mode => mode === 'transit' ? network.transitRoutingAvailable : network.sharedMobility !== null);
+    return SEARCH_MODES[filters.kind].filter(mode => mode === 'transit' ? network.transitRoutingAvailable : network.sharedMobility !== null);
 }
 
 export function routeOptionsQuery(search: RouteSearch | null, network: TransportContext) {
@@ -23,6 +23,8 @@ export function routeOptionsQuery(search: RouteSearch | null, network: Transport
         origin: search.origin,
         destination: search.destination,
         modes: requestedModes(search.filters, network),
+        kind: search.filters.kind,
+        departureAt: search.filters.departureAt,
         transitTypes: search.filters.transitTypes,
         accessibilityNeed: search.accessibilityNeed,
     } : null;
@@ -32,6 +34,6 @@ export function routeOptionsQuery(search: RouteSearch | null, network: Transport
             body,
             { fetch: { signal: AbortSignal.any([signal, AbortSignal.timeout(60_000)]) } },
         )) : skipToken,
-        staleTime: 5 * 60_000,
+        staleTime: body?.departureAt ? 5 * 60_000 : 0,
     });
 }

@@ -13,7 +13,7 @@ export const routeSelectionAtom = atom<{ queryKey: string; routeId: string } | n
 export type TripsHubTab = 'upcoming' | 'recurring' | 'history' | 'saved';
 
 /** Trajet en cours de planification, ou null si le formulaire est ferme. */
-export const planSourceAtom = atom<TripSource | null>(null);
+export const planSourceAtom = atom<(TripSource & { departureAt?: string }) | null>(null);
 
 export const tripsHubAtom = atom<{ open: boolean; tab: TripsHubTab }>({ open: false, tab: 'upcoming' });
 

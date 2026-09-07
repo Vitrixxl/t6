@@ -30,13 +30,13 @@ export function transportRoutes(ctx: AppContext, config: ServerConfig) {
         .post('/journeys', async ({ body, request, set }) => {
             const context = await transport.context();
             const options = await searchRouteOptions(body, config.motisUrl, { sharedMobility: context.sharedMobility !== null, transit: context.transitRoutingAvailable, lineShapes: transport.lineShapes }, request.signal);
-            if (options.length === 0) {
+            if (options === null) {
                 set.status = 503;
-                return { error: 'Aucun trajet : le moteur d’itinéraires est indisponible ou les points sont inaccessibles.' };
+                return { error: 'Le moteur d’itinéraires est indisponible. Réessaie dans un instant.' };
             }
             return options;
         }, {
             body: routeSearch, response: { 200: routeOptions, 503: errorResponse },
-            detail: { summary: 'Tous les trajets autorisés par arrivée croissante, calculés par MOTIS avec reprise piétonne conditionnelle et tracés TCL officiels vérifiés' },
+            detail: { summary: 'Trajets de l’onglet demandé, par arrivée croissante ; Multitransport recherche séparément Vélo’v + TCL et Dott + TCL. Tableau vide si aucune option, 503 si MOTIS ne répond pas.' },
         });
 }

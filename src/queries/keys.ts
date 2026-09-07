@@ -15,10 +15,10 @@ export const queryKeys = {
     transportContext: ['transport-context'],
     // Les extrémités, les moyens demandés et le besoin PMR déterminent le trajet
     // calculé ; le libellé d'un point n'y change rien.
-    routeOptions: ({ origin, destination, modes, transitTypes, accessibilityNeed }: RouteSearchRequest) =>
+    routeOptions: ({ origin, destination, modes, transitTypes, accessibilityNeed, kind, departureAt }: RouteSearchRequest) =>
         [
             'route-options',
-            { origin: { lat: origin.lat, lon: origin.lon }, destination: { lat: destination.lat, lon: destination.lon }, modes, transitTypes, accessibilityNeed },
+            { origin: { lat: origin.lat, lon: origin.lon }, destination: { lat: destination.lat, lon: destination.lon }, modes, transitTypes, accessibilityNeed, kind, departureAt },
         ],
 } as const;
 

@@ -283,3 +283,17 @@ La présentation conserve sa mise en page et se pilote aussi au toucher : balaya
 
 
 **Caméra après recherche (B81).** `UrbanMap` cadre le résultat à sa réception. Son `ResizeObserver` adapte ensuite le canvas sans rappeler `fitBounds` : déplacement et zoom restent libres, y compris lors d’un changement de hauteur du navigateur mobile. Le cadrage dépend du trajet reçu, pas des mises à jour des extrémités GPS pendant un calcul. Une nouvelle recherche cadre son résultat ; « Ma position » reste une demande explicite. `scripts/check-map-camera.mjs`, appelé par `e2e-map-picker.mjs` dans la CI, vérifie déplacement tactile, zoom, événements resize, changement réel de hauteur et cadrage du trajet inversé.
+
+
+## Onglets de recherche — 7 septembre 2026
+
+La recherche propose cinq onglets : À pied, Vélo’v, Dott, Transport en commun et Multitransport. Les onglets restent utilisables même si le moyen est absent du profil ; aucun changement ne s’y écrit. Le profil amorce Transport en commun s’il l’autorise, sinon Vélo’v, Dott ou À pied. Fermer le trajet réinitialise l’onglet et les types TCL depuis le profil. La ligne explicative et le lien de retour au profil sont retirés. Les cinq onglets ont une largeur égale, avec icône au-dessus du libellé ; ils défilent horizontalement si la place manque. Les favoris combinés rouvrent Multitransport. Le bouton Types de transport apparaît dans Transport en commun et Multitransport, avec les quatre cases Bus, Métro, Tramway et Funiculaire.
+
+Chaque onglet conserve seulement ses trajets, accès piétons inclus. Multitransport interroge séparément chaque engin en accès puis en sortie du réseau : jusqu’à quatre plans MOTIS en parallèle, sans candidat direct concurrent. Il propose Vélo’v + TCL et Dott + TCL quand le moteur trouve ces combinaisons, puis trie toutes les variantes par arrivée avec une seule référence voiture. Il ne garantit pas qu’une combinaison existe. Les recherches simples gardent un plan et, pour une location directe, la reprise piétonne conditionnelle. Le transport seul exclut les trajets directs concurrents du calcul. Sans véhicule disponible, type TCL autorisé ou accessibilité compatible, aucun résultat de remplacement n’est inventé. Un tableau vide signifie aucun trajet ; une panne MOTIS répond 503, y compris si un des plans combinés échoue.
+
+Le parcours est décrit dans scripts/check-search-filters.mjs (appelé par e2e-tcl.mjs) : cinq onglets, Dott sur mobile, Vélo’v sur bureau, Multitransport, bouton des types TCL et aucune écriture de profil. server/src/__tests__/planning.test.ts couvre les quatre plans combinés, les deux engins et l’absence de substitution. Les scénarios sont intégrés à bun run ci ; check-search-departure.mjs vérifie aussi l’heure demandée, la date planifiée persistée et l’heure de départ récurrente.
+
+
+### Départ à une date choisie
+
+Le bouton Départ est disponible dans les cinq onglets. Il permet de choisir une date et une heure locales, ou Maintenant. La validation convertit la saisie en instant ISO selon le fuseau de l’appareil ; departureAt traverse la clé React Query, le contrat partagé, l’API et tous les plans MOTIS. Changer d’onglet conserve cette heure ; fermer le trajet la réinitialise. Planifier reprend la date et l’heure du résultat calculé, y compris l’heure de départ d’une récurrence. Un favori planifié sans recalcul conserve sa proposition de date habituelle. Les disponibilités des engins restent celles des flux actuels : elles ne sont pas une prévision à la date choisie.

@@ -1,4 +1,4 @@
-// Les filtres d'une recherche partent du profil ; le popover peut y déroger
+// Le profil amorce l'onglet de recherche ; les onglets peuvent y déroger
 // pour le trajet en cours, sans rien écrire dans le profil.
 import { useMemo } from 'react';
 import { useAtom } from 'jotai';
@@ -10,10 +10,9 @@ export function useSearchFilters(): {
     filters: SearchFilters;
     /** `null` revient à ce que le profil déclare. */
     setFilters: (filters: SearchFilters | null) => void;
-    fromProfile: boolean;
 } {
     const profile = useProfile();
     const [override, setOverride] = useAtom(searchFiltersAtom);
     const filters = useMemo(() => override ?? filtersFromProfile(profile), [override, profile]);
-    return { filters, setFilters: setOverride, fromProfile: override === null };
+    return { filters, setFilters: setOverride };
 }

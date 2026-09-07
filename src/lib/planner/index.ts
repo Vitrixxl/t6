@@ -19,7 +19,7 @@ export {
     AVAILABLE_MODE_LABELS,
     TRANSIT_TYPES,
     availableModesOf,
-    describeFilters,
+    filtersFromRoute,
     filtersFromProfile,
     type SearchFilters,
     type TransitType,

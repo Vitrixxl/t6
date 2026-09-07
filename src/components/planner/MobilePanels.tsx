@@ -13,7 +13,7 @@ import { Metric } from '../app/shared';
 import { RouteSteps } from './RouteSteps';
 import { RouteChoices } from './RouteChoices';
 
-export const NO_ROUTE_MESSAGE = 'Aucun trajet avec ces moyens de transport. Modifie-les, ou réessaie si le moteur ne répond pas.';
+export const NO_ROUTE_MESSAGE = 'Aucun trajet à afficher. Choisis un autre onglet ou modifie les types de transport. En cas de panne, réessaie plus tard.';
 
 export function MobileTripPanel({
     destination,
@@ -59,7 +59,7 @@ export function MobileTripPanel({
                 ) : null}
 
                 <div className="px-4 pb-3"><SearchFilters /></div>
-                {routingStatus === 'unavailable' ? <p role="status" className="px-4 pb-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
+                {routingStatus === 'unavailable' || routingStatus === 'empty' ? <p role="status" className="px-4 pb-3 text-sm">{NO_ROUTE_MESSAGE}</p> : null}
                 <div className="px-4 pb-2"><RouteChoices options={options} queryKey={queryKey} /></div>
                 <MobileRouteSelection
                     routeOption={route}

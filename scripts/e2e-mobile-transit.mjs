@@ -37,7 +37,7 @@ try {
     assert((await firstResponse).ok(), 'Le moteur ne propose aucun trajet');
     const detailToggle = page.getByText(/^Détails du trajet/);
     await detailToggle.waitFor({ timeout: 60000 });
-    const filter = page.getByRole('button', { name: /^Moyens de transport :/ });
+    const filter = page.getByRole('button', { name: /^Types de transport/ });
     const sheet = page.locator('[data-tour="routes"]:visible');
     assert(await detailToggle.locator('..').getAttribute('open') === null, 'Détails ouverts au départ');
     // Attendre la fin de fermeture du hub : Radix masque encore la carte aux lecteurs d’écran pendant sa transition.
@@ -63,10 +63,10 @@ try {
     await page.getByRole('checkbox', { name: 'Bus', exact: true }).uncheck();
     const metro = await (await metroResponse).json();
     assert(metro.every(option => option.legs.every(leg => leg.mode !== 'transit' || leg.mapLabel.startsWith('Métro '))), 'Type de transport non demandé');
-    const walkResponse = page.waitForResponse(response => response.url().endsWith('/api/transport/journeys') && response.request().postDataJSON().transitTypes.length === 0);
+    const emptyResponse = page.waitForResponse(response => response.url().endsWith('/api/transport/journeys') && response.request().postDataJSON().transitTypes.length === 0);
     await page.getByRole('checkbox', { name: 'Métro', exact: true }).uncheck();
-    const walk = await (await walkResponse).json();
-    assert(walk.every(option => option.modes.length === 1 && option.modes[0] === 'walk'), 'Un transport reste proposé sans type autorisé');
+    const empty = await (await emptyResponse).json();
+    assert(empty.length === 0, 'Un transport reste proposé sans type autorisé');
     await page.keyboard.press('Escape');
     await filter.waitFor();
     await page.setViewportSize({ width: 844, height: 390 });

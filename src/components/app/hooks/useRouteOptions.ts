@@ -14,7 +14,7 @@ const NO_OPTIONS: RouteOption[] = [];
  * l'utilisateur : dans le premier cas la carte va se remplir, dans le second
  * il faut lui dire que le service de routage ne répond pas.
  */
-export type RoutingStatus = 'idle' | 'pending' | 'ready' | 'partial' | 'unavailable';
+export type RoutingStatus = 'idle' | 'pending' | 'ready' | 'partial' | 'empty' | 'unavailable';
 
 export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
     idle: 'En attente d\'un trajet',
@@ -22,6 +22,7 @@ export const ROUTING_STATUS_LABEL: Record<RoutingStatus, string> = {
     ready: 'Tracé réel affiché',
     partial: 'Une partie du tracé est indisponible',
     unavailable: 'Service de routage indisponible',
+    empty: 'Aucun trajet disponible dans cet onglet',
 };
 
 export function useRouteOptions(input: {
@@ -44,7 +45,7 @@ export function useRouteOptions(input: {
     const options = query.data ?? NO_OPTIONS;
     const queryKey = hashKey(request.queryKey);
     const { route } = useRouteSelection(options, queryKey);
-    const routeStatus: RoutingStatus = !route ? 'unavailable' : route.legs.some(leg => leg.path.length < 2) ? 'partial' : 'ready';
+    const routeStatus: RoutingStatus = !route ? (query.isError ? 'unavailable' : 'empty') : route.legs.some(leg => leg.path.length < 2) ? 'partial' : 'ready';
     const routingStatus: RoutingStatus = !search ? 'idle' : query.isPending ? 'pending' : routeStatus;
 
     return { route, options, queryKey, routingStatus };

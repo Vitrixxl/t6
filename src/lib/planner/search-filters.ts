@@ -1,7 +1,6 @@
-// Ce qu'une recherche autorise : les moyens dont l'utilisateur dispose pour ce
-// trajet et, s'il prend le transport en commun, les types de lignes. La marche
-// est toujours possible ; elle n'est pas un filtre.
+// Un onglet choisit le parcours de la recherche, sans modifier le profil.
 import { AVAILABLE_MODES } from '../../contracts/primitives';
+import type { SearchKind } from '../../contracts/planning';
 import type { AvailableMode, MobilityMode, MobilityProfile } from '../../types';
 
 export const TRANSIT_TYPES = [
@@ -12,35 +11,40 @@ export const TRANSIT_TYPES = [
 ] as const;
 export type TransitType = typeof TRANSIT_TYPES[number]['type'];
 export const ALL_TRANSIT_TYPES: TransitType[] = TRANSIT_TYPES.map((option) => option.type);
-
 export const AVAILABLE_MODE_LABELS: Record<AvailableMode, string> = {
-    bike: 'Vélo’v',
-    scooter: 'Dott',
-    transit: 'Transport en commun',
+    bike: 'Vélo’v', scooter: 'Dott', transit: 'Transport en commun',
 };
-
+export const SEARCH_TABS: { kind: SearchKind; label: string }[] = [
+    { kind: 'walk', label: 'À pied' },
+    { kind: 'bike', label: 'Vélo’v' },
+    { kind: 'scooter', label: 'Dott' },
+    { kind: 'transit', label: 'Transport en commun' },
+    { kind: 'multimodal', label: 'Multitransport' },
+];
+export const SEARCH_MODES: Record<SearchKind, AvailableMode[]> = {
+    walk: [], bike: ['bike'], scooter: ['scooter'], transit: ['transit'],
+    multimodal: ['bike', 'scooter', 'transit'],
+};
 export interface SearchFilters {
-    modes: AvailableMode[];
+    kind: SearchKind;
     transitTypes: TransitType[];
+    /** Instant ISO ; absent, départ maintenant. */
+    departureAt?: string;
 }
 
-/** Une recherche part de ce que le profil déclare, tous les types de lignes autorisés. */
+/** Le profil amorce un onglet simple ; il n'autorise pas implicitement un nouvel engin. */
 export function filtersFromProfile(profile: Pick<MobilityProfile, 'availableModes'>): SearchFilters {
-    return { modes: [...profile.availableModes], transitTypes: ALL_TRANSIT_TYPES };
+    const modes = profile.availableModes;
+    const kind = modes.includes('transit') ? 'transit' : modes.includes('bike') ? 'bike' : modes.includes('scooter') ? 'scooter' : 'walk';
+    return { kind, transitTypes: ALL_TRANSIT_TYPES };
 }
 
-/** Les moyens d'un trajet enregistré, dans l'ordre des cases : la marche n'en fait pas partie. */
 export function availableModesOf(modes: readonly MobilityMode[]): AvailableMode[] {
     return AVAILABLE_MODES.filter((mode) => modes.includes(mode));
 }
 
-/** Résumé du filtre pour son bouton : « Vélo’v, Transport en commun (Bus) » ou « À pied seulement ». */
-export function describeFilters(filters: SearchFilters): string {
-    const modes = availableModesOf(filters.modes).map((mode) => AVAILABLE_MODE_LABELS[mode]);
-    if (modes.length === 0) {
-        return 'À pied seulement';
-    }
-    const restricted = filters.modes.includes('transit') && filters.transitTypes.length < ALL_TRANSIT_TYPES.length;
-    const types = TRANSIT_TYPES.filter((option) => filters.transitTypes.includes(option.type)).map((option) => option.label);
-    return restricted ? `${modes.join(', ')} (${types.join(', ') || 'aucun type'})` : modes.join(', ');
+/** Un favori combiné rouvre l'onglet des combinaisons ; ses mesures sont recalculées. */
+export function filtersFromRoute(modes: readonly MobilityMode[]): SearchFilters {
+    const combined = modes.includes('transit') && (modes.includes('bike') || modes.includes('scooter'));
+    return combined ? { kind: 'multimodal', transitTypes: ALL_TRANSIT_TYPES } : filtersFromProfile({ availableModes: availableModesOf(modes) });
 }

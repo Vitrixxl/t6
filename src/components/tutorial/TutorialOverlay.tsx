@@ -38,7 +38,7 @@ const DESKTOP_STEPS: TourStep[] = [
         id: 'route-detail',
         target: 'route-detail',
         title: 'Choisir un trajet',
-        body: "Tous les trajets autorisés sont classés par arrivée. Le premier est sélectionné ; touche une autre carte pour changer de trajet. « Moyens de transport » permet d'en ajouter ou d'en retirer pour cette recherche. Le détail donne les horaires, l'empreinte en gCO₂e comparée au même trajet en voiture, et chaque étape. « Planifier » date le trajet ou en fait une routine, « Enregistrer » le garde sous la main.",
+        body: "Tous les trajets autorisés sont classés par arrivée. Le premier est sélectionné ; touche une autre carte pour changer de trajet. Les onglets À pied, Vélo’v, Dott, Transport en commun et Multitransport choisissent le parcours sans modifier ton profil. « Types de transport » filtre les lignes TCL. Le détail donne les horaires, l'empreinte en gCO₂e comparée au même trajet en voiture, et chaque étape. « Planifier » date le trajet ou en fait une routine, « Enregistrer » le garde sous la main.",
     },
     {
         id: 'trips',

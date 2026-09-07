@@ -32,6 +32,9 @@ export interface PlanQuery {
     /** Engins autorisés pour rejoindre le réseau, le quitter ou faire tout le trajet ; vide, la marche seule. */
     rentalFormFactors: RentalFormFactor[];
     wheelchair: boolean;
+    /** Impose une location avant ou après le transport, sans candidat direct concurrent. */
+    rentalTransitSide?: 'access' | 'egress';
+    transitOnly?: boolean;
 }
 
 const place = z.object({
@@ -115,9 +118,9 @@ export function planUrl(baseUrl: string, query: PlanQuery): string {
         pedestrianProfile: query.wheelchair ? 'WHEELCHAIR' : 'FOOT',
         numItineraries: String(ITINERARIES),
         maxDirectTime: String(MAX_DIRECT_SECONDS),
-        preTransitModes: streetModes,
-        postTransitModes: streetModes,
-        directModes: streetModes,
+        preTransitModes: query.rentalTransitSide ? (query.rentalTransitSide === 'access' ? 'RENTAL' : 'WALK') : streetModes,
+        postTransitModes: query.rentalTransitSide ? (query.rentalTransitSide === 'egress' ? 'RENTAL' : 'WALK') : streetModes,
+        directModes: query.rentalTransitSide || query.transitOnly ? '' : streetModes,
     });
     if (query.rentalFormFactors.length > 0) {
         const formFactors = query.rentalFormFactors.join(',');
