@@ -348,7 +348,7 @@ Toute la pile tient dans une commande, sur n'importe quelle machine où Docker e
 docker compose up
 ```
 
-`compose.yml` lance **l'application et le moteur ensemble**. Au premier démarrage, le conteneur MOTIS construit son graphe dans un volume à partir de la voirie et des horaires TCL versionnés (`infra/osm/` et `infra/gtfs/`, voir leurs README), en une minute environ ; les démarrages suivants réutilisent ce graphe. Rien n'est téléchargé. L'application attend que le moteur réponde, puis écoute en **HTTPS** sur https://localhost:4000 avec un certificat auto-signé généré au premier démarrage. L'API appelle `motis:8080` sur le réseau Docker, sans port publié. Les flux GBFS et le géocodage restent externes. Tout se règle dans un `.env` facultatif à la racine (modèle : `.env.example`) ; pour ouvrir l'application depuis un téléphone du réseau local, inscrire l'adresse de la machine dans le certificat avec `TLS_EXTRA_HOSTS=IP:192.168.1.37`.
+`compose.yml` lance **l'application et le moteur ensemble**. Au premier démarrage, le conteneur MOTIS construit son graphe dans un volume à partir de la voirie et des horaires TCL versionnés (`infra/osm/` et `infra/gtfs/`, voir leurs README), en une minute environ ; les démarrages suivants réutilisent ce graphe. Rien n'est téléchargé. L'application attend que le moteur réponde, puis est publiée en **HTTPS** sur le port 443 (https://localhost, `HTTPS_PORT` pour en changer) avec un certificat auto-signé généré au premier démarrage ; il n'y a pas d'écoute HTTP. L'API appelle `motis:8080` sur le réseau Docker, sans port publié. Les flux GBFS et le géocodage restent externes. Tout se règle dans un `.env` facultatif à la racine (modèle : `.env.example`) ; pour que le certificat couvre le nom public de l'instance ou l'adresse de la machine sur le réseau local, les inscrire avant le premier démarrage avec `TLS_EXTRA_HOSTS=DNS:mon-nom.duckdns.org,IP:192.168.1.37` (le certificat n'est généré qu'une fois : `docker volume rm urbanflow_app-certs` pour le refaire).
 
 **Horaires TCL.** L'archive officielle `infra/gtfs/tcl.gtfs.zip` est versionnée : `infra/motis-entrypoint.sh` importe 60 jours d'horaires à partir du jour de l'import et reconstruit le graphe après 30 jours, ou dès que la voirie, l'archive ou la configuration change. Une archive périmée ne fournit aucun horaire courant : la remplacer par la version courante de Data Grand Lyon, le moteur se reconstruit au démarrage suivant. `MOTIS_TRANSIT_ENABLED=false` dans `.env` désactive les horaires : marche, vélo, voiture et engins partagés seulement, avec bandeau. Les horaires de recette de `scripts/fixtures/` sont réservés à `bun run ci`.
 
@@ -377,11 +377,11 @@ serveur de confiance (`P,,`, sans lui donner le rôle d’autorité de certifica
 
 ```bash
 mkdir -p tmp/certs
-docker cp urbanflow:/certs/cert.pem tmp/certs/urbanflow-localhost.pem
+docker compose cp app:/certs/cert.pem tmp/certs/urbanflow-localhost.pem
 certutil -d sql:$HOME/.pki/nssdb -A -t 'P,,' -n 'UrbanFlow localhost 2026' -i tmp/certs/urbanflow-localhost.pem
 ```
 
-Cet exemple vise le conteneur local nommé `urbanflow` et une base NSS existante.
+Cet exemple vise le conteneur `app` de la pile Compose et une base NSS existante.
 Les installations Chromium récentes utilisent `~/.local/share/pki/nssdb` si
 `~/.pki/nssdb` n’existe pas. La [documentation Chromium](https://chromium.googlesource.com/chromium/src/+/master/docs/linux/cert_management.md)
 précise les chemins et l’import depuis l’interface. Relancer le navigateur si
