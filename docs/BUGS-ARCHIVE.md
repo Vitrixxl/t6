@@ -2047,6 +2047,18 @@ Les positions sur les autres tailles restent une garantie visuelle plus faible.
 
 **Test et niveau de verrouillage : automatisé.** `server/src/__tests__/transport-map.test.ts` simule une réponse MOTIS vide, exige 200 et `[]`, et conserve le test distinct de panne en 503. Le test passe localement ; l’ancien branchement `options.length === 0` échouerait sur le statut attendu. `planning.test.ts` vérifie aussi que des TCL seuls ne remplacent pas une combinaison demandée.
 
+### B84 — Planifier un départ immédiat le comptabilise aussitôt
+
+**Symptôme observé.** Pendant la recette de planification, aucun ponctuel à venir n’est retrouvé après validation : le trajet figure déjà comme fait. La CI signale « Impossible de préparer l’échéance de recette ».
+
+**Cause racine.** L’ajout du départ choisi copiait aussi l’instant du calcul « Maintenant » dans le formulaire. À la validation, cet instant était passé ; la synchronisation serveur le comptabilisait correctement, mais contrairement à l’intention de planifier un trajet futur.
+
+**Correctif.** [44e327b](https://github.com/Vitrixxl/t6/commit/44e327bddcc954513d25ec2e213b58f66a686588) : transmettre au formulaire l’heure exacte seulement lorsqu’elle a été choisie explicitement. « Maintenant » conserve la proposition future habituelle. La date et l’heure choisies restent reprises pour un ponctuel et pour le départ récurrent.
+
+**Où le montrer.** `src/components/app/MobilityMapApp.tsx` → `planRoute`, `src/components/planner/trips/PlanTripDialog.tsx`.
+
+**Test et niveau de verrouillage : automatisé.** `scripts/e2e-planning.mjs` exige un ponctuel encore à venir avant d’avancer son échéance, puis contrôle sa comptabilisation automatique. Ce scénario a échoué avant correction. `scripts/check-search-departure.mjs` vérifie séparément qu’une date choisie est persistée exactement et que l’heure récurrente est préremplie. Les deux font partie de `bun run ci`.
+
 ## Ouverts
 
 Le renouvellement du GTFS officiel reste manuel. Le temps réel reste à intégrer. Les variantes TCL sans correspondance vérifiée avec les tracés SYTRAL restent sans géométrie. La reprise piétonne après échec du profil location est limitée à un accès du chemin réel : elle ne prouve pas l’optimalité globale du moteur.
