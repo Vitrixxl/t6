@@ -2,7 +2,7 @@
 // ouverts) : l'état du compte vit dans le cache de requêtes (src/queries/),
 // que chaque module lit.
 import { useCallback, useEffect, useState } from 'react';
-import { useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import type { GeoPoint, RouteOption, SavedRouteRecord, TransportContext } from '../../types';
 import { filtersFromRoute, haversineDistanceKm } from '../../lib/planner';
 import { useGeolocation } from './hooks/useGeolocation';
@@ -27,7 +27,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
     const persistRoute = useSaveRoute();
     const startPlanning = useSetAtom(planSourceAtom);
     const closeHub = useSetAtom(closeHubAtom);
-    const setSearchFilters = useSetAtom(searchFiltersAtom);
+    const [searchFilters, setSearchFilters] = useAtom(searchFiltersAtom);
 
     // Le départ choisi explicitement. Tant qu'il est vide, c'est la position
     // courante qui fait office de départ : ouvrir l'application et saisir une
@@ -156,7 +156,7 @@ export function MobilityMapApp({ network }: { network: TransportContext }) {
         }
         startPlanning({
             label: routeOption.title,
-            departureAt: routeOption.departureAt,
+            departureAt: searchFilters?.departureAt ? routeOption.departureAt : undefined,
             origin,
             destination,
             modes: routeOption.modes,
